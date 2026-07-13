@@ -1,0 +1,32 @@
+# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+# Proprietary software — see LICENSE in the repository root.
+#
+# Minimal single-replica CephObjectStore (RGW) for a lab / cluster-test Rook deploy.
+# Paired with Rook's upstream deploy/examples/object-user.yaml, which creates the
+# user `my-user` in store `my-store` — the names here must match it.
+#
+# Applied by scripts/cluster/install-cluster-prereqs.sh (V9S_INSTALL_ROOK_CEPH=1)
+# to give Velero an in-cluster S3 endpoint.
+#
+# NOT for production: replica size 1 means a single OSD loss destroys the pools.
+# For production use a replicated (size>=3) or erasure-coded store on >=3 nodes.
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStore
+metadata:
+  name: my-store
+  namespace: rook-ceph
+spec:
+  metadataPool:
+    failureDomain: host
+    replicated:
+      size: 1
+      requireSafeReplicaSize: false
+  dataPool:
+    failureDomain: host
+    replicated:
+      size: 1
+      requireSafeReplicaSize: false
+  preservePoolsOnDelete: false
+  gateway:
+    port: 80
+    instances: 1

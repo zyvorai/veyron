@@ -57,27 +57,81 @@ else
 fi
 c -o /dev/null -w '' "${BASE}/api/v1/health/ready" 2>/dev/null && ok "Readiness endpoint healthy" || warn "Readiness probe not OK"
 
-# 3) Day-2 capabilities (which ops actually work on THIS cluster)
-echo; echo "Day-2 capabilities (target cluster):"; hr
+# 3) Acceptance gate — grade the cluster against the go-live requirements.
+#    Hard FAILs block sign-off (exit non-zero); WARNs are capability gaps that
+#    degrade gracefully. See docs/CUSTOMER_DEPLOY.md.
+GATE_FAILED=0
+echo; echo "Acceptance gate (target cluster):"; hr
 caps="$(c "${BASE}/api/v1/platform/capabilities" 2>/dev/null || true)"
 if [[ -z "${caps}" || "${caps}" == *'"error"'* ]]; then
-  warn "capabilities endpoint unavailable (redeploy API to enable /platform/capabilities)"
+  bad "capabilities endpoint unavailable (redeploy API to enable /platform/capabilities)"
+  GATE_FAILED=1
 else
-  python3 - "${caps}" <<'PY' 2>/dev/null || { echo "${caps}" | head -c 400; echo; }
+  python3 - "${caps}" <<'PY' || GATE_FAILED=1
 import sys, json
+
+G, Y, R, N = "\033[0;32m", "\033[0;33m", "\033[0;31m", "\033[0m"
 d = json.loads(sys.argv[1])
-print("  kubevirt_version:", d.get("kubevirt_version"))
-ops = d.get("day2_ops", {})
-for k, v in ops.items():
-    mark = "\033[0;32m✔\033[0m" if v else "\033[0;33m—\033[0m"
-    print(f"    {mark} {k}: {v}")
-comps = d.get("components", {})
-print("  components:", ", ".join(f"{k}={v}" for k, v in comps.items()))
-gated = [k for k, v in ops.items() if not v]
-if gated:
-    print("\n  \033[0;33mNote:\033[0m gated/off ops above are conditional — enable the KubeVirt")
-    print("  feature gate (VMLiveUpdateFeatures / VolumesUpdateStrategy) or install the")
-    print("  component, or expect those Day-2 ops to be unavailable.")
+st, nodes, ops = d.get("storage", {}), d.get("nodes", {}), d.get("day2_ops", {})
+fails, warns = [], []
+
+def check(cond, label, detail="", hard=True):
+    if cond:
+        print(f"  {G}✔{N} {label}")
+    else:
+        (fails if hard else warns).append(label)
+        mark, col = (f"{R}✘{N}", R) if hard else (f"{Y}!{N}", Y)
+        print(f"  {mark} {col}{label}{N}" + (f" — {detail}" if detail else ""))
+
+print(f"\n  Platform: kubevirt={d.get('kubevirt_version')} nodes={nodes.get('count')} "
+      f"kvm_capable={nodes.get('kvm_capable')}")
+
+# --- Hard requirements: without these, VMs are not production-viable. ---
+check(bool(d.get("kubevirt_version")), "KubeVirt installed and reporting a version")
+check(nodes.get("kvm_capable", 0) > 0, "Hardware virtualization exposed to KubeVirt",
+      "no node advertises devices.kubevirt.io/kvm — VMs would need slow software emulation")
+
+dsc = st.get("default_storage_class")
+check(dsc is not None, "A default StorageClass exists",
+      "VM disk creation without an explicit class will fail")
+check(not st.get("default_storage_class_node_local", False),
+      "Default StorageClass is shared (not node-local)",
+      f"default is '{dsc}' — node-local storage pins each VM to one node, "
+      "breaks live migration, and loses the disk if that node dies")
+check(st.get("shared_storage_class_present", False), "A shared (non-node-local) StorageClass exists")
+check(ops.get("snapshots", False), "A VolumeSnapshotClass object exists",
+      "the snapshot CRD may be installed but with zero classes — nothing can actually snapshot")
+if st.get("volume_snapshot_classes"):
+    check(st.get("snapshot_drivers_matched", False),
+          "VolumeSnapshotClass driver matches a StorageClass provisioner",
+          "snapshots will fail at bind time")
+
+# --- Capability gaps: degrade gracefully, but the customer must know. ---
+check(ops.get("cpu_memory_live_hotplug", False), "Live CPU/memory hotplug",
+      "enable KubeVirt feature gate VMLiveUpdateFeatures", hard=False)
+check(ops.get("storage_class_migration", False), "Storage-class disk migration",
+      "enable KubeVirt feature gate VolumesUpdateStrategy", hard=False)
+check(ops.get("live_migration", False), "Live migration",
+      f"needs >=2 nodes (have {nodes.get('count')}) and RWX storage "
+      f"(rwx_capable={st.get('rwx_capable')})", hard=False)
+check(ops.get("windows_golden_images", False), "Windows golden-image workflow",
+      "needs CDI + a shared StorageClass", hard=False)
+check(ops.get("persistent_tpm_efi", False), "Persistent TPM/EFI state (Windows 11, BitLocker)",
+      f"needs feature gate VMPersistentState + vmStateStorageClass "
+      f"(currently {st.get('vm_state_storage_class')})", hard=False)
+check(ops.get("velero_backups", False), "Velero off-cluster backups", "optional", hard=False)
+
+sc_summary = ", ".join(
+    f"{s['name']}{'*' if s['default'] else ''}"
+    f"{' (node-local)' if s['node_local'] else ''}"
+    f"{' (rwx)' if s['rwx_capable'] else ''}"
+    for s in st.get("storage_classes", []))
+print(f"\n  StorageClasses: {sc_summary or 'none'}   (* = default)")
+
+if fails:
+    print(f"\n  {R}GATE FAILED{N} — {len(fails)} blocking issue(s): " + "; ".join(fails))
+    sys.exit(1)
+print(f"\n  {G}Gate passed{N}" + (f" ({len(warns)} capability gap(s) — see above)" if warns else ""))
 PY
 fi
 
@@ -94,6 +148,11 @@ else
 fi
 
 hr
+if [[ "${GATE_FAILED}" == "1" ]]; then
+  bad "Preflight FAILED — the cluster is not ready for go-live (see blocking issues above)."
+  bad "Remediate with: ./scripts/cluster/adapt-existing-cluster.sh <host> <user> --apply"
+  exit 1
+fi
 ok "Preflight complete."
 ok "Full smoke test:  VEYRON_API_KEY=... $0 ${HOST} ${PORT} --smoke"
 ok "Daily-ops E2E:    VEYRON_API_KEY=... ./scripts/test-vm-daily-ops-remote.sh ${HOST} ${PORT}"

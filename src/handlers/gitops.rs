@@ -147,6 +147,8 @@ pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<
                                 source_type,
                                 name: None,
                                 image: source_image,
+                                namespace: None,
+                                from_pvc: false,
                             },
                             device_type: "disk".to_string(),
                             bus: d.disk.as_ref().and_then(|dd| dd.bus.clone()),

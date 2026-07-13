@@ -1,0 +1,107 @@
+# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+# Proprietary software — see LICENSE in the repository root.
+#
+# Windows instance types + preference (KubeVirt instancetype.kubevirt.io).
+#
+# Instance types define SIZE (CPU/memory). Preferences define SHAPE (device buses,
+# firmware, CPU topology) for a given OS. Splitting them means one Windows preference
+# serves every size, and a size can be reused across guest OSes.
+#
+# KubeVirt can INFER both from labels on the golden image's DataSource/PVC:
+#   instancetype.kubevirt.io/default-instancetype: windows-medium
+#   instancetype.kubevirt.io/default-preference:   windows-server
+# so a VM created from that image gets the right shape without naming either.
+#
+#   kubectl apply -f deploy/k8s/bootstrap/windows-instancetypes.yaml
+---
+apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachineClusterInstancetype
+metadata:
+  name: windows-medium
+  labels:
+    veyron.io/managed-by: veyron
+spec:
+  cpu:
+    guest: 4
+  memory:
+    guest: 8Gi
+---
+apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachineClusterInstancetype
+metadata:
+  name: windows-large
+  labels:
+    veyron.io/managed-by: veyron
+spec:
+  cpu:
+    guest: 8
+  memory:
+    guest: 16Gi
+---
+apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachineClusterPreference
+metadata:
+  name: windows-server
+  labels:
+    veyron.io/managed-by: veyron
+spec:
+  cpu:
+    # Windows licenses per socket — prefer cores so a large VM doesn't multiply
+    # the socket count (and the licence bill).
+    preferredCPUTopology: preferCores
+  devices:
+    preferredDiskBus: virtio
+    preferredInterfaceModel: virtio
+    preferredRng: {}
+    preferredTPM: {}
+  firmware:
+    preferredUseEfi: true
+    preferredUseSecureBoot: false
+  clock:
+    preferredTimer:
+      hpet:
+        present: false
+      pit:
+        tickPolicy: delay
+      rtc:
+        tickPolicy: catchup
+      hyperv: {}
+    utc: {}
+  features:
+    preferredAcpi: {}
+    preferredApic: {}
+    preferredSmm: {}
+    preferredHyperv:
+      relaxed: {}
+      vapic: {}
+      spinlocks:
+        spinlocks: 8191
+---
+# Windows 11 additionally requires Secure Boot + TPM.
+apiVersion: instancetype.kubevirt.io/v1beta1
+kind: VirtualMachineClusterPreference
+metadata:
+  name: windows-11
+  labels:
+    veyron.io/managed-by: veyron
+spec:
+  cpu:
+    preferredCPUTopology: preferCores
+  devices:
+    preferredDiskBus: virtio
+    preferredInterfaceModel: virtio
+    preferredRng: {}
+    preferredTPM: {}
+  firmware:
+    preferredUseEfi: true
+    # Windows 11 will not install without Secure Boot; Secure Boot needs SMM.
+    preferredUseSecureBoot: true
+  features:
+    preferredAcpi: {}
+    preferredApic: {}
+    preferredSmm: {}
+    preferredHyperv:
+      relaxed: {}
+      vapic: {}
+      spinlocks:
+        spinlocks: 8191

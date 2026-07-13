@@ -3,8 +3,10 @@
 # Fixes clusters where CILIUM_POST_nat is empty and packets leave with 10.0.0.x source IPs.
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-VALUES="${ROOT_DIR}/k8s/cilium-k3s-values.yaml"
+CLUSTER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VALUES="${CLUSTER_DIR}/cilium-k3s-values.yaml"
+# shellcheck source=../versions.env
+source "${CLUSTER_DIR}/versions.env"
 
 command -v kubectl >/dev/null 2>&1 || exit 0
 command -v helm >/dev/null 2>&1 || exit 0
@@ -19,7 +21,7 @@ if ! kubectl get ds cilium -n kube-system &>/dev/null; then
   exit 0
 fi
 
-CHART_VERSION="${V9S_CILIUM_CHART_VERSION:-1.19.4}"
+CHART_VERSION="${V9S_CILIUM_CHART_VERSION:-${CILIUM_CHART_VERSION}}"
 helm repo add cilium https://helm.cilium.io/ 2>/dev/null || true
 helm repo update cilium 2>/dev/null || helm repo update 2>/dev/null || true
 

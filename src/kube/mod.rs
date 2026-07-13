@@ -1025,7 +1025,14 @@ impl KubeClient {
         }
     }
 
-    /// Clone a VM by copying its spec and creating a new VM with a different name
+    /// Clone a VM: copy its spec under a new name **and give it its own disks**.
+    ///
+    /// Copying the spec verbatim is not a clone — every `persistentVolumeClaim` /
+    /// `dataVolume` volume would still name the *source's* disk, so two VMs would
+    /// boot the same volume and corrupt it. Instead, each persistent volume is
+    /// rewritten into a VM-owned `dataVolumeTemplates` entry that CDI-clones the
+    /// source disk. Ephemeral volumes (containerDisk, emptyDisk, cloud-init,
+    /// sysprep) are copied as-is; they carry no VM state.
     pub async fn clone_vm(
         &self,
         namespace: &str,
@@ -1037,7 +1044,71 @@ impl KubeClient {
         // Get existing VM
         let source = vms.get(name).await?;
 
-        // Build new VM from source spec
+        let mut spec = source.spec.clone();
+
+        // A copied dataVolumeTemplate would try to create the *source's* DataVolume
+        // name; rebuild the list from scratch below.
+        spec.data_volume_templates = None;
+        let mut dvts: Vec<DataVolumeTemplate> = Vec::new();
+
+        if let Some(volumes) = spec.template.spec.volumes.as_mut() {
+            for vol in volumes.iter_mut() {
+                // Which existing PVC backs this volume? (A DataVolume's PVC shares its name.)
+                let source_claim = vol
+                    .persistent_volume_claim
+                    .as_ref()
+                    .map(|p| p.claim_name.clone())
+                    .or_else(|| vol.data_volume.as_ref().map(|d| d.name.clone()));
+
+                let Some(source_claim) = source_claim else {
+                    continue; // ephemeral — nothing to clone
+                };
+
+                let clone_dv = format!("{}-{}", new_name, vol.name);
+                let size = self
+                    .pvc_storage_request(namespace, &source_claim)
+                    .await
+                    .unwrap_or_else(|| "10Gi".to_string());
+
+                let mut requests = BTreeMap::new();
+                requests.insert("storage".to_string(), size);
+
+                dvts.push(DataVolumeTemplate {
+                    metadata: Some(kube::api::ObjectMeta {
+                        name: Some(clone_dv.clone()),
+                        ..Default::default()
+                    }),
+                    spec: DataVolumeSpec {
+                        source: Some(DataVolumeSourceSpec {
+                            pvc: Some(DataVolumeSourcePVC {
+                                namespace: namespace.to_string(),
+                                name: source_claim,
+                            }),
+                            ..Default::default()
+                        }),
+                        source_ref: None,
+                        storage: Some(DataVolumeStorage {
+                            // Inherit the source's class via the StorageProfile.
+                            storage_class_name: None,
+                            access_modes: None,
+                            volume_mode: None,
+                            resources: Some(DataVolumeResources {
+                                requests: Some(requests),
+                            }),
+                        }),
+                    },
+                });
+
+                // Repoint the volume at the clone's own disk.
+                vol.persistent_volume_claim = None;
+                vol.data_volume = Some(DataVolumeSource { name: clone_dv });
+            }
+        }
+
+        if !dvts.is_empty() {
+            spec.data_volume_templates = Some(dvts);
+        }
+
         let mut new_vm = VirtualMachine {
             metadata: kube::api::ObjectMeta {
                 name: Some(new_name.to_string()),
@@ -1046,9 +1117,20 @@ impl KubeClient {
                 annotations: source.metadata.annotations.clone(),
                 ..Default::default()
             },
-            spec: source.spec.clone(),
+            spec,
             status: None,
         };
+        // The `kubevirt.io/vm` label must follow the clone, not the source, or the
+        // clone's virt-launcher pods get selected by the source's Services.
+        if let Some(labels) = new_vm.metadata.labels.as_mut() {
+            labels.insert("kubevirt.io/vm".to_string(), new_name.to_string());
+        }
+        if let Some(tmpl_meta) = new_vm.spec.template.metadata.as_mut() {
+            if let Some(labels) = tmpl_meta.labels.as_mut() {
+                labels.insert("kubevirt.io/vm".to_string(), new_name.to_string());
+            }
+        }
+
         // Don't auto-start the clone — use RunStrategy instead of deprecated Running field
         new_vm.spec.running = None;
         new_vm.spec.run_strategy = Some("Halted".to_string());
@@ -1056,6 +1138,18 @@ impl KubeClient {
         let pp = PostParams::default();
         let created = vms.create(&pp, &new_vm).await?;
         Ok(created)
+    }
+
+    /// The `spec.resources.requests.storage` of a PVC, if it exists.
+    async fn pvc_storage_request(&self, namespace: &str, claim: &str) -> Option<String> {
+        use k8s_openapi::api::core::v1::PersistentVolumeClaim;
+        let pvcs: Api<PersistentVolumeClaim> = Api::namespaced(self.client.clone(), namespace);
+        let pvc = pvcs.get_opt(claim).await.ok().flatten()?;
+        pvc.spec?
+            .resources?
+            .requests?
+            .get("storage")
+            .map(|q| q.0.clone())
     }
 
     /// Pause a running VM instance via KubeVirt VMI pause subresource.
@@ -1788,7 +1882,12 @@ impl KubeClient {
 
     /// Default virtio-win container disk — attached as SATA CD-ROM for Windows VMs.
     /// Override with `VEYRON_VIRTIO_WIN_CONTAINER_DISK`.
-    const VIRTIO_WIN_CONTAINER_DISK: &'static str = "quay.io/containerdisks/virtio-win:latest";
+    ///
+    /// Pinned by digest, not tag: this disk carries the storage/network drivers
+    /// every Windows guest binds to, so a floating tag would change the driver set
+    /// under running fleets. Digest is the multi-arch OCI index for v1.8.1 and is
+    /// kept in sync with `scripts/cluster/versions.env`.
+    const VIRTIO_WIN_CONTAINER_DISK: &'static str = "quay.io/kubevirt/virtio-container-disk@sha256:6b823946eb7493347a93d6daa16b4101a68e16a0ee1766e01ac3adf82e4b5838";
 
     /// For Windows VM creation: inject the virtio-win container disk as a SATA CD-ROM.
     /// Applies `ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY` to mirror quay.io/* to a private prefix.

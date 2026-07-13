@@ -26,7 +26,7 @@ STEP A — install-cluster.sh (automated cluster prerequisites)
 -------------------------------------------------------------
   export KUBECONFIG=/path/to/kubeconfig
 
-  # Defaults: Cilium (if no Flannel/Calico), metrics-server, KubeVirt v1.4.0, CDI v1.59.0
+  # Defaults: Cilium (if no Flannel/Calico), metrics-server, KubeVirt v1.8.4, CDI v1.65.0
   ./install-cluster.sh
 
   SKIP FLAGS (set before ./install-cluster.sh):
@@ -36,9 +36,12 @@ STEP A — install-cluster.sh (automated cluster prerequisites)
     VMROGUE_SKIP_METRICS_SERVER=1  or V9S_SKIP_METRICS_SERVER=1
 
   VERSION OVERRIDES:
-    VMROGUE_KUBEVIRT_VERSION=v1.4.0
-    VMROGUE_CDI_VERSION=v1.65.0
-    VMROGUE_CILIUM_CHART_VERSION=1.19.4
+    VEYRON_KUBEVIRT_VERSION=v1.8.4     or V9S_KUBEVIRT_VERSION=
+    VEYRON_CDI_VERSION=v1.65.0        or V9S_CDI_VERSION=
+    VEYRON_CILIUM_CHART_VERSION=1.19.5  or V9S_CILIUM_CHART_VERSION=
+
+  The shipped defaults are the tested baseline. KubeVirt 1.8.x is validated against
+  Kubernetes 1.33-1.35 — do not run it on a newer Kubernetes without re-testing.
 
   OPTIONAL INSTALL (off by default):
     V9S_INSTALL_MULTUS=1

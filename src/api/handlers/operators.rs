@@ -17,7 +17,7 @@ use crate::api::http_server::web::SharedState;
 use super::namespace_scope::{self, DashboardNamespaceQuery};
 #[cfg(feature = "web")]
 use k8s_openapi::{
-    api::apps::v1::Deployment,
+    api::apps::v1::Deployment, api::core::v1::Node, api::storage::v1::StorageClass,
     apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition,
 };
 
@@ -81,7 +81,20 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
         .and_then(|v| v.as_str())
         .map(String::from);
 
-    // Component presence (best-effort; missing CRD → not present).
+    // KubeVirt backend storage for persistent TPM/EFI state (Windows 11, BitLocker).
+    let vm_state_storage_class = kv_obj
+        .as_ref()
+        .and_then(|o| o.data.get("spec"))
+        .and_then(|s| s.get("configuration"))
+        .and_then(|c| c.get("vmStateStorageClass"))
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(String::from);
+
+    // Component presence. NOTE: a servable API type is NOT the same as a usable
+    // component — an installed-but-empty snapshot CRD would greenlight a cluster
+    // that cannot actually snapshot anything. Only use this for control-plane CRs
+    // (CDI, Velero); capability claims below are gated on real *objects*.
     let crd_exists = |group: &str, version: &str, kind: &str| {
         let ar = ApiResource::from_gvk(&GroupVersionKind::gvk(group, version, kind));
         let cl = client.clone();
@@ -94,8 +107,114 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
     };
     let cdi_present = crd_exists("cdi.kubevirt.io", "v1beta1", "CDI").await;
     let velero_present = crd_exists("velero.io", "v1", "Backup").await;
-    let snapshot_class_present =
-        crd_exists("snapshot.storage.k8s.io", "v1", "VolumeSnapshotClass").await;
+
+    // --- StorageClasses: which exist, which is default, and is it node-local? ---
+    let sc_api: Api<StorageClass> = Api::all(client.clone());
+    let sc_list = sc_api.list(&Default::default()).await.ok();
+    let storage_classes: Vec<serde_json::Value> = sc_list
+        .as_ref()
+        .map(|l| {
+            l.items
+                .iter()
+                .map(|sc| {
+                    let name = sc.metadata.name.clone().unwrap_or_default();
+                    let is_default = sc
+                        .metadata
+                        .annotations
+                        .as_ref()
+                        .and_then(|a| a.get(DEFAULT_SC_ANNOTATION))
+                        .map(|v| v == "true")
+                        .unwrap_or(false);
+                    serde_json::json!({
+                        "name": name,
+                        "provisioner": sc.provisioner,
+                        "default": is_default,
+                        "node_local": is_node_local_provisioner(&sc.provisioner),
+                        "rwx_capable": is_rwx_capable_provisioner(&sc.provisioner),
+                        "allow_expansion": sc.allow_volume_expansion.unwrap_or(false),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let default_sc = storage_classes
+        .iter()
+        .find(|sc| sc["default"] == serde_json::json!(true));
+    let default_storage_class = default_sc
+        .and_then(|sc| sc["name"].as_str())
+        .map(String::from);
+    // The §7 trap: a default StorageClass that pins every VM disk to one node.
+    let default_storage_class_node_local = default_sc
+        .map(|sc| sc["node_local"] == serde_json::json!(true))
+        .unwrap_or(false);
+    let rwx_capable = storage_classes
+        .iter()
+        .any(|sc| sc["rwx_capable"] == serde_json::json!(true));
+    // A class VM disks can actually live on (shared, not node-pinned).
+    let shared_storage_class_present = storage_classes
+        .iter()
+        .any(|sc| sc["node_local"] == serde_json::json!(false));
+
+    // --- VolumeSnapshotClasses: real objects, not just the CRD. ---
+    let vsc_ar = ApiResource::from_gvk(&GroupVersionKind::gvk(
+        "snapshot.storage.k8s.io",
+        "v1",
+        "VolumeSnapshotClass",
+    ));
+    let vsc_api: Api<DynamicObject> = Api::all_with(client.clone(), &vsc_ar);
+    let vsc_list = vsc_api.list(&Default::default()).await.ok();
+    let snapshot_class_crd_present = vsc_list.is_some();
+    let volume_snapshot_classes: Vec<serde_json::Value> = vsc_list
+        .as_ref()
+        .map(|l| {
+            l.items
+                .iter()
+                .map(|o| {
+                    serde_json::json!({
+                        "name": o.metadata.name.clone().unwrap_or_default(),
+                        "driver": o.data.get("driver").and_then(|d| d.as_str()),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    // Snapshots need a *class*, not merely the API type.
+    let snapshots_usable = !volume_snapshot_classes.is_empty();
+    // A snapshot class is only useful if its driver matches a StorageClass provisioner.
+    let snapshot_drivers_matched = volume_snapshot_classes.iter().any(|vsc| {
+        vsc["driver"].as_str().is_some_and(|d| {
+            storage_classes
+                .iter()
+                .any(|sc| sc["provisioner"].as_str() == Some(d))
+        })
+    });
+
+    // --- Nodes: count + hardware virtualization actually exposed to KubeVirt. ---
+    let node_api: Api<Node> = Api::all(client.clone());
+    let nodes = node_api.list(&Default::default()).await.ok();
+    let node_count = nodes.as_ref().map(|l| l.items.len()).unwrap_or(0);
+    let kvm_nodes = nodes
+        .as_ref()
+        .map(|l| {
+            l.items
+                .iter()
+                .filter(|n| {
+                    n.status
+                        .as_ref()
+                        .and_then(|s| s.allocatable.as_ref())
+                        .and_then(|a| a.get(KVM_DEVICE_RESOURCE))
+                        .map(|q| q.0 != "0")
+                        .unwrap_or(false)
+                })
+                .count()
+        })
+        .unwrap_or(0);
+
+    // --- Derived, first-class capability flags ---
+    // Live migration needs somewhere to migrate *to* and shared RWX storage.
+    let live_migration = node_count >= 2 && rwx_capable;
+    // The golden-image workflow needs CDI (clone/import) and non-node-local storage.
+    let windows_golden_images = cdi_present && shared_storage_class_present;
 
     Json(serde_json::json!({
         "kubevirt_version": kv_version,
@@ -105,20 +224,70 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
             "cpu_memory_live_hotplug": has("VMLiveUpdateFeatures"),
             // Storage-class disk migration needs the volumes update strategy.
             "storage_class_migration": has("VolumesUpdateStrategy") || has("VolumeMigration"),
-            // Snapshots/backups need a VolumeSnapshotClass.
-            "snapshots": snapshot_class_present,
+            // Snapshots need an actual VolumeSnapshotClass object, not just the CRD.
+            "snapshots": snapshots_usable,
             "velero_backups": velero_present,
             "cdi_import_convert": cdi_present,
+            "live_migration": live_migration,
+            "windows_golden_images": windows_golden_images,
+            // Persistent TPM/EFI state (Windows 11, BitLocker) needs backend storage.
+            "persistent_tpm_efi": has("VMPersistentState") && vm_state_storage_class.is_some(),
             // These are unconditional (plain API/subresource calls).
             "node_cordon": true, "run_strategy": true, "bulk_actions": true,
             "drift_remediation": true, "self_healing": true, "guest_ops_if_agent": true
         },
         "components": {
             "cdi": cdi_present, "velero": velero_present,
-            "volume_snapshot_class": snapshot_class_present
+            "volume_snapshot_class": snapshot_class_crd_present
+        },
+        "storage": {
+            "storage_classes": storage_classes,
+            "default_storage_class": default_storage_class,
+            "default_storage_class_node_local": default_storage_class_node_local,
+            "shared_storage_class_present": shared_storage_class_present,
+            "rwx_capable": rwx_capable,
+            "volume_snapshot_classes": volume_snapshot_classes,
+            "snapshot_drivers_matched": snapshot_drivers_matched,
+            "vm_state_storage_class": vm_state_storage_class
+        },
+        "nodes": {
+            "count": node_count,
+            "kvm_capable": kvm_nodes
         },
         "note": "guest ops (patch/reclaim/app-consistent) additionally require a guest agent (GuestKit/QGA) in the VM image"
     }))
+}
+
+/// Marks the cluster-wide default StorageClass.
+#[cfg(feature = "web")]
+const DEFAULT_SC_ANNOTATION: &str = "storageclass.kubernetes.io/is-default-class";
+
+/// KubeVirt advertises hardware virtualization as an extended node resource.
+#[cfg(feature = "web")]
+const KVM_DEVICE_RESOURCE: &str = "devices.kubevirt.io/kvm";
+
+/// Provisioners whose volumes are pinned to a single node: a VM on one of these
+/// cannot live-migrate and loses its disk if the node dies.
+#[cfg(feature = "web")]
+fn is_node_local_provisioner(provisioner: &str) -> bool {
+    matches!(
+        provisioner,
+        "rancher.io/local-path"
+            | "kubernetes.io/no-provisioner"
+            | "openebs.io/local"
+            | "topolvm.io"
+    )
+}
+
+/// Provisioners that can back a `ReadWriteMany` volume — the KubeVirt
+/// prerequisite for live migration of a PVC-backed VM.
+#[cfg(feature = "web")]
+fn is_rwx_capable_provisioner(provisioner: &str) -> bool {
+    provisioner.contains("cephfs")
+        || provisioner.contains("nfs")
+        || provisioner.contains("glusterfs")
+        || provisioner.contains("azurefile")
+        || provisioner.contains("efs")
 }
 
 #[derive(Debug, Clone, Deserialize)]

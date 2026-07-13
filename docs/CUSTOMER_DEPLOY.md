@@ -6,15 +6,50 @@ Turns "works in our lab" into "works at the customer." Follow top to bottom; the
 
 ## 0. Prerequisites (verify on the customer cluster)
 
-| Requirement | Check | Needed for |
+The tested baseline lives in **`scripts/cluster/versions.env`** — the single source of
+version truth for every installer and bundle. Do not pin components anywhere else.
+
+| Component | Baseline | Why this version |
 |---|---|---|
-| Kubernetes ≥ 1.28 | `kubectl version` | base |
-| **KubeVirt** installed + `Deployed` | `kubectl get kubevirt -n kubevirt` | VMs (required) |
-| **CDI** (optional) | `kubectl get cdi` | image import / DataVolumes |
-| A default/known **StorageClass** | `kubectl get sc` | VM disks |
-| A **VolumeSnapshotClass** | `kubectl get volumesnapshotclass` | snapshots/backups |
-| **Velero** (optional) | `kubectl get crd backups.velero.io` | off-cluster backups |
-| container runtime that can pull the Veyron image | — | install |
+| Kubernetes / k3s | `v1.35.6+k3s1` | KubeVirt supports the latest **three** Kubernetes releases as of its own release, so KubeVirt 1.8.x is tested on **1.33–1.35**. A newer k3s leaves that window. |
+| KubeVirt | `v1.8.4` | current stable |
+| CDI | `v1.65.0` | current stable |
+| Cilium | `1.19.5` | current stable |
+| Storage | shared CSI with clone + snapshot + expand | node-local storage pins each VM to one node |
+
+Two automated gates replace the old manual `kubectl` checklist:
+
+```bash
+# Host level: /dev/kvm, vhost-net, tun, vmx/svm, virt-host-validate, swap, time sync
+./scripts/cluster/preflight-node.sh <host> <user>
+
+# Cluster level: graded pass/fail against the go-live requirements (exits non-zero)
+VEYRON_API_KEY='<key>' ./scripts/preflight-veyron-remote.sh <host> 30151
+```
+
+The cluster gate **hard-fails** on: no KubeVirt, no node advertising
+`devices.kubevirt.io/kvm`, no default StorageClass, a **node-local default
+StorageClass** (e.g. `local-path` — pins every VM disk to one node and loses it with
+the node), no **VolumeSnapshotClass object** (the CRD alone is not enough), or a
+snapshot class whose driver matches no StorageClass provisioner.
+
+It **warns** (degrades gracefully) on: live hotplug, storage-class migration, live
+migration, Windows golden images, persistent TPM/EFI, Velero.
+
+To remediate an existing cluster in place:
+
+```bash
+./scripts/cluster/adapt-existing-cluster.sh <host> <user>          # dry-run
+./scripts/cluster/adapt-existing-cluster.sh <host> <user> --apply
+```
+
+It moves the default StorageClass off node-local storage, **merges** the missing
+KubeVirt feature gates, sets `vmStateStorageClass`, and adds a VolumeSnapshotClass for
+any CSI driver lacking one. It will not silently paper over a single-node cluster or a
+degraded Ceph — those are reported and left to a human.
+
+Windows golden images (ISO upload → sysprep → versioned image → cloned VMs) are
+documented in [WINDOWS_GOLDEN_IMAGES.md](WINDOWS_GOLDEN_IMAGES.md).
 
 ## 1. KubeVirt feature gates for full Day-2 (important)
 

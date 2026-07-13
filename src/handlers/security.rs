@@ -771,6 +771,7 @@ mod tests {
                 run_strategy: None,
                 instancetype: None,
                 preference: None,
+                data_volume_templates: None,
                 template: VirtualMachineInstanceTemplateSpec {
                     metadata: None,
                     spec: VirtualMachineInstanceSpec {

@@ -20,7 +20,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
 
 REMOTE="${1:?Usage: $0 <user@host> [cdi-version]}"
-CDI_VERSION="${2:-${VEYRON_CDI_VERSION:-v1.65.0}}"
+# shellcheck source=./cluster/versions.env
+source "${SCRIPT_DIR}/cluster/versions.env"
+CDI_VERSION="${2:-${VEYRON_CDI_VERSION:-${CDI_VERSION}}}"
 
 if [[ "${VEYRON_SKIP_CDI:-0}" == "1" ]]; then
   echo "  [skip] CDI (VEYRON_SKIP_CDI=1)"

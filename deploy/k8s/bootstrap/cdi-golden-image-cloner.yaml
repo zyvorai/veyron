@@ -1,0 +1,50 @@
+# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+# Proprietary software — see LICENSE in the repository root.
+#
+# Cross-namespace golden-image cloning (CDI).
+#
+# CDI refuses to clone a PVC/DataSource across namespaces unless the *creating*
+# ServiceAccount holds `create` on `datavolumes/source` in the SOURCE namespace.
+# Without this binding, a VM in a tenant namespace that references a golden image
+# in `vm-images` never gets its disk: the DataVolume sits in a permission error.
+#
+# Grant one RoleBinding per tenant namespace, in the image namespace.
+#
+#   kubectl apply -f deploy/k8s/bootstrap/cdi-golden-image-cloner.yaml
+#
+# To authorize another tenant, copy the RoleBinding and change:
+#   metadata.name        -> <tenant>-golden-image-cloner
+#   subjects[0].namespace -> <tenant>
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cdi-golden-image-cloner
+  labels:
+    veyron.io/managed-by: veyron
+rules:
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["datavolumes/source"]
+    verbs: ["create"]
+  # Resolving a `sourceRef: DataSource` also requires reading the DataSource.
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["datasources"]
+    verbs: ["get", "list", "watch"]
+---
+# The Veyron API/operator ServiceAccount creates VMs on behalf of users, so it is
+# the identity CDI authorizes for the clone.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: veyron-golden-image-cloner
+  namespace: vm-images
+  labels:
+    veyron.io/managed-by: veyron
+subjects:
+  - kind: ServiceAccount
+    name: veyron
+    namespace: veyron-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cdi-golden-image-cloner

@@ -12,6 +12,9 @@ use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
 use serde_json::json;
 use std::collections::BTreeMap;
 
+/// Volume/disk name for the Windows unattend answer-file CD-ROM.
+const SYSPREP_VOLUME_NAME: &str = "sysprep";
+
 const QEMU_GUEST_AGENT_CHANNEL: &str = "org.qemu.guest_agent.0";
 
 fn qemu_guest_agent_channel() -> Channel {
@@ -72,6 +75,8 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
 
     // Build volumes
     let mut volumes = Vec::new();
+    // Golden-image disks additionally emit a VM-owned DataVolume (clone-on-create).
+    let mut data_volume_templates: Vec<DataVolumeTemplate> = Vec::new();
 
     for disk in &config.disks {
         let volume = match &disk.source {
@@ -80,22 +85,14 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 empty_disk: Some(EmptyDiskSource {
                     capacity: disk.size.clone(),
                 }),
-                container_disk: None,
-                persistent_volume_claim: None,
-                data_volume: None,
-                cloud_init_no_cloud: None,
-                cloud_init_config_drive: None,
+                ..Default::default()
             },
             DiskSource::PVC { name } => Volume {
                 name: disk.name.clone(),
                 persistent_volume_claim: Some(PersistentVolumeClaimVolumeSource {
                     claim_name: name.clone(),
                 }),
-                empty_disk: None,
-                container_disk: None,
-                data_volume: None,
-                cloud_init_no_cloud: None,
-                cloud_init_config_drive: None,
+                ..Default::default()
             },
             DiskSource::ContainerDisk { image } => Volume {
                 name: disk.name.clone(),
@@ -103,23 +100,94 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                     image: image.clone(),
                     image_pull_policy: Some("IfNotPresent".to_string()),
                 }),
-                empty_disk: None,
-                persistent_volume_claim: None,
-                data_volume: None,
-                cloud_init_no_cloud: None,
-                cloud_init_config_drive: None,
+                ..Default::default()
             },
             DiskSource::DataVolume { name } => Volume {
                 name: disk.name.clone(),
                 data_volume: Some(DataVolumeSource { name: name.clone() }),
-                empty_disk: None,
-                container_disk: None,
-                persistent_volume_claim: None,
-                cloud_init_no_cloud: None,
-                cloud_init_config_drive: None,
+                ..Default::default()
             },
+            DiskSource::GoldenImage {
+                name,
+                namespace,
+                from_pvc,
+                storage_class,
+            } => {
+                // The clone gets its own DataVolume, named for the VM+disk so two
+                // VMs from the same image never collide.
+                let dv_name = format!("{}-{}", config.name, disk.name);
+
+                let (source, source_ref) = if *from_pvc {
+                    (
+                        Some(DataVolumeSourceSpec {
+                            pvc: Some(DataVolumeSourcePVC {
+                                namespace: namespace.clone(),
+                                name: name.clone(),
+                            }),
+                            ..Default::default()
+                        }),
+                        None,
+                    )
+                } else {
+                    (
+                        None,
+                        Some(DataVolumeSourceRef {
+                            kind: "DataSource".to_string(),
+                            name: name.clone(),
+                            namespace: Some(namespace.clone()),
+                        }),
+                    )
+                };
+
+                let mut requests = BTreeMap::new();
+                requests.insert("storage".to_string(), disk.size.clone());
+
+                data_volume_templates.push(DataVolumeTemplate {
+                    metadata: Some(ObjectMeta {
+                        name: Some(dv_name.clone()),
+                        ..Default::default()
+                    }),
+                    spec: DataVolumeSpec {
+                        source,
+                        source_ref,
+                        storage: Some(DataVolumeStorage {
+                            storage_class_name: storage_class.clone(),
+                            access_modes: None, // let the StorageProfile decide
+                            volume_mode: None,
+                            resources: Some(DataVolumeResources {
+                                requests: Some(requests),
+                            }),
+                        }),
+                    },
+                });
+
+                Volume {
+                    name: disk.name.clone(),
+                    data_volume: Some(DataVolumeSource { name: dv_name }),
+                    ..Default::default()
+                }
+            }
         };
         volumes.push(volume);
+    }
+
+    // Windows unattended setup: mount autounattend.xml as a sysprep CD-ROM.
+    // Previously this was accepted and silently dropped.
+    if let Some(sysprep) = &config.sysprep {
+        volumes.push(Volume {
+            name: SYSPREP_VOLUME_NAME.to_string(),
+            sysprep: Some(SysprepSource {
+                secret: sysprep
+                    .secret
+                    .as_ref()
+                    .map(|n| LocalObjectRef { name: n.clone() }),
+                config_map: sysprep
+                    .config_map
+                    .as_ref()
+                    .map(|n| LocalObjectRef { name: n.clone() }),
+            }),
+            ..Default::default()
+        });
     }
 
     // Add cloud-init volume if present (`NoCloud` vs config-drive / Cloudbase-Init).
@@ -132,11 +200,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                         user_data: Some(cloud_init.user_data.clone()),
                         network_data: cloud_init.network_data.clone(),
                     }),
-                    cloud_init_config_drive: None,
-                    empty_disk: None,
-                    container_disk: None,
-                    persistent_volume_claim: None,
-                    data_volume: None,
+                    ..Default::default()
                 });
             }
             CloudInitDelivery::ConfigDrive => {
@@ -148,10 +212,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                             name: crate::kube::cloudinit_configdrive_secret_name(&config.name),
                         }),
                     }),
-                    empty_disk: None,
-                    container_disk: None,
-                    persistent_volume_claim: None,
-                    data_volume: None,
+                    ..Default::default()
                 });
             }
         }
@@ -163,11 +224,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
             persistent_volume_claim: Some(PersistentVolumeClaimVolumeSource {
                 claim_name: fs.pvc_name.clone(),
             }),
-            empty_disk: None,
-            container_disk: None,
-            data_volume: None,
-            cloud_init_no_cloud: None,
-            cloud_init_config_drive: None,
+            ..Default::default()
         });
     }
 
@@ -243,6 +300,25 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
             }),
             lun: None,
             cdrom: None,
+            boot_order: None,
+            cache: None,
+            io: None,
+            dedicated_io_thread: None,
+            serial: None,
+        });
+    }
+
+    // Sysprep media must be a CD-ROM — Windows Setup only reads autounattend.xml
+    // from removable/optical media.
+    if config.sysprep.is_some() {
+        disks.push(Disk {
+            name: SYSPREP_VOLUME_NAME.to_string(),
+            disk: None,
+            lun: None,
+            cdrom: Some(CDROMTarget {
+                bus: Some("sata".to_string()),
+                readonly: Some(true),
+            }),
             boot_order: None,
             cache: None,
             io: None,
@@ -446,6 +522,11 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
         run_strategy: run_strategy_field,
         instancetype,
         preference,
+        data_volume_templates: if data_volume_templates.is_empty() {
+            None
+        } else {
+            Some(data_volume_templates)
+        },
         template: VirtualMachineInstanceTemplateSpec {
             metadata: Some(ObjectMeta {
                 labels: Some(template_labels),
@@ -764,5 +845,187 @@ mod tests {
         let vm = vm_config_to_kubevirt(&config).unwrap();
         let dev = vm.spec.template.spec.domain.devices.as_ref().unwrap();
         assert!(dev.channels.is_none());
+    }
+
+    // ── Golden image + sysprep (the Windows catalog path) ────────────────────
+
+    /// A golden-image disk must emit a VM-owned `dataVolumeTemplates` entry, not a
+    /// bare reference — two VMs from the same image must never share one disk.
+    #[test]
+    fn golden_image_disk_emits_owned_data_volume_template() {
+        let mut config = VMConfigBuilder::new("win01")
+            .namespace("customer-a")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk("rootdisk", "150Gi", 1)
+            .add_pod_network("default")
+            .build();
+        config.disks[0].source = DiskSource::GoldenImage {
+            name: "windows-server-2022".to_string(),
+            namespace: "vm-images".to_string(),
+            from_pvc: false,
+            storage_class: Some("zyvor-rbd-prod".to_string()),
+        };
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+
+        let dvts = vm
+            .spec
+            .data_volume_templates
+            .as_ref()
+            .expect("golden image must produce a dataVolumeTemplate");
+        assert_eq!(dvts.len(), 1);
+        let dvt = &dvts[0];
+        // Named per VM+disk so a second VM from the same image cannot collide.
+        assert_eq!(
+            dvt.metadata.as_ref().unwrap().name.as_deref(),
+            Some("win01-rootdisk")
+        );
+
+        // sourceRef -> DataSource is the stable catalog handle (not an inline PVC).
+        let source_ref = dvt.spec.source_ref.as_ref().expect("expected sourceRef");
+        assert_eq!(source_ref.kind, "DataSource");
+        assert_eq!(source_ref.name, "windows-server-2022");
+        assert_eq!(source_ref.namespace.as_deref(), Some("vm-images"));
+        assert!(
+            dvt.spec.source.is_none(),
+            "sourceRef and source are exclusive"
+        );
+
+        let storage = dvt.spec.storage.as_ref().unwrap();
+        assert_eq!(
+            storage.storage_class_name.as_deref(),
+            Some("zyvor-rbd-prod")
+        );
+        assert_eq!(
+            storage
+                .resources
+                .as_ref()
+                .unwrap()
+                .requests
+                .as_ref()
+                .unwrap()
+                .get("storage"),
+            Some(&"150Gi".to_string())
+        );
+
+        // The VM's volume must point at the clone it owns.
+        let vol = vm
+            .spec
+            .template
+            .spec
+            .volumes
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|v| v.name == "rootdisk")
+            .unwrap();
+        assert_eq!(vol.data_volume.as_ref().unwrap().name, "win01-rootdisk");
+        assert!(
+            vol.empty_disk.is_none(),
+            "golden image must not boot a blank disk"
+        );
+    }
+
+    /// `from_pvc` clones straight from a source PVC instead of a DataSource.
+    #[test]
+    fn golden_image_from_pvc_uses_inline_source() {
+        let mut config = VMConfigBuilder::new("win02")
+            .namespace("customer-a")
+            .cpu(2, 1, 1)
+            .memory("4Gi")
+            .add_blank_disk("rootdisk", "120Gi", 1)
+            .add_pod_network("default")
+            .build();
+        config.disks[0].source = DiskSource::GoldenImage {
+            name: "windows-2022-golden-2026-07".to_string(),
+            namespace: "vm-images".to_string(),
+            from_pvc: true,
+            storage_class: None,
+        };
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let dvt = &vm.spec.data_volume_templates.as_ref().unwrap()[0];
+
+        let pvc = dvt.spec.source.as_ref().unwrap().pvc.as_ref().unwrap();
+        assert_eq!(pvc.name, "windows-2022-golden-2026-07");
+        assert_eq!(pvc.namespace, "vm-images");
+        assert!(dvt.spec.source_ref.is_none());
+        // No storage class => inherit the cluster default.
+        assert!(
+            dvt.spec
+                .storage
+                .as_ref()
+                .unwrap()
+                .storage_class_name
+                .is_none()
+        );
+    }
+
+    /// Regression: sysprep used to be accepted and silently dropped. It must reach
+    /// the guest as CD-ROM media, or Windows Setup boots to an interactive prompt.
+    #[test]
+    fn sysprep_secret_emits_cdrom_volume_and_disk() {
+        let mut config = VMConfigBuilder::new("win01")
+            .namespace("customer-a")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk("rootdisk", "150Gi", 1)
+            .add_pod_network("default")
+            .build();
+        config.sysprep = Some(crate::config::SysprepConfig {
+            secret: Some("win01-sysprep".to_string()),
+            config_map: None,
+        });
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+
+        let vol = vm
+            .spec
+            .template
+            .spec
+            .volumes
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|v| v.name == "sysprep")
+            .expect("sysprep volume must be emitted");
+        assert_eq!(
+            vol.sysprep.as_ref().unwrap().secret.as_ref().unwrap().name,
+            "win01-sysprep"
+        );
+
+        // Windows Setup only reads autounattend.xml from optical media.
+        let disk = vm
+            .spec
+            .template
+            .spec
+            .domain
+            .devices
+            .as_ref()
+            .unwrap()
+            .disks
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|d| d.name == "sysprep")
+            .expect("sysprep disk must be attached");
+        assert!(disk.cdrom.is_some(), "sysprep must be a CD-ROM, not a disk");
+        assert!(disk.disk.is_none());
+    }
+
+    /// No golden image => no dataVolumeTemplates at all (must not emit an empty list).
+    #[test]
+    fn plain_disk_emits_no_data_volume_templates() {
+        let config = VMConfigBuilder::new("plain")
+            .namespace("default")
+            .cpu(1, 1, 1)
+            .memory("1Gi")
+            .add_blank_disk("rootdisk", "10Gi", 1)
+            .add_pod_network("default")
+            .build();
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        assert!(vm.spec.data_volume_templates.is_none());
     }
 }

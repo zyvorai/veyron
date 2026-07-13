@@ -29,7 +29,102 @@ pub struct VirtualMachineSpec {
     pub instancetype: Option<InstancetypeMatcher>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preference: Option<InstancetypeMatcher>,
+    /// Per-VM DataVolumes, created and garbage-collected with the VM. This is how a
+    /// VM gets its own disk cloned from a golden image, rather than referencing a
+    /// shared PVC by name (which would have two VMs writing the same disk).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data_volume_templates: Option<Vec<DataVolumeTemplate>>,
     pub template: VirtualMachineInstanceTemplateSpec,
+}
+
+/// A CDI DataVolume owned by the VM (`spec.dataVolumeTemplates[]`).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataVolumeTemplate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(schema_with = "metadata_schema")]
+    pub metadata: Option<ObjectMeta>,
+    pub spec: DataVolumeSpec,
+}
+
+/// CDI `DataVolume.spec`. Either `source` (inline) or `sourceRef` (a DataSource
+/// pointer) is set — `sourceRef` is preferred for a golden-image catalog because
+/// the DataSource can be repointed at a new image version without touching VMs.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataVolumeSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<DataVolumeSourceSpec>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_ref: Option<DataVolumeSourceRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub storage: Option<DataVolumeStorage>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataVolumeSourceSpec {
+    /// Clone from an existing PVC (the golden disk).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pvc: Option<DataVolumeSourcePVC>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub http: Option<DataVolumeSourceHTTP>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub registry: Option<DataVolumeSourceRegistry>,
+    /// An empty disk of the requested size.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blank: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataVolumeSourcePVC {
+    pub namespace: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataVolumeSourceHTTP {
+    pub url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataVolumeSourceRegistry {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
+/// Points at a CDI `DataSource` — the stable catalog handle for a golden image.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataVolumeSourceRef {
+    /// Always `DataSource` today.
+    pub kind: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataVolumeStorage {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub storage_class_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub access_modes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume_mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resources: Option<DataVolumeResources>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DataVolumeResources {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub requests: Option<BTreeMap<String, String>>,
 }
 
 /// KubeVirt `VirtualMachineSpec.instancetype` / `preference` reference.
@@ -292,7 +387,7 @@ pub struct Interface {
     pub boot_order: Option<u32>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Volume {
     pub name: String,
@@ -308,6 +403,28 @@ pub struct Volume {
     pub cloud_init_config_drive: Option<CloudInitConfigDriveSource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub empty_disk: Option<EmptyDiskSource>,
+    /// Windows unattended-setup answer file, surfaced to the guest as a CD-ROM.
+    /// KubeVirt reads `autounattend.xml` from the referenced Secret/ConfigMap.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sysprep: Option<SysprepSource>,
+}
+
+/// KubeVirt `sysprep` volume — mounts a Windows `autounattend.xml` as install media.
+/// Exactly one of `secret` / `config_map` is set; a Secret is correct whenever the
+/// answer file carries credentials (it almost always does).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct SysprepSource {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secret: Option<LocalObjectRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config_map: Option<LocalObjectRef>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalObjectRef {
+    pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

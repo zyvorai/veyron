@@ -65,7 +65,9 @@ REMOTE_DIR="/home/${USER}/veyron"
 API_KEY="${VEYRON_API_KEY:-Admin@321}"
 NODE_PORT="${VEYRON_NODE_PORT:-30151}"
 NS="${VEYRON_NAMESPACE:-veyron-system}"
-CDI_VERSION="${VEYRON_CDI_VERSION:-v1.65.0}"
+# shellcheck source=./cluster/versions.env
+source "${SCRIPT_DIR}/cluster/versions.env"
+CDI_VERSION="${VEYRON_CDI_VERSION:-${CDI_VERSION}}"
 SKIP_CDI="${VEYRON_SKIP_CDI:-0}"
 RUN_STARTED_AT="$(date +%s)"
 

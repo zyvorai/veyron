@@ -2902,6 +2902,7 @@ mod tests {
                 run_strategy: None,
                 instancetype: None,
                 preference: None,
+                data_volume_templates: None,
                 template: VirtualMachineInstanceTemplateSpec {
                     metadata: None,
                     spec: VirtualMachineInstanceSpec {
@@ -3011,6 +3012,7 @@ mod tests {
             cloud_init_no_cloud: None,
             cloud_init_config_drive: None,
             data_volume: None,
+            sysprep: None,
         }]);
 
         let config = vm_to_config(&vm, "default");
@@ -3037,6 +3039,7 @@ mod tests {
             cloud_init_no_cloud: None,
             cloud_init_config_drive: None,
             data_volume: None,
+            sysprep: None,
         }]);
 
         let config = vm_to_config(&vm, "default");
@@ -3058,6 +3061,7 @@ mod tests {
             cloud_init_no_cloud: None,
             cloud_init_config_drive: None,
             data_volume: None,
+            sysprep: None,
         }]);
 
         let config = vm_to_config(&vm, "default");
@@ -3082,6 +3086,7 @@ mod tests {
             }),
             cloud_init_config_drive: None,
             data_volume: None,
+            sysprep: None,
         }]);
 
         let config = vm_to_config(&vm, "default");

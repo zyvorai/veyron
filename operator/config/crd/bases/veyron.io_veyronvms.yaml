@@ -107,11 +107,18 @@ spec:
                         properties:
                           type:
                             type: string
-                            enum: ["blank", "pvc", "containerDisk", "dataVolume"]
+                            # dataSource clones a per-VM disk from a golden image at
+                            # create time; pvc/dataVolume only reference an existing
+                            # volume, which two VMs must never share.
+                            enum: ["blank", "pvc", "containerDisk", "dataVolume", "dataSource"]
                           name:
                             type: string
                           image:
                             type: string
+                          namespace:
+                            type: string
+                          fromPvc:
+                            type: boolean
                       deviceType:
                         type: string
                         enum: ["disk", "cdrom", "lun"]

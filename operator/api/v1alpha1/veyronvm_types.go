@@ -197,17 +197,27 @@ type DiskSpec struct {
 
 // DiskSource mirrors Rust DiskSource enum.
 type DiskSource struct {
-	// Source type.
-	// +kubebuilder:validation:Enum=blank;pvc;containerDisk;dataVolume
+	// Source type. "dataSource" clones a per-VM disk from a golden image at create
+	// time (emitted as a dataVolumeTemplate); "pvc"/"dataVolume" only *reference* an
+	// existing volume, which two VMs must never share.
+	// +kubebuilder:validation:Enum=blank;pvc;containerDisk;dataVolume;dataSource
 	Type string `json:"type"`
 
-	// Name of PVC or DataVolume.
+	// Name of the PVC, DataVolume, or golden-image DataSource.
 	// +optional
 	Name string `json:"name,omitempty"`
 
 	// Container disk image (e.g. "quay.io/containerdisks/ubuntu:22.04").
 	// +optional
 	Image string `json:"image,omitempty"`
+
+	// Namespace holding the golden-image DataSource / source PVC ("dataSource" type).
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// Clone straight from a PVC instead of resolving a DataSource ("dataSource" type).
+	// +optional
+	FromPvc bool `json:"fromPvc,omitempty"`
 }
 
 // InterfaceSpec mirrors Rust InterfaceConfig.

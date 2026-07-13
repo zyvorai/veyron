@@ -73,6 +73,11 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     if path.starts_with("/api/v1/soc/playbooks/") {
         return ApiRole::Admin;
     }
+    // Publishing a golden image repoints the DataSource every future VM clones from —
+    // a bad image silently propagates to the whole fleet's next builds.
+    if path == "/api/v1/images/publish" {
+        return ApiRole::Admin;
+    }
     if path.starts_with("/api/v1/platform/") && path != "/api/v1/platform/guestkit/binary" {
         return ApiRole::Admin;
     }
@@ -117,6 +122,25 @@ mod tests {
         assert_eq!(
             min_role_for_route(&Method::POST, "/api/v1/snapshots/default/my-snap/restore"),
             ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn admin_required_for_golden_image_publish() {
+        // Fleet-wide blast radius: repoints the DataSource every future clone uses.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/images/publish"),
+            ApiRole::Admin
+        );
+        // ...including via the product alias prefix.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/images/publish"),
+            ApiRole::Admin
+        );
+        // Uploading/importing an image is only Write — it publishes nothing.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/images/upload"),
+            ApiRole::Write
         );
     }
 

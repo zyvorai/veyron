@@ -35,9 +35,11 @@ rules:
   - apiGroups: ["snapshot.kubevirt.io"]
     resources: ["virtualmachinesnapshots", "virtualmachinerestores"]
     verbs: ["get", "list", "watch", "create", "delete"]
+  # Write verbs required for golden-image cloning (dataVolumeTemplates ->
+  # datavolumes/source). Keep in sync with operator/config/rbac/role.yaml.
   - apiGroups: ["cdi.kubevirt.io"]
     resources: ["*"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["upload.cdi.kubevirt.io"]
     resources: ["*"]
     verbs: ["get", "list", "watch"]
