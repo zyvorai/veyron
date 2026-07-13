@@ -89,6 +89,30 @@ pub struct PublishImageRequest {
     /// Skip the readiness check (for republishing an already-known-good PVC).
     #[serde(default)]
     pub force: bool,
+    /// Cluster instancetype a VM should default to when it infers from this image
+    /// (e.g. `windows-medium`). Stamped as the `default-instancetype` label.
+    #[serde(default)]
+    pub instancetype: Option<String>,
+    /// Cluster preference likewise (e.g. `windows-server`).
+    #[serde(default)]
+    pub preference: Option<String>,
+    /// OS family hint (`windows`/`linux`) used to pick sensible instancetype/preference
+    /// defaults when the two above are not given.
+    #[serde(default)]
+    pub os: Option<String>,
+}
+
+/// Default (instancetype, preference) for an OS family, so a published image is
+/// self-describing even when the caller does not spell the pair out.
+#[cfg(feature = "web")]
+fn default_inference_pair(os: Option<&str>) -> Option<(&'static str, &'static str)> {
+    match os.map(|s| s.to_ascii_lowercase()) {
+        Some(ref o) if o.contains("windows") => Some(("windows-medium", "windows-server")),
+        Some(ref o) if o.contains("linux") || o.contains("ubuntu") || o.contains("rhel") => {
+            Some(("u1.medium", "linux"))
+        }
+        _ => None,
+    }
 }
 
 #[cfg(feature = "web")]
@@ -298,6 +322,25 @@ async fn publish_image(
     if let Some(v) = req.version.as_ref().filter(|v| !v.is_empty()) {
         labels["veyron.io/image-version"] = serde_json::Value::String(v.clone());
     }
+    // Inference labels: a VM whose disk infers-from-volume this image auto-sizes to
+    // these. Explicit params win; otherwise fall back to OS-family defaults.
+    let defaults = default_inference_pair(req.os.as_deref());
+    let instancetype = req
+        .instancetype
+        .clone()
+        .or_else(|| defaults.map(|(i, _)| i.to_string()));
+    let preference = req
+        .preference
+        .clone()
+        .or_else(|| defaults.map(|(_, p)| p.to_string()));
+    if let Some(it) = instancetype.as_ref().filter(|s| !s.is_empty()) {
+        labels["instancetype.kubevirt.io/default-instancetype"] =
+            serde_json::Value::String(it.clone());
+    }
+    if let Some(pr) = preference.as_ref().filter(|s| !s.is_empty()) {
+        labels["instancetype.kubevirt.io/default-preference"] =
+            serde_json::Value::String(pr.clone());
+    }
     let label_patch = serde_json::json!({ "metadata": { "labels": labels } });
 
     let pp = PatchParams::apply("veyron-image-publish").force();
@@ -323,16 +366,27 @@ async fn publish_image(
     let ds_ar = datasource_api_resource();
     let ds_api: kube::Api<DynamicObject> =
         kube::Api::namespaced_with(client, &req.namespace, &ds_ar);
+    // KubeVirt reads default-instancetype/preference off the DataSource when a VM's
+    // disk infers from a sourceRef volume, so the labels must live here too.
+    let mut ds_labels = serde_json::json!({
+        "veyron.io/type": "golden-image",
+        "veyron.io/managed-by": "veyron",
+    });
+    if let Some(it) = instancetype.as_ref().filter(|s| !s.is_empty()) {
+        ds_labels["instancetype.kubevirt.io/default-instancetype"] =
+            serde_json::Value::String(it.clone());
+    }
+    if let Some(pr) = preference.as_ref().filter(|s| !s.is_empty()) {
+        ds_labels["instancetype.kubevirt.io/default-preference"] =
+            serde_json::Value::String(pr.clone());
+    }
     let ds: DynamicObject = serde_json::from_value(serde_json::json!({
         "apiVersion": "cdi.kubevirt.io/v1beta1",
         "kind": "DataSource",
         "metadata": {
             "name": req.data_source,
             "namespace": req.namespace,
-            "labels": {
-                "veyron.io/type": "golden-image",
-                "veyron.io/managed-by": "veyron",
-            }
+            "labels": ds_labels
         },
         "spec": { "source": { "pvc": { "namespace": req.namespace, "name": req.name } } }
     }))

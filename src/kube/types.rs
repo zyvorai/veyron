@@ -128,12 +128,21 @@ pub struct DataVolumeResources {
 }
 
 /// KubeVirt `VirtualMachineSpec.instancetype` / `preference` reference.
+///
+/// `name` OR `inferFromVolume` — the latter tells KubeVirt to read the matcher from a
+/// label on the named volume's PVC/DataSource (how a VM auto-sizes off a golden image).
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct InstancetypeMatcher {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub infer_from_volume: Option<String>,
+    /// `Reject` (default in KubeVirt) or `Ignore` when the label is absent.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub infer_from_volume_failure_policy: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

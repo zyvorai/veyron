@@ -8077,7 +8077,11 @@ html.glass-deck .mac-page-toolbar{
       <p style="font-size:.82rem;color:var(--text-muted);margin:0 0 12px">Promotes <strong id="image-publish-src"></strong> to a versioned golden image and points a DataSource at it. VMs clone from the DataSource, so publishing a new version rolls future clones without touching existing VMs. <em>Admin only.</em></p>
       <input type="hidden" id="image-publish-name"><input type="hidden" id="image-publish-ns">
       <div class="form-group"><label class="form-label">DataSource name (catalog handle)</label><input type="text" class="form-input" id="image-publish-ds" placeholder="windows-server-2022"></div>
-      <div class="form-group"><label class="form-label">Version <span style="color:var(--text-dim)">(optional)</span></label><input type="text" class="form-input" id="image-publish-ver" placeholder="2026-07"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Version <span style="color:var(--text-dim)">(optional)</span></label><input type="text" class="form-input" id="image-publish-ver" placeholder="2026-07"></div>
+        <div class="form-group"><label class="form-label">OS family</label><select class="form-select" id="image-publish-os"><option value="windows">windows</option><option value="linux">linux</option><option value="">(none)</option></select></div>
+      </div>
+      <p style="font-size:.78rem;color:var(--text-dim);margin:0 0 8px">Sets <code>default-instancetype</code> / <code>default-preference</code> labels so VMs cloned from this image auto-size. Windows → windows-medium / windows-server.</p>
       <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-muted)"><input type="checkbox" id="image-publish-force"> Force (skip the Succeeded check — publishing an incomplete image gives every clone a corrupt disk)</label>
     </div>
     <div class="modal-footer">
@@ -27309,6 +27313,9 @@ function openImagePublishModal(name, ns, kind) {
   document.getElementById('image-publish-src').textContent = (ns || '') + '/' + (name || '');
   document.getElementById('image-publish-ds').value = '';
   document.getElementById('image-publish-ver').value = '';
+  // Default OS family from the image kind/name when it looks like Windows.
+  document.getElementById('image-publish-os').value =
+    /win/i.test((name || '') + ' ' + (kind || '')) ? 'windows' : 'linux';
   document.getElementById('image-publish-force').checked = false;
   document.getElementById('image-publish-modal').classList.add('open');
 }
@@ -27318,12 +27325,13 @@ async function submitImagePublish() {
   const ns = document.getElementById('image-publish-ns').value.trim();
   const data_source = document.getElementById('image-publish-ds').value.trim();
   const version = document.getElementById('image-publish-ver').value.trim();
+  const os = document.getElementById('image-publish-os').value;
   const force = document.getElementById('image-publish-force').checked;
   if (!data_source) { toast('DataSource name required', 'error'); return; }
   try {
     await apiJson('/api/v1/images/publish', {
       method: 'POST',
-      body: JSON.stringify({ name, namespace: ns, data_source, version: version || undefined, force })
+      body: JSON.stringify({ name, namespace: ns, data_source, version: version || undefined, os: os || undefined, force })
     });
     toast('Published ' + data_source, 'success');
     closeImagePublishModal();

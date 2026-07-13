@@ -285,6 +285,7 @@ fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
         .map(|m| crate::config::VmMatcherRef {
             name: m.name.clone(),
             kind: m.kind.clone(),
+            infer_from_volume: m.infer_from_volume.clone(),
         });
     config.preference = vm
         .spec
@@ -293,6 +294,7 @@ fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
         .map(|m| crate::config::VmMatcherRef {
             name: m.name.clone(),
             kind: m.kind.clone(),
+            infer_from_volume: m.infer_from_volume.clone(),
         });
     if spec.node_selector.is_some()
         || spec.affinity.is_some()

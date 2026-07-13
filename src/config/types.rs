@@ -25,11 +25,20 @@ pub struct VmScheduling {
 }
 
 /// KubeVirt `instancetype` / `preference` matcher (`kind` optional; defaults apply in KubeVirt).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Either `name` names an instancetype/preference directly, or `infer_from_volume`
+/// names a VM volume — KubeVirt then reads the size/shape from the
+/// `instancetype.kubevirt.io/default-instancetype` (or `default-preference`) label on
+/// that volume's PVC/DataSource. Inference is how a VM auto-sizes from a golden image.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VmMatcherRef {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
+    /// Volume name to infer the matcher from (mutually exclusive with `name`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub infer_from_volume: Option<String>,
 }
 
 /// QEMU watchdog (`i6300esb`, `ib700`, …) and action (`poweroff`, `reset`, `pause`, …).
