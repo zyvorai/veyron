@@ -131,13 +131,43 @@ Copy the RoleBinding per tenant namespace.
 3. Existing VMs keep their disks. New VMs clone the new version.
 4. To roll back, publish the previous PVC under the same `data_source`.
 
+## Domain join
+
+Set `windows.domainJoinSecretRef` on a **VeyronVM** pointing at a Secret whose key
+holds JSON:
+
+```json
+{
+  "domain":   "corp.example.com",
+  "ou":       "OU=Servers,DC=corp,DC=example,DC=com",
+  "username": "CORP\\joinsvc",
+  "password": "..."
+}
+```
+
+The operator renders a Windows unattend **`<Identification>`** block into an
+operator-managed Secret (`<vm>-veyron-sysprep`) and mounts it as sysprep media.
+
+**This is not cosmetic.** The join credential used to be rendered into a PowerShell
+`Add-Computer` block in cloud-init userData. Cloudbase-Init *logs the userdata script
+it runs*, so the domain password ended up in plaintext in
+`cloudbase-init.log` inside the guest — and in the config-drive volume, permanently.
+Via `<Identification>`, Windows consumes the credential during the specialize pass and
+replaces it with `*SENSITIVE*DATA*DELETED*` in the cached
+`C:\Windows\Panther\unattend.xml`.
+
+The password must still reach Windows somehow — there is no mechanism that avoids
+that. **Use a least-privilege delegated join account** that can join computers to the
+target OU and nothing else.
+
+If you also set `sysprepSecretRef`, your answer file is **merged**, not replaced: the
+join is injected into your existing `specialize` pass. The operator refuses (rather
+than guessing) if your file already contains an `UnattendedJoin` component or is not a
+recognizable unattend document.
+
 ## Known gaps
 
 - **Live migration** needs ≥2 nodes and an RWX StorageClass; the gate reports
   `live_migration: false` until both hold.
 - **Persistent TPM/EFI** (Windows 11 BitLocker) needs the `VMPersistentState` feature
   gate *and* `vmStateStorageClass`. `adapt-existing-cluster.sh` sets both.
-- **Domain join** currently renders the join password into cloud-init userData, which
-  lands in the config-drive volume and is readable inside the guest. Use a
-  least-privilege delegated join account; the `autounattend` `<Identification>` path
-  is the supported fix and is not yet implemented.
