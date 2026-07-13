@@ -2038,12 +2038,14 @@ pub mod web {
                     Err(msg) => err_json(500, "INTERNAL_ERROR", &msg),
                 },
                 Err(e) => {
-                    let msg = sanitize_error(&e);
-                    // Publishing bare RDP is refused by policy, not broken — say so.
-                    if msg.contains("VEYRON_ALLOW_PUBLIC_RDP") {
-                        return err_json(403, "PUBLIC_RDP_FORBIDDEN", &msg);
+                    // Check the RAW error for the policy signature — sanitize_error
+                    // rewrites the message and would drop it, mis-mapping the refusal
+                    // to a 500. Publishing bare RDP is refused by policy, not broken.
+                    let raw = e.to_string();
+                    if raw.contains("VEYRON_ALLOW_PUBLIC_RDP") {
+                        return err_json(403, "PUBLIC_RDP_FORBIDDEN", &raw);
                     }
-                    err_json(500, "RDP_EXPOSE_UPSERT_FAILED", &msg)
+                    err_json(500, "RDP_EXPOSE_UPSERT_FAILED", &sanitize_error(&e))
                 }
             }
         }
