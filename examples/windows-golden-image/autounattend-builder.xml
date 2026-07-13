@@ -198,11 +198,26 @@
           <CommandLine>powershell -NoProfile -ExecutionPolicy Bypass -Command "$cd = Get-Volume | Where-Object {$_.DriveType -eq 'CD-ROM' -and $_.DriveLetter} | ForEach-Object { $_.DriveLetter + ':' } ; foreach ($d in $cd) { if (Test-Path \"$d\\viostor\") { pnputil /add-driver \"$d\\*.inf\" /subdirs /install ; $ga = Get-ChildItem -Path $d -Recurse -Filter 'qemu-ga-x86_64.msi' -ErrorAction SilentlyContinue | Select-Object -First 1 ; if ($ga) { Start-Process msiexec.exe -Wait -ArgumentList ('/i \"' + $ga.FullName + '\" /qn /norestart') } } } " &gt; C:\Windows\Temp\veyron-drivers.log 2&gt;&amp;1</CommandLine>
         </SynchronousCommand>
 
+        <!-- CRITICAL for cloning: copy the Windows boot manager to the UEFI
+             removable-media fallback path \EFI\Boot\bootx64.efi.
+
+             KubeVirt gives every NEW VM a fresh (empty) EFI NVRAM. The "Windows Boot
+             Manager" NVRAM entry that Setup created on THIS builder does not exist on a
+             clone, so OVMF finds no boot option and halts at
+             "No bootable option or device was found". OVMF always tries the fallback
+             \EFI\Boot\bootx64.efi when NVRAM has no entry — putting bootmgfw.efi there
+             makes any fresh-NVRAM clone boot. -->
+        <SynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Description>Install UEFI fallback bootloader for cloning</Description>
+          <CommandLine>powershell -NoProfile -ExecutionPolicy Bypass -Command "mountvol S: /S ; New-Item -ItemType Directory -Force -Path 'S:\EFI\Boot' | Out-Null ; Copy-Item 'S:\EFI\Microsoft\Boot\bootmgfw.efi' 'S:\EFI\Boot\bootx64.efi' -Force ; mountvol S: /D" &gt; C:\Windows\Temp\veyron-efi-fallback.log 2&gt;&amp;1</CommandLine>
+        </SynchronousCommand>
+
         <!-- Generalize + shut down. The builder runs with runStrategy RerunOnFailure
              so a clean sysprep shutdown does NOT get restarted (KubeVirt would
              otherwise boot the generalized image straight back into OOBE). -->
         <SynchronousCommand wcm:action="add">
-          <Order>2</Order>
+          <Order>3</Order>
           <Description>Sysprep generalize and shut down</Description>
           <CommandLine>cmd /c C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /mode:vm</CommandLine>
         </SynchronousCommand>
