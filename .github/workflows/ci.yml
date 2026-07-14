@@ -26,6 +26,18 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
+  scripts-lint:
+    name: Scripts Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Lint shell scripts + customer-readiness suite
+        run: make scripts-lint
+
   helm-monitoring:
     name: Helm monitoring chart
     runs-on: ubuntu-latest
