@@ -95,21 +95,96 @@ RBAC lives in three synced places — see CLAUDE.md § "API service account and 
   upgrade, DR failback, orphan delete) are **Admin**; destructive ones are
   **dry-run by default** (`?confirm=true` / `dry_run:false` to apply).
 
-## 4. Acceptance gate (must pass — run against the customer cluster)
+## 4. Acceptance gate — one command (must print GO)
+
+Run the single customer-readiness gate against the customer's cluster. It chains
+every phase (node preflight → acceptance gate → read-only smoke → security,
+data-safety, resilience, upgrade/ops → lifecycle E2E → dashboard sweep), auto-
+detects cluster shape, and writes a **GO / NO-GO** sign-off report.
 
 ```bash
-# 1) Readiness + security posture + Day-2 capabilities (fast, seconds).
-#    Add --smoke to also run the full functional smoke test (~2-3 min).
-VEYRON_API_KEY='<key>' ./scripts/preflight-veyron-remote.sh <host> 30151 --smoke
-
-# 2) Full VM daily-ops E2E (create/start/stop/pause/expose/snapshot + Day-2 Tier C)
-VEYRON_API_KEY='<key>' ./scripts/test-vm-daily-ops-remote.sh <host> 30151
-
-# 3) Dashboard has zero console/page errors
-VEYRON_API_KEY='<key>' ./scripts/dashboard-console-check.sh --host <host>
+# Full RBAC coverage: supply three keyed roles so the security phase can PROVE
+# enforcement (readonly/write denials) rather than skip it.
+VEYRON_API_KEYS='ro:RO_KEY:readonly,wr:WRITE_KEY:write,admin:ADMIN_KEY:admin' \
+VEYRON_RO_KEY='RO_KEY' VEYRON_WRITE_KEY='WRITE_KEY' VEYRON_ADMIN_KEY='ADMIN_KEY' \
+VEYRON_API_KEY='ADMIN_KEY' \
+  ./scripts/customer-readiness.sh <host> 30151 \
+    --ssh-user <user> --report-dir ./signoff
 ```
-Sign off only when all three are green **on the customer's cluster** — lab passes
-do not transfer, because feature gates, storage, CNI, scale and guest images differ.
+
+**Sign off only when `./signoff/readiness-report.md` prints `GO`.** Lab passes do
+not transfer — feature gates, storage, CNI, scale and guest images differ — which
+is exactly why this gate runs against the customer's real cluster.
+
+### 4a. What GO means (SKIP / WARN / FAIL semantics)
+
+The verdict is **`GO` iff zero failures and the P1 acceptance gate passed**;
+warnings and skips never block.
+
+| Phase | Covers |
+|---|---|
+| P0 node preflight | `/dev/kvm`, vhost-net, virt-host-validate, swap, time sync (SSH; needs `--ssh-user`) |
+| P1 acceptance gate | KubeVirt + shared default StorageClass + a VolumeSnapshotClass object — **the only fail-fast point** (stops before any mutation) |
+| P2 read-only smoke | ~90 read-only API GETs |
+| P3 security & multi-tenancy | RBAC 403/200 enforcement matrix, auth/TLS posture, namespace scoping, cross-ns clone RBAC |
+| P4 data safety | snapshot→mutate→restore data round-trip, DR export/apply, orphan reclaim, Velero |
+| P5 resilience | live migration (node A→B, IP unchanged), cordon/drain, self-healing |
+| P6 upgrade & ops | upgrade path, monitoring scrape, day-2 hotplug seen by guest, version drift |
+| P7 lifecycle E2E | create/start/stop/pause/expose/snapshot in the test namespace |
+| P8 dashboard | zero console/page errors across the SPA |
+| P9 (`--full`) | Windows golden-image clone-boot (long) |
+
+- **FAIL → NO-GO**: a capability the cluster *advertises* is broken, or a security
+  guarantee is violated (a read-only key mutates; restore loses data; migration
+  drops the VM).
+- **WARN** (never blocks): default `CHANGE_ME` key, self-signed cert, version
+  drift, degraded Ceph — review, but they don't stop go-live.
+- **SKIP / N/A** (never blocks): single-node → migration/drain SKIP with reason
+  `single_node`; Velero/Prometheus/GuestKit absent; an opt-in flag unset. Every
+  skip carries a machine reason so the report never hides gaps.
+
+Multi-node checks (live migration, drain) only run on a **≥2-node** cluster; on a
+single-node lab they SKIP honestly. The version baseline is
+[`scripts/cluster/versions.env`](../scripts/cluster/versions.env).
+
+### 4b. Opt-in destructive checks (maintenance window)
+
+Safe-by-default: every test resource lives in the disposable `veyron-readiness`
+namespace, is named `veyron-readiness-*`, is guarded by an ownership check before
+any delete, and is torn down by a LIFO cleanup trap — **existing customer VMs are
+never touched**. The genuinely disruptive checks are opt-in:
+
+| Flag | Enables |
+|---|---|
+| `VEYRON_READY_ALLOW_DRAIN=1` | cordon/drain a node (uncordon auto-registered as cleanup) |
+| `VEYRON_READY_ALLOW_ORPHAN_DELETE=1` | real `confirm=true` orphan-PVC reclaim |
+| `VEYRON_READY_ALLOW_HEAL=1` | kill a *test* VMI and prove self-healing recovers it |
+| `VEYRON_READY_ALLOW_UPGRADE=1` | same-version no-op operator bounce (assert VM survives) |
+| `VEYRON_READY_ALLOW_VELERO=1` | real Velero backup→restore |
+| `VEYRON_READY_ALLOW_CLONE_RBAC=1` | throwaway tenant namespace for cross-ns clone RBAC |
+| `--allow-destructive` | flip all of the above on at once |
+
+Run the safe-by-default form first; add flags only inside a scheduled maintenance
+window.
+
+**Real snapshot data round-trip:** the built-in `ubuntu-22.04` test template is
+containerDisk-rooted (ephemeral), so the in-guest data-return proof SKIPs by
+default. To exercise a genuine PVC-backed restore (write marker → snapshot →
+delete → restore → assert marker returns), point it at a published golden image:
+`VEYRON_READY_DATASOURCE=<CDI DataSource name>`. Without it the snapshot
+create→ready→restore lifecycle still runs; only the data assertion skips.
+
+### 4c. Run one phase (debugging)
+
+The legacy single-purpose scripts still work standalone when you want to isolate a
+failure the gate surfaced:
+
+```bash
+VEYRON_API_KEY='<key>' ./scripts/preflight-veyron-remote.sh <host> 30151 --smoke
+VEYRON_API_KEY='<key>' ./scripts/test-vm-daily-ops-remote.sh <host> 30151
+VEYRON_API_KEY='<key>' ./scripts/dashboard-console-check.sh --host <host>
+VEYRON_API_KEY='<key>' ./scripts/test/security-rbac-remote.sh <host> 30151
+```
 
 ## 5. Guest-dependent ops
 
