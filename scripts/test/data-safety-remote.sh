@@ -43,14 +43,29 @@ section "P4 · Snapshot round-trip"
 # without it, the snapshot create→ready→restore lifecycle still runs and the
 # in-guest data assertion SKIPs honestly (never a false FAIL).
 DS="${VEYRON_READY_DATASOURCE:-}"
+DS_NS="${VEYRON_READY_DATASOURCE_NS:-}"       # namespace holding the DataSource
+DS_SC="${VEYRON_READY_DATASOURCE_SC:-}"       # optional clone StorageClass
+DS_MODE="${VEYRON_READY_DATASOURCE_MODE:-}"   # optional clone volumeMode (Filesystem|Block)
+DS_SIZE="${VEYRON_READY_DATASOURCE_SIZE:-20Gi}" # clone disk size (>= golden PVC size)
 PVC_BACKED=0
-VM="$(new_name snap)"
-SNAP="${VM}-snap"
+# The restore handler derives the VM name from the snapshot name by splitting on
+# "-snap-", so the VM name must NOT contain "-snap-" and the snapshot must be
+# "<vm>-snap-<suffix>" (trailing suffix so rsplit lands on the right boundary).
+VM="$(new_name data)"
+SNAP="${VM}-snap-rt"
 DR_VM=""
 
 if [[ -n "${DS}" ]]; then
     PVC_BACKED=1
-    create_body="$(printf '{"name":"%s","namespace":"%s","image":{"name":"%s"},"cpus":2,"memory":"2Gi","start":true}' "${VM}" "${TEST_NS}" "${DS}")"
+    # template=ubuntu-22.04 supplies the GuestKit cloud-init (needed for the
+    # in-guest marker); image={} repoints the root disk to a clone of the golden
+    # image so a restore actually restores real disk data.
+    img="{\"name\":\"${DS}\""
+    [[ -n "${DS_NS}" ]] && img="${img},\"namespace\":\"${DS_NS}\""
+    [[ -n "${DS_SC}" ]] && img="${img},\"storage_class\":\"${DS_SC}\""
+    [[ -n "${DS_MODE}" ]] && img="${img},\"volume_mode\":\"${DS_MODE}\""
+    img="${img}}"
+    create_body="$(printf '{"name":"%s","namespace":"%s","template":"ubuntu-22.04","image":%s,"cpus":2,"memory":"2Gi","disk_size":"%s","start":true}' "${VM}" "${TEST_NS}" "${img}" "${DS_SIZE}")"
 else
     create_body="$(printf '{"name":"%s","namespace":"%s","template":"ubuntu-22.04","cpus":1,"memory":"1Gi","disk_size":"10Gi","start":true}' "${VM}" "${TEST_NS}")"
 fi
@@ -75,9 +90,11 @@ else
         GUEST_OK=0
         if [[ "${PVC_BACKED}" -eq 1 ]] && wait_guest_connected "${TEST_NS}" "${VM}" 300; then
             GUEST_OK=1
-            curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/guest/exec" \
-                "$(printf '{"command":["sh","-c","echo %s > %s; sync"]}' "${MARKER}" "${MARKER_PATH}")"
-            body_success "${_CURL_BODY}" \
+            # Targeted fdatasync of just the marker file (sync -d FILE) flushes it
+            # to the volume without a slow global `sync`, so a crash-consistent
+            # snapshot reliably captures it.
+            guest_exec "${TEST_NS}" "${VM}" /bin/sh -c "echo ${MARKER} > ${MARKER_PATH}; sync -d ${MARKER_PATH}"
+            [[ "${_GUEST_RC}" -eq 0 ]] \
                 && pass "wrote data marker to ${MARKER_PATH}" \
                 || { GUEST_OK=0; skip "in-guest marker write" "guest_exec_failed:$(printf '%s' "${_CURL_BODY}" | head -c 120)"; }
         elif [[ "${PVC_BACKED}" -eq 0 ]]; then
@@ -86,24 +103,44 @@ else
             skip "in-guest data round-trip" "no_guest_agent"
         fi
 
-        # ---- snapshot create → ready → list ----
+        # ---- OFFLINE snapshot round-trip ----
+        # KubeVirt fsfreezes any ONLINE (running-VM) snapshot via the guest agent,
+        # and GuestKit's fsfreeze QGA reply ({"return":{"frozen":0}}) is rejected by
+        # KubeVirt's snapshot controller, wedging the snapshot InProgress. Veyron's
+        # `app_consistent` flag is only a recorded annotation and does NOT disable
+        # the freeze. So, with a marker to protect, we stop the VM and snapshot it
+        # OFFLINE (no freeze). (finding: GuestKit fsfreeze breaks online snapshots.)
+        if [[ "${GUEST_OK}" -eq 1 ]]; then
+            curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/stop" '{}'
+            wait_vm_status "${TEST_NS}" "${VM}" Stopped 300 \
+                && pass "stopped VM for offline (freeze-free) snapshot" \
+                || warn "VM slow to stop before offline snapshot"
+        fi
+
         curl_api POST "/api/v1/snapshots/${TEST_NS}/${VM}/create" \
-            "$(printf '{"snapshot_name":"%s","app_consistent":true}' "${SNAP}")"
+            "$(printf '{"snapshot_name":"%s","app_consistent":false}' "${SNAP}")"
         if body_success "${_CURL_BODY}"; then
             pass "POST snapshot create ${SNAP}"
             wait_snapshot_ready "${TEST_NS}" "${VM}" "${SNAP}" 360 \
                 && pass "snapshot reached ready" \
                 || warn "snapshot did not report ready within 6m — restore may be slow"
 
-            # Mutate (delete the marker) so restore has something to bring back.
+            # Mutate: start, delete the marker (so restore must bring it back), stop.
             if [[ "${GUEST_OK}" -eq 1 ]]; then
-                curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/guest/exec" "$(printf '{"command":["rm","-f","%s"]}' "${MARKER_PATH}")"
-                pass "deleted marker post-snapshot (restore must bring it back)"
+                curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/start" '{}'
+                if wait_vm_status "${TEST_NS}" "${VM}" Running 360 \
+                    && wait_guest_connected "${TEST_NS}" "${VM}" 300; then
+                    guest_exec "${TEST_NS}" "${VM}" /bin/rm -f "${MARKER_PATH}"
+                    pass "deleted marker post-snapshot (restore must bring it back)"
+                    curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/stop" '{}'
+                    wait_vm_status "${TEST_NS}" "${VM}" Stopped 300 || warn "VM slow to stop before restore"
+                else
+                    GUEST_OK=0
+                    skip "post-snapshot marker delete" "guest_not_ready_after_restart"
+                fi
             fi
 
-            # ---- restore ----
-            curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/stop" '{}'
-            wait_vm_status "${TEST_NS}" "${VM}" Stopped 180 || warn "VM slow to stop before restore"
+            # ---- restore (VM stopped) ----
             curl_api POST "/api/v1/snapshots/${TEST_NS}/${SNAP}/restore" '{}'
             if body_success "${_CURL_BODY}"; then
                 pass "POST snapshot restore accepted"
@@ -111,11 +148,11 @@ else
                 if wait_vm_status "${TEST_NS}" "${VM}" Running 360; then
                     pass "VM returned to Running after restore"
                     if [[ "${GUEST_OK}" -eq 1 ]] && wait_guest_connected "${TEST_NS}" "${VM}" 300; then
-                        curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/guest/exec" "$(printf '{"command":["cat","%s"]}' "${MARKER_PATH}")"
-                        if body_has "${_CURL_BODY}" "${MARKER}"; then
+                        guest_exec "${TEST_NS}" "${VM}" /bin/cat "${MARKER_PATH}"
+                        if [[ "${_GUEST_RC}" -eq 0 ]] && printf '%s' "${_GUEST_STDOUT}" | grep -q "${MARKER}"; then
                             pass "DATA ROUND-TRIP verified — marker '${MARKER}' returned after restore"
                         else
-                            fail "restore lost data — marker not present after restore" "$(printf '%s' "${_CURL_BODY}" | head -c 200)"
+                            fail "restore lost data — marker not present after restore" "stdout='${_GUEST_STDOUT}'"
                         fi
                     else
                         skip "post-restore data verification" "$([[ ${PVC_BACKED} -eq 0 ]] && echo 'no_pvc_backed_image' || echo 'no_guest_agent_after_restore')"
