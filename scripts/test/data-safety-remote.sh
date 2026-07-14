@@ -103,49 +103,38 @@ else
             skip "in-guest data round-trip" "no_guest_agent"
         fi
 
-        # ---- OFFLINE snapshot round-trip ----
-        # KubeVirt fsfreezes any ONLINE (running-VM) snapshot via the guest agent,
-        # and GuestKit's fsfreeze QGA reply ({"return":{"frozen":0}}) is rejected by
-        # KubeVirt's snapshot controller, wedging the snapshot InProgress. Veyron's
-        # `app_consistent` flag is only a recorded annotation and does NOT disable
-        # the freeze. So, with a marker to protect, we stop the VM and snapshot it
-        # OFFLINE (no freeze). (finding: GuestKit fsfreeze breaks online snapshots.)
-        if [[ "${GUEST_OK}" -eq 1 ]]; then
-            curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/stop" '{}'
-            wait_vm_status "${TEST_NS}" "${VM}" Stopped 300 \
-                && pass "stopped VM for offline (freeze-free) snapshot" \
-                || warn "VM slow to stop before offline snapshot"
-        fi
-
+        # ---- ONLINE snapshot round-trip ----
+        # KubeVirt fsfreezes the guest FS for an online (running-VM) snapshot via
+        # the guest agent, producing an application-consistent image. This exercises
+        # the GuestKit fsfreeze QGA path — earlier GuestKit returned a malformed
+        # freeze-status reply and wedged online snapshots InProgress.
         curl_api POST "/api/v1/snapshots/${TEST_NS}/${VM}/create" \
-            "$(printf '{"snapshot_name":"%s","app_consistent":false}' "${SNAP}")"
+            "$(printf '{"snapshot_name":"%s","app_consistent":true}' "${SNAP}")"
         if body_success "${_CURL_BODY}"; then
             pass "POST snapshot create ${SNAP}"
             wait_snapshot_ready "${TEST_NS}" "${VM}" "${SNAP}" 360 \
-                && pass "snapshot reached ready" \
+                && pass "snapshot reached ready (online app-consistent freeze)" \
                 || warn "snapshot did not report ready within 6m — restore may be slow"
 
-            # Mutate: start, delete the marker (so restore must bring it back), stop.
+            # Mutate: delete the marker (VM still running) so restore must bring it back.
             if [[ "${GUEST_OK}" -eq 1 ]]; then
-                curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/start" '{}'
-                if wait_vm_status "${TEST_NS}" "${VM}" Running 360 \
-                    && wait_guest_connected "${TEST_NS}" "${VM}" 300; then
-                    guest_exec "${TEST_NS}" "${VM}" /bin/rm -f "${MARKER_PATH}"
-                    pass "deleted marker post-snapshot (restore must bring it back)"
-                    curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/stop" '{}'
-                    wait_vm_status "${TEST_NS}" "${VM}" Stopped 300 || warn "VM slow to stop before restore"
-                else
-                    GUEST_OK=0
-                    skip "post-snapshot marker delete" "guest_not_ready_after_restart"
-                fi
+                guest_exec "${TEST_NS}" "${VM}" /bin/rm -f "${MARKER_PATH}"
+                pass "deleted marker post-snapshot (restore must bring it back)"
             fi
 
-            # ---- restore (VM stopped) ----
+            # ---- restore (VM must be stopped) ----
+            # The restore endpoint itself waits out a terminating VMI (VM status
+            # can read "Stopped" before the VMI is gone), so no client settle here.
+            curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/stop" '{}'
+            wait_vm_status "${TEST_NS}" "${VM}" Stopped 300 || warn "VM slow to stop before restore"
             curl_api POST "/api/v1/snapshots/${TEST_NS}/${SNAP}/restore" '{}'
             if body_success "${_CURL_BODY}"; then
                 pass "POST snapshot restore accepted"
+                # Restore is async (recreates the PVC from the snapshot). Let it
+                # settle before starting, else the VMI can't schedule (PVC not ready).
+                sleep 60
                 curl_api POST "/api/v1/vms/${TEST_NS}/${VM}/start" '{}'
-                if wait_vm_status "${TEST_NS}" "${VM}" Running 360; then
+                if wait_vm_status "${TEST_NS}" "${VM}" Running 420; then
                     pass "VM returned to Running after restore"
                     if [[ "${GUEST_OK}" -eq 1 ]] && wait_guest_connected "${TEST_NS}" "${VM}" 300; then
                         guest_exec "${TEST_NS}" "${VM}" /bin/cat "${MARKER_PATH}"
