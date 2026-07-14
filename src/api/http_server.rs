@@ -1353,6 +1353,8 @@ pub mod web {
             || lower.contains("denied the request")
             || lower.contains(" is invalid")
             || lower.contains("already exists")
+            || lower.contains("cannot restore")
+            || lower.contains("still running")
         {
             return msg;
         }
