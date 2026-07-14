@@ -126,22 +126,35 @@ impl RestoreManager {
         vm_name: &str,
         snapshot_name: &str,
     ) -> Result<RestoreInfo> {
-        // Verify VM is not running before in-place restore
-        match self.is_vm_running(&self.namespace, vm_name).await {
-            Ok(true) => {
-                return Err(anyhow::anyhow!(
-                    "Cannot restore in-place: VM '{}' is currently running. Stop the VM first.",
-                    vm_name
-                ));
+        // Verify the VM is not running before an in-place restore. A VM's
+        // printableStatus can read "Stopped" while its VMI is still terminating,
+        // so wait out that race (up to ~60s) instead of rejecting immediately —
+        // otherwise a stop-then-restore sequence intermittently fails with
+        // "currently running".
+        let mut waited_secs = 0u64;
+        loop {
+            match self.is_vm_running(&self.namespace, vm_name).await {
+                Ok(false) => break, // VMI gone — safe to proceed
+                Ok(true) if waited_secs < 60 => {
+                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                    waited_secs += 3;
+                }
+                Ok(true) => {
+                    return Err(anyhow::anyhow!(
+                        "Cannot restore in-place: VM '{}' is still running after waiting {}s \
+                         for it to stop. Stop the VM first.",
+                        vm_name,
+                        waited_secs
+                    ));
+                }
+                Err(e) => {
+                    return Err(anyhow::anyhow!(
+                        "Cannot verify VM '{}' running state: {}. Aborting restore for safety.",
+                        vm_name,
+                        e
+                    ));
+                }
             }
-            Err(e) => {
-                return Err(anyhow::anyhow!(
-                    "Cannot verify VM '{}' running state: {}. Aborting restore for safety.",
-                    vm_name,
-                    e
-                ));
-            }
-            Ok(false) => {} // VM is stopped, safe to proceed
         }
 
         // Create a pre-restore safety snapshot
