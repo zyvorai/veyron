@@ -1345,6 +1345,18 @@ pub mod web {
             return msg;
         }
 
+        // Kubernetes admission / validation / conflict errors are actionable and
+        // carry no secrets (kubectl surfaces them verbatim). Collapsing them to
+        // "Internal server error" hides the real cause — e.g. a restore rejected
+        // by the KubeVirt webhook, or an AlreadyExists conflict. Surface them.
+        if lower.contains("admission webhook")
+            || lower.contains("denied the request")
+            || lower.contains(" is invalid")
+            || lower.contains("already exists")
+        {
+            return msg;
+        }
+
         // Map known error patterns to safe, generic messages
         if msg.starts_with("NotFound") || msg.contains("not found") {
             "Resource not found".to_string()
