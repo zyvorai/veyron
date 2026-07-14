@@ -72,3 +72,31 @@ For a lab/one-off ISO build, know these:
   `docs/WINDOWS_GOLDEN_IMAGES.md`).
 - Windows 11 needs 4 GiB RAM minimum; this builder requests 6 GiB. A single-node lab
   cluster must have the headroom free before you start.
+
+## Generalizing on Windows 11 24H2 — two hard walls (measured on the cluster)
+
+Producing a **sysprep-generalized** golden image from an ISO install on headless
+24H2 hits two Windows-side blockers that no Veyron change can remove:
+
+1. **Interactive OOBE overrides the answer file.** 24H2's redesigned OOBE shows the
+   locale/account screens even with a complete `oobeSystem` pass, so the auto-sysprep
+   `FirstLogonCommands` never run, and OOBE creates an account with a password that is
+   NOT the one in the answer file — leaving the built image un-loginable headlessly.
+
+2. **BitLocker device encryption is auto-enabled.** With a vTPM present (which KubeVirt
+   provides), 24H2 encrypts the OS partition on install (`blkid` reports
+   `TYPE="BitLocker"`). That blocks the offline fallback (mount the disk, clear the
+   password / inject a RunOnce sysprep) — the partition can't be mounted without the
+   recovery key.
+
+Net: a *force-stopped* 24H2 ISO-install image **boots and clones fine** (proven), but
+cannot be generalized after the fact. For a generalized image:
+
+- **Recommended — Packer pre-built image** (`docs/WINDOWS_PACKER_GITOPS_PIPELINE.md`):
+  build + sysprep once in a controlled VM, export a qcow2, and `POST /images/import`
+  it. Sidesteps OOBE, BitLocker, and credentials entirely.
+- **Or, for a headless ISO build**, the answer file must (a) set
+  `HKLM\SYSTEM\CurrentControlSet\Control\BitLocker\PreventDeviceEncryption=1`
+  before first boot so the disk stays offline-editable, and (b) reliably run sysprep
+  in the build — which on 24H2 means driving OOBE, since its interactive setup does
+  not honor the `oobeSystem` auto-seal.
