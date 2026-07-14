@@ -38,15 +38,44 @@ section "P4 · Snapshot round-trip"
 
 # The built-in ubuntu-22.04 template is containerDisk-rooted (ephemeral) — a file
 # written to the root disk does not survive a restore, so the in-guest DATA proof
-# needs a PVC-backed root from a published golden image. Set
-# VEYRON_READY_DATASOURCE=<CDI DataSource name> to run the real data round-trip;
-# without it, the snapshot create→ready→restore lifecycle still runs and the
+# needs a PVC-backed root from a published golden image. A Linux DataSource is
+# auto-discovered when present (override with VEYRON_READY_DATASOURCE=<name>); if
+# none exists, the snapshot create→ready→restore lifecycle still runs and the
 # in-guest data assertion SKIPs honestly (never a false FAIL).
 DS="${VEYRON_READY_DATASOURCE:-}"
 DS_NS="${VEYRON_READY_DATASOURCE_NS:-}"       # namespace holding the DataSource
 DS_SC="${VEYRON_READY_DATASOURCE_SC:-}"       # optional clone StorageClass
 DS_MODE="${VEYRON_READY_DATASOURCE_MODE:-}"   # optional clone volumeMode (Filesystem|Block)
 DS_SIZE="${VEYRON_READY_DATASOURCE_SIZE:-20Gi}" # clone disk size (>= golden PVC size)
+
+# Auto-discover a published Linux golden image if none was given, so the real
+# data round-trip runs out-of-the-box on any cluster that has one (no need to
+# know the DataSource name / namespace). Windows images are skipped — this test
+# boots with the Linux ubuntu-22.04 template for its GuestKit cloud-init.
+if [[ -z "${DS}" ]] && command -v python3 >/dev/null 2>&1; then
+    curl_api GET "/api/v1/images/datasources"
+    _ads="$(python3 - "${_CURL_BODY}" <<'PY'
+import sys, json
+try:
+    d = json.loads(sys.argv[1])
+except Exception:
+    d = {}
+for x in d.get("data_sources", []):
+    fam = (x.get("family") or "").lower()
+    tags = " ".join(x.get("tags", []) or []).lower()
+    if "windows" in fam or "windows" in tags:
+        continue
+    print((x.get("name") or "") + "|" + (x.get("namespace") or "default"))
+    break
+PY
+)"
+    if [[ -n "${_ads}" && "${_ads}" != "|default" ]]; then
+        DS="${_ads%%|*}"
+        [[ -z "${DS_NS}" ]] && DS_NS="${_ads##*|}"
+        [[ -z "${DS_MODE}" ]] && DS_MODE="Filesystem"
+        printf '  auto-detected golden image DataSource: %s (ns=%s)\n' "${DS}" "${DS_NS}"
+    fi
+fi
 PVC_BACKED=0
 # The restore handler derives the VM name from the snapshot name by splitting on
 # "-snap-", so the VM name must NOT contain "-snap-" and the snapshot must be
