@@ -206,25 +206,45 @@ async fn validate_node_ports_available(
     if own.contains(&node_port) {
         return Ok(());
     }
-    let entries = list_rdp_nodeport_entries(client.clone()).await?;
-    if let Some(conflict) = entries
-        .iter()
-        .find(|e| e.node_port == node_port && !(e.namespace == namespace && e.vm_name == vm_name))
-    {
-        return Err(anyhow!(
-            "NodePort {} is already used by VM {}/{} (Service {}). Choose a different port.",
-            node_port,
-            conflict.namespace,
-            conflict.vm_name,
-            conflict.service_name.as_deref().unwrap_or("?")
-        ));
+    // Both checks below are a best-effort pre-flight. If listing Services fails
+    // (transient API error, an object the typed client can't deserialize, RBAC
+    // in a locked-down cluster), DEGRADE rather than 500 the whole request — the
+    // API server still rejects a genuinely-allocated NodePort at create time with
+    // a clear message. Previously the `?` here surfaced as an opaque
+    // "Internal server error" for every RDP expose, while the status endpoint
+    // swallowed the identical failure — so the suggested port looked valid but the
+    // upsert always failed.
+    match list_rdp_nodeport_entries(client.clone()).await {
+        Ok(entries) => {
+            if let Some(conflict) = entries.iter().find(|e| {
+                e.node_port == node_port && !(e.namespace == namespace && e.vm_name == vm_name)
+            }) {
+                return Err(anyhow!(
+                    "NodePort {} is already used by VM {}/{} (Service {}). Choose a different port.",
+                    node_port,
+                    conflict.namespace,
+                    conflict.vm_name,
+                    conflict.service_name.as_deref().unwrap_or("?")
+                ));
+            }
+        }
+        Err(e) => log::warn!(
+            "RDP expose: could not list RDP NodePort services for pre-check ({e}); \
+             relying on the API server to reject a colliding port"
+        ),
     }
-    let cluster_ports = list_cluster_node_ports(client).await?;
-    if cluster_ports.contains(&node_port) {
-        return Err(anyhow!(
-            "NodePort {} is already allocated on this cluster. Choose a different port (e.g. 30101–30199).",
-            node_port
-        ));
+    match list_cluster_node_ports(client).await {
+        Ok(cluster_ports) if cluster_ports.contains(&node_port) => {
+            return Err(anyhow!(
+                "NodePort {} is already allocated on this cluster. Choose a different port (e.g. 30101–30199).",
+                node_port
+            ));
+        }
+        Ok(_) => {}
+        Err(e) => log::warn!(
+            "RDP expose: could not list cluster NodePorts for pre-check ({e}); \
+             relying on the API server to reject a colliding port"
+        ),
     }
     Ok(())
 }

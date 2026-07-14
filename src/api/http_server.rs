@@ -1980,20 +1980,38 @@ pub mod web {
                 Err(e) => err_json(500, "RDP_EXPOSE_DELETE_FAILED", &sanitize_error(&e)),
             }
         } else {
-            let Some(node_port) = req.node_port else {
-                return err_json(
-                    400,
-                    "INVALID_REQUEST",
-                    "node_port is required when enabling RDP exposure (use 30100–30199 per VM, within 30000–32767)",
-                );
+            // Only NodePort/LoadBalancer need a node_port; ClusterIP does not.
+            let svc_type = match req
+                .service_type
+                .as_deref()
+                .unwrap_or("NodePort")
+                .to_ascii_lowercase()
+                .as_str()
+            {
+                "loadbalancer" => "LoadBalancer",
+                "clusterip" => "ClusterIP",
+                _ => "NodePort",
             };
-            if !(30000..=32767).contains(&node_port) {
-                return err_json(
-                    400,
-                    "INVALID_REQUEST",
-                    "node_port must be in range 30000–32767",
-                );
-            }
+            let node_port = if svc_type == "NodePort" || svc_type == "LoadBalancer" {
+                let Some(np) = req.node_port else {
+                    return err_json(
+                        400,
+                        "INVALID_REQUEST",
+                        "node_port is required for a NodePort/LoadBalancer RDP service (use 30100–30199 per VM, within 30000–32767)",
+                    );
+                };
+                if !(30000..=32767).contains(&np) {
+                    return err_json(
+                        400,
+                        "INVALID_REQUEST",
+                        "node_port must be in range 30000–32767",
+                    );
+                }
+                np
+            } else {
+                // ClusterIP ignores node_port; upsert won't set one on the service.
+                req.node_port.unwrap_or(0)
+            };
             if let Err(e) = kube.get_vm(&ns, &name).await {
                 let msg = sanitize_error(&e);
                 if msg.contains("NotFound")
@@ -2021,12 +2039,6 @@ pub mod web {
                 ),
             }
 
-            let svc_type = req.service_type.as_deref().unwrap_or("NodePort");
-            let svc_type = match svc_type.to_ascii_lowercase().as_str() {
-                "loadbalancer" => "LoadBalancer",
-                "clusterip" => "ClusterIP",
-                _ => "NodePort",
-            };
             match vm_rdp::upsert_rdp_expose_service(kube.client(), &ns, &name, svc_type, node_port)
                 .await
             {
