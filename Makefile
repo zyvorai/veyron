@@ -1,4 +1,4 @@
-.PHONY: build release check test clippy fmt lint clean install help docker deploy catalog-generate catalog-check
+.PHONY: build release check test clippy fmt lint scripts-lint clean install help docker deploy catalog-generate catalog-check
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -24,7 +24,18 @@ fmt: ## Format code
 fmt-check: ## Check formatting without modifying
 	cargo fmt --all -- --check
 
-lint: fmt-check clippy ## Run all lints (format + clippy)
+scripts-lint: ## Syntax-check shell scripts + shellcheck the customer-readiness suite
+	@fail=0; \
+	for f in $$(find scripts -name '*.sh'); do bash -n "$$f" || fail=1; done; \
+	python3 -m py_compile scripts/lib/readiness-report.py || fail=1; \
+	if command -v shellcheck >/dev/null 2>&1; then \
+	  for f in scripts/customer-readiness.sh scripts/lib/test-helpers.sh scripts/test/*.sh; do \
+	    shellcheck -S error "$$f" || fail=1; \
+	  done; \
+	else echo "shellcheck not installed — ran bash -n only"; fi; \
+	if [ $$fail -eq 0 ]; then echo "scripts-lint: OK"; else echo "scripts-lint: FAILED" >&2; exit 1; fi
+
+lint: fmt-check clippy scripts-lint ## Run all lints (format + clippy + scripts)
 
 clean: ## Clean build artifacts
 	cargo clean
@@ -32,7 +43,7 @@ clean: ## Clean build artifacts
 install: ## Install to ~/.cargo/bin
 	cargo install --path .
 
-ci: fmt-check clippy test ## Run full CI pipeline locally
+ci: fmt-check clippy scripts-lint test ## Run full CI pipeline locally
 
 test-vm-e2e-remote: ## Run daily VM ops E2E against remote API (HOST=... PORT=30151)
 	@test -n "$(HOST)" || (echo "Usage: make test-vm-e2e-remote HOST=<ip> [PORT=30151]" >&2; exit 1)
