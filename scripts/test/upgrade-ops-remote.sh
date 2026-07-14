@@ -96,17 +96,16 @@ if body_success "${_CURL_BODY}" && wait_vm_status "${TEST_NS}" "${MVM}" Running 
 
     section "P6 · Day-2 hotplug seen by guest"
     if wait_guest_connected "${TEST_NS}" "${MVM}" 240; then
-        # nproc output lands in the guest-exec result's "stdout" field, not the
-        # response envelope — parse that specifically (envelope has request-id digits).
-        curl_api POST "/api/v1/vms/${TEST_NS}/${MVM}/guest/exec" '{"command":["nproc"]}'
-        before="$(json_str "${_CURL_BODY}" stdout | grep -oE '[0-9]+' | head -1)"
+        # guest exec uses {path,arg} and returns base64 out-data; guest_exec decodes it.
+        guest_exec "${TEST_NS}" "${MVM}" /usr/bin/nproc
+        before="$(printf '%s' "${_GUEST_STDOUT}" | grep -oE '[0-9]+' | head -1)"
         curl_api POST "/api/v1/vms/${TEST_NS}/${MVM}/hotplug" '{"sockets":2,"memory":"2Gi"}'
         # The hotplug handler returns {"ok":true,...} (not the "success" envelope).
         if [[ "${_CURL_CODE}" == "200" ]] && body_has "${_CURL_BODY}" '"ok"[[:space:]]*:[[:space:]]*true'; then
             pass "POST hotplug {sockets:2,memory:2Gi} accepted"
             sleep 20
-            curl_api POST "/api/v1/vms/${TEST_NS}/${MVM}/guest/exec" '{"command":["nproc"]}'
-            after="$(json_str "${_CURL_BODY}" stdout | grep -oE '[0-9]+' | head -1)"
+            guest_exec "${TEST_NS}" "${MVM}" /usr/bin/nproc
+            after="$(printf '%s' "${_GUEST_STDOUT}" | grep -oE '[0-9]+' | head -1)"
             if [[ -z "${before}" || -z "${after}" ]]; then
                 skip "hotplug guest CPU visibility" "nproc_unreadable"
             elif [[ "${after}" -gt "${before}" ]]; then

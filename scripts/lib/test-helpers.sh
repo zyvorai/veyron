@@ -144,6 +144,40 @@ json_str() {
     printf '%s' "$1" | sed -n "s/.*\"$2\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -1
 }
 
+# guest_exec NS NAME PATH [ARG...] — run a command in the guest via the
+# QGA-mediated GuestKit exec. The API expects {"path","arg":[...]} (NOT
+# {"command":[...]}), and returns the output base64-encoded in "out-data".
+# Sets _GUEST_STDOUT (decoded text) and _GUEST_RC (0 on API success).
+_GUEST_STDOUT=""
+_GUEST_RC=1
+guest_exec() {
+    local ns="$1" name="$2" path="$3"; shift 3
+    local argjson="[]" a first=1
+    if [[ $# -gt 0 ]]; then
+        argjson="["
+        for a in "$@"; do
+            [[ ${first} -eq 1 ]] || argjson="${argjson},"
+            argjson="${argjson}\"$(_json_escape "${a}")\""
+            first=0
+        done
+        argjson="${argjson}]"
+    fi
+    curl_api POST "/api/v1/vms/${ns}/${name}/guest/exec" \
+        "$(printf '{"path":"%s","arg":%s}' "${path}" "${argjson}")"
+    _GUEST_STDOUT=""
+    _GUEST_RC=1
+    if body_success "${_CURL_BODY}"; then
+        local b64
+        b64="$(json_str "${_CURL_BODY}" out-data)"
+        if [[ -n "${b64}" ]]; then
+            _GUEST_STDOUT="$(printf '%s' "${b64}" | base64 -d 2>/dev/null || printf '%s' "${b64}" | base64 -D 2>/dev/null || printf '')"
+        fi
+        _GUEST_RC=0
+        return 0
+    fi
+    return 1
+}
+
 # ── Cluster facts ───────────────────────────────────────────────────────────
 NODE_COUNT="${NODE_COUNT:-}"
 READY_NODES="${READY_NODES:-}"
