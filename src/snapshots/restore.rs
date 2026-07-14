@@ -53,7 +53,14 @@ impl RestoreManager {
         let restores: Api<VirtualMachineRestore> =
             Api::namespaced(self.client.clone(), &self.namespace);
 
-        let restore_name = format!("{}-restore", target_vm_name);
+        // Unique per attempt: a fixed "{vm}-restore" name collides with
+        // AlreadyExists on any second restore of the same VM (or a leftover
+        // completed restore object), surfacing as an opaque 500.
+        let restore_name = format!(
+            "{}-restore-{}",
+            target_vm_name,
+            Utc::now().format("%Y%m%d%H%M%S")
+        );
 
         // Build labels
         let mut labels = BTreeMap::new();
