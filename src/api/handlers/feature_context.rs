@@ -68,7 +68,7 @@ impl VmrogueFeatureContext {
     pub fn logs_dashboard() -> Self {
         Self {
             data_source: "virt_launcher_pod_logs".to_string(),
-            scope: "Logs from pods labeled kubevirt.io/domain (virt-launcher) in the selected scope."
+            scope: "Logs from pods labeled vm.kubevirt.io/name (virt-launcher) in the selected scope."
                 .to_string(),
             limitations: "Not cluster-wide Loki/Elasticsearch: no aggregated platform or audit log pipeline. Lines are parsed heuristically from pod log text; other workloads are out of scope unless they share the label."
                 .to_string(),

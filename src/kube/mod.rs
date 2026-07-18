@@ -58,6 +58,15 @@ pub use converter::vm_config_to_kubevirt;
 pub use status::{ResourceSummary, VMStatus};
 pub use types::*;
 
+/// Label KubeVirt stamps on virt-launcher pods with the owning VM's name.
+/// KubeVirt 1.8 launchers no longer carry the older `kubevirt.io/domain`
+/// label — selectors must use this one (verified empirically on v1.8.4).
+pub const VM_NAME_LABEL: &str = "vm.kubevirt.io/name";
+
+/// Legacy virt-launcher VM-name label; only useful as a read fallback when
+/// mapping pods back to VMs on pre-1.8 clusters. Never use it in selectors.
+pub const VM_NAME_LABEL_LEGACY: &str = "kubevirt.io/domain";
+
 /// Dashboard: KubeVirt + CDI readiness from the cluster API.
 #[derive(Debug, Clone, Serialize)]
 pub struct PlatformReadiness {
@@ -438,8 +447,10 @@ impl KubeClient {
     }
 
     /// Creates or updates a `Service` whose selector targets the **virt-launcher pod**
-    /// (`kubevirt.io/domain=<vm>`). That forwards to the VM’s network namespace when the guest is
-    /// running; it does **not** guarantee the guest OS is listening on the exposed ports.
+    /// (`vm.kubevirt.io/name=<vm>` — KubeVirt 1.8 launchers no longer carry the old
+    /// `kubevirt.io/domain` label, which left these Services with zero endpoints).
+    /// That forwards to the VM’s network namespace when the guest is running; it does
+    /// **not** guarantee the guest OS is listening on the exposed ports.
     pub async fn upsert_vm_expose_service(
         &self,
         namespace: &str,
@@ -450,7 +461,7 @@ impl KubeClient {
         let svc_name = vm_expose_service_name(vm_name);
 
         let mut selector = BTreeMap::new();
-        selector.insert("kubevirt.io/domain".to_string(), vm_name.to_string());
+        selector.insert(VM_NAME_LABEL.to_string(), vm_name.to_string());
 
         let type_str = match expose.service_type.to_ascii_lowercase().as_str() {
             "nodeport" => "NodePort",

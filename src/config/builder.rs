@@ -296,7 +296,7 @@ impl VMConfigBuilder {
         self
     }
 
-    /// Create a Kubernetes Service targeting this VM's virt-launcher (`kubevirt.io/domain` selector).
+    /// Create a Kubernetes Service targeting this VM's virt-launcher (`vm.kubevirt.io/name` selector).
     pub fn expose(mut self, expose: crate::config::VmExposeConfig) -> Self {
         self.config.expose = Some(expose);
         self

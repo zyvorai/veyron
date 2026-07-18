@@ -308,7 +308,7 @@ impl MetricsCollector {
         };
 
         let pods: Api<Pod> = Api::namespaced(client.clone(), &self.namespace);
-        let label = format!("kubevirt.io/domain={}", vm_name);
+        let label = format!("{}={}", crate::kube::VM_NAME_LABEL, vm_name);
         let lp = kube::api::ListParams::default().labels(&label);
 
         let pod_name = match pods.list(&lp).await {
