@@ -3034,7 +3034,11 @@ pub mod web {
         // failed *probe* never blocks — only a definitive "not eligible" does.
         if !req.force {
             if let Ok(elig) = client
-                .migration_eligibility(&ns, &name, Default::default())
+                .migration_eligibility(
+                    &ns,
+                    &name,
+                    crate::kube::migration_guard::ClusterMigrationCaps::from_env(),
+                )
                 .await
             {
                 if !elig.eligible {

@@ -444,6 +444,9 @@ pub struct VMProfileSpec {
     pub memory: String,
     #[serde(rename = "diskSize")]
     pub disk_size: String,
+    /// GPUs granted by this profile (VM's explicit gpus win).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gpus: Vec<CRDGpuSpec>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     #[serde(rename = "useCases")]
     pub use_cases: Vec<String>,

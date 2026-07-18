@@ -63,7 +63,13 @@ if [[ "${1:-}" == "--init-server" ]]; then
 
   ssh "${SSH_OPTS[@]}" "${USER_}@${HOST}" bash -s <<EOF
 set -euo pipefail
-command -v wg >/dev/null 2>&1 || { apt-get update -qq && apt-get install -y -qq wireguard-tools >/dev/null; }
+command -v wg >/dev/null 2>&1 || {
+  if command -v apt-get >/dev/null 2>&1; then apt-get update -qq && apt-get install -y -qq wireguard-tools >/dev/null
+  elif command -v dnf >/dev/null 2>&1; then dnf install -y -q wireguard-tools >/dev/null
+  elif command -v yum >/dev/null 2>&1; then yum install -y -q wireguard-tools >/dev/null
+  elif command -v zypper >/dev/null 2>&1; then zypper --non-interactive install wireguard-tools >/dev/null
+  else echo "no known package manager to install wireguard-tools" >&2; exit 1; fi
+}
 umask 077
 mkdir -p /etc/wireguard
 if [[ ! -f /etc/wireguard/${WG_IF}.key ]]; then
@@ -169,7 +175,13 @@ else
   # Worker side: keys + config + peer(server).
   WORKER_PUB="$(ssh "${SSH_OPTS[@]}" "${WORKER_USER}@${WORKER_HOST}" bash -s <<EOF
 set -euo pipefail
-command -v wg >/dev/null 2>&1 || { apt-get update -qq && apt-get install -y -qq wireguard-tools >/dev/null; }
+command -v wg >/dev/null 2>&1 || {
+  if command -v apt-get >/dev/null 2>&1; then apt-get update -qq && apt-get install -y -qq wireguard-tools >/dev/null
+  elif command -v dnf >/dev/null 2>&1; then dnf install -y -q wireguard-tools >/dev/null
+  elif command -v yum >/dev/null 2>&1; then yum install -y -q wireguard-tools >/dev/null
+  elif command -v zypper >/dev/null 2>&1; then zypper --non-interactive install wireguard-tools >/dev/null
+  else echo "no known package manager to install wireguard-tools" >&2; exit 1; fi
+}
 umask 077
 mkdir -p /etc/wireguard
 if [[ ! -f /etc/wireguard/${WG_IF}.key ]]; then

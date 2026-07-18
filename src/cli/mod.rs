@@ -292,6 +292,12 @@ pub enum Commands {
         #[arg(long)]
         no_internet: bool,
 
+        /// Attach GPUs: a count ("2"), a device-plugin resource
+        /// ("nvidia.com/gpu"), or "RESOURCE:COUNT" ("nvidia.com/GRID_T4-2Q:2").
+        /// Passthrough GPU VMs can never live-migrate.
+        #[arg(long)]
+        gpu: Option<String>,
+
         /// Dry run (don't create, just show manifest)
         #[arg(long)]
         dry_run: bool,
@@ -2597,6 +2603,12 @@ pub enum Commands {
         /// Do not apply internet egress policy (operator reconciles when enabled)
         #[arg(long)]
         no_internet: bool,
+
+        /// Attach GPUs: a count ("2"), a device-plugin resource
+        /// ("nvidia.com/gpu"), or "RESOURCE:COUNT". Passthrough GPU VMs can
+        /// never live-migrate.
+        #[arg(long)]
+        gpu: Option<String>,
 
         /// Machine type (e.g. q35)
         #[arg(long)]

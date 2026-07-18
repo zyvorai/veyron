@@ -168,32 +168,56 @@ impl MigrationAssistant {
             }
         }
 
-        // Check each selected VM is running
+        // Per-VM eligibility comes from the shared guard — the single source of
+        // truth the API's migrate endpoints also enforce (passthrough devices,
+        // VMI phase, KubeVirt's LiveMigratable verdict, ephemeral storage).
         for vm_name in &self.selected_vms {
-            match client.is_running(namespace, vm_name).await {
-                Ok(true) => {
-                    self.pre_check_results.push(PreCheckResult {
-                        check_name: format!("VM '{}' running", vm_name),
-                        check_type: CheckType::Health,
-                        status: CheckStatus::Passed,
-                        severity: CheckSeverity::Required,
-                        message: format!(
-                            "VM '{}' is running and ready for live migration",
-                            vm_name
-                        ),
-                    });
-                }
-                Ok(false) => {
-                    self.pre_check_results.push(PreCheckResult {
-                        check_name: format!("VM '{}' running", vm_name),
-                        check_type: CheckType::Health,
-                        status: CheckStatus::Failed,
-                        severity: CheckSeverity::Required,
-                        message: format!(
-                            "VM '{}' is not running — cannot live-migrate a stopped VM",
-                            vm_name
-                        ),
-                    });
+            match client
+                .migration_eligibility(
+                    namespace,
+                    vm_name,
+                    crate::kube::migration_guard::ClusterMigrationCaps::from_env(),
+                )
+                .await
+            {
+                Ok(elig) => {
+                    if elig.eligible && elig.warnings.is_empty() {
+                        self.pre_check_results.push(PreCheckResult {
+                            check_name: format!("VM '{}' eligibility", vm_name),
+                            check_type: CheckType::Health,
+                            status: CheckStatus::Passed,
+                            severity: CheckSeverity::Required,
+                            message: format!("VM '{}' is eligible for live migration", vm_name),
+                        });
+                    }
+                    for b in &elig.blockers {
+                        let check_type = if b.code.contains("GPU") || b.code.contains("DEVICE") {
+                            CheckType::Resource
+                        } else if b.code.contains("Disks") || b.code.contains("STORAGE") {
+                            CheckType::Storage
+                        } else {
+                            CheckType::Health
+                        };
+                        self.pre_check_results.push(PreCheckResult {
+                            check_name: format!("VM '{}' {}", vm_name, b.code),
+                            check_type,
+                            status: CheckStatus::Failed,
+                            severity: CheckSeverity::Required,
+                            message: match &b.suggestion {
+                                Some(s) => format!("{} — {}", b.message, s),
+                                None => b.message.clone(),
+                            },
+                        });
+                    }
+                    for w in &elig.warnings {
+                        self.pre_check_results.push(PreCheckResult {
+                            check_name: format!("VM '{}' {}", vm_name, w.code),
+                            check_type: CheckType::Storage,
+                            status: CheckStatus::Warning,
+                            severity: CheckSeverity::Recommended,
+                            message: w.message.clone(),
+                        });
+                    }
                 }
                 Err(e) => {
                     self.pre_check_results.push(PreCheckResult {
@@ -201,41 +225,7 @@ impl MigrationAssistant {
                         check_type: CheckType::Health,
                         status: CheckStatus::Warning,
                         severity: CheckSeverity::Required,
-                        message: format!("Could not check VM '{}' status: {}", vm_name, e),
-                    });
-                }
-            }
-        }
-
-        // Check storage accessibility (VM has shared storage, not local)
-        for vm_name in &self.selected_vms {
-            if let Ok(vm) = client.get_vm(namespace, vm_name).await {
-                let has_local_only = vm
-                    .spec
-                    .template
-                    .spec
-                    .volumes
-                    .as_ref()
-                    .map(|vols| {
-                        vols.iter()
-                            .all(|v| v.empty_disk.is_some() || v.container_disk.is_some())
-                    })
-                    .unwrap_or(true);
-                if has_local_only {
-                    self.pre_check_results.push(PreCheckResult {
-                        check_name: format!("VM '{}' storage", vm_name),
-                        check_type: CheckType::Storage,
-                        status: CheckStatus::Warning,
-                        severity: CheckSeverity::Recommended,
-                        message: format!("VM '{}' uses only local/ephemeral storage — data may not persist after migration", vm_name),
-                    });
-                } else {
-                    self.pre_check_results.push(PreCheckResult {
-                        check_name: format!("VM '{}' storage", vm_name),
-                        check_type: CheckType::Storage,
-                        status: CheckStatus::Passed,
-                        severity: CheckSeverity::Required,
-                        message: format!("VM '{}' uses shared storage (PVC/DataVolume)", vm_name),
+                        message: format!("Could not evaluate VM '{}': {}", vm_name, e),
                     });
                 }
             }

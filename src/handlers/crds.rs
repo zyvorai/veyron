@@ -101,6 +101,8 @@ pub struct VrvmCreateArgs {
     pub secure_boot: bool,
     pub tpm: bool,
     pub no_rng: bool,
+    /// GPU spec: count, resource name, or "RESOURCE:COUNT" (see `parse_gpu_spec`).
+    pub gpu: Option<String>,
     pub machine_type: Option<String>,
     pub eviction_strategy: Option<String>,
     pub labels: Vec<String>,
@@ -377,7 +379,19 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VeyronVMSpe
         annotations: std::collections::HashMap::new(),
         allow_internet: !args.no_internet,
         windows: None,
-        gpus: Vec::new(),
+        gpus: match args.gpu {
+            Some(ref spec) => {
+                let (resource, count) = crate::handlers::vm::parse_gpu_spec(spec)?;
+                (0..count)
+                    .map(|i| crate::operator_crds::CRDGpuSpec {
+                        name: format!("gpu{i}"),
+                        device_name: resource.clone(),
+                        virtual_gpu_options: None,
+                    })
+                    .collect()
+            }
+            None => Vec::new(),
+        },
         host_devices: Vec::new(),
     })
 }

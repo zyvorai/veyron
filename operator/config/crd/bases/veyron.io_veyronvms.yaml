@@ -155,10 +155,19 @@ spec:
                         type: string
                 cloudInit:
                   type: object
-                  required: ["userData"]
                   properties:
                     userData:
                       type: string
+                    userDataSecretRef:
+                      type: object
+                      required: ["name", "key"]
+                      properties:
+                        name:
+                          type: string
+                        key:
+                          type: string
+                        namespace:
+                          type: string
                     networkData:
                       type: string
                     delivery:
@@ -256,6 +265,34 @@ spec:
                   type: object
                   additionalProperties:
                     type: string
+                allowInternet:
+                  type: boolean
+                  default: true
+                  description: Apply internet egress policy for this VM's virt-launcher pods.
+                windows:
+                  type: object
+                  description: Windows-specific bootstrap secret references.
+                  properties:
+                    sysprepSecretRef:
+                      type: object
+                      required: ["name", "key"]
+                      properties:
+                        name:
+                          type: string
+                        key:
+                          type: string
+                        namespace:
+                          type: string
+                    domainJoinSecretRef:
+                      type: object
+                      required: ["name", "key"]
+                      properties:
+                        name:
+                          type: string
+                        key:
+                          type: string
+                        namespace:
+                          type: string
                 gpus:
                   type: array
                   description: |

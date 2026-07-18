@@ -1079,6 +1079,7 @@ async fn create_catalog_profile(
             threads,
             memory,
             disk_size,
+            gpus: vec![],
             use_cases,
             recommended_templates: vec![],
         },
