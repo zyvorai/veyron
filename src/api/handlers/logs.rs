@@ -131,7 +131,8 @@ fn parse_log_line(line: &str, source: &str) -> LogEntry {
     }
 }
 
-/// Fetch logs from virt-launcher pods (`kubevirt.io/domain` label).
+/// Fetch logs from virt-launcher pods (`vm.kubevirt.io/name` label; legacy
+/// `kubevirt.io/domain` read as a fallback for pre-1.8 clusters).
 #[cfg(feature = "web")]
 async fn fetch_pod_logs(
     state: &SharedState,
@@ -149,7 +150,7 @@ async fn fetch_pod_logs(
     } else {
         Api::namespaced(client.clone(), namespace_scope)
     };
-    let lp = ListParams::default().labels("kubevirt.io/domain");
+    let lp = ListParams::default().labels(crate::kube::VM_NAME_LABEL);
 
     let pod_list = match pods.list(&lp).await {
         Ok(list) => list,
@@ -161,13 +162,14 @@ async fn fetch_pod_logs(
     for pod in &pod_list.items {
         let pod_name = pod.metadata.name.clone().unwrap_or_default();
 
-        // If a VM filter is specified, check the kubevirt.io/domain label
+        // If a VM filter is specified, match the launcher's VM-name label.
         if let Some(vm) = vm_filter {
-            let domain = pod
-                .metadata
-                .labels
-                .as_ref()
-                .and_then(|l| l.get("kubevirt.io/domain"))
+            let labels = pod.metadata.labels.as_ref();
+            let domain = labels
+                .and_then(|l| {
+                    l.get(crate::kube::VM_NAME_LABEL)
+                        .or_else(|| l.get(crate::kube::VM_NAME_LABEL_LEGACY))
+                })
                 .map(|s| s.as_str())
                 .unwrap_or("");
             if domain != vm {

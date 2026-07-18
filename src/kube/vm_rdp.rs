@@ -4,7 +4,7 @@
 
 //! RDP NodePort / LoadBalancer exposure for Windows KubeVirt VMs.
 //!
-//! Selects **virt-launcher** pods via `kubevirt.io/vm=<vm>` (not `kubevirt.io/domain` used for SSH expose).
+//! Selects **virt-launcher** pods via `kubevirt.io/vm=<vm>` (SSH expose uses `vm.kubevirt.io/name`).
 
 use anyhow::{Result, anyhow};
 use k8s_openapi::api::core::v1::{Service, ServicePort, ServiceSpec};

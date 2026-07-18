@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **virt-launcher label selectors matched nothing on KubeVirt 1.8** — SSH expose Services, logs-by-VM, OpenCost pod→VM mapping, guest Prometheus discovery, and per-VM metrics selected pods by `kubevirt.io/domain`, a label KubeVirt 1.8 launchers no longer carry (verified on v1.8.4: expose Services had **zero endpoints**). All selector sites now use `vm.kubevirt.io/name` (`kube::VM_NAME_LABEL`), with the legacy label kept as a read fallback for pre-1.8 clusters.
 - **VeyronVM CRD schema pruned valid fields** — `windows` (sysprep/domain-join secret refs), `allowInternet`, and `cloudInit.userDataSecretRef` were missing from the hand-maintained CRD schema (`operator/config/crd/bases/veyron.io_veyronvms.yaml`), so strict clusters silently dropped them; `cloudInit.userData` is no longer required (a secret ref suffices).
 - **Daily-ops E2E false skips** — the Tier-C admin read probes (`platform/versions`, orphan list, …) were sent without the API key and reported misleading "redeploy for Day-2 ops" skips on healthy deployments.
 - **TUI migration assistant drift** — the pre-migration wizard now delegates per-VM checks to the same eligibility guard the API enforces (one source of truth, including GPU blockers).

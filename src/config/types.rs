@@ -141,7 +141,7 @@ pub struct VMConfig {
     /// Machine type (e.g., "q35")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub machine_type: Option<String>,
-    /// When set, Veyron creates a Kubernetes Service targeting the virt-launcher pod (`kubevirt.io/domain`).
+    /// When set, Veyron creates a Kubernetes Service targeting the virt-launcher pod (`vm.kubevirt.io/name`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expose: Option<VmExposeConfig>,
     /// KubeVirt `runStrategy` (`Always`, `Manual`, `RerunOnFailure`, `Halted`). When set, `spec.running` is omitted.

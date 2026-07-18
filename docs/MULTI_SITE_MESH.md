@@ -80,7 +80,18 @@ kubectl exec t1 -- ping -c2 <pod-ip-on-site-1>
 ```
 
 First rehearsal can be a spare box (or a VM) joined as a fake "site-2" before
-rack 2 exists.
+rack 2 exists. This flow was verified end-to-end (2026-07-18) with two KubeVirt
+VMs on the lab node as fake site-1/site-2 — two rehearsal caveats came out of it:
+
+- **`V9S_SKIP_PREFLIGHT=1`** — VMs have no `/dev/kvm`, so the KubeVirt node
+  preflight must be skipped in rehearsal mode. Real workers must pass it.
+- **Guest k3s CIDRs must not collide with the host cluster's.** A rehearsal
+  k3s server inside a KubeVirt VM defaults to service CIDR `10.43.0.0/16` —
+  the same as the host cluster — so the guest's kube-proxy hijacks the host
+  DNS ClusterIP (`10.43.0.10`) that the guest itself resolves through: DNS
+  blackhole. Install the rehearsal server with
+  `--cluster-cidr 10.44.0.0/16 --service-cidr 10.45.0.0/16 --cluster-dns 10.45.0.10`.
+  (Also applies to any real worker that is itself a VM on another KubeVirt cluster.)
 
 ### 4. Storage locality
 

@@ -87,7 +87,8 @@ fn try_extract_allocation(
     }
 }
 
-/// Map virt-launcher pods to VM names via `kubevirt.io/domain` label on running VMIs.
+/// Map virt-launcher pods to VM names via the `vm.kubevirt.io/name` label
+/// (legacy `kubevirt.io/domain` read as a fallback for pre-1.8 clusters).
 #[cfg(feature = "web")]
 pub async fn vm_costs_from_opencost(
     client: &kube::Client,
@@ -100,7 +101,7 @@ pub async fn vm_costs_from_opencost(
     use kube::{Api, api::ListParams};
 
     let pods: Api<Pod> = Api::all(client.clone());
-    let lp = ListParams::default().labels("kubevirt.io/domain");
+    let lp = ListParams::default().labels(crate::kube::VM_NAME_LABEL);
     let pod_items = match pods.list(&lp).await {
         Ok(list) => list.items,
         Err(_) => Vec::new(),
@@ -113,7 +114,10 @@ pub async fn vm_costs_from_opencost(
             .metadata
             .labels
             .as_ref()
-            .and_then(|l| l.get("kubevirt.io/domain"))
+            .and_then(|l| {
+                l.get(crate::kube::VM_NAME_LABEL)
+                    .or_else(|| l.get(crate::kube::VM_NAME_LABEL_LEGACY))
+            })
             .cloned()
             .unwrap_or_default();
         if let Some(&cost) = pod_costs.get(&(ns.clone(), pname)) {

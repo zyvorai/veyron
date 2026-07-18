@@ -32,6 +32,9 @@
 #   V9S_SITE            zone label for site-2 (default site-2)
 #   V9S_K3S_TOKEN       k3s join token (default: read from the server over SSH)
 #   V9S_GPU_PREFLIGHT=1 also run the GPU preflight before joining
+#   V9S_SKIP_PREFLIGHT=1 skip the KubeVirt node preflight — ONLY for mesh
+#                       rehearsals on VMs (no /dev/kvm in a guest); real
+#                       workers must pass preflight
 #
 # WireGuard MTU is pinned to 1420 (1500 - WG overhead); Cilium native routing
 # rides the tunnel and inherits it.
@@ -137,7 +140,9 @@ echo "Joining ${WORKER_USER}@${WORKER_HOST} as a ${SITE} worker (mesh backend: $
 printf '%s\n' "────────────────────────────────────────────────"
 
 # 0) Host preflight first — a worker that can't run VMs is not worth joining.
-if [[ -x "${SCRIPT_DIR}/preflight-node.sh" ]]; then
+if [[ "${V9S_SKIP_PREFLIGHT:-0}" == "1" ]]; then
+  warn "Skipping node preflight (V9S_SKIP_PREFLIGHT=1 — rehearsal mode; real workers must pass it)"
+elif [[ -x "${SCRIPT_DIR}/preflight-node.sh" ]]; then
   PREFLIGHT_ARGS=()
   [[ "${V9S_GPU_PREFLIGHT:-0}" == "1" ]] && PREFLIGHT_ARGS+=(--gpu)
   "${SCRIPT_DIR}/preflight-node.sh" "${PREFLIGHT_ARGS[@]}" "${WORKER_HOST}" "${WORKER_USER}" \

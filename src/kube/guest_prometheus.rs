@@ -183,7 +183,7 @@ fn vm_bound_pvcs(vm: &VirtualMachine) -> Vec<(String, String)> {
 
 async fn virt_launcher_pod_name(client: &Client, namespace: &str, vm_name: &str) -> Option<String> {
     let pods: Api<Pod> = Api::namespaced(client.clone(), namespace);
-    let lp = ListParams::default().labels(&format!("kubevirt.io/domain={vm_name}"));
+    let lp = ListParams::default().labels(&format!("{}={vm_name}", crate::kube::VM_NAME_LABEL));
     let list = pods.list(&lp).await.ok()?;
     list.items.into_iter().find_map(|p| p.metadata.name)
 }

@@ -109,7 +109,7 @@ pub async fn network_lens(client: &KubeClient, namespace: &str, name: &str) -> C
         }
         Ok(None) => r
             .evidence
-            .push("No SSH expose Service (kubevirt.io/domain)".into()),
+            .push("No SSH expose Service (vm.kubevirt.io/name)".into()),
         Err(e) => r.evidence.push(format!("SSH expose lookup: {e}")),
     }
 
