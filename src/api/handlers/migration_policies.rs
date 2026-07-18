@@ -94,6 +94,27 @@ async fn get_migration_policy(
     Ok(Json(v))
 }
 
+/// Validate the payload against the typed spec before the untyped passthrough:
+/// a policy whose spec doesn't parse, or that selects nothing, silently
+/// applies to nothing — better to reject up front. Unknown extra fields are
+/// tolerated (future KubeVirt versions may add knobs).
+#[cfg(feature = "web")]
+fn validate_policy_spec(obj: &DynamicObject) -> Result<(), String> {
+    let spec = obj
+        .data
+        .get("spec")
+        .ok_or_else(|| "missing spec".to_string())?;
+    let typed: crate::kube::types::MigrationPolicySpec = serde_json::from_value(spec.clone())
+        .map_err(|e| format!("spec does not match MigrationPolicy schema: {e}"))?;
+    if typed.selectors.namespace_selector.is_none() && typed.selectors.vmi_selector.is_none() {
+        return Err(
+            "spec.selectors must set namespaceSelector and/or virtualMachineInstanceSelector"
+                .to_string(),
+        );
+    }
+    Ok(())
+}
+
 #[cfg(feature = "web")]
 async fn create_migration_policy(
     State(state): State<SharedState>,
@@ -101,6 +122,10 @@ async fn create_migration_policy(
 ) -> Result<(StatusCode, Json<serde_json::Value>), StatusCode> {
     let obj: DynamicObject = serde_json::from_value(body).map_err(|e| {
         log::warn!("MigrationPolicy create parse: {}", e);
+        StatusCode::BAD_REQUEST
+    })?;
+    validate_policy_spec(&obj).map_err(|e| {
+        log::warn!("MigrationPolicy create rejected: {}", e);
         StatusCode::BAD_REQUEST
     })?;
     let s = state.read().await;
@@ -134,6 +159,10 @@ async fn replace_migration_policy(
     if obj.metadata.name.is_none() {
         obj.metadata.name = Some(name.clone());
     }
+    validate_policy_spec(&obj).map_err(|e| {
+        log::warn!("MigrationPolicy replace rejected: {}", e);
+        StatusCode::BAD_REQUEST
+    })?;
     let s = state.read().await;
     let api = migration_policy_api(s.client().client());
     let replaced = api

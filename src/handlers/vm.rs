@@ -334,6 +334,25 @@ fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
                 })
                 .collect();
         }
+        if let Some(ref gpus) = dev.gpus {
+            config.gpus = gpus
+                .iter()
+                .map(|g| crate::config::VmGpuDevice {
+                    name: g.name.clone(),
+                    device_name: g.device_name.clone(),
+                    virtual_gpu_options: g.virtual_gpu_options.as_ref().map(|o| {
+                        crate::config::VmVgpuOptions {
+                            display: o.display.as_ref().and_then(|d| d.enabled),
+                            ram_fb: o
+                                .display
+                                .as_ref()
+                                .and_then(|d| d.ram_fb.as_ref())
+                                .and_then(|r| r.enabled),
+                        }
+                    }),
+                })
+                .collect();
+        }
         if let Some(ref video) = dev.video {
             let first = video.as_array().and_then(|a| a.first()).unwrap_or(video);
             if let Some(t) = first.get("type").and_then(|v| v.as_str()) {

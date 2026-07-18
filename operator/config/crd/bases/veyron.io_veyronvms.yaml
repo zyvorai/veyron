@@ -256,6 +256,38 @@ spec:
                   type: object
                   additionalProperties:
                     type: string
+                gpus:
+                  type: array
+                  description: |
+                    GPUs bound via KubeVirt domain.devices.gpus (whole-GPU passthrough
+                    or vGPU mediated devices). A VM holding a passthrough GPU can
+                    never live-migrate.
+                  items:
+                    type: object
+                    required: ["name", "deviceName"]
+                    properties:
+                      name:
+                        type: string
+                      deviceName:
+                        type: string
+                      virtualGPUOptions:
+                        type: object
+                        properties:
+                          display:
+                            type: boolean
+                          ramFB:
+                            type: boolean
+                hostDevices:
+                  type: array
+                  description: Generic passthrough host devices (domain.devices.hostDevices).
+                  items:
+                    type: object
+                    required: ["name", "deviceName"]
+                    properties:
+                      name:
+                        type: string
+                      deviceName:
+                        type: string
             status:
               type: object
               properties:

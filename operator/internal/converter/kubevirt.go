@@ -536,6 +536,41 @@ func buildDevices(disks, interfaces []interface{}, spec *veyronv1alpha1.VeyronVM
 		},
 	}
 
+	// GPUs (domain.devices.gpus): whole-GPU passthrough or vGPU mediated devices.
+	if len(spec.GPUs) > 0 {
+		gpus := make([]interface{}, 0, len(spec.GPUs))
+		for _, g := range spec.GPUs {
+			gpu := map[string]interface{}{
+				"name":       g.Name,
+				"deviceName": g.DeviceName,
+			}
+			if g.VirtualGPUOptions != nil {
+				display := map[string]interface{}{}
+				if g.VirtualGPUOptions.Display != nil {
+					display["enabled"] = *g.VirtualGPUOptions.Display
+				}
+				if g.VirtualGPUOptions.RAMFB != nil {
+					display["ramFB"] = map[string]interface{}{"enabled": *g.VirtualGPUOptions.RAMFB}
+				}
+				gpu["virtualGPUOptions"] = map[string]interface{}{"display": display}
+			}
+			gpus = append(gpus, gpu)
+		}
+		devices["gpus"] = gpus
+	}
+
+	// Generic passthrough host devices (domain.devices.hostDevices).
+	if len(spec.HostDevices) > 0 {
+		hostDevices := make([]interface{}, 0, len(spec.HostDevices))
+		for _, h := range spec.HostDevices {
+			hostDevices = append(hostDevices, map[string]interface{}{
+				"name":       h.Name,
+				"deviceName": h.DeviceName,
+			})
+		}
+		devices["hostDevices"] = hostDevices
+	}
+
 	// KubeVirt 1.8+ auto-injects the guest-agent channel; explicit channels fail strict validation.
 	if emitGuestAgentChannels() {
 		devices["channels"] = []interface{}{

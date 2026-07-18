@@ -201,7 +201,28 @@ async fn bulk_action(
             "stop" => kube.stop_vm(&req.namespace, name).await.map(|_| ()),
             "restart" => kube.restart_vm(&req.namespace, name).await.map(|_| ()),
             "delete" => kube.delete_vm(&req.namespace, name).await,
-            "migrate" => kube.migrate_vm(&req.namespace, name, None).await,
+            "migrate" => {
+                // Per-VM eligibility: a passthrough-GPU VM in the batch fails
+                // with the blocker text instead of silently "succeeding" into
+                // a doomed migration. Probe failure never blocks.
+                let blocked = match kube
+                    .migration_eligibility(&req.namespace, name, Default::default())
+                    .await
+                {
+                    Ok(elig) if !elig.eligible => Some(
+                        elig.blockers
+                            .iter()
+                            .map(|b| b.message.as_str())
+                            .collect::<Vec<_>>()
+                            .join("; "),
+                    ),
+                    _ => None,
+                };
+                match blocked {
+                    Some(msg) => Err(anyhow::anyhow!("migration blocked: {msg}")),
+                    None => kube.migrate_vm(&req.namespace, name, None).await,
+                }
+            }
             _ => unreachable!(),
         };
         results.push(match r {

@@ -45,6 +45,9 @@ pub struct CreateMigrationRequest {
     pub vm_name: String,
     pub target_node: Option<String>,
     pub migration_type: Option<String>,
+    /// Bypass the eligibility gate (KubeVirt still enforces its own rules).
+    #[serde(default)]
+    pub force: bool,
 }
 
 #[cfg(feature = "web")]
@@ -122,8 +125,31 @@ async fn list_migrations(State(state): State<SharedState>) -> Json<Vec<Migration
 async fn create_migration(
     State(state): State<SharedState>,
     Json(req): Json<CreateMigrationRequest>,
-) -> Result<Json<MigrationResponse>, StatusCode> {
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
     let s = state.read().await;
+    // Eligibility gate: passthrough-GPU / non-migratable VMs get a structured
+    // 409 instead of a doomed migration object. Probe failure never blocks.
+    if !req.force {
+        if let Ok(elig) = s
+            .client()
+            .migration_eligibility(&s.namespace, &req.vm_name, Default::default())
+            .await
+        {
+            if !elig.eligible {
+                return (
+                    StatusCode::CONFLICT,
+                    Json(serde_json::json!({
+                        "error": "MIGRATION_BLOCKED",
+                        "blockers": elig.blockers,
+                        "warnings": elig.warnings,
+                        "suggestion": elig.blockers.iter().find_map(|b| b.suggestion.clone()),
+                    })),
+                )
+                    .into_response();
+            }
+        }
+    }
     // Look up the current node of the VMI before triggering migration
     let source_node = s
         .client()
@@ -154,7 +180,7 @@ async fn create_migration(
         .migrate_vm(&s.namespace, &req.vm_name, mopts)
         .await
     {
-        Ok(()) => Ok(Json(MigrationResponse {
+        Ok(()) => Json(MigrationResponse {
             id: format!(
                 "{}-migration-{}",
                 req.vm_name,
@@ -170,8 +196,9 @@ async fn create_migration(
             progress_percent: 0,
             started_at: Some(chrono::Utc::now().to_rfc3339()),
             completed_at: None,
-        })),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        })
+        .into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 

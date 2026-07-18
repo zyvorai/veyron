@@ -375,6 +375,24 @@ YAML
     fi
 }
 
+install_gpu_passthrough() {
+    echo ""
+    if ! should_install V9S_INSTALL_GPU_PASSTHROUGH; then
+        info "skip GPU passthrough (set V9S_INSTALL_GPU_PASSTHROUGH=1; nodes need prepare-gpu-node.sh first)"
+        return
+    fi
+    # Delegates to the dedicated script so the single-entry-point UX and the
+    # standalone flow share one implementation. --apply: this installer only
+    # runs when the operator explicitly opted in.
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [[ -x "${script_dir}/enable-gpu-passthrough.sh" ]]; then
+        "${script_dir}/enable-gpu-passthrough.sh" --apply
+    else
+        info "enable-gpu-passthrough.sh not found next to this script — skipping"
+    fi
+}
+
 main() {
     preflight
     install_cilium
@@ -387,8 +405,9 @@ main() {
     install_rook_ceph
     install_prometheus
     install_metallb
+    install_gpu_passthrough
     echo ""
-    info "Done. metrics-server: on by default (V9S_INSTALL_METRICS_SERVER=0 or V9S_SKIP_METRICS_SERVER=1 to skip). Optional: V9S_INSTALL_MULTUS, V9S_INSTALL_SNAPSHOT_CONTROLLER, V9S_INSTALL_ROOK_CEPH, V9S_INSTALL_METALLB, V9S_INSTALL_PROMETHEUS."
+    info "Done. metrics-server: on by default (V9S_INSTALL_METRICS_SERVER=0 or V9S_SKIP_METRICS_SERVER=1 to skip). Optional: V9S_INSTALL_MULTUS, V9S_INSTALL_SNAPSHOT_CONTROLLER, V9S_INSTALL_ROOK_CEPH, V9S_INSTALL_METALLB, V9S_INSTALL_PROMETHEUS, V9S_INSTALL_GPU_PASSTHROUGH."
 }
 
 main "$@"

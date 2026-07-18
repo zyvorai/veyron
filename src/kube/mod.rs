@@ -3,6 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 pub mod converter;
+pub mod gpu_inventory;
 pub mod guest_filesystem;
 pub mod guest_os;
 #[cfg(feature = "web")]
@@ -26,7 +27,9 @@ pub mod guest_prometheus {
     }
 }
 pub mod kubevirt_subresources;
+pub mod migration_guard;
 pub mod status;
+pub mod storage_caps;
 pub mod types;
 pub mod vm_data_disk;
 pub mod vm_internet;
@@ -1162,6 +1165,24 @@ impl KubeClient {
     pub async fn unpause_vm(&self, namespace: &str, name: &str) -> Result<()> {
         let vmi = self.resolve_vmi_name_for_console(namespace, name).await?;
         kubevirt_subresources::vmi_unpause(self.client.clone(), namespace, &vmi).await
+    }
+
+    /// Evaluate whether a VM can live-migrate right now (passthrough devices,
+    /// VMI phase, KubeVirt's own `LiveMigratable` verdict). Callers gate
+    /// migration on `eligible` unless the user forces.
+    pub async fn migration_eligibility(
+        &self,
+        namespace: &str,
+        name: &str,
+        caps: migration_guard::ClusterMigrationCaps,
+    ) -> Result<migration_guard::MigrationEligibility> {
+        let vm = self.get_vm(namespace, name).await?;
+        let vmi = self.get_vmi(namespace, name).await.ok();
+        Ok(migration_guard::evaluate_eligibility(
+            &vm,
+            vmi.as_ref(),
+            caps,
+        ))
     }
 
     /// Trigger live migration of a VM to another node.

@@ -13,6 +13,7 @@ pub use types::{
     BootloaderType, CPUConfig, ClockConfig, CloudInitConfig, CloudInitDelivery, DiskConfig,
     DiskDeviceType, DiskSource, FeaturesConfig, FirmwareConfig, HyperVConfig, InterfaceConfig,
     MemoryConfig, NetworkType, SysprepConfig, TimersConfig, VMConfig, VmExposeConfig, VmExposePort,
-    VmHostDevice, VmMatcherRef, VmScheduling, VmVirtioFs, VmWatchdogConfig,
+    VmGpuDevice, VmHostDevice, VmMatcherRef, VmScheduling, VmVgpuOptions, VmVirtioFs,
+    VmWatchdogConfig,
 };
 pub use validator::validate_vm_config;

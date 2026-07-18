@@ -28,6 +28,7 @@ pub mod experience;
 pub mod feature_context;
 pub mod forecasting;
 pub mod gitops;
+pub mod gpus;
 pub mod guest_ops;
 pub mod health;
 pub mod heatmap;
@@ -120,6 +121,7 @@ pub fn all_routes(
         .merge(costs::router(state.clone()))
         .merge(crds::router(state.clone()))
         .merge(logs::router(state.clone()))
+        .merge(gpus::router(state.clone()))
         .merge(migrations::router(state.clone()))
         .merge(migration_policies::router(state.clone()))
         .merge(storage::router(state.clone()))

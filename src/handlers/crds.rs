@@ -377,6 +377,8 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VeyronVMSpe
         annotations: std::collections::HashMap::new(),
         allow_internet: !args.no_internet,
         windows: None,
+        gpus: Vec::new(),
+        host_devices: Vec::new(),
     })
 }
 

@@ -100,6 +100,10 @@ pub struct VmInfo {
     /// True when VMI reports AgentConnected=True condition.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub guest_agent_connected: Option<bool>,
+    /// Passthrough devices attached (`devices.gpus` + `devices.hostDevices`).
+    /// Non-zero means the VM can never live-migrate.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gpu_count: Option<u32>,
 }
 
 impl VmInfo {
@@ -211,6 +215,19 @@ impl VmInfo {
         // IP is not available in VM spec/status - needs VMI status
         let ip = "N/A".to_string();
 
+        let gpu_count = vm
+            .spec
+            .template
+            .spec
+            .domain
+            .devices
+            .as_ref()
+            .map(|d| {
+                (d.gpus.as_ref().map(|g| g.len()).unwrap_or(0)
+                    + d.host_devices.as_ref().map(|h| h.len()).unwrap_or(0)) as u32
+            })
+            .filter(|n| *n > 0);
+
         Self {
             name,
             namespace,
@@ -226,6 +243,7 @@ impl VmInfo {
             drift_detected: None,
             drift_message: None,
             guest_agent_connected: None,
+            gpu_count,
         }
     }
 

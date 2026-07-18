@@ -94,6 +94,7 @@ flowchart LR
 |------|----------|
 | Docs index | [docs/README.md](docs/README.md) |
 | User stories | [docs/USER_STORIES.md](docs/USER_STORIES.md) |
+| GPU cloud roadmap (passthrough → vGPU) | [docs/NEO_CLOUD_GPU_ROADMAP.md](docs/NEO_CLOUD_GPU_ROADMAP.md) |
 | OpenAPI | Embedded in API server |
 
 ## Zyvor Platform Stack
