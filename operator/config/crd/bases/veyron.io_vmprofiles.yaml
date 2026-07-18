@@ -57,6 +57,26 @@ spec:
                   type: string
                 diskSize:
                   type: string
+                gpus:
+                  type: array
+                  description: |
+                    GPUs granted by this profile (KubeVirt domain.devices.gpus).
+                    A VM holding a passthrough GPU can never live-migrate.
+                  items:
+                    type: object
+                    required: ["name", "deviceName"]
+                    properties:
+                      name:
+                        type: string
+                      deviceName:
+                        type: string
+                      virtualGPUOptions:
+                        type: object
+                        properties:
+                          display:
+                            type: boolean
+                          ramFB:
+                            type: boolean
                 useCases:
                   type: array
                   items:

@@ -133,7 +133,11 @@ async fn create_migration(
     if !req.force {
         if let Ok(elig) = s
             .client()
-            .migration_eligibility(&s.namespace, &req.vm_name, Default::default())
+            .migration_eligibility(
+                &s.namespace,
+                &req.vm_name,
+                crate::kube::migration_guard::ClusterMigrationCaps::from_env(),
+            )
             .await
         {
             if !elig.eligible {

@@ -79,6 +79,8 @@ _From a blank cluster to a running fleet without hand-writing manifests._
   - **How:** CLI: `veyron wizard my-vm` (alias `veyron wiz`) for the guided flow; `veyron batch some-batch.yaml --dry-run` for bulk. Web: New VM wizard.
 - **Clone, Export & Dry-Run** — Duplicate an existing VM, export any VM as a manifest, or preview the generated resource before it touches the cluster. — _Reproduce known-good VMs and review exactly what will be applied first._
   - **How:** CLI: `veyron clone source-vm cloned-vm --start`; `veyron generate my-vm --template fedora-40 --kubevirt` (alias `veyron gen`) to export; add `--dry-run` to any create/deploy.
+- **GPU VMs (Passthrough)** — Attach whole NVIDIA GPUs to VMs via PCI passthrough with automatic driver-friendly settings (KVM hidden for NVIDIA), a per-node GPU inventory, and a create-time check that the cluster can actually satisfy the request. — _Run CUDA, rendering, or AI workloads in isolated VMs on your own GPUs, no licensing required._
+  - **How:** CLI: `veyron create gpu-01 --template ubuntu-22.04 --gpu 1`. API: `POST /api/v1/vms` with `"gpu": {"count": 1}`. Web: Forge wizard GPU picker (appears when the cluster has GPUs); Nodes page → GPU Inventory. Cluster prep: `docs/GPU_PASSTHROUGH.md`. Note: passthrough GPU VMs use stop/start moves — live migration is physically impossible and Veyron will tell you so instead of failing silently.
 
 > Templates resolve from an embedded catalog for offline CLI use and from cluster VMTemplate/VMProfile CRDs for GitOps — the operator and CLI agree on names.
 
@@ -124,6 +126,8 @@ _Move workloads between nodes and keep critical VMs running through maintenance.
   - **How:** CLI: `veyron ha-config my-vm --enable --priority critical --eviction-strategy live-migrate`; check with `veyron ha-status`.
 - **Migration Tracking & Policies** — Watch live migration progress and manage KubeVirt migration policies from the scheduling surface. — _Know exactly where a migration is and enforce fleet-wide migration guardrails._
   - **How:** CLI: `veyron migration-status my-vm --watch`, `veyron migration-list -A`. Web: Scheduling page. API: `GET /api/v1/vms/:ns/:name/migrations`.
+- **Migration Eligibility Guard** — Every migration request is pre-checked: passthrough GPUs, stopped instances, and KubeVirt's own non-migratable verdicts are refused up front with the exact reason and the recommended alternative (e.g. a stop/start cold move). — _No more migrations that silently spin forever — you learn immediately why a VM can't move and what to do instead._
+  - **How:** Automatic on every migrate (API returns a structured 409 with `blockers[]`; dashboard shows the reason as a toast). Bypass with `"force": true` when you know better.
 
 ## 5. Storage & Disks
 

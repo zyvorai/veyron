@@ -49,6 +49,39 @@ func TestBlueprintOverrideCPU(t *testing.T) {
 	}
 }
 
+func TestProfileGrantsGpusButVmWins(t *testing.T) {
+	r := &Resolver{}
+	ctx := t.Context()
+	embeddedProfiles["gpu-test"] = veyronv1alpha1.VMProfileSpec{
+		Cores:  8,
+		Memory: "16Gi",
+		GPUs: []veyronv1alpha1.GPUSpec{
+			{Name: "gpu0", DeviceName: "nvidia.com/gpu"},
+		},
+	}
+	defer delete(embeddedProfiles, "gpu-test")
+
+	out, err := r.ResolveSpec(ctx, "", "gpu-test", veyronv1alpha1.VeyronVMSpec{}, BlueprintOverrides{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.GPUs) != 1 || out.GPUs[0].DeviceName != "nvidia.com/gpu" {
+		t.Fatalf("expected profile GPU to be granted, got %#v", out.GPUs)
+	}
+
+	// A VM that already declares its own GPUs keeps them.
+	base := veyronv1alpha1.VeyronVMSpec{
+		GPUs: []veyronv1alpha1.GPUSpec{{Name: "mine", DeviceName: "nvidia.com/GRID_T4-2Q"}},
+	}
+	out, err = r.ResolveSpec(ctx, "", "gpu-test", base, BlueprintOverrides{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.GPUs) != 1 || out.GPUs[0].Name != "mine" {
+		t.Fatalf("expected explicit VM GPUs to win over profile, got %#v", out.GPUs)
+	}
+}
+
 func TestSpecHashStable(t *testing.T) {
 	spec := ubuntu2204Default()
 	h1, err := SpecHash(spec)

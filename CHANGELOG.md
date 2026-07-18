@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **CLI `--gpu` flag** — `veyron create` and `veyron vrvm-create` accept `--gpu <count | resource | resource:count>` (e.g. `--gpu 1`, `--gpu nvidia.com/GRID_T4-2Q:2`).
+- **GPU-granting VMProfiles** — `VMProfile.spec.gpus` lets a catalog profile (e.g. `gpu-large`) attach GPUs; a VM's own explicit `gpus` win over the profile's (`operator/internal/catalog/resolver.go`).
+- **vGPU migration attestation** — `VEYRON_VGPU_LIVE_MIGRATION=1` (explicit operator attestation; upstream KubeVirt ≤1.8 cannot migrate mdev VMIs, so this is never auto-derived) relaxes the migration gate for vGPU-only VMs and surfaces `day2_ops.vgpu_live_migration` in platform capabilities.
+- **E2E GPU coverage** — `test-vm-daily-ops-remote.sh` gains a GPU inventory check, a 422-preflight assertion on GPU-less clusters, and a conditional Tier D GPU-VM lifecycle (create → migrate must 409 → delete) that activates when the cluster advertises GPU resources.
+- **Customer feature guide** — GPU VMs (Passthrough) and Migration Eligibility Guard sections (md + html + regenerated PDF; 58 features).
+
+### Fixed
+
+- **VeyronVM CRD schema pruned valid fields** — `windows` (sysprep/domain-join secret refs), `allowInternet`, and `cloudInit.userDataSecretRef` were missing from the hand-maintained CRD schema (`operator/config/crd/bases/veyron.io_veyronvms.yaml`), so strict clusters silently dropped them; `cloudInit.userData` is no longer required (a secret ref suffices).
+- **Daily-ops E2E false skips** — the Tier-C admin read probes (`platform/versions`, orphan list, …) were sent without the API key and reported misleading "redeploy for Day-2 ops" skips on healthy deployments.
+- **TUI migration assistant drift** — the pre-migration wizard now delegates per-VM checks to the same eligibility guard the API enforces (one source of truth, including GPU blockers).
+- **`join-remote-worker.sh` on non-Debian hosts** — wireguard-tools install now falls back to dnf/yum/zypper.
+
 - **GPU VMs (passthrough)** — first-class KubeVirt `domain.devices.gpus` support end-to-end: `gpus`/`gpu` on `POST /api/v1/vms` (with `vgpu_profile` sugar and a 422 preflight when no node advertises the resource; `"force": true` overrides), `VMConfig.gpus` + `add_gpu()` builder, operator `VeyronVM.spec.gpus`/`hostDevices`, and automatic KVM-hidden for NVIDIA passthrough. `GET /api/v1/gpus` reports the per-node GPU inventory (passthrough/MIG/vGPU classification); `GET /api/v1/platform/capabilities` gains `day2_ops.gpu_passthrough`, `day2_ops.vgpu`, `nodes.gpu_capable`, and a `gpus` section (resource totals + KubeVirt `permittedHostDevices` counts).
 - **Migration eligibility gate** — `POST /vms/:ns/:name/migrate`, `POST /migrations`, and bulk `migrate` now consult a per-VM eligibility check (passthrough GPU/host devices, VMI phase, KubeVirt's `LiveMigratable` condition) and return **409 with a structured blocker list** (code/message/cold-move suggestion) instead of firing a doomed migration. Pass `"force": true` to bypass.
 - **Typed MigrationPolicy validation** — `POST/PUT /api/v1/kubevirt/migration-policies` payloads are validated against a typed `migrations.kubevirt.io/v1alpha1` spec (must select something) before the passthrough apply.

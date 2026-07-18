@@ -247,6 +247,13 @@ func (in *VMProfileList) DeepCopyObject() runtime.Object {
 
 func (in *VMProfileSpec) DeepCopyInto(out *VMProfileSpec) {
 	*out = *in
+	if in.GPUs != nil {
+		in, out := &in.GPUs, &out.GPUs
+		*out = make([]GPUSpec, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.UseCases != nil {
 		in, out := &in.UseCases, &out.UseCases
 		*out = make([]string, len(*in))

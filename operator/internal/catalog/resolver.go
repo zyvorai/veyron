@@ -66,6 +66,10 @@ func (r *Resolver) ResolveSpec(
 		if prof.DiskSize != "" && len(out.Disks) > 0 {
 			out.Disks[0].Size = prof.DiskSize
 		}
+		// Profile-granted GPUs; the VM's own explicit gpus win.
+		if len(prof.GPUs) > 0 && len(out.GPUs) == 0 {
+			out.GPUs = append([]veyronv1alpha1.GPUSpec(nil), prof.GPUs...)
+		}
 		out.Profile = profileName
 	}
 

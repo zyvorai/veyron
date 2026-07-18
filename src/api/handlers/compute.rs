@@ -206,7 +206,11 @@ async fn bulk_action(
                 // with the blocker text instead of silently "succeeding" into
                 // a doomed migration. Probe failure never blocks.
                 let blocked = match kube
-                    .migration_eligibility(&req.namespace, name, Default::default())
+                    .migration_eligibility(
+                        &req.namespace,
+                        name,
+                        crate::kube::migration_guard::ClusterMigrationCaps::from_env(),
+                    )
                     .await
                 {
                     Ok(elig) if !elig.eligible => Some(

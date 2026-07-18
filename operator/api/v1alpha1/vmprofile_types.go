@@ -33,6 +33,12 @@ type VMProfileSpec struct {
 	// Root disk size (e.g. "40Gi").
 	DiskSize string `json:"diskSize"`
 
+	// GPUs granted by this profile (KubeVirt domain.devices.gpus). A VM using
+	// a GPU profile can never live-migrate while it holds a passthrough GPU.
+	// The VM's own explicit gpus win over the profile's.
+	// +optional
+	GPUs []GPUSpec `json:"gpus,omitempty"`
+
 	// Use cases for this profile.
 	// +optional
 	UseCases []string `json:"useCases,omitempty"`

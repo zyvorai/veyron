@@ -526,6 +526,31 @@ fn load_or_create_config(
     }
 }
 
+/// Parse the CLI `--gpu` spec: `"2"` (count of nvidia.com/gpu),
+/// `"nvidia.com/gpu"` (one of that resource), or `"RESOURCE:COUNT"`.
+pub(crate) fn parse_gpu_spec(spec: &str) -> Result<(String, u32)> {
+    let spec = spec.trim();
+    if spec.is_empty() {
+        return Err(anyhow!("--gpu spec cannot be empty"));
+    }
+    if let Ok(count) = spec.parse::<u32>() {
+        if count == 0 {
+            return Err(anyhow!("--gpu count must be at least 1"));
+        }
+        return Ok(("nvidia.com/gpu".to_string(), count));
+    }
+    // RESOURCE:COUNT — split on the LAST ':' so resource names keep theirs.
+    if let Some((resource, count_str)) = spec.rsplit_once(':') {
+        if let Ok(count) = count_str.parse::<u32>() {
+            if count == 0 {
+                return Err(anyhow!("--gpu count must be at least 1"));
+            }
+            return Ok((resource.to_string(), count));
+        }
+    }
+    Ok((spec.to_string(), 1))
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn handle_create(
     name: String,
@@ -538,6 +563,7 @@ pub async fn handle_create(
     container_disk: Option<String>,
     cloud_init: Option<String>,
     no_internet: bool,
+    gpu: Option<String>,
     dry_run: bool,
     output: String,
     namespace: &str,
@@ -558,6 +584,16 @@ pub async fn handle_create(
     )?;
     if no_internet {
         config.allow_internet = false;
+    }
+    if let Some(ref spec) = gpu {
+        let (resource, count) = parse_gpu_spec(spec)?;
+        for i in 0..count {
+            config.gpus.push(crate::config::VmGpuDevice {
+                name: format!("gpu{i}"),
+                device_name: resource.clone(),
+                virtual_gpu_options: None,
+            });
+        }
     }
     validate_vm_config(&config)?;
 
@@ -3248,5 +3284,27 @@ mod tests {
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("Template not found"));
+    }
+
+    #[test]
+    fn test_parse_gpu_spec() {
+        assert_eq!(
+            parse_gpu_spec("2").unwrap(),
+            ("nvidia.com/gpu".to_string(), 2)
+        );
+        assert_eq!(
+            parse_gpu_spec("nvidia.com/gpu").unwrap(),
+            ("nvidia.com/gpu".to_string(), 1)
+        );
+        assert_eq!(
+            parse_gpu_spec("nvidia.com/GRID_T4-2Q:2").unwrap(),
+            ("nvidia.com/GRID_T4-2Q".to_string(), 2)
+        );
+        assert_eq!(
+            parse_gpu_spec("amd.com/gpu").unwrap(),
+            ("amd.com/gpu".to_string(), 1)
+        );
+        assert!(parse_gpu_spec("0").is_err());
+        assert!(parse_gpu_spec("").is_err());
     }
 }

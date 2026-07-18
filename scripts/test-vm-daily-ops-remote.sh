@@ -204,7 +204,8 @@ curl_api PUT "/api/v1/vms/${NS}/x/run-strategy" '{"strategy":"Bogus"}'
 curl_api POST "/api/v1/vms/bulk" '{"action":"nope","namespace":"'"${NS}"'","names":["a"]}'
 [[ "${_CURL_CODE}" == "400" ]] && pass "bulk invalid action → 400" || skip "bulk validation (HTTP ${_CURL_CODE})"
 
-# Read/dry-run endpoints (safe)
+# Read/dry-run endpoints (safe). Authenticated: these are admin-gated reads,
+# so probing without the key just proves the auth wall (fixed 401 false-skips).
 for chk in \
     "GET|/api/v1/capacity/headroom|capacity headroom" \
     "GET|/api/v1/platform/versions|platform versions" \
@@ -212,9 +213,28 @@ for chk in \
     "GET|/api/v1/self-healing/policy|self-healing policy" \
     "GET|/api/v1/storage/orphans|orphan list" ; do
     IFS='|' read -r m path label <<< "${chk}"
-    curl_api "${m}" "${path}" '' no
+    curl_api "${m}" "${path}"
     [[ "${_CURL_CODE}" == "200" ]] && pass "${label} → 200" || skip "${label} (redeploy for Day-2 ops; HTTP ${_CURL_CODE})"
 done
+
+# GPU surface: inventory + create preflight (no VM mutated on GPU-less clusters)
+GPU_TOTAL=0
+curl_api GET "/api/v1/gpus"
+if [[ "${_CURL_CODE}" == "200" ]]; then
+    GPU_TOTAL="$(echo "${_CURL_BODY}" | grep -o '"total_allocatable"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo 0)"
+    pass "GPU inventory → 200 (${GPU_TOTAL} allocatable)"
+else
+    skip "GPU inventory (redeploy for GPU support; HTTP ${_CURL_CODE})"
+fi
+if [[ "${_CURL_CODE}" == "200" && "${GPU_TOTAL:-0}" -eq 0 ]]; then
+    # A GPU-less cluster must refuse GPU VM creates up front.
+    curl_api POST "/api/v1/vms" '{"name":"veyron-e2e-gpu-preflight","template":"ubuntu-22.04","namespace":"'"${NS}"'","gpu":{"count":1}}'
+    if [[ "${_CURL_CODE}" == "422" ]] && body_error_code "${_CURL_BODY}" "GPU_RESOURCE_UNAVAILABLE"; then
+        pass "GPU create preflight → 422 GPU_RESOURCE_UNAVAILABLE"
+    else
+        fail "GPU create preflight (expected 422 GPU_RESOURCE_UNAVAILABLE, got ${_CURL_CODE})" "$(echo "${_CURL_BODY}" | head -c 300)"
+    fi
+fi
 
 # Self-healing evaluate (dry run) + upgrade dry run — non-mutating
 curl_api POST "/api/v1/self-healing/run"
@@ -488,6 +508,38 @@ EOF
             fi
             curl_api POST "/api/v1/snapshots/${NS}/${SNAP_NAME}/delete" '{}' >/dev/null 2>&1 || true
         fi
+    fi
+fi
+
+# ═══════════════════════════════════════════════
+# Tier D — GPU VM lifecycle (only when the cluster advertises GPU resources)
+# ═══════════════════════════════════════════════
+if [[ "${GPU_TOTAL:-0}" -gt 0 && "${SKIP_TIER_B}" != "1" ]]; then
+    tier "Tier D — GPU VM lifecycle (${GPU_TOTAL} GPU(s) advertised)"
+    GPU_VM="veyron-e2e-gpu-${TS}"
+    curl_api POST "/api/v1/vms" '{"name":"'"${GPU_VM}"'","namespace":"'"${NS}"'","template":"ubuntu-22.04","cpus":1,"memory":"1Gi","gpu":{"count":1},"start":true}'
+    if body_success "${_CURL_BODY}"; then
+        pass "POST create GPU VM ${GPU_VM}"
+        # A passthrough-GPU VM must be refused live migration with the guard's 409.
+        curl_api POST "/api/v1/vms/${NS}/${GPU_VM}/migrate"
+        if [[ "${_CURL_CODE}" == "409" ]] && echo "${_CURL_BODY}" | grep -q "GPU_PASSTHROUGH_NOT_MIGRATABLE"; then
+            pass "GPU VM migrate → 409 GPU_PASSTHROUGH_NOT_MIGRATABLE"
+        else
+            fail "GPU VM migrate gate (expected 409 with GPU blocker, got ${_CURL_CODE})" "$(echo "${_CURL_BODY}" | head -c 300)"
+        fi
+        # Spec must carry the KubeVirt gpus device (deviceName, not resourceName).
+        curl_api GET "/api/v1/vms/${NS}/${GPU_VM}"
+        if echo "${_CURL_BODY}" | grep -q '"gpu_count"'; then
+            pass "GPU VM reports gpu_count in VM info"
+        else
+            skip "GPU VM gpu_count not present in VM info"
+        fi
+        curl_api POST "/api/v1/vms/${NS}/${GPU_VM}/stop" '{}' >/dev/null 2>&1 || true
+        sleep 5
+        curl_api DELETE "/api/v1/vms/${NS}/${GPU_VM}"
+        body_success "${_CURL_BODY}" && pass "DELETE GPU VM ${GPU_VM}" || fail "DELETE GPU VM" "$(echo "${_CURL_BODY}" | head -c 200)"
+    else
+        fail "POST create GPU VM" "$(echo "${_CURL_BODY}" | head -c 300)"
     fi
 fi
 

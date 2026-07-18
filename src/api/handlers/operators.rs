@@ -254,6 +254,11 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
     // external device plugins set externalResourceProvider instead).
     let gpu_passthrough = gpu_allocatable_total > 0 && (permitted_pci > 0 || permitted_mdev > 0);
     let vgpu = vgpu_resource_present && permitted_mdev > 0;
+    // Upstream KubeVirt (≤1.8) cannot live-migrate mdev VMIs, so this is never
+    // auto-derived: it requires vGPU resources present AND the operator's
+    // explicit attestation that the stack was verified (Phase 2).
+    let vgpu_live_migration =
+        vgpu && crate::kube::migration_guard::ClusterMigrationCaps::from_env().vgpu_live_migration;
 
     // --- Derived, first-class capability flags ---
     // Live migration needs somewhere to migrate *to* and shared RWX storage.
@@ -283,6 +288,7 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
             // possible — only vGPU VMs can move (Phase 2, license-gated).
             "gpu_passthrough": gpu_passthrough,
             "vgpu": vgpu,
+            "vgpu_live_migration": vgpu_live_migration,
             // These are unconditional (plain API/subresource calls).
             "node_cordon": true, "run_strategy": true, "bulk_actions": true,
             "drift_remediation": true, "self_healing": true, "guest_ops_if_agent": true

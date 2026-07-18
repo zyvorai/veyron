@@ -88,6 +88,7 @@ fn build_profile_crd(profile: &crate::profiles::Profile) -> VMProfile {
             threads: profile.cpu_threads,
             memory: profile.memory.clone(),
             disk_size: profile.disk_size.clone(),
+            gpus: vec![],
             use_cases: profile.use_cases.clone(),
             recommended_templates: profile.recommended_os.clone(),
         },

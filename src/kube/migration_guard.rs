@@ -23,6 +23,22 @@ pub struct ClusterMigrationCaps {
     pub vgpu_live_migration: bool,
 }
 
+impl ClusterMigrationCaps {
+    /// Resolve the caps for this cluster. Upstream KubeVirt (≤1.8) does not
+    /// live-migrate mdev-attached VMIs, so there is nothing safe to
+    /// auto-detect: vGPU migration is enabled only by explicit operator
+    /// attestation via `VEYRON_VGPU_LIVE_MIGRATION=1`, set after verifying the
+    /// vGPU host-driver + KubeVirt combination actually migrates (Phase 2).
+    pub fn from_env() -> Self {
+        Self {
+            vgpu_live_migration: matches!(
+                std::env::var("VEYRON_VGPU_LIVE_MIGRATION").as_deref(),
+                Ok("1") | Ok("true") | Ok("yes")
+            ),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MigrationBlocker {
     /// Stable machine-readable code, e.g. `GPU_PASSTHROUGH_NOT_MIGRATABLE`.
