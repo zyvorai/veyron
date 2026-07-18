@@ -219,7 +219,10 @@ deploy_ssh "${USER}@${HOST}" "
       ${K} get crd virtualmachines.kubevirt.io &>/dev/null || { echo 'KubeVirt CRD virtualmachines.kubevirt.io not found'; exit 1; }
     fi
 
-    for crd_yaml in ${REMOTE_DIR}/operator/config/crd/bases/veyron.io_vmtemplates.yaml ${REMOTE_DIR}/operator/config/crd/bases/veyron.io_vmprofiles.yaml; do
+    # Apply ALL operator CRDs (not just the catalog pair) so schema updates —
+    # e.g. veyronvms gaining gpus/windows/allowInternet — reach the cluster on
+    # every deploy path, matching deploy-all-remote.sh step 4.
+    for crd_yaml in ${REMOTE_DIR}/operator/config/crd/bases/*.yaml; do
       if [[ -f \"\${crd_yaml}\" ]]; then
         ${K} apply -f \"\${crd_yaml}\"
       fi
