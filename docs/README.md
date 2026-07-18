@@ -12,6 +12,14 @@ Veyron — Kubernetes-native KubeVirt VM command center
 | **Ask Zeus AI assistant** | [VEYRON_AI.md](VEYRON_AI.md) |
 | **User journeys & acceptance criteria** | [User Stories](USER_STORIES.md) |
 
+## Infrastructure & Cluster
+
+| Goal | Document |
+|------|----------|
+| **GPU cloud strategy & phase roadmap** | [NEO_CLOUD_GPU_ROADMAP.md](NEO_CLOUD_GPU_ROADMAP.md) |
+| **GPU passthrough runbook** (vfio → permittedHostDevices → GPU VM) | [GPU_PASSTHROUGH.md](GPU_PASSTHROUGH.md) |
+| **Two-rack WireGuard mesh** (join site-2 workers, storage locality) | [MULTI_SITE_MESH.md](MULTI_SITE_MESH.md) |
+
 ## Dashboard & Testing
 
 | Task | Command / doc |

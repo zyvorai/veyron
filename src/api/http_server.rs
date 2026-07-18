@@ -2955,6 +2955,50 @@ pub mod web {
         added_node_selector: Option<std::collections::BTreeMap<String, String>>,
         #[serde(default)]
         priority: Option<String>,
+        /// Bypass the eligibility gate (KubeVirt will still enforce its own rules).
+        #[serde(default)]
+        force: bool,
+    }
+
+    /// 409 with the structured blocker list — migration is prevented by VM
+    /// state (passthrough GPU, not running, KubeVirt LiveMigratable=False),
+    /// not by a malformed request.
+    fn migration_blocked_json(
+        name: &str,
+        elig: &crate::kube::migration_guard::MigrationEligibility,
+    ) -> (StatusCode, Json<serde_json::Value>) {
+        let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/migrate");
+        let summary = elig
+            .blockers
+            .iter()
+            .map(|b| b.message.as_str())
+            .collect::<Vec<_>>()
+            .join("; ");
+        let suggestion = elig.blockers.iter().find_map(|b| b.suggestion.clone());
+        let resp = crate::api::ApiResponse::<serde_json::Value> {
+            status: 409,
+            success: false,
+            data: Some(serde_json::json!({
+                "eligible": false,
+                "blockers": elig.blockers,
+                "warnings": elig.warnings,
+                "suggestion": suggestion,
+            })),
+            error: Some(crate::api::ApiError {
+                code: "MIGRATION_BLOCKED".to_string(),
+                message: format!("VM '{name}' cannot live-migrate: {summary}"),
+                details: suggestion,
+            }),
+            metadata: crate::api::ResponseMetadata {
+                request_id: ctx.request_id.clone(),
+                timestamp: chrono::Utc::now(),
+                duration_ms: None,
+            },
+        };
+        (
+            StatusCode::CONFLICT,
+            Json(serde_json::to_value(&resp).unwrap_or_default()),
+        )
     }
 
     async fn migrate_vm_handler(
@@ -2985,6 +3029,19 @@ pub mod web {
             Some(opts)
         };
         let client = { state.read().await.kube_client.clone() };
+        // Eligibility gate: a passthrough-GPU VM (or one KubeVirt itself marks
+        // non-migratable) would otherwise enter a doomed migration loop. A
+        // failed *probe* never blocks — only a definitive "not eligible" does.
+        if !req.force {
+            if let Ok(elig) = client
+                .migration_eligibility(&ns, &name, Default::default())
+                .await
+            {
+                if !elig.eligible {
+                    return migration_blocked_json(&name, &elig);
+                }
+            }
+        }
         match client.migrate_vm(&ns, &name, mopts).await {
             Ok(_) => {
                 let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/migrate");
@@ -3521,6 +3578,41 @@ pub mod web {
         sysprep_secret: Option<String>,
         #[serde(default)]
         sysprep_config_map: Option<String>,
+        /// Explicit GPU devices (KubeVirt `domain.devices.gpus`); wins over `gpu`.
+        #[serde(default)]
+        gpus: Option<Vec<CreateVmGpuReq>>,
+        /// GPU shorthand: `{"gpu": {"count": 1}}` attaches N `nvidia.com/gpu` devices.
+        #[serde(default)]
+        gpu: Option<CreateVmGpuSugarReq>,
+        /// Skip the "does any node advertise this GPU resource" preflight.
+        #[serde(default)]
+        force: bool,
+    }
+
+    #[derive(Deserialize)]
+    struct CreateVmGpuReq {
+        /// Device alias inside the VM spec (default `gpu<N>`).
+        #[serde(default)]
+        name: Option<String>,
+        /// Device-plugin resource, e.g. `nvidia.com/gpu` or `nvidia.com/GRID_T4-2Q`.
+        device_name: String,
+    }
+
+    #[derive(Deserialize)]
+    struct CreateVmGpuSugarReq {
+        #[serde(default = "default_gpu_count")]
+        count: u32,
+        /// Device-plugin resource (default `nvidia.com/gpu`).
+        #[serde(default)]
+        resource_name: Option<String>,
+        /// vGPU mediated-device profile; `GRID_T4-2Q` → `nvidia.com/GRID_T4-2Q`.
+        /// Requires a vGPU-configured cluster (Phase 2).
+        #[serde(default)]
+        vgpu_profile: Option<String>,
+    }
+
+    fn default_gpu_count() -> u32 {
+        1
     }
 
     /// Golden-image source for a new VM's root disk.
@@ -3788,10 +3880,82 @@ pub mod web {
             }
         }
 
+        // GPU attachment: an explicit device list wins; the `gpu` shorthand
+        // expands to N identical devices. The converter defaults KVM-hidden on
+        // for NVIDIA resources so guest drivers load.
+        if let Some(ref gpu_list) = req.gpus {
+            for (i, g) in gpu_list.iter().enumerate() {
+                if g.device_name.is_empty() {
+                    return err_json(400, "INVALID_GPU", "gpus[].device_name cannot be empty");
+                }
+                config.gpus.push(crate::config::VmGpuDevice {
+                    name: g.name.clone().unwrap_or_else(|| format!("gpu{i}")),
+                    device_name: g.device_name.clone(),
+                    virtual_gpu_options: None,
+                });
+            }
+        } else if let Some(ref g) = req.gpu {
+            let resource = match (&g.resource_name, &g.vgpu_profile) {
+                (Some(r), _) => r.clone(),
+                (None, Some(profile)) => format!("nvidia.com/{profile}"),
+                (None, None) => "nvidia.com/gpu".to_string(),
+            };
+            for i in 0..g.count.max(1) {
+                config.gpus.push(crate::config::VmGpuDevice {
+                    name: format!("gpu{i}"),
+                    device_name: resource.clone(),
+                    virtual_gpu_options: None,
+                });
+            }
+        }
+
         let client = {
             let s = state.read().await;
             s.kube_client.clone()
         };
+
+        // GPU preflight: a VM asking for a resource no node advertises would
+        // sit Pending forever with an opaque scheduler message. Fail fast with
+        // what IS available; `force: true` skips (e.g. node about to join).
+        if !config.gpus.is_empty() && !req.force {
+            use k8s_openapi::api::core::v1::Node;
+            let node_api: kube::Api<Node> = kube::Api::all(client.client().clone());
+            if let Ok(nodes) = node_api.list(&Default::default()).await {
+                let available: std::collections::BTreeSet<String> = nodes
+                    .items
+                    .iter()
+                    .flat_map(crate::kube::gpu_inventory::node_gpu_resources)
+                    .filter(|r| r.allocatable > 0)
+                    .map(|r| r.name)
+                    .collect();
+                let missing: Vec<&str> = config
+                    .gpus
+                    .iter()
+                    .map(|g| g.device_name.as_str())
+                    .filter(|d| !available.contains(*d))
+                    .collect();
+                if !missing.is_empty() {
+                    let avail_msg = if available.is_empty() {
+                        "no node advertises any GPU resource — run \
+                         scripts/cluster/enable-gpu-passthrough.sh or install a GPU device plugin"
+                            .to_string()
+                    } else {
+                        format!(
+                            "available GPU resources: {}",
+                            available.into_iter().collect::<Vec<_>>().join(", ")
+                        )
+                    };
+                    return err_json(
+                        422,
+                        "GPU_RESOURCE_UNAVAILABLE",
+                        &format!(
+                            "no node advertises {} ({avail_msg}); pass \"force\": true to override",
+                            missing.join(", ")
+                        ),
+                    );
+                }
+            }
+        }
 
         // Evaluate VeyronPolicy CRDs before creation
         if let Ok(violations) = check_policies(&client, &config).await {

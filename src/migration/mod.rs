@@ -92,6 +92,28 @@ impl Default for MigrationPolicy {
     }
 }
 
+impl MigrationPolicy {
+    /// Bridge to a real KubeVirt `MigrationPolicy` spec
+    /// (`migrations.kubevirt.io/v1alpha1`). `parallelism` has no per-policy
+    /// KubeVirt equivalent (it is cluster `migrationConfiguration`) and is
+    /// deliberately not emitted. `completion_timeout` here is total seconds;
+    /// KubeVirt's knob is per-GiB — callers pass the VM memory size to derive
+    /// it, or `None` to omit.
+    pub fn to_kubevirt_policy(
+        &self,
+        selectors: crate::kube::types::MigrationPolicySelectors,
+        completion_timeout_per_gib: Option<i64>,
+    ) -> crate::kube::types::MigrationPolicySpec {
+        crate::kube::types::MigrationPolicySpec {
+            selectors,
+            allow_auto_converge: Some(self.allow_auto_converge),
+            bandwidth_per_migration: self.bandwidth_limit.clone(),
+            completion_timeout_per_gib,
+            allow_post_copy: Some(self.allow_post_copy),
+        }
+    }
+}
+
 /// Migration status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MigrationStatus {

@@ -210,6 +210,51 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
         })
         .unwrap_or(0);
 
+    // --- GPUs: device-plugin extended resources actually advertised by nodes. ---
+    use crate::kube::gpu_inventory::{GpuResourceKind, node_gpu_resources};
+    let mut gpu_nodes = 0usize;
+    let mut gpu_resource_totals: std::collections::BTreeMap<String, i64> = Default::default();
+    let mut vgpu_resource_present = false;
+    if let Some(ref l) = nodes {
+        for n in &l.items {
+            let res = node_gpu_resources(n);
+            if res.iter().any(|r| r.allocatable > 0) {
+                gpu_nodes += 1;
+            }
+            for r in res {
+                *gpu_resource_totals.entry(r.name.clone()).or_insert(0) += r.allocatable;
+                if r.kind == GpuResourceKind::Vgpu && r.allocatable > 0 {
+                    vgpu_resource_present = true;
+                }
+            }
+        }
+    }
+    // KubeVirt only hands a device to a VM when the KubeVirt CR permits it.
+    let permitted_host_devices = kv_obj
+        .as_ref()
+        .and_then(|o| o.data.get("spec"))
+        .and_then(|s| s.get("configuration"))
+        .and_then(|c| c.get("permittedHostDevices"))
+        .cloned();
+    let permitted_pci = permitted_host_devices
+        .as_ref()
+        .and_then(|p| p.get("pciHostDevices"))
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0);
+    let permitted_mdev = permitted_host_devices
+        .as_ref()
+        .and_then(|p| p.get("mediatedDevices"))
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0);
+    let gpu_allocatable_total: i64 = gpu_resource_totals.values().sum();
+    // Passthrough is usable once a node advertises a GPU resource AND KubeVirt
+    // permits handing it to VMs (built-in plugin ⇒ pciHostDevices entries;
+    // external device plugins set externalResourceProvider instead).
+    let gpu_passthrough = gpu_allocatable_total > 0 && (permitted_pci > 0 || permitted_mdev > 0);
+    let vgpu = vgpu_resource_present && permitted_mdev > 0;
+
     // --- Derived, first-class capability flags ---
     // Live migration needs somewhere to migrate *to* and shared RWX storage.
     let live_migration = node_count >= 2 && rwx_capable;
@@ -232,9 +277,21 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
             "windows_golden_images": windows_golden_images,
             // Persistent TPM/EFI state (Windows 11, BitLocker) needs backend storage.
             "persistent_tpm_efi": has("VMPersistentState") && vm_state_storage_class.is_some(),
+            // GPU passthrough needs a node-advertised GPU resource plus a
+            // KubeVirt permittedHostDevices entry; vGPU additionally needs
+            // mediated devices. Live migration of passthrough VMs is never
+            // possible — only vGPU VMs can move (Phase 2, license-gated).
+            "gpu_passthrough": gpu_passthrough,
+            "vgpu": vgpu,
             // These are unconditional (plain API/subresource calls).
             "node_cordon": true, "run_strategy": true, "bulk_actions": true,
             "drift_remediation": true, "self_healing": true, "guest_ops_if_agent": true
+        },
+        "gpus": {
+            "resource_totals": gpu_resource_totals,
+            "permitted_pci_host_devices": permitted_pci,
+            "permitted_mediated_devices": permitted_mdev,
+            "host_devices_feature_gate": has("HostDevices"),
         },
         "components": {
             "cdi": cdi_present, "velero": velero_present,
@@ -252,7 +309,8 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
         },
         "nodes": {
             "count": node_count,
-            "kvm_capable": kvm_nodes
+            "kvm_capable": kvm_nodes,
+            "gpu_capable": gpu_nodes
         },
         "note": "guest ops (patch/reclaim/app-consistent) additionally require a guest agent (GuestKit/QGA) in the VM image"
     }))
@@ -266,29 +324,10 @@ const DEFAULT_SC_ANNOTATION: &str = "storageclass.kubernetes.io/is-default-class
 #[cfg(feature = "web")]
 const KVM_DEVICE_RESOURCE: &str = "devices.kubevirt.io/kvm";
 
-/// Provisioners whose volumes are pinned to a single node: a VM on one of these
-/// cannot live-migrate and loses its disk if the node dies.
+/// StorageClass provisioner classification lives in `kube::storage_caps` so the
+/// migration eligibility guard shares the exact same notion of "migratable".
 #[cfg(feature = "web")]
-fn is_node_local_provisioner(provisioner: &str) -> bool {
-    matches!(
-        provisioner,
-        "rancher.io/local-path"
-            | "kubernetes.io/no-provisioner"
-            | "openebs.io/local"
-            | "topolvm.io"
-    )
-}
-
-/// Provisioners that can back a `ReadWriteMany` volume — the KubeVirt
-/// prerequisite for live migration of a PVC-backed VM.
-#[cfg(feature = "web")]
-fn is_rwx_capable_provisioner(provisioner: &str) -> bool {
-    provisioner.contains("cephfs")
-        || provisioner.contains("nfs")
-        || provisioner.contains("glusterfs")
-        || provisioner.contains("azurefile")
-        || provisioner.contains("efs")
-}
+use crate::kube::storage_caps::{is_node_local_provisioner, is_rwx_capable_provisioner};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct PlatformUpgradeRequest {

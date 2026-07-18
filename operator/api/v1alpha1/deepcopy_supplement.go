@@ -42,6 +42,59 @@ func (in *WindowsSpec) DeepCopy() *WindowsSpec {
 	return out
 }
 
+func (in *GPUSpec) DeepCopyInto(out *GPUSpec) {
+	*out = *in
+	if in.VirtualGPUOptions != nil {
+		in, out := &in.VirtualGPUOptions, &out.VirtualGPUOptions
+		*out = (*in).DeepCopy()
+	}
+}
+
+func (in *GPUSpec) DeepCopy() *GPUSpec {
+	if in == nil {
+		return nil
+	}
+	out := new(GPUSpec)
+	in.DeepCopyInto(out)
+	return out
+}
+
+func (in *VGPUOptionsSpec) DeepCopyInto(out *VGPUOptionsSpec) {
+	*out = *in
+	if in.Display != nil {
+		in, out := &in.Display, &out.Display
+		*out = new(bool)
+		**out = **in
+	}
+	if in.RAMFB != nil {
+		in, out := &in.RAMFB, &out.RAMFB
+		*out = new(bool)
+		**out = **in
+	}
+}
+
+func (in *VGPUOptionsSpec) DeepCopy() *VGPUOptionsSpec {
+	if in == nil {
+		return nil
+	}
+	out := new(VGPUOptionsSpec)
+	in.DeepCopyInto(out)
+	return out
+}
+
+func (in *HostDeviceSpec) DeepCopyInto(out *HostDeviceSpec) {
+	*out = *in
+}
+
+func (in *HostDeviceSpec) DeepCopy() *HostDeviceSpec {
+	if in == nil {
+		return nil
+	}
+	out := new(HostDeviceSpec)
+	in.DeepCopyInto(out)
+	return out
+}
+
 func (in *VMTemplate) DeepCopyInto(out *VMTemplate) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta

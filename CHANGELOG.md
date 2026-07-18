@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **GPU VMs (passthrough)** — first-class KubeVirt `domain.devices.gpus` support end-to-end: `gpus`/`gpu` on `POST /api/v1/vms` (with `vgpu_profile` sugar and a 422 preflight when no node advertises the resource; `"force": true` overrides), `VMConfig.gpus` + `add_gpu()` builder, operator `VeyronVM.spec.gpus`/`hostDevices`, and automatic KVM-hidden for NVIDIA passthrough. `GET /api/v1/gpus` reports the per-node GPU inventory (passthrough/MIG/vGPU classification); `GET /api/v1/platform/capabilities` gains `day2_ops.gpu_passthrough`, `day2_ops.vgpu`, `nodes.gpu_capable`, and a `gpus` section (resource totals + KubeVirt `permittedHostDevices` counts).
+- **Migration eligibility gate** — `POST /vms/:ns/:name/migrate`, `POST /migrations`, and bulk `migrate` now consult a per-VM eligibility check (passthrough GPU/host devices, VMI phase, KubeVirt's `LiveMigratable` condition) and return **409 with a structured blocker list** (code/message/cold-move suggestion) instead of firing a doomed migration. Pass `"force": true` to bypass.
+- **Typed MigrationPolicy validation** — `POST/PUT /api/v1/kubevirt/migration-policies` payloads are validated against a typed `migrations.kubevirt.io/v1alpha1` spec (must select something) before the passthrough apply.
+
+### Changed
+
+- **Bulk migrate behavior** — `POST /api/v1/vms/bulk` with `action: "migrate"` now fails individual non-migratable VMs with the blocker text in `results[].error` (previously they "succeeded" into a migration that could never complete).
+
+### Fixed
+
+- **GPU/host-device passthrough never bound** — `hostDevices` serialized the device-plugin resource as `resourceName`, but KubeVirt's schema field is `deviceName`; the field was pruned server-side and the device silently never attached (`src/kube/types.rs`).
+
 - **Distro SVG icons** — per-distro inline SVG icons (`distroSvg()`) for app store, foundry, and launchpad pages; Launchpad fixed to render SVGs correctly (overflow:hidden + sizing CSS).
 - **Ask Zeus page** — standalone `/ask-zeus` route with chat thread UI and quick-chip prompts (`src/api/web/dashboard.html`).
 - **PVC resize API** — `PATCH /api/v1/storage/pvcs/:ns/:name` with `new_size` body; **Resize** button wired in the storage dashboard UI (`src/api/handlers/storage.rs`).

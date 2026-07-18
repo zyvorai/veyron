@@ -55,6 +55,30 @@ pub struct VmHostDevice {
     pub resource_name: String,
 }
 
+/// vGPU display options (`domain.devices.gpus[].virtualGPUOptions`). Phase-2
+/// material — only meaningful for mediated (vGPU) devices, ignored for
+/// whole-GPU passthrough.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VmVgpuOptions {
+    /// Enable the vGPU display head (`virtualGPUOptions.display.enabled`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display: Option<bool>,
+    /// Enable the RAM framebuffer (`virtualGPUOptions.display.ramFB.enabled`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ram_fb: Option<bool>,
+}
+
+/// GPU assignment via KubeVirt `domain.devices.gpus` (whole-GPU passthrough
+/// or a vGPU mediated device — `device_name` is the device-plugin resource,
+/// e.g. `nvidia.com/gpu` or `nvidia.com/GRID_T4-2Q`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VmGpuDevice {
+    pub name: String,
+    pub device_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub virtual_gpu_options: Option<VmVgpuOptions>,
+}
+
 /// Virtio-FS mount backed by a PVC (requires KubeVirt + cluster support).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VmVirtioFs {
@@ -133,6 +157,9 @@ pub struct VMConfig {
     pub watchdog: Option<VmWatchdogConfig>,
     #[serde(default)]
     pub host_devices: Vec<VmHostDevice>,
+    /// GPUs bound via KubeVirt `domain.devices.gpus` (passthrough or vGPU).
+    #[serde(default)]
+    pub gpus: Vec<VmGpuDevice>,
     #[serde(default)]
     pub virtio_fs: Vec<VmVirtioFs>,
     /// Raw KubeVirt `accessCredentials` entries (password / SSH injection).

@@ -114,6 +114,45 @@ type VeyronVMSpec struct {
 	// Windows-specific bootstrap (sysprep, domain join).
 	// +optional
 	Windows *WindowsSpec `json:"windows,omitempty"`
+
+	// GPUs bound via KubeVirt domain.devices.gpus (whole-GPU passthrough or
+	// vGPU mediated devices). A VM with a passthrough GPU can never
+	// live-migrate.
+	// +optional
+	GPUs []GPUSpec `json:"gpus,omitempty"`
+
+	// Generic passthrough host devices (domain.devices.hostDevices).
+	// +optional
+	HostDevices []HostDeviceSpec `json:"hostDevices,omitempty"`
+}
+
+// GPUSpec mirrors KubeVirt's domain.devices.gpus entry.
+type GPUSpec struct {
+	// Device alias inside the VM spec (e.g. "gpu0").
+	Name string `json:"name"`
+	// Device-plugin resource, e.g. "nvidia.com/gpu" or "nvidia.com/GRID_T4-2Q".
+	DeviceName string `json:"deviceName"`
+	// vGPU display options (mediated devices only).
+	// +optional
+	VirtualGPUOptions *VGPUOptionsSpec `json:"virtualGPUOptions,omitempty"`
+}
+
+// VGPUOptionsSpec mirrors KubeVirt's virtualGPUOptions.display.
+type VGPUOptionsSpec struct {
+	// Enable the vGPU display head.
+	// +optional
+	Display *bool `json:"display,omitempty"`
+	// Enable the RAM framebuffer.
+	// +optional
+	RAMFB *bool `json:"ramFB,omitempty"`
+}
+
+// HostDeviceSpec mirrors KubeVirt's domain.devices.hostDevices entry.
+type HostDeviceSpec struct {
+	// Device alias inside the VM spec.
+	Name string `json:"name"`
+	// Device-plugin resource name permitted via permittedHostDevices.
+	DeviceName string `json:"deviceName"`
 }
 
 // CPUSpec mirrors Rust CPUConfig.

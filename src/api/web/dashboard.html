@@ -6509,6 +6509,10 @@ html.glass-deck .mac-page-toolbar{
     <div class="table-header node-header"><span>Name</span><span>Status</span><span>Roles</span><span>VMs</span><span>CPU Cap</span><span>CPU Alloc</span><span>Mem Cap / Alloc</span><span>Kubelet</span><span>OS</span></div>
     <div id="node-list"></div>
   </div>
+  <div class="card glass-card" style="margin-top:16px;display:none" id="gpu-inventory-card">
+    <div class="card-header"><span class="card-title">GPU Inventory</span><span id="gpu-inventory-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchGpus()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>Node</th><th>Resource</th><th>Kind</th><th>Allocatable</th><th>Capacity</th><th>Product</th></tr></thead><tbody id="gpu-inventory-body"></tbody></table>
+  </div>
   <div class="card glass-card" style="margin-top:16px">
     <div class="card-header"><span class="card-title">Platform Readiness</span><span id="platform-ready-badge" style="font-size:.8rem;padding:0 6px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchPlatformReadiness()">&#8635;</button></div>
     <div id="platform-readiness-body" style="padding:12px 16px"><p style="color:var(--text-dim);font-size:.84rem">Loading…</p></div>
@@ -8305,6 +8309,13 @@ html.glass-deck .mac-page-toolbar{
           <div class="form-group"><label class="form-label">Memory</label><input type="text" class="form-input" id="forge-wiz-memory" value="4Gi"></div>
           <div class="form-group"><label class="form-label">Disk</label><input type="text" class="form-input" id="forge-wiz-disk" value="20Gi"></div>
         </div>
+        <div class="form-row-2" style="margin-top:8px" id="forge-wiz-gpu-row" hidden>
+          <div class="form-group"><label class="form-label">GPU</label>
+            <select class="form-input" id="forge-wiz-gpu"><option value="">None</option></select>
+          </div>
+          <div class="form-group"><label class="form-label">GPU count</label><input type="number" class="form-input" id="forge-wiz-gpu-count" min="1" max="8" value="1"></div>
+        </div>
+        <p id="forge-wiz-gpu-note" hidden style="margin-top:6px;font-size:.78rem;color:var(--ink-3)">Passthrough GPU VMs cannot live-migrate — plan maintenance as stop/start.</p>
       </div>
       <div class="forge-step-pane" data-step="4">
         <h3>Configure network</h3>
@@ -10025,7 +10036,7 @@ function loadPageData(page, opts) {
     if (typeof fetchSnapshotsVmr === 'function') fetchSnapshotsVmr(opts);
   }
   if (page === 'events') fetchEvents(true, opts);
-  if (page === 'nodes') { fetchNodes(opts); fetchPlatformReadiness(); fetchClusterLocations(); fetchPlatformOps(); }
+  if (page === 'nodes') { fetchNodes(opts); fetchPlatformReadiness(); fetchClusterLocations(); fetchPlatformOps(); fetchGpus(); }
   if (page === 'pods') { fetchPods(opts); fetchVmis(); }
   if (page === 'storage') { fetchStorage(opts); fetchStoragePools(); }
   if (page === 'crds') fetchCRDs();
@@ -15127,10 +15138,18 @@ function vmCard(vm, showActions) {
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + vmGenomeStrip(vm) + idSig(vm.status) + vmMomentum(ns, vm.name) + vmLastActionChip(ns, vm.name) + '</div>' +
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + highlightMatch(vm.name, activeSearchQuery()) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
-    '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
+    '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmGpuBadge(vm) + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
     vmTagsHtml(ns, vm.name) +
     vmNoteHtml(ns, vm.name) +
     '<div class="vm-card-actions">' + actions + vmDriftBadge(vm) + '</div></div>';
+}
+
+/// Passthrough-device chip: a GPU pins the VM to its node (no live migration).
+function vmGpuBadge(vm) {
+  if (!vm || !vm.gpu_count) return '';
+  return ' · <span style="font-family:var(--mono-deck);font-size:.72rem;color:var(--aurora-2)" ' +
+    'title="Passthrough GPU/host device attached — live migration is not possible; use stop/start cold move">⬢ GPU×' +
+    vm.gpu_count + '</span>';
 }
 
 function vmListEmptyHtml(filteredEmpty) {
@@ -16490,6 +16509,34 @@ function openForgeWizard() {
   } else {
     _forgeWizardRenderProfiles();
   }
+  _forgeWizardPopulateGpus();
+}
+
+/// GPU picker only appears when the cluster actually advertises GPU resources.
+async function _forgeWizardPopulateGpus() {
+  const row = document.getElementById('forge-wiz-gpu-row');
+  const note = document.getElementById('forge-wiz-gpu-note');
+  const sel = document.getElementById('forge-wiz-gpu');
+  if (!row || !sel) return;
+  try {
+    const resp = await apiJson('/api/v1/gpus');
+    const resources = {};
+    asArray(resp && resp.nodes).forEach(function(n) {
+      asArray(n.resources).forEach(function(r) {
+        if (r.allocatable > 0) resources[r.name] = (resources[r.name] || 0) + r.allocatable;
+      });
+    });
+    const names = Object.keys(resources).sort();
+    if (!names.length) { row.hidden = true; if (note) note.hidden = true; return; }
+    sel.innerHTML = '<option value="">None</option>' + names.map(function(n) {
+      return '<option value="' + esc(n) + '">' + esc(n) + ' (' + resources[n] + ' allocatable)</option>';
+    }).join('');
+    row.hidden = false;
+    if (note) note.hidden = false;
+  } catch (e) {
+    row.hidden = true;
+    if (note) note.hidden = true;
+  }
 }
 
 function closeForgeWizard() {
@@ -16607,6 +16654,13 @@ async function submitForgeWizard(andStart) {
   if ((document.getElementById('forge-wiz-expose') || {}).checked) {
     const port = parseInt((document.getElementById('forge-wiz-expose-port') || {}).value, 10) || 22;
     body.expose = { enabled: true, service_type: 'ClusterIP', ports: [{ name: 'ssh', port: port, target_port: port, protocol: 'TCP' }] };
+  }
+  const gpuResource = (document.getElementById('forge-wiz-gpu') || {}).value || '';
+  if (gpuResource) {
+    body.gpu = {
+      resource_name: gpuResource,
+      count: parseInt((document.getElementById('forge-wiz-gpu-count') || {}).value, 10) || 1,
+    };
   }
   try {
     await apiJson('/api/v1/vms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -24096,16 +24150,28 @@ async function unpauseVM(ns, name) {
 }
 
 async function migrateVM(ns, name) {
+  const vmRec = (typeof vmData !== 'undefined' && vmData || []).find(function(v) {
+    return v.name === name && (v.namespace || 'default') === (ns || 'default');
+  });
+  const gpuWarn = vmRec && vmRec.gpu_count
+    ? '<br><br><span style="color:var(--caution)">⚠ This VM holds ' + vmRec.gpu_count +
+      ' passthrough device(s) — live migration will be refused. Stop the VM and start it with node placement instead.</span>'
+    : '';
   openGlassConfirm({
     title: 'Migrate VM',
-    body: 'Migrate "' + name + '" to another node?',
+    body: 'Migrate "' + name + '" to another node?' + gpuWarn,
     confirmLabel: 'Migrate',
     onConfirm: async function() {
       try {
         await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/migrate', {method:'POST'});
         toast(name + ' migration initiated', 'success');
         setTimeout(refresh, 2000);
-      } catch(e) { await translateApiError(e.message, 'migrate'); }
+      } catch(e) {
+        // The eligibility gate answers 409 with the blocker list baked into
+        // the message — show it directly instead of the generic translator.
+        if (/cannot live-migrate/i.test(e.message)) { toast(e.message, 'warning', 9000); }
+        else await translateApiError(e.message, 'migrate');
+      }
     }
   });
 }
@@ -28435,6 +28501,36 @@ async function fetchPlatformReadiness() {
       }).join('') + '</div>';
   } catch (e) {
     if (body) body.innerHTML = '<p style="color:var(--error);font-size:.84rem">' + esc(e.message || String(e)) + '</p>';
+  }
+}
+
+// ── GPU Inventory (nodes page) ──
+async function fetchGpus() {
+  const card = document.getElementById('gpu-inventory-card');
+  const tbody = document.getElementById('gpu-inventory-body');
+  const countEl = document.getElementById('gpu-inventory-count');
+  if (!card || !tbody) return;
+  try {
+    const resp = await apiJson('/api/v1/gpus');
+    const nodes = asArray(resp && resp.nodes);
+    if (!nodes.length) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    if (countEl) countEl.textContent = (resp.total_allocatable || 0) + ' allocatable across ' + nodes.length + ' node' + (nodes.length === 1 ? '' : 's');
+    const kindSig = { passthrough: 'ok', mig: 'warn', vgpu: 'ok' };
+    tbody.innerHTML = nodes.map(function(n) {
+      return asArray(n.resources).map(function(r) {
+        return '<tr>' +
+          '<td style="font-family:var(--mono-deck)">' + esc(n.node) + '</td>' +
+          '<td style="font-family:var(--mono-deck)">' + esc(r.name) + '</td>' +
+          '<td>' + idSig(kindSig[r.kind] || 'inert', esc(r.kind || '—')) + '</td>' +
+          '<td style="font-feature-settings:\'tnum\'">' + (r.allocatable != null ? r.allocatable : '—') + '</td>' +
+          '<td style="font-feature-settings:\'tnum\'">' + (r.capacity != null ? r.capacity : '—') + '</td>' +
+          '<td>' + esc((n.labels && n.labels.product) || '—') + '</td>' +
+          '</tr>';
+      }).join('');
+    }).join('');
+  } catch (e) {
+    card.style.display = 'none';
   }
 }
 

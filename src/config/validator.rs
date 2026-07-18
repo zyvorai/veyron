@@ -23,6 +23,7 @@ pub fn validate_vm_config(config: &VMConfig) -> Result<()> {
     validate_memory(&config.memory)?;
     validate_disks(&config.disks)?;
     validate_interfaces(&config.interfaces)?;
+    validate_devices(config)?;
 
     if let Some(tgp) = config.termination_grace_period {
         if tgp < 0 {
@@ -30,6 +31,36 @@ pub fn validate_vm_config(config: &VMConfig) -> Result<()> {
         }
     }
 
+    Ok(())
+}
+
+/// GPUs and host devices must have non-empty, unique device aliases; KubeVirt
+/// rejects duplicate `devices.gpus[].name` / `devices.hostDevices[].name`.
+fn validate_devices(config: &VMConfig) -> Result<()> {
+    let mut seen = std::collections::HashSet::new();
+    for (name, device_name, kind) in config
+        .gpus
+        .iter()
+        .map(|g| (&g.name, &g.device_name, "GPU"))
+        .chain(
+            config
+                .host_devices
+                .iter()
+                .map(|h| (&h.name, &h.resource_name, "host device")),
+        )
+    {
+        if name.is_empty() {
+            return Err(anyhow!("{kind} name cannot be empty"));
+        }
+        if device_name.is_empty() {
+            return Err(anyhow!("{kind} '{name}' must set a device resource name"));
+        }
+        if !seen.insert(name.clone()) {
+            return Err(anyhow!(
+                "duplicate device name '{name}' across gpus/host_devices"
+            ));
+        }
+    }
     Ok(())
 }
 

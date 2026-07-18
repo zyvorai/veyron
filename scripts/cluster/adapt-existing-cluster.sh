@@ -235,6 +235,30 @@ if $K get cephcluster -A >/dev/null 2>&1; then
     *) bad "Ceph health is '${CEPH_HEALTH:-unknown}'" ;;
   esac
 fi
+# GPU nodes that advertise resources KubeVirt is not configured to hand out.
+GPU_ALLOC="$($K get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.allocatable}{"\n"}{end}' 2>/dev/null \
+  | grep -E 'nvidia\.com/|amd\.com/|intel\.com/' || true)"
+if [[ -n "${GPU_ALLOC}" ]]; then
+  PERMITTED="$($K get kubevirt kubevirt -n kubevirt -o jsonpath='{.spec.configuration.permittedHostDevices}' 2>/dev/null || true)"
+  if [[ -z "${PERMITTED}" || "${PERMITTED}" == "{}" ]]; then
+    warn "Nodes advertise GPU resources but KubeVirt has no permittedHostDevices —"
+    warn "  VMs cannot request them. Run: ./scripts/cluster/enable-gpu-passthrough.sh"
+  else
+    ok "GPU resources advertised and permittedHostDevices configured"
+  fi
+fi
+# Multi-zone cluster whose StorageClasses ignore zones: PVCs can bind to the
+# wrong site and pin VMs across the WAN (see docs/MULTI_SITE_MESH.md).
+ZONE_COUNT="$($K get nodes -o jsonpath='{range .items[*]}{.metadata.labels.topology\.kubernetes\.io/zone}{"\n"}{end}' 2>/dev/null | grep -v '^$' | sort -u | wc -l | tr -d ' ')"
+if [[ "${ZONE_COUNT}" -gt 1 ]]; then
+  TOPO_SC="$($K get sc -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.allowedTopologies}{"\n"}{end}' 2>/dev/null | awk 'NF>1' | wc -l | tr -d ' ')"
+  if [[ "${TOPO_SC}" -eq 0 ]]; then
+    warn "Cluster spans ${ZONE_COUNT} zones but no StorageClass sets allowedTopologies —"
+    warn "  cross-site PVC binding is possible; add zone-scoped StorageClasses (docs/MULTI_SITE_MESH.md §4)"
+  else
+    ok "Multi-zone cluster has ${TOPO_SC} zone-scoped StorageClass(es)"
+  fi
+fi
 
 printf '%s\n' "────────────────────────────────────────────────"
 if [[ "${APPLY}" == "1" ]]; then

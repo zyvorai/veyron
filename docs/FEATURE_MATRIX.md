@@ -112,6 +112,9 @@ These route groups now have first-class dashboard pages:
 | Storage pools | `/api/v1/storage/pools` | Surfaced (Storage page) |
 | SOC playbooks/hunts | `/api/v1/soc/playbooks`, `/soc/playbooks/trigger`, `/soc/hunts` | Surfaced (SOC page) |
 | Logs query | `/api/v1/logs/query` | Surfaced (Logs page) |
+| GPU inventory | `/api/v1/gpus`, `/api/v1/platform/capabilities` (`day2_ops.gpu_passthrough`/`vgpu`, `gpus` section) | Surfaced (Nodes page GPU Inventory card, Forge wizard GPU picker, VM `⬢ GPU×N` badge) — see [GPU_PASSTHROUGH.md](GPU_PASSTHROUGH.md) |
+| GPU VM create | `POST /api/v1/vms` `gpu`/`gpus` fields (422 preflight, `force` override) | Surfaced (Forge wizard) |
+| Migration eligibility gate | `POST /vms/:ns/:name/migrate`, `POST /migrations`, bulk `migrate` → 409 + `blockers[]` for passthrough-GPU/non-migratable VMs | Surfaced (migrate confirm pre-warning + blocker toast) |
 
 ## Known Partial Areas
 

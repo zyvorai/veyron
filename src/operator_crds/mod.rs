@@ -114,6 +114,45 @@ pub struct VeyronVMSpec {
     /// Windows sysprep / domain-join secret references.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub windows: Option<CRDWindowsSpec>,
+
+    /// GPUs bound via KubeVirt `domain.devices.gpus` (passthrough or vGPU).
+    /// A VM holding a passthrough GPU can never live-migrate.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gpus: Vec<CRDGpuSpec>,
+
+    /// Generic passthrough host devices (`domain.devices.hostDevices`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(rename = "hostDevices")]
+    pub host_devices: Vec<CRDHostDeviceSpec>,
+}
+
+/// Mirrors the Go `GPUSpec` (KubeVirt `domain.devices.gpus` entry).
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDGpuSpec {
+    pub name: String,
+    #[serde(rename = "deviceName")]
+    pub device_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "virtualGPUOptions")]
+    pub virtual_gpu_options: Option<CRDVgpuOptionsSpec>,
+}
+
+/// Mirrors the Go `VGPUOptionsSpec`.
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDVgpuOptionsSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "ramFB")]
+    pub ram_fb: Option<bool>,
+}
+
+/// Mirrors the Go `HostDeviceSpec` (KubeVirt `domain.devices.hostDevices` entry).
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDHostDeviceSpec {
+    pub name: String,
+    #[serde(rename = "deviceName")]
+    pub device_name: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -784,6 +823,28 @@ impl From<&crate::config::VMConfig> for VeyronVMSpec {
             annotations: config.annotations.clone(),
             allow_internet: config.allow_internet,
             windows: None,
+            gpus: config
+                .gpus
+                .iter()
+                .map(|g| CRDGpuSpec {
+                    name: g.name.clone(),
+                    device_name: g.device_name.clone(),
+                    virtual_gpu_options: g.virtual_gpu_options.as_ref().map(|o| {
+                        CRDVgpuOptionsSpec {
+                            display: o.display,
+                            ram_fb: o.ram_fb,
+                        }
+                    }),
+                })
+                .collect(),
+            host_devices: config
+                .host_devices
+                .iter()
+                .map(|h| CRDHostDeviceSpec {
+                    name: h.name.clone(),
+                    device_name: h.resource_name.clone(),
+                })
+                .collect(),
         }
     }
 }

@@ -286,6 +286,8 @@ pub struct Devices {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub host_devices: Option<Vec<HostDevice>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub gpus: Option<Vec<Gpu>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub watchdog: Option<WatchdogDevice>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub autoattach_graphics_device: Option<bool>,
@@ -776,12 +778,54 @@ pub struct WatchdogDevice {
     pub action: Option<String>,
 }
 
+/// GPU assignment (`spec.domain.devices.gpus`) — whole-GPU passthrough or a
+/// vGPU mediated device. `deviceName` is the device-plugin resource name.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Gpu {
+    pub name: String,
+    pub device_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub virtual_gpu_options: Option<VirtualGpuOptions>,
+}
+
+/// KubeVirt `virtualGPUOptions` (vGPU display head / RAM framebuffer).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct VirtualGpuOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display: Option<VgpuDisplayOptions>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct VgpuDisplayOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enabled: Option<bool>,
+    #[serde(rename = "ramFB", skip_serializing_if = "Option::is_none")]
+    pub ram_fb: Option<VgpuRamFb>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct VgpuRamFb {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enabled: Option<bool>,
+}
+
 /// GPU / mediated device assignment (`spec.domain.devices.hostDevices`).
+/// KubeVirt's schema calls the device-plugin resource `deviceName`; the
+/// `resourceName` alias keeps previously exported Veyron JSON deserializable.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct HostDevice {
     pub name: String,
+    #[serde(rename = "deviceName", alias = "resourceName")]
     pub resource_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tag: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -839,6 +883,10 @@ pub struct VmiCondition {
     pub type_: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
@@ -886,6 +934,38 @@ pub struct GuestOsInfo {
     pub version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kernel_release: Option<String>,
+}
+
+/// Typed spec for KubeVirt cluster-scoped `MigrationPolicy`
+/// (`migrations.kubevirt.io/v1alpha1`). Used to validate API payloads before
+/// the untyped passthrough create/replace, and as the target of
+/// [`crate::migration::MigrationPolicy::to_kubevirt_policy`].
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MigrationPolicySpec {
+    pub selectors: MigrationPolicySelectors,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_auto_converge: Option<bool>,
+    /// Quantity string, e.g. `"100Mi"` per second.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bandwidth_per_migration: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completion_timeout_per_gib: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_post_copy: Option<bool>,
+}
+
+/// A MigrationPolicy must select *something* — namespaces and/or VMIs.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MigrationPolicySelectors {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace_selector: Option<BTreeMap<String, String>>,
+    #[serde(
+        rename = "virtualMachineInstanceSelector",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub vmi_selector: Option<BTreeMap<String, String>>,
 }
 
 /// VirtualMachineInstanceMigration CRD for KubeVirt

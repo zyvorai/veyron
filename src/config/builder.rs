@@ -379,6 +379,30 @@ impl VMConfigBuilder {
         self
     }
 
+    /// Attach a GPU via KubeVirt `domain.devices.gpus` (`device_name` is the
+    /// device-plugin resource, e.g. `nvidia.com/gpu`).
+    pub fn add_gpu(mut self, name: impl Into<String>, device_name: impl Into<String>) -> Self {
+        self.config.gpus.push(crate::config::VmGpuDevice {
+            name: name.into(),
+            device_name: device_name.into(),
+            virtual_gpu_options: None,
+        });
+        self
+    }
+
+    /// Attach a generic host device via `domain.devices.hostDevices`.
+    pub fn add_host_device(
+        mut self,
+        name: impl Into<String>,
+        device_name: impl Into<String>,
+    ) -> Self {
+        self.config.host_devices.push(crate::config::VmHostDevice {
+            name: name.into(),
+            resource_name: device_name.into(),
+        });
+        self
+    }
+
     /// Set domain features (ACPI, HyperV, etc.).
     pub fn features(mut self, features: FeaturesConfig) -> Self {
         self.config.features = Some(features);

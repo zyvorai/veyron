@@ -396,8 +396,29 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
     let mut requests = BTreeMap::new();
     requests.insert("memory".to_string(), config.memory.size.clone());
 
-    // Build features
-    let features = config.features.as_ref().map(convert_features);
+    // Build features. NVIDIA guest drivers refuse to load when they detect
+    // KVM, so default the KVM-hidden feature on for NVIDIA GPU passthrough
+    // unless the config took an explicit stance.
+    let mut features = config.features.as_ref().map(convert_features);
+    let wants_nvidia_gpu = config
+        .gpus
+        .iter()
+        .any(|g| g.device_name.starts_with("nvidia.com/"));
+    let kvm_hidden_explicit = config
+        .features
+        .as_ref()
+        .is_some_and(|f| f.kvm_hidden.is_some());
+    if wants_nvidia_gpu && !kvm_hidden_explicit {
+        features
+            .get_or_insert(Features {
+                acpi: None,
+                apic: None,
+                hyperv: None,
+                kvm: None,
+                smm: None,
+            })
+            .kvm = Some(KVMFeatures { hidden: Some(true) });
+    }
 
     // Build clock
     let clock = config.clock.as_ref().map(convert_clock);
@@ -455,6 +476,31 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 .map(|h| HostDevice {
                     name: h.name.clone(),
                     resource_name: h.resource_name.clone(),
+                    tag: None,
+                })
+                .collect(),
+        )
+    };
+
+    let gpus = if config.gpus.is_empty() {
+        None
+    } else {
+        Some(
+            config
+                .gpus
+                .iter()
+                .map(|g| Gpu {
+                    name: g.name.clone(),
+                    device_name: g.device_name.clone(),
+                    tag: None,
+                    virtual_gpu_options: g.virtual_gpu_options.as_ref().map(|o| {
+                        VirtualGpuOptions {
+                            display: Some(VgpuDisplayOptions {
+                                enabled: o.display,
+                                ram_fb: o.ram_fb.map(|e| VgpuRamFb { enabled: Some(e) }),
+                            }),
+                        }
+                    }),
                 })
                 .collect(),
         )
@@ -586,6 +632,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                         rng,
                         inputs,
                         host_devices,
+                        gpus,
                         watchdog,
                         autoattach_graphics_device: None,
                         autoattach_mem_balloon: if config.disable_balloon {
@@ -791,6 +838,100 @@ mod tests {
         assert_eq!(
             vmi_spec.domain.memory.as_ref().unwrap().guest,
             Some("4Gi".to_string())
+        );
+    }
+
+    #[test]
+    fn test_host_device_serializes_kubevirt_device_name() {
+        let mut config = VMConfigBuilder::new("gpu-vm")
+            .namespace("default")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk("rootdisk", "20Gi", 1)
+            .add_pod_network("default")
+            .build();
+        config
+            .host_devices
+            .push(crate::config::types::VmHostDevice {
+                name: "gpu0".to_string(),
+                resource_name: "nvidia.com/gpu".to_string(),
+            });
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let json = serde_json::to_value(&vm).unwrap();
+        let hd = &json["spec"]["template"]["spec"]["domain"]["devices"]["hostDevices"][0];
+        // KubeVirt's HostDevice schema field is `deviceName`; `resourceName`
+        // would be pruned by the CRD schema and the device would never bind.
+        assert_eq!(hd["deviceName"], "nvidia.com/gpu");
+        assert!(hd.get("resourceName").is_none());
+        assert_eq!(hd["name"], "gpu0");
+    }
+
+    #[test]
+    fn test_gpu_conversion_defaults_kvm_hidden_for_nvidia() {
+        let config = VMConfigBuilder::new("gpu-vm")
+            .namespace("default")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk("rootdisk", "20Gi", 1)
+            .add_pod_network("default")
+            .add_gpu("gpu0", "nvidia.com/gpu")
+            .build();
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let json = serde_json::to_value(&vm).unwrap();
+        let domain = &json["spec"]["template"]["spec"]["domain"];
+        let gpu = &domain["devices"]["gpus"][0];
+        assert_eq!(gpu["name"], "gpu0");
+        assert_eq!(gpu["deviceName"], "nvidia.com/gpu");
+        // NVIDIA guest drivers refuse to load when they see KVM; with no
+        // explicit stance the converter must hide it.
+        assert_eq!(domain["features"]["kvm"]["hidden"], true);
+    }
+
+    #[test]
+    fn test_gpu_conversion_respects_explicit_kvm_hidden() {
+        let mut config = VMConfigBuilder::new("gpu-vm")
+            .namespace("default")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk("rootdisk", "20Gi", 1)
+            .add_pod_network("default")
+            .add_gpu("gpu0", "nvidia.com/gpu")
+            .build();
+        config.features = Some(crate::config::FeaturesConfig {
+            acpi: true,
+            apic: false,
+            hyperv: None,
+            kvm_hidden: Some(false),
+            smm: None,
+        });
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let json = serde_json::to_value(&vm).unwrap();
+        assert_eq!(
+            json["spec"]["template"]["spec"]["domain"]["features"]["kvm"]["hidden"],
+            false
+        );
+    }
+
+    #[test]
+    fn test_non_nvidia_gpu_does_not_touch_kvm_features() {
+        let config = VMConfigBuilder::new("gpu-vm")
+            .namespace("default")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk("rootdisk", "20Gi", 1)
+            .add_pod_network("default")
+            .add_gpu("gpu0", "amd.com/gpu")
+            .build();
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let json = serde_json::to_value(&vm).unwrap();
+        assert!(
+            json["spec"]["template"]["spec"]["domain"]
+                .get("features")
+                .is_none()
         );
     }
 
