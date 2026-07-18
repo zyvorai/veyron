@@ -1,4 +1,4 @@
-.PHONY: build release check test clippy fmt lint scripts-lint clean install help docker deploy catalog-generate catalog-check
+.PHONY: build release check test clippy fmt lint scripts-lint clean install help docker deploy catalog-generate catalog-check guide-pdf
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -48,6 +48,15 @@ ci: fmt-check clippy scripts-lint test ## Run full CI pipeline locally
 test-vm-e2e-remote: ## Run daily VM ops E2E against remote API (HOST=... PORT=30151)
 	@test -n "$(HOST)" || (echo "Usage: make test-vm-e2e-remote HOST=<ip> [PORT=30151]" >&2; exit 1)
 	./scripts/test-vm-daily-ops-remote.sh "$(HOST)" "$(if $(PORT),$(PORT),30151)"
+
+guide-pdf: ## Regenerate the customer feature guide PDF from the html (headless Chrome)
+	@CHROME="$${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
+	command -v "$$CHROME" >/dev/null 2>&1 || CHROME="$$(command -v google-chrome || command -v chromium || command -v chromium-browser)"; \
+	test -n "$$CHROME" || { echo "no Chrome/Chromium found — set CHROME=/path/to/chrome" >&2; exit 1; }; \
+	"$$CHROME" --headless --disable-gpu --no-pdf-header-footer \
+	  --print-to-pdf="$(CURDIR)/docs/veyron-customer-feature-guide.pdf" \
+	  "file://$(CURDIR)/docs/veyron-customer-feature-guide.html" 2>/dev/null; \
+	ls -la docs/veyron-customer-feature-guide.pdf
 
 helm-monitoring-validate: ## Validate veyron-monitoring Helm chart (template)
 	helm dependency build charts/veyron-monitoring
