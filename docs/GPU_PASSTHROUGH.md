@@ -85,9 +85,18 @@ Verify: `kubectl get node <n> -o jsonpath='{.status.allocatable}'` shows
 ## 3. Create a GPU VM
 
 ```bash
+# API
 curl -sk -X POST https://<host>:30151/api/v1/vms \
   -H "X-API-Key: $VEYRON_API_KEY" -H "Content-Type: application/json" \
-  -d '{"name":"gpu-vm","template":"ubuntu22","gpu":{"count":1}}'
+  -d '{"name":"gpu-vm","template":"ubuntu-22.04","gpu":{"count":1}}'
+
+# CLI — count, resource name, or RESOURCE:COUNT
+veyron create gpu-vm --template ubuntu-22.04 --gpu 1
+veyron create gpu-vm --template ubuntu-22.04 --gpu nvidia.com/GRID_T4-2Q:2
+veyron vrvm-create gpu-vm --template ubuntu-22.04 --gpu 1     # GitOps VeyronVM CR
+
+# Catalog profile — a VMProfile with spec.gpus grants the GPU implicitly
+# (see docs/TEMPLATE_CATALOG.md for the gpu-large example)
 ```
 
 - `gpu` sugar: `{count, resource_name (default nvidia.com/gpu), vgpu_profile}`.
