@@ -129,6 +129,8 @@ Veyron does not proxy the full PacketWolf UI/API (unlike v9s Zeus OS); use **Ope
 
 **Automatic wiring:** `bootstrap-integrations.sh` sets `VEYRON_ATLAS_URL` to `http://<svc>.<ns>.svc:5110` when an Atlas gateway Service is found — preferring the real-Ceph gateway (`atlas-gateway-ceph` in `rook-ceph`), then `atlas-gateway` in `zyvor-system` / `atlas`. Restart `veyron-api` after the Secret is applied (deploy script does this on rollout).
 
+**PVC↔RBD mapping caveat:** `GET /api/v1/atlas/vms/:ns/:name/volumes` reports `matched: false` for any disk whose PVC is **not on a Ceph StorageClass** (e.g. legacy `local-path` PVCs created before the cluster default was repointed to Ceph RBD) — that's correct behavior, not a wiring failure. Atlas's own discovery runs every ~60s inside the gateway; check `kubectl -n rook-ceph logs deploy/atlas-gateway-ceph | grep discover` when volumes look stale.
+
 **Manual verify:**
 
 ```bash

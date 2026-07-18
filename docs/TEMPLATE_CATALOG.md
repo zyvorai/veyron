@@ -13,9 +13,25 @@ Cluster-scoped **VMTemplate** and **VMProfile** CRDs provide a shared catalog fo
 Resolution order in the operator (`operator/internal/catalog/resolver.go`):
 
 1. VMTemplate defaults
-2. VMProfile CPU/memory/disk
+2. VMProfile CPU/memory/disk **+ GPUs** (`spec.gpus` — the VM's own explicit `gpus` win over the profile's)
 3. Blueprint per-VM cpu/memory/diskSize
 4. Explicit `override` (wins)
+
+A GPU-granting profile makes `profile: gpu-large` attach e.g. `nvidia.com/gpu`
+without the VM spec mentioning GPUs — note a passthrough GPU makes the VM
+non-live-migratable (see [GPU_PASSTHROUGH.md](GPU_PASSTHROUGH.md)):
+
+```yaml
+apiVersion: veyron.io/v1alpha1
+kind: VMProfile
+metadata: { name: gpu-large }
+spec:
+  cores: 8
+  memory: 32Gi
+  diskSize: 100Gi
+  gpus:
+    - { name: gpu0, deviceName: nvidia.com/gpu }
+```
 
 ## Bootstrap
 
