@@ -15,9 +15,12 @@ metrics, integrity, security posture, file/service/storage ops, …).
 
 ```
 veyron agent deploy <vm> [--spawn] [--os linux|windows] [--template T]
-                         [--bundle-url URL] [--iso URL] [--wait] [--dry-run]
-veyron agent status <vm>
-veyron agent verify <vm>
+                         [--bundle-url URL] [--iso URL] [--boot-pvc PVC]
+                         [--cd-image REF] [--full-access] [--wait] [--dry-run]
+veyron agent status  <vm>
+veyron agent verify  <vm>
+veyron agent methods <vm>
+veyron agent rpc     <vm> <method> [--params '<json>']
 ```
 
 | Command  | What it does |
@@ -25,10 +28,42 @@ veyron agent verify <vm>
 | `deploy` | Installs the agent into a VM. `--spawn` creates the VM first. `--wait` blocks until the agent connects and prints its version/capabilities. `--dry-run` renders manifests without applying. |
 | `status` | Prints guest OS, `AgentConnected`, agent version, and RPC method count. |
 | `verify` | Exercises the agent's JSON-RPC surface (version, capability list, a live metrics probe). |
+| `methods` | Lists every RPC method the agent advertises (`getCapabilities`). |
+| `rpc` | Invokes **any** agent method by name (the `guestkit.` prefix is optional). |
+
+### Deploy flags
+
+| Flag | Meaning |
+|------|---------|
+| `--spawn` | Create the VM first (Ubuntu for Linux; attach media for Windows). |
+| `--bundle-url URL` | Linux agent binary (default: published `guestkitd`). |
+| `--iso URL` | Windows agent ISO, imported via CDI (default: published bundle ISO). |
+| `--boot-pvc PVC` | Boot an existing PVC as the Windows OS disk (e.g. a CDI-uploaded image). |
+| `--cd-image REF` | Attach agent media as a CD from a containerDisk, or `pvc:<name>`. |
+| `--full-access` | Also install the privileged executor helper (`guestkitd-exec`). Does **not** change the agent's security policy — capabilities stay gated by `/etc/guestkit/agent-policy.yaml`; an operator opts them in there. |
 
 The agent binary / ISO default to the published GuestKit release
-(`guestkit-agent-v0.3.14`); override with `--bundle-url` (Linux `guestkitd`) or
-`--iso` (Windows bundle ISO).
+(`guestkit-agent-v0.3.14`); override with `--bundle-url` / `--iso`.
+
+## Invoking the full agent surface
+
+The agent exposes ~79 JSON-RPC methods. On KubeVirt they are reached over the
+QGA channel through a single generic passthrough (`guestkit-rpc`), so **every**
+method is callable — not just a hand-picked few:
+
+```console
+$ veyron agent methods gk-linux            # list all methods
+$ veyron agent rpc gk-linux security.posture
+$ veyron agent rpc gk-linux getEvidence
+$ veyron agent rpc gk-linux packages.inventory
+$ veyron agent rpc gk-linux migration.assess --params '{"target":"kvm"}'
+```
+
+Mutating and privileged methods (service control, storage expand, package
+install, customization, migration repair, file ops, shell exec) are gated by
+the agent's policy and are **off by default**; enable the ones you need in
+`/etc/guestkit/agent-policy.yaml` inside the guest. Read-only methods (evidence,
+health, metrics, inventories, posture, migration assessment) work out of the box.
 
 ## Linux
 
