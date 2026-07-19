@@ -14,7 +14,7 @@
 // The agent binary/ISO come from the public GuestKit release by default; override
 // with `--bundle-url` / `--iso`.
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use base64::Engine;
 use serde_json::{json, Value};
 use std::time::Duration;
@@ -75,7 +75,58 @@ pub async fn handle_agent(command: AgentCommands, namespace: &str) -> Result<()>
         }
         AgentCommands::Status { name } => report_status(&name, namespace).await,
         AgentCommands::Verify { name } => verify(&name, namespace).await,
+        AgentCommands::Rpc {
+            name,
+            method,
+            params,
+        } => agent_rpc(&name, &method, params, namespace).await,
+        AgentCommands::Methods { name } => list_methods(&name, namespace).await,
     }
+}
+
+/// Invoke any GuestKit RPC method on a VM (generic passthrough over QGA).
+async fn agent_rpc(
+    name: &str,
+    method: &str,
+    params: Option<String>,
+    namespace: &str,
+) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let params: Value = match params {
+        Some(s) => serde_json::from_str(&s).context("--params must be a JSON object")?,
+        None => json!({}),
+    };
+    let method = if method.starts_with("guestkit.") {
+        method.to_string()
+    } else {
+        format!("guestkit.{method}")
+    };
+    let v = kube::guestkit_client::guestkit_rpc_for_vm(
+        client.client(),
+        namespace,
+        name,
+        &method,
+        params,
+    )
+    .await?;
+    println!("{}", serde_json::to_string_pretty(&v)?);
+    Ok(())
+}
+
+/// List every RPC method the agent advertises (getCapabilities).
+async fn list_methods(name: &str, namespace: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let caps = guestkit_rpc(&client, namespace, name, "guestkit.getCapabilities").await?;
+    let methods = caps
+        .get("methods")
+        .and_then(|m| m.as_array())
+        .cloned()
+        .unwrap_or_default();
+    println!("{} agent RPC methods on '{name}':", methods.len());
+    for m in methods.iter().filter_map(|v| v.as_str()) {
+        println!("  {m}");
+    }
+    Ok(())
 }
 
 fn is_windows(os: &Option<String>, template: &Option<String>) -> bool {

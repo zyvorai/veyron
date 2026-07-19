@@ -127,6 +127,22 @@ pub enum AgentCommands {
         /// VM name
         name: String,
     },
+    /// Invoke any GuestKit agent RPC method (all of getCapabilities) on a VM.
+    Rpc {
+        /// VM name
+        name: String,
+        /// Method name (e.g. security.posture, packages.inventory, getEvidence;
+        /// the `guestkit.` prefix is optional)
+        method: String,
+        /// JSON params object (default: {})
+        #[arg(long)]
+        params: Option<String>,
+    },
+    /// List the agent's advertised RPC methods (from getCapabilities).
+    Methods {
+        /// VM name
+        name: String,
+    },
 }
 
 #[derive(Subcommand, Debug)]
