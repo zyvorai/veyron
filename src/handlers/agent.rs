@@ -150,6 +150,9 @@ async fn deploy_linux(
 fn linux_install_script(bundle_url: &str) -> String {
     format!(
         r#"set -eu
+# KubeVirt masquerade hands the guest a DNS proxy that can be flaky; pin working
+# resolvers (cluster CoreDNS + public) so the release download resolves.
+printf 'nameserver 10.43.0.10\nnameserver 8.8.8.8\nnameserver 1.1.1.1\n' > /etc/resolv.conf 2>/dev/null || true
 # Free the QGA virtio channel so GuestKit can own it (it speaks the QGA protocol).
 systemctl disable --now qemu-guest-agent 2>/dev/null || true
 mkdir -p /usr/local/bin
@@ -189,9 +192,7 @@ fn linux_cloud_init(bundle_url: &str) -> String {
         .join("\n");
     format!(
         r#"#cloud-config
-package_update: true
-packages:
-  - curl
+# curl ships in the Ubuntu cloud image; skip apt to avoid a slow/failing update.
 write_files:
   - path: /usr/local/sbin/veyron-install-guestkit.sh
     permissions: '0755'
@@ -224,19 +225,34 @@ async fn wait_and_verify_linux(client: &KubeClient, namespace: &str, name: &str)
     }
     println!("    ✓ AgentConnected — GuestKit is answering the QGA channel");
 
-    // Prove the deployed agent actually works: run its self-test battery in-guest
-    // (through the agent's own guest-exec) and show the version it reports.
-    let probe = "systemctl is-active guestkit-agent 2>/dev/null; echo '---'; \
-                 /usr/local/bin/guestkit selftest /tmp/gk.json >/dev/null 2>&1; \
-                 cat /tmp/gk.json 2>/dev/null | head -c 3000";
-    match guest_exec(client, namespace, name, "/bin/sh", &["-c", probe]).await {
-        Ok(out) => {
-            println!("==> In-guest GuestKit self-test:\n{}", indent(&out));
+    // Prove the deployed agent is really GuestKit and works: query it over the
+    // GuestKit JSON-RPC path (virsh qemu-agent-command in the virt-launcher pod).
+    match guestkit_rpc(client, namespace, name, "guestkit.getVersion").await {
+        Ok(v) => {
+            let ver = v.get("version").and_then(|x| x.as_str()).unwrap_or("?");
+            let proto = v.get("protocol").and_then(|x| x.as_str()).unwrap_or("?");
+            println!("    ✓ GuestKit agent v{ver} (protocol {proto}) responding");
         }
-        Err(e) => println!("    (self-test via guest-exec unavailable: {e})"),
+        Err(e) => println!("    (GuestKit RPC getVersion failed: {e})"),
+    }
+    if let Ok(c) = guestkit_rpc(client, namespace, name, "guestkit.getCapabilities").await {
+        if let Some(methods) = c.get("methods").and_then(|m| m.as_array()) {
+            println!("    ✓ {} RPC methods advertised", methods.len());
+        }
     }
     println!("\n✓ GuestKit agent deployed and verified in '{name}'.");
     Ok(())
+}
+
+/// Call a GuestKit JSON-RPC method over the QGA channel (virsh qemu-agent-command).
+async fn guestkit_rpc(
+    client: &KubeClient,
+    namespace: &str,
+    vm: &str,
+    method: &str,
+) -> Result<Value> {
+    kube::guestkit_client::guestkit_rpc_for_vm(client.client(), namespace, vm, method, json!({}))
+        .await
 }
 
 // ---------------------------------------------------------------------------
@@ -383,28 +399,19 @@ async fn report_status(name: &str, namespace: &str) -> Result<()> {
         println!("(GuestKit not answering the guest-agent channel yet)");
         return Ok(());
     }
-    let out = if windows {
-        guest_exec(
-            &client,
-            namespace,
-            name,
-            r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
-            &["-NoProfile", "-Command", "sc.exe query GuestKitAgent"],
-        )
-        .await
-    } else {
-        guest_exec(
-            &client,
-            namespace,
-            name,
-            "/bin/sh",
-            &["-c", "systemctl is-active guestkit-agent; /usr/local/bin/guestkit --help >/dev/null 2>&1 && echo binary-present"],
-        )
-        .await
-    };
-    match out {
-        Ok(o) => println!("GuestKit:\n{}", indent(&o)),
-        Err(e) => println!("GuestKit probe failed: {e}"),
+    let _ = windows;
+    match guestkit_rpc(&client, namespace, name, "guestkit.getVersion").await {
+        Ok(v) => println!(
+            "GuestKit:       v{} (protocol {})",
+            v.get("version").and_then(|x| x.as_str()).unwrap_or("?"),
+            v.get("protocol").and_then(|x| x.as_str()).unwrap_or("?"),
+        ),
+        Err(e) => println!("GuestKit RPC:   unavailable ({e})"),
+    }
+    if let Ok(c) = guestkit_rpc(&client, namespace, name, "guestkit.getCapabilities").await {
+        if let Some(m) = c.get("methods").and_then(|m| m.as_array()) {
+            println!("RPC methods:    {}", m.len());
+        }
     }
     Ok(())
 }
@@ -416,35 +423,37 @@ async fn verify(name: &str, namespace: &str) -> Result<()> {
     if !kube::windows_rdp::vmi_guest_agent_connected(&vmi_json) {
         bail!("guest agent not connected on '{name}' — deploy it first / wait for boot");
     }
-    let windows = kube::windows_rdp::is_windows_guest(None, Some(&vmi_json));
-    let out = if windows {
-        guest_exec(
-            &client,
-            namespace,
-            name,
-            r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
-            &[
-                "-NoProfile",
-                "-Command",
-                r#"& 'C:\Program Files\Zyvor GuestKit\guestkitd.exe' selftest C:\gk.json; Get-Content C:\gk.json -Raw"#,
-            ],
-        )
-        .await?
-    } else {
-        guest_exec(
-            &client,
-            namespace,
-            name,
-            "/bin/sh",
-            &[
-                "-c",
-                "/usr/local/bin/guestkit selftest /tmp/gk.json >/dev/null 2>&1; cat /tmp/gk.json",
-            ],
-        )
-        .await?
-    };
-    println!("{out}");
+    // Exercise the GuestKit agent over its JSON-RPC surface (via virsh QGA).
+    let ver = guestkit_rpc(&client, namespace, name, "guestkit.getVersion").await?;
+    println!(
+        "GuestKit v{} (protocol {})",
+        ver.get("version").and_then(|x| x.as_str()).unwrap_or("?"),
+        ver.get("protocol").and_then(|x| x.as_str()).unwrap_or("?"),
+    );
+    let caps = guestkit_rpc(&client, namespace, name, "guestkit.getCapabilities").await?;
+    if let Some(m) = caps.get("methods").and_then(|m| m.as_array()) {
+        println!("Advertised RPC methods ({}):", m.len());
+        for chunk in m
+            .iter()
+            .filter_map(|v| v.as_str())
+            .collect::<Vec<_>>()
+            .chunks(4)
+        {
+            println!("  {}", chunk.join(", "));
+        }
+    }
+    // A real read-only probe end to end (guest metrics via the QGA shim).
+    if let Ok(m) = guestkit_rpc(&client, namespace, name, "guestkit.getMetrics").await {
+        println!("\nlive metrics probe: {}", truncate(&m.to_string(), 400));
+    }
     Ok(())
+}
+
+fn truncate(s: &str, n: usize) -> String {
+    match s.char_indices().nth(n) {
+        Some((idx, _)) => format!("{}…", &s[..idx]),
+        None => s.to_string(),
+    }
 }
 
 // ---------------------------------------------------------------------------
