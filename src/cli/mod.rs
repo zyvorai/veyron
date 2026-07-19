@@ -107,6 +107,11 @@ pub enum AgentCommands {
         /// Boot an existing PVC as the OS disk (Windows) instead of a blank disk
         #[arg(long)]
         boot_pvc: Option<String>,
+        /// Enable the full agent surface: install the privileged guestkitd-exec
+        /// helper and a permissive policy (file ops, customization, storage
+        /// expand, package install, migration repair, shell exec). Linux only.
+        #[arg(long)]
+        full_access: bool,
         /// containerDisk/PVC image ref to attach as the agent CD instead of a CDI ISO import
         #[arg(long)]
         cd_image: Option<String>,

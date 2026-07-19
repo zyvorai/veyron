@@ -47,6 +47,7 @@ pub async fn handle_agent(command: AgentCommands, namespace: &str) -> Result<()>
             iso,
             boot_pvc,
             cd_image,
+            full_access,
             wait,
             dry_run,
         } => {
@@ -67,6 +68,7 @@ pub async fn handle_agent(command: AgentCommands, namespace: &str) -> Result<()>
                     bundle_url.unwrap_or_else(default_linux_bundle_url),
                     spawn,
                     wait,
+                    full_access,
                     dry_run,
                     namespace,
                 )
@@ -148,6 +150,7 @@ async fn deploy_linux(
     bundle_url: String,
     spawn: bool,
     wait: bool,
+    full_access: bool,
     dry_run: bool,
     namespace: &str,
 ) -> Result<()> {
@@ -163,7 +166,7 @@ async fn deploy_linux(
             .label("os", "ubuntu")
             .label("app.kubernetes.io/managed-by", "veyron-agent-deploy")
             .label("guestkit.zyvor.dev/agent", GUESTKIT_RELEASE_TAG)
-            .cloud_init(linux_cloud_init(&bundle_url))
+            .cloud_init(linux_cloud_init(&bundle_url, full_access))
             .enable_rng()
             .build();
         config.allow_internet = true; // needs egress to fetch the release binary
@@ -180,13 +183,13 @@ async fn deploy_linux(
         client.start_vm(namespace, name).await?;
         println!("==> VM '{name}' created and starting");
     } else if dry_run {
-        println!("{}", linux_cloud_init(&bundle_url));
+        println!("{}", linux_cloud_init(&bundle_url, full_access));
         return Ok(());
     } else {
         // Deploy into an already-running VM via guest-exec (needs a guest agent
         // already answering the QGA channel — e.g. a base cloud image's qemu-ga).
         println!("==> Installing GuestKit agent into running VM '{name}' via guest-exec");
-        let script = linux_install_script(&bundle_url);
+        let script = linux_install_script(&bundle_url, full_access);
         let out = guest_exec(&client, namespace, name, "/bin/sh", &["-c", &script]).await?;
         println!("{out}");
     }
@@ -202,7 +205,40 @@ async fn deploy_linux(
 }
 
 /// Shell that installs `guestkitd` as the QGA-channel agent and starts it.
-fn linux_install_script(bundle_url: &str) -> String {
+fn linux_install_script(bundle_url: &str, full_access: bool) -> String {
+    // --full-access installs the privileged executor helper (guestkitd-exec),
+    // which the agent uses to run privileged operations (service restart, power
+    // actions). It does NOT change the agent's security policy — every method
+    // stays gated by /etc/guestkit/agent-policy.yaml; an operator opts capabilities
+    // in there deliberately. Off by default.
+    let extra = if full_access {
+        let exec_url = format!("{bundle_url}-exec");
+        format!(
+            r#"mkdir -p /etc/guestkit /var/run/zyvor
+for i in $(seq 1 20); do
+  if curl -fkSL -o /usr/local/bin/guestkitd-exec "{exec_url}" && [ -s /usr/local/bin/guestkitd-exec ]; then break; fi
+  sleep 3
+done
+chmod 0755 /usr/local/bin/guestkitd-exec
+cat > /etc/systemd/system/guestkitd-exec.service <<'XUNIT'
+[Unit]
+Description=Zyvor GuestKit Executor (privileged)
+After=network-online.target
+[Service]
+ExecStart=/usr/local/bin/guestkitd-exec
+Restart=on-failure
+RestartSec=5
+User=root
+[Install]
+WantedBy=multi-user.target
+XUNIT
+systemctl daemon-reload
+systemctl enable --now guestkitd-exec || true
+"#
+        )
+    } else {
+        String::new()
+    };
     format!(
         r#"set -eu
 # KubeVirt masquerade hands the guest a DNS proxy that can be flaky; pin working
@@ -231,16 +267,16 @@ User=root
 WantedBy=multi-user.target
 UNIT
 systemctl daemon-reload
-systemctl enable --now guestkit-agent
+{extra}systemctl enable --now guestkit-agent
 "#
     )
 }
 
-fn linux_cloud_init(bundle_url: &str) -> String {
+fn linux_cloud_init(bundle_url: &str, full_access: bool) -> String {
     // Indent every script line by 6 spaces so it sits inside the `content: |`
     // block scalar (whose first line `#!/bin/sh` is also at 6 spaces). cloud-init
     // strips this common indent when it writes the file.
-    let script = format!("#!/bin/sh\n{}", linux_install_script(bundle_url))
+    let script = format!("#!/bin/sh\n{}", linux_install_script(bundle_url, full_access))
         .lines()
         .map(|l| format!("      {l}"))
         .collect::<Vec<_>>()
@@ -348,6 +384,7 @@ pub async fn deploy_agent_api(
             iso,
             boot_pvc: None,
             cd_image: None,
+            full_access: false,
             wait: false,
             dry_run: false,
         },
