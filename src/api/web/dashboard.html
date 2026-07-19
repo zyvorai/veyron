@@ -4523,12 +4523,18 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border,
   max-width:min(420px,55vw);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .mac-dynamic-island:hover{border-color:rgba(59,130,246,.35);box-shadow:0 4px 24px rgba(0,0,0,.25)}
-.mac-dynamic-island.expanded{border-radius:20px;padding:10px 14px 12px;min-width:280px;white-space:normal;flex-direction:column;align-items:stretch}
+.mac-dynamic-island.expanded{box-shadow:0 4px 24px rgba(0,0,0,.25);border-color:rgba(59,130,246,.35)}
+/* Detail panel is a teleported popover (appended to <body> on open, like .mac-menu-panel) —
+   it must never expand the pill in place: the menubar is a fixed 40px overflow:hidden row,
+   so an in-flow panel smeared its rows across the bar and above the viewport. */
 .mac-dynamic-island-expanded{
-  display:none;margin-top:8px;padding:0;font-size:.78rem;color:var(--text-muted);text-align:left;
-  border-top:1px solid rgba(255,255,255,.08);padding-top:10px;
+  display:none;font-size:.78rem;color:var(--text-muted);text-align:left;
+  min-width:280px;max-width:min(360px,92vw);padding:10px 12px;border-radius:14px;
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border-strong);box-shadow:var(--glass-shadow),0 16px 48px rgba(0,0,0,.45);
+  cursor:default;
 }
-.mac-dynamic-island.expanded .mac-dynamic-island-expanded{display:block}
+.mac-dynamic-island-expanded.open{display:block}
 .mac-island-row{display:flex;justify-content:space-between;gap:8px;padding:4px 0}
 .mac-island-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .mac-island-actions button{font-size:.72rem}
@@ -12210,19 +12216,53 @@ function toggleNotificationCenter() {
   }
 }
 
+var _islandPanelOrigin = null;
+
+function closeDynamicIsland() {
+  const btn = document.getElementById('mac-dynamic-island-btn');
+  const panel = document.getElementById('mac-dynamic-island-expanded');
+  dynamicIslandOpen = false;
+  if (btn) { btn.classList.remove('expanded'); btn.setAttribute('aria-expanded', 'false'); }
+  if (panel) {
+    panel.classList.remove('open');
+    panel.style.cssText = '';
+    // Restore the panel to its markup position inside the pill
+    if (_islandPanelOrigin) {
+      const o = _islandPanelOrigin;
+      if (o.next && o.next.parentNode === o.parent) o.parent.insertBefore(panel, o.next);
+      else o.parent.appendChild(panel);
+    }
+  }
+}
+
 function toggleDynamicIsland(ev) {
   if (ev && ev.target && ev.target.closest && ev.target.closest('.mac-island-actions')) return;
   const btn = document.getElementById('mac-dynamic-island-btn');
-  dynamicIslandOpen = !dynamicIslandOpen;
-  if (btn) {
-    btn.classList.toggle('expanded', dynamicIslandOpen);
-    btn.setAttribute('aria-expanded', dynamicIslandOpen ? 'true' : 'false');
+  const panel = document.getElementById('mac-dynamic-island-expanded');
+  if (dynamicIslandOpen) { closeDynamicIsland(); return; }
+  dynamicIslandOpen = true;
+  if (btn) { btn.classList.add('expanded'); btn.setAttribute('aria-expanded', 'true'); }
+  if (btn && panel) {
+    // Teleport to <body>: the menubar is overflow:hidden with a backdrop-filter, which both
+    // clips and traps position:fixed descendants (same reason .mac-menu-panel does this).
+    if (!_islandPanelOrigin) _islandPanelOrigin = { parent: panel.parentElement, next: panel.nextSibling };
+    document.body.appendChild(panel);
+    const rect = btn.getBoundingClientRect();
+    const width = 300;
+    const left = Math.max(8, Math.min(window.innerWidth - width - 8, Math.round(rect.left + rect.width / 2 - width / 2)));
+    panel.style.cssText = 'position:fixed;top:' + Math.round(rect.bottom + 8) + 'px;left:' + left + 'px;width:' + width + 'px;z-index:9000';
+    panel.classList.add('open');
   }
-  if (dynamicIslandOpen) {
-    refreshIslandAlerts();
-    updateMacStatusIsland();
-  }
+  refreshIslandAlerts();
+  updateMacStatusIsland();
 }
+
+document.addEventListener('click', e => {
+  if (!dynamicIslandOpen) return;
+  if (e.target.closest('#mac-dynamic-island-btn') || e.target.closest('#mac-dynamic-island-expanded')) return;
+  closeDynamicIsland();
+});
+window.addEventListener('resize', () => { if (dynamicIslandOpen) closeDynamicIsland(); });
 
 function loadDesktopWallpaper() {
   let wp = 'tahoe';
@@ -20385,6 +20425,7 @@ document.addEventListener('keydown', e => {
     if (typeof closePodLogsVmr === 'function') closePodLogsVmr();
     if (typeof closeForgeWizard === 'function') closeForgeWizard();
     closeDockEditor(); closeMacMenus(); closeMissionControlOverlay(); closeLaunchpad();
+    if (typeof closeDynamicIsland === 'function') closeDynamicIsland();
     const cc = document.getElementById('mac-control-center');
     if (cc) cc.classList.remove('open');
     const nc = document.getElementById('mac-notification-center');
