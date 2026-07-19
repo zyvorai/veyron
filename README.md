@@ -72,7 +72,7 @@ cargo build --release
 |----------|------|
 | Operator deploy | `charts/veyron-operator/` |
 | Remote deploy | `./scripts/deploy-remote.sh` |
-| GuestKit integration | `guestkit/` submodule |
+| GuestKit integration | `guestkit/` submodule · [`veyron agent deploy`](docs/GUESTKIT_AGENT.md) |
 
 ---
 

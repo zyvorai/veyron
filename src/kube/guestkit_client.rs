@@ -111,31 +111,28 @@ async fn discover_libvirt_domain(pods: &Api<Pod>, pod_name: &str) -> Result<Stri
 }
 
 fn jsonrpc_method_to_qga_execute(method: &str, params: &Value) -> Result<Value> {
+    // Generic passthrough: the agent's `guestkit-rpc` QGA command carries a full
+    // JSON-RPC request and routes it through the complete handler, so EVERY agent
+    // method (all of getCapabilities) is reachable — not just a hand-picked few.
+    // Agents that predate `guestkit-rpc` still answer the bespoke `guestkit-*`
+    // shims below, kept as a fallback for the common read methods.
+    Ok(json!({
+        "execute": "guestkit-rpc",
+        "arguments": { "method": method, "params": params },
+    }))
+}
+
+/// Legacy per-method QGA mapping (agents without the `guestkit-rpc` passthrough).
+#[allow(dead_code)]
+fn jsonrpc_method_to_qga_execute_legacy(method: &str, params: &Value) -> Result<Value> {
     match method {
         "guestkit.getEvidence" => Ok(json!({ "execute": "guestkit-get-evidence" })),
-        "guestkit.doctor" => Ok(json!({
-            "execute": "guestkit-doctor",
-            "arguments": params,
-        })),
+        "guestkit.doctor" => Ok(json!({ "execute": "guestkit-doctor", "arguments": params })),
         "guestkit.getCapabilities" => Ok(json!({ "execute": "guestkit-get-capabilities" })),
         "guestkit.getVersion" => Ok(json!({ "execute": "guestkit-get-version" })),
-        "guestkit.runFixPlan" => Ok(json!({
-            "execute": "guestkit-run-fix-plan",
-            "arguments": params,
-        })),
-        "guestkit.migrateScore" => Ok(json!({
-            "execute": "guestkit-migrate-score",
-            "arguments": params,
-        })),
         "guestkit.getMetrics" => Ok(json!({ "execute": "guestkit-get-metrics" })),
-        "guestkit.getFilesystem" => Ok(json!({ "execute": "guestkit-get-filesystem" })),
-        "guestkit.exec" => Ok(json!({
-            "execute": "guestkit-exec",
-            "arguments": params,
-        })),
-        "guestkit.enableRdp" => Ok(json!({ "execute": "guestkit-enable-rdp" })),
-        "guestkit.disableRdp" => Ok(json!({ "execute": "guestkit-disable-rdp" })),
-        other => anyhow::bail!("unsupported GuestKit RPC method for KubeVirt: {other}"),
+        "guestkit.getGuestHealth" => Ok(json!({ "execute": "guestkit-get-guest-health" })),
+        other => anyhow::bail!("no legacy QGA shim for: {other}"),
     }
 }
 
@@ -156,6 +153,10 @@ pub async fn qga_execute_for_vmi(
         vec![
             "virsh".to_string(),
             "qemu-agent-command".to_string(),
+            // Default QGA timeout is 5s; heavy methods (evidence, process
+            // enumeration, migration assessment, full health) need longer.
+            "--timeout".to_string(),
+            "60".to_string(),
             domain,
             payload,
         ],
@@ -204,6 +205,10 @@ pub async fn guestkit_rpc_for_vmi(
         vec![
             "virsh".to_string(),
             "qemu-agent-command".to_string(),
+            // Default QGA timeout is 5s; heavy methods (evidence, process
+            // enumeration, migration assessment, full health) need longer.
+            "--timeout".to_string(),
+            "60".to_string(),
             domain,
             payload,
         ],
