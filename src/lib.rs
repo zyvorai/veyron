@@ -1588,6 +1588,10 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             handlers::vm::handle_doctor(&cli.namespace).await?;
         }
 
+        Commands::Agent { command } => {
+            handlers::agent::handle_agent(command, &cli.namespace).await?;
+        }
+
         Commands::Ai { action, query } => {
             use cli::AiCommands;
             match action {
