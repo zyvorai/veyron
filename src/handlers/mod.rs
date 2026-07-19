@@ -5,6 +5,7 @@
 // Command handlers - extracted from lib.rs for maintainability
 // Each submodule handles a group of related CLI commands.
 
+pub mod agent;
 pub mod api;
 pub mod automation;
 pub mod backup;

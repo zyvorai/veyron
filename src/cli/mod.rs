@@ -82,6 +82,69 @@ pub enum CatalogAction {
     },
 }
 
+/// GuestKit in-guest agent operations.
+#[derive(Subcommand, Debug)]
+pub enum AgentCommands {
+    /// Deploy the GuestKit agent into a VM (optionally spawn it first) and verify.
+    Deploy {
+        /// VM name
+        name: String,
+        /// Create the VM first before deploying the agent
+        #[arg(long)]
+        spawn: bool,
+        /// Template hint (used only to infer OS family; e.g. windows-2022)
+        #[arg(long)]
+        template: Option<String>,
+        /// Guest OS family: linux or windows (inferred from the VM/template otherwise)
+        #[arg(long)]
+        os: Option<String>,
+        /// Linux agent binary URL (default: published GuestKit release `guestkitd`)
+        #[arg(long)]
+        bundle_url: Option<String>,
+        /// Windows agent ISO URL imported via CDI (default: published GuestKit release ISO)
+        #[arg(long)]
+        iso: Option<String>,
+        /// Boot an existing PVC as the OS disk (Windows) instead of a blank disk
+        #[arg(long)]
+        boot_pvc: Option<String>,
+        /// containerDisk/PVC image ref to attach as the agent CD instead of a CDI ISO import
+        #[arg(long)]
+        cd_image: Option<String>,
+        /// Wait for the agent to connect and run the in-guest self-test
+        #[arg(long)]
+        wait: bool,
+        /// Render manifests without applying
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Report GuestKit agent status inside a running VM.
+    Status {
+        /// VM name
+        name: String,
+    },
+    /// Run the GuestKit self-test battery inside a running VM.
+    Verify {
+        /// VM name
+        name: String,
+    },
+    /// Invoke any GuestKit agent RPC method (all of getCapabilities) on a VM.
+    Rpc {
+        /// VM name
+        name: String,
+        /// Method name (e.g. security.posture, packages.inventory, getEvidence;
+        /// the `guestkit.` prefix is optional)
+        method: String,
+        /// JSON params object (default: {})
+        #[arg(long)]
+        params: Option<String>,
+    },
+    /// List the agent's advertised RPC methods (from getCapabilities).
+    Methods {
+        /// VM name
+        name: String,
+    },
+}
+
 #[derive(Subcommand, Debug)]
 pub enum AiCommands {
     /// VM health report (Veyron Doctor)
@@ -2517,6 +2580,13 @@ pub enum Commands {
         /// Natural-language question when no subcommand is used
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         query: Vec<String>,
+    },
+
+    /// GuestKit in-guest agent — deploy, status, verify
+    #[command(name = "agent")]
+    Agent {
+        #[command(subcommand)]
+        command: AgentCommands,
     },
 
     // ========== GITOPS ==========
