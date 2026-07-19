@@ -45,6 +45,8 @@ pub async fn handle_agent(command: AgentCommands, namespace: &str) -> Result<()>
             os,
             bundle_url,
             iso,
+            boot_pvc,
+            cd_image,
             wait,
             dry_run,
         } => {
@@ -52,6 +54,8 @@ pub async fn handle_agent(command: AgentCommands, namespace: &str) -> Result<()>
                 deploy_windows(
                     &name,
                     iso.unwrap_or_else(default_windows_iso_url),
+                    boot_pvc,
+                    cd_image,
                     spawn,
                     dry_run,
                     namespace,
@@ -244,6 +248,70 @@ async fn wait_and_verify_linux(client: &KubeClient, namespace: &str, name: &str)
     Ok(())
 }
 
+/// Agent status as structured JSON (for the REST API / dashboard).
+pub async fn agent_status_json(
+    client: &KubeClient,
+    namespace: &str,
+    name: &str,
+) -> Result<Value> {
+    let vmi = client.get_vmi(namespace, name).await?;
+    let vmi_json = serde_json::to_value(&vmi)?;
+    let connected = kube::windows_rdp::vmi_guest_agent_connected(&vmi_json);
+    let windows = kube::windows_rdp::is_windows_guest(None, Some(&vmi_json));
+    let mut out = json!({
+        "vm": name,
+        "namespace": namespace,
+        "os": if windows { "windows" } else { "linux" },
+        "agentConnected": connected,
+    });
+    if connected {
+        if let Ok(v) = guestkit_rpc(client, namespace, name, "guestkit.getVersion").await {
+            out["version"] = v.get("version").cloned().unwrap_or(Value::Null);
+            out["protocol"] = v.get("protocol").cloned().unwrap_or(Value::Null);
+        }
+        if let Ok(c) = guestkit_rpc(client, namespace, name, "guestkit.getCapabilities").await {
+            if let Some(m) = c.get("methods").and_then(|m| m.as_array()) {
+                out["rpcMethods"] = json!(m.len());
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// Deploy the agent from the REST API (non-blocking — does not wait/verify).
+pub async fn deploy_agent_api(
+    namespace: &str,
+    name: &str,
+    os: Option<String>,
+    spawn: bool,
+    bundle_url: Option<String>,
+    iso: Option<String>,
+) -> Result<Value> {
+    handle_agent(
+        AgentCommands::Deploy {
+            name: name.to_string(),
+            spawn,
+            template: None,
+            os: os.clone(),
+            bundle_url: bundle_url.clone(),
+            iso,
+            boot_pvc: None,
+            cd_image: None,
+            wait: false,
+            dry_run: false,
+        },
+        namespace,
+    )
+    .await?;
+    Ok(json!({
+        "status": "deploying",
+        "vm": name,
+        "namespace": namespace,
+        "os": os.unwrap_or_else(|| "linux".into()),
+        "release": GUESTKIT_RELEASE_TAG,
+    }))
+}
+
 /// Call a GuestKit JSON-RPC method over the QGA channel (virsh qemu-agent-command).
 async fn guestkit_rpc(
     client: &KubeClient,
@@ -262,67 +330,117 @@ async fn guestkit_rpc(
 async fn deploy_windows(
     name: &str,
     iso_url: String,
+    boot_pvc: Option<String>,
+    cd_image: Option<String>,
     spawn: bool,
     dry_run: bool,
     namespace: &str,
 ) -> Result<()> {
-    // The GuestKit ISO is imported into a PVC by CDI and attached as a CD-ROM;
-    // Cloudbase-Init installs the MSI on first boot (registers GuestKitAgent).
+    // Agent media: either an existing containerDisk/PVC image (--cd-image) or a
+    // CDI import of the release ISO into a PVC, attached as a read-only CD-ROM.
     let iso_dv = format!("{name}-guestkit-iso");
-    let datavolume = guestkit_iso_datavolume(&iso_dv, &iso_url, namespace);
+    let datavolume = if cd_image.is_none() {
+        Some(guestkit_iso_datavolume(&iso_dv, &iso_url, namespace))
+    } else {
+        None
+    };
 
-    let mut config = VMConfigBuilder::new(name)
+    let mut builder = VMConfigBuilder::new(name)
         .namespace(namespace)
         .cpu(4, 1, 1)
         .memory("8Gi")
         .add_pod_network("default")
         .label("os", "windows")
         .label("app.kubernetes.io/managed-by", "veyron-agent-deploy")
-        .label("guestkit.zyvor.dev/agent", GUESTKIT_RELEASE_TAG)
-        .cloud_init_config_drive(windows_cloudbase_init())
-        .build();
+        .label("guestkit.zyvor.dev/agent", GUESTKIT_RELEASE_TAG);
+    // Only inject Cloudbase-Init when we don't have a prepared OS disk of our own.
+    if boot_pvc.is_none() {
+        builder = builder.cloud_init_config_drive(windows_cloudbase_init());
+    }
+    let mut config = builder.build();
     config.allow_internet = true;
-    // Attach the GuestKit ISO PVC as a read-only CD-ROM.
-    attach_iso_cdrom(&mut config, "guestkit-iso", &iso_dv);
+
+    // OS boot disk (virtio bus — the prepared Windows image ships virtio storage drivers).
+    if let Some(ref pvc) = boot_pvc {
+        push_disk(&mut config, "rootdisk", DiskSourceKind::Pvc(pvc.clone()), false, 1, "virtio");
+    }
+    // Agent CD-ROM: an existing PVC ("pvc:NAME"), a containerDisk image, or a
+    // CDI-imported ISO PVC (default).
+    match &cd_image {
+        Some(img) if img.starts_with("pvc:") => push_disk(
+            &mut config,
+            "guestkit-iso",
+            DiskSourceKind::Pvc(img[4..].to_string()),
+            true,
+            2,
+            "sata",
+        ),
+        Some(img) => push_disk(&mut config, "guestkit-iso", DiskSourceKind::Container(img.clone()), true, 2, "sata"),
+        None => push_disk(&mut config, "guestkit-iso", DiskSourceKind::DataVolume(iso_dv.clone()), true, 2, "sata"),
+    }
 
     let vm = kube::vm_config_to_kubevirt(&config)?;
 
-    if dry_run || !spawn {
-        println!("# GuestKit ISO import (CDI DataVolume):");
-        println!("{}", serde_json::to_string_pretty(&datavolume)?);
-        println!("---");
-        println!("# Windows VM with GuestKit ISO attached + Cloudbase-Init install:");
+    if dry_run || (!spawn && boot_pvc.is_none()) {
+        if let Some(dv) = &datavolume {
+            println!("# GuestKit ISO import (CDI DataVolume):");
+            println!("{}", serde_json::to_string_pretty(dv)?);
+            println!("---");
+        }
+        println!("# Windows VM (GuestKit agent media attached):");
         println!("{}", serde_json::to_string_pretty(&vm)?);
-        if !dry_run {
+        if !dry_run && boot_pvc.is_none() {
             println!(
-                "\nNote: spawning a Windows guest also needs a Windows OS disk/base image on \
-                 the cluster. Apply the DataVolume + VM above once that base image is present."
+                "\nNote: booting a Windows guest also needs a Windows OS disk. Pass \
+                 --boot-pvc <pvc> (e.g. a CDI-uploaded disk) to boot one."
             );
         }
         return Ok(());
     }
 
-    println!("==> Importing GuestKit ISO via CDI and creating Windows VM '{name}'");
+    println!("==> Creating Windows VM '{name}' (agent media attached)");
     let client = KubeClient::new().await?;
-    apply_datavolume(&client, namespace, &datavolume).await?;
+    if let Some(dv) = &datavolume {
+        apply_datavolume(&client, namespace, dv).await?;
+    }
     client.create_vm(&config).await?;
     client.start_vm(namespace, name).await?;
-    println!("==> Windows VM '{name}' created; Cloudbase-Init will install the GuestKit MSI on boot");
+    println!("==> Windows VM '{name}' created and starting");
     Ok(())
 }
 
-fn attach_iso_cdrom(config: &mut crate::config::VMConfig, disk_name: &str, dv_name: &str) {
-    use crate::config::types::{DiskConfig, DiskDeviceType, DiskSource};
+enum DiskSourceKind {
+    Pvc(String),
+    Container(String),
+    DataVolume(String),
+}
+
+fn push_disk(
+    config: &mut crate::config::VMConfig,
+    disk_name: &str,
+    source: DiskSourceKind,
+    cdrom: bool,
+    boot_order: u32,
+    bus: &str,
+) {
+    use crate::config::{DiskConfig, DiskDeviceType, DiskSource};
+    let source = match source {
+        DiskSourceKind::Pvc(name) => DiskSource::PVC { name },
+        DiskSourceKind::Container(image) => DiskSource::ContainerDisk { image },
+        DiskSourceKind::DataVolume(name) => DiskSource::DataVolume { name },
+    };
     config.disks.push(DiskConfig {
         name: disk_name.to_string(),
         size: "0".to_string(),
         storage_class: None,
-        boot_order: 3,
-        source: DiskSource::DataVolume {
-            name: dv_name.to_string(),
+        boot_order,
+        source,
+        device_type: if cdrom {
+            DiskDeviceType::CDROM
+        } else {
+            DiskDeviceType::Disk
         },
-        device_type: DiskDeviceType::CDROM,
-        bus: Some("sata".to_string()),
+        bus: Some(bus.to_string()),
         cache: None,
         io: None,
     });

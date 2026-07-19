@@ -104,6 +104,12 @@ pub enum AgentCommands {
         /// Windows agent ISO URL imported via CDI (default: published GuestKit release ISO)
         #[arg(long)]
         iso: Option<String>,
+        /// Boot an existing PVC as the OS disk (Windows) instead of a blank disk
+        #[arg(long)]
+        boot_pvc: Option<String>,
+        /// containerDisk/PVC image ref to attach as the agent CD instead of a CDI ISO import
+        #[arg(long)]
+        cd_image: Option<String>,
         /// Wait for the agent to connect and run the in-guest self-test
         #[arg(long)]
         wait: bool,
