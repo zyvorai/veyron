@@ -871,6 +871,14 @@ pub mod web {
                 )
                 .route("/api/v1/vms/:ns/:name/guest/exec", post(guest_exec_handler))
                 .route(
+                    "/api/v1/vms/:ns/:name/guest/agent",
+                    get(guest_agent_status_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest/agent/deploy",
+                    post(guest_agent_deploy_handler),
+                )
+                .route(
                     "/api/v1/platform/guestkit/binary",
                     get(guestkit_binary_handler),
                 )
@@ -2295,6 +2303,60 @@ pub mod web {
                 ok_json(&ApiResponse::success(&resp, &ctx.request_id))
             }
             Err(e) => err_json(500, "GUEST_EXEC_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    #[derive(Deserialize, Default)]
+    #[serde(rename_all = "camelCase")]
+    struct AgentDeployRequest {
+        #[serde(default)]
+        spawn: bool,
+        os: Option<String>,
+        bundle_url: Option<String>,
+        iso: Option<String>,
+    }
+
+    /// GET /api/v1/vms/:ns/:name/guest/agent — GuestKit agent status (connected, version, RPC count).
+    async fn guest_agent_status_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match crate::handlers::agent::agent_status_json(&kube, &ns, &name).await {
+            Ok(v) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest/agent");
+                ok_json(&ApiResponse::success(&v, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_AGENT_STATUS_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    /// POST /api/v1/vms/:ns/:name/guest/agent/deploy — deploy the GuestKit agent into the VM.
+    async fn guest_agent_deploy_handler(
+        State(_state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        body: Option<Json<AgentDeployRequest>>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let req = body.map(|Json(b)| b).unwrap_or_default();
+        match crate::handlers::agent::deploy_agent_api(
+            &ns, &name, req.os, req.spawn, req.bundle_url, req.iso,
+        )
+        .await
+        {
+            Ok(v) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest/agent/deploy");
+                ok_json(&ApiResponse::success(&v, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_AGENT_DEPLOY_FAILED", &sanitize_error(&e)),
         }
     }
 
