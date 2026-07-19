@@ -153,6 +153,10 @@ pub async fn qga_execute_for_vmi(
         vec![
             "virsh".to_string(),
             "qemu-agent-command".to_string(),
+            // Default QGA timeout is 5s; heavy methods (evidence, process
+            // enumeration, migration assessment, full health) need longer.
+            "--timeout".to_string(),
+            "60".to_string(),
             domain,
             payload,
         ],
@@ -201,6 +205,10 @@ pub async fn guestkit_rpc_for_vmi(
         vec![
             "virsh".to_string(),
             "qemu-agent-command".to_string(),
+            // Default QGA timeout is 5s; heavy methods (evidence, process
+            // enumeration, migration assessment, full health) need longer.
+            "--timeout".to_string(),
+            "60".to_string(),
             domain,
             payload,
         ],
