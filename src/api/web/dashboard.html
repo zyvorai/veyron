@@ -20463,6 +20463,9 @@ document.addEventListener('keydown', e => {
     if (typeof closeForgeWizard === 'function') closeForgeWizard();
     closeDockEditor(); closeMacMenus(); closeMissionControlOverlay(); closeLaunchpad();
     if (typeof closeDynamicIsland === 'function') closeDynamicIsland();
+    // The action log was the one overlay Escape did not dismiss — every other
+    // panel here closes, so it read as a stuck panel rather than a shortcut gap.
+    if (typeof closeActionLog === 'function') closeActionLog();
     const cc = document.getElementById('mac-control-center');
     if (cc) cc.classList.remove('open');
     const nc = document.getElementById('mac-notification-center');
