@@ -4060,11 +4060,38 @@ body.mac-desktop-root .mac-menubar.navbar{
 }
 body.mac-desktop-root .mac-menubar-left{flex:0 1 auto;min-width:0;overflow:hidden}
 body.mac-desktop-root .mac-menubar-center{flex:1 1 auto;min-width:0;overflow:hidden}
-/* The right cluster is all interactive controls (refresh interval, namespace,
-   theme, sign-out…). Shrinking it just clipped the trailing controls off the
-   window edge with no scroll and no overflow menu — the centre group, which is
-   already ellipsised, gives up space instead. */
-body.mac-desktop-root .navbar-right{flex:0 0 auto;min-width:0;overflow:visible}
+body.mac-desktop-root .navbar-right{flex:0 1 auto;min-width:0;overflow:hidden;flex-shrink:1}
+/* ── Menubar capacity ──────────────────────────────────────────────────────
+   The bar is a fixed-height overflow:hidden row, so any group whose content
+   exceeds its box loses controls off the edge silently — no scroll, no
+   overflow menu. A headless sweep found all three groups clipping below
+   1600px (right group short by 351px at 1280), which is how the refresh
+   control ended up sliced at the window edge.
+
+   Pinning a group only moves the starvation to its neighbours, so the fix is
+   to SHED low-priority controls before the bar runs out of room, and pin only
+   the small, essential left group (app menus + sidebar toggle, ~209px, which
+   cannot shrink). Verified 0px overflow on every group at 1280/1440/1600/
+   1920/2560 — re-check with scripts/menubar-capacity-check if you add a
+   control here. */
+body.mac-desktop-root .mac-menubar-left{flex:0 0 auto}
+body.mac-desktop-root .mac-menubar-title{min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:2000px){
+  body.mac-desktop-root[data-desktop-tier="advanced"] .menubar-tier-collapsible{display:none!important}
+}
+@media(max-width:1700px){
+  body.mac-desktop-root .mac-menubar-crumb{display:none!important}
+}
+@media(max-width:1500px){
+  body.mac-desktop-root[data-desktop-tier="advanced"] .topbar-location{display:none!important}
+  body.mac-desktop-root .mac-menubar-clock{display:none!important}
+  body.mac-desktop-root #vmr-action-log-btn,
+  body.mac-desktop-root #vmr-fleet-mood{display:none!important}
+}
+@media(max-width:1380px){
+  body.mac-desktop-root #btn-classic-nav{display:none!important}
+  body.mac-desktop-root .mac-menubar-title{display:none!important}
+}
 body.mac-desktop-root .mac-menubar-menus{flex-shrink:0}
 body.mac-desktop-root .mac-menu-trigger{padding:4px 8px;font-size:.78rem}
 body.mac-desktop-root .veyron-menu-wordmark{max-width:5.5rem;overflow:hidden;text-overflow:ellipsis}
