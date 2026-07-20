@@ -4060,7 +4060,11 @@ body.mac-desktop-root .mac-menubar.navbar{
 }
 body.mac-desktop-root .mac-menubar-left{flex:0 1 auto;min-width:0;overflow:hidden}
 body.mac-desktop-root .mac-menubar-center{flex:1 1 auto;min-width:0;overflow:hidden}
-body.mac-desktop-root .navbar-right{flex:0 1 auto;min-width:0;overflow:hidden;flex-shrink:1}
+/* The right cluster is all interactive controls (refresh interval, namespace,
+   theme, sign-out…). Shrinking it just clipped the trailing controls off the
+   window edge with no scroll and no overflow menu — the centre group, which is
+   already ellipsised, gives up space instead. */
+body.mac-desktop-root .navbar-right{flex:0 0 auto;min-width:0;overflow:visible}
 body.mac-desktop-root .mac-menubar-menus{flex-shrink:0}
 body.mac-desktop-root .mac-menu-trigger{padding:4px 8px;font-size:.78rem}
 body.mac-desktop-root .veyron-menu-wordmark{max-width:5.5rem;overflow:hidden;text-overflow:ellipsis}
@@ -12248,9 +12252,15 @@ function toggleDynamicIsland(ev) {
     if (!_islandPanelOrigin) _islandPanelOrigin = { parent: panel.parentElement, next: panel.nextSibling };
     document.body.appendChild(panel);
     const rect = btn.getBoundingClientRect();
+    const bar = document.querySelector('.mac-menubar');
     const width = 300;
     const left = Math.max(8, Math.min(window.innerWidth - width - 8, Math.round(rect.left + rect.width / 2 - width / 2)));
-    panel.style.cssText = 'position:fixed;top:' + Math.round(rect.bottom + 8) + 'px;left:' + left + 'px;width:' + width + 'px;z-index:9000';
+    // Clear the menubar, not just the pill: the pill is vertically centred in a
+    // taller bar (bottom ~37 inside a 48px bar), so anchoring to the pill alone
+    // still overlapped the bar's lower edge.
+    const barBottom = bar ? bar.getBoundingClientRect().bottom : rect.bottom;
+    const top = Math.round(Math.max(rect.bottom, barBottom) + 8);
+    panel.style.cssText = 'position:fixed;top:' + top + 'px;left:' + left + 'px;width:' + width + 'px;z-index:9000';
     panel.classList.add('open');
   }
   refreshIslandAlerts();
