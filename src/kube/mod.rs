@@ -1703,20 +1703,19 @@ impl KubeClient {
     }
 
     /// Hotplug a PVC volume onto a VM (`virtctl addvolume`).
-    pub async fn add_vm_volume(
-        &self,
-        namespace: &str,
-        vm_name: &str,
-        volume_name: &str,
-        pvc_name: &str,
-    ) -> Result<()> {
+    ///
+    /// The bundled virtctl (pinned via VIRTCTL_VERSION) has no `--pvc` flag —
+    /// `--volume-name` is the ONLY way to identify the source, and it must be
+    /// the actual PVC/DataVolume object's name (reproduced live: `unknown
+    /// flag: --pvc` — every hotplug call failed 100% of the time before this
+    /// fix). Callers wanting a distinct internal label independent of the PVC
+    /// name would need the raw KubeVirt subresource API instead of virtctl.
+    pub async fn add_vm_volume(&self, namespace: &str, vm_name: &str, pvc_name: &str) -> Result<()> {
         let output = tokio::process::Command::new("virtctl")
             .args([
                 "addvolume",
                 vm_name,
                 "--volume-name",
-                volume_name,
-                "--pvc",
                 pvc_name,
                 "-n",
                 namespace,
