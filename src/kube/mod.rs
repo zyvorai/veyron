@@ -1188,7 +1188,25 @@ impl KubeClient {
         caps: migration_guard::ClusterMigrationCaps,
     ) -> Result<migration_guard::MigrationEligibility> {
         let vm = self.get_vm(namespace, name).await?;
-        let vmi = self.get_vmi(namespace, name).await.ok();
+        // A missing VMI (404) genuinely means "not running" and should feed
+        // evaluate_eligibility as such. Any other error (throttling, a
+        // transient API hiccup, a brief race right after start) must NOT be
+        // folded into that same "not running" state — propagate it instead
+        // of letting it silently become a false VM_NOT_RUNNING blocker.
+        let vmi = match self.get_vmi(namespace, name).await {
+            Ok(vmi) => Some(vmi),
+            Err(e) => {
+                let not_found = matches!(
+                    e.downcast_ref::<kube::Error>(),
+                    Some(kube::Error::Api(ae)) if ae.code == 404
+                );
+                if not_found {
+                    None
+                } else {
+                    return Err(e).context("checking VMI status for migration eligibility");
+                }
+            }
+        };
         Ok(migration_guard::evaluate_eligibility(
             &vm,
             vmi.as_ref(),
