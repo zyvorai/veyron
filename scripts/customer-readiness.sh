@@ -161,7 +161,7 @@ if [[ "${P1_PASSED}" -eq 1 ]]; then
 
     # ── P3–P6 · New coverage (JSONL) ────────────────────────────────────────
     run_new_phase "P3 security & multi-tenancy" "${LOG_DIR}/p3-security.log" \
-        "${SCRIPT_DIR}/test/security-rbac-remote.sh" "${HOST}" "${PORT}" || true
+        "${SCRIPT_DIR}/test/security-rbac-remote.sh" "${HOST}" "${PORT}" "${SSH_USER}" || true
     run_new_phase "P4 data safety" "${LOG_DIR}/p4-data-safety.log" \
         "${SCRIPT_DIR}/test/data-safety-remote.sh" "${HOST}" "${PORT}" || true
     run_new_phase "P5 resilience & recovery" "${LOG_DIR}/p5-resilience.log" \
