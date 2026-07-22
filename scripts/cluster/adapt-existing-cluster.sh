@@ -12,6 +12,7 @@
 #   2. KubeVirt feature gates missing                   -> merge in the Day-2 gates
 #   3. vmStateStorageClass unset                        -> persistent TPM/EFI (Windows 11)
 #   4. No VolumeSnapshotClass for the filesystem driver -> add one
+#   5. containerd denies non-root access to Block PVCs  -> enable nonroot-devices (k3s)
 #
 # DRY RUN BY DEFAULT — prints the exact changes and exits. Pass --apply to commit.
 # Idempotent: safe to re-run.
@@ -219,8 +220,55 @@ EOF
   done < <($K get sc -o custom-columns=N:.metadata.name,P:.provisioner --no-headers 2>/dev/null)
 fi
 
-# ── 5. Report blockers we will NOT auto-fix ──────────────────────────────────
-echo; echo "5) Blockers requiring a human"
+# ── 5. containerd block-device ownership (blank/Block-mode DataVolumes) ───────
+# Without this, every non-root CDI importer pod (the default) fails opening
+# /dev/cdi-block-volume with "Permission denied" on ANY Block-mode PVC — the
+# DataVolume sits in ImportInProgress / CrashLoopBackOff forever. This is not
+# specific to Windows golden images: it breaks every blank Block-mode volume
+# (see kubevirt/containerized-data-importer doc/block_cri_ownership_config.md).
+# Reproduced and root-caused live on a customer-representative lab cluster —
+# k3s does not set this by default, so treat it as a go-live blocker.
+echo; echo "5) Block-mode DataVolume permissions (containerd)"
+K3S_CONF="/etc/rancher/k3s/config.yaml"
+K3S_CONTAINERD_CONF="/var/lib/rancher/k3s/agent/etc/containerd/config.toml"
+if command -v k3s >/dev/null 2>&1 || [[ -x /usr/local/bin/k3s ]]; then
+  # k3s's containerd agent dir is root-only (0700) — a plain bash `[[ -f ]]`
+  # test as a non-root SSH user silently reads as "file doesn't exist" rather
+  # than denied, so this must go through sudo, not a bash builtin test.
+  if sudo test -f "${K3S_CONTAINERD_CONF}" && sudo grep -q 'device_ownership_from_security_context = true' "${K3S_CONTAINERD_CONF}" 2>/dev/null; then
+    ok "containerd already honors device_ownership_from_security_context"
+  else
+    warn "containerd will deny non-root CDI importer pods access to Block-mode PVCs"
+    if [[ "${APPLY}" == "1" ]]; then
+      CHANGES=$((CHANGES + 1))
+      if ! sudo grep -q '^nonroot-devices:' "${K3S_CONF}" 2>/dev/null; then
+        sudo mkdir -p "$(dirname "${K3S_CONF}")"
+        echo 'nonroot-devices: true' | sudo tee -a "${K3S_CONF}" >/dev/null
+      fi
+      if sudo systemctl restart k3s 2>/dev/null; then
+        # Wait for the API to come back before moving on.
+        for _ in $(seq 1 30); do $K get nodes >/dev/null 2>&1 && break; sleep 5; done
+        ok "set nonroot-devices: true and restarted k3s"
+      else
+        bad "FAILED to restart k3s — set 'nonroot-devices: true' in ${K3S_CONF} and restart it by hand"
+      fi
+    else
+      plan "set 'nonroot-devices: true' in ${K3S_CONF} and restart k3s"
+      CHANGES=$((CHANGES + 1))
+    fi
+  fi
+elif sudo test -f /etc/containerd/config.toml; then
+  if sudo grep -q 'device_ownership_from_security_context = true' /etc/containerd/config.toml 2>/dev/null; then
+    ok "containerd already honors device_ownership_from_security_context"
+  else
+    warn "containerd will deny non-root CDI importer pods access to Block-mode PVCs —"
+    warn "  add device_ownership_from_security_context = true under [plugins.\"io.containerd.grpc.v1.cri\"]"
+    warn "  in /etc/containerd/config.toml and restart containerd (not auto-fixed on non-k3s hosts)"
+  fi
+fi
+
+# ── 6. Report blockers we will NOT auto-fix ──────────────────────────────────
+echo; echo "6) Blockers requiring a human"
 NODE_COUNT="$($K get nodes --no-headers 2>/dev/null | wc -l | tr -d ' ')"
 if [[ "${NODE_COUNT}" -lt 2 ]]; then
   warn "Single-node cluster — live migration is impossible until a 2nd node joins."
