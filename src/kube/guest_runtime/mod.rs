@@ -265,6 +265,44 @@ pub async fn guestkit_exec(ctx: &GuestContext, params: Value) -> Result<Value> {
     .await
 }
 
+/// Thin-provisioning reclaim (`fstrim -va` when `params` is empty, or a
+/// specific mount via `{"mount": "..."}`). The structured RPC, NOT shell
+/// exec — GuestKit's default policy disables `guestkit.exec`.
+pub async fn guestkit_storage_trim(ctx: &GuestContext, params: Value) -> Result<Value> {
+    guestkit_client::guestkit_rpc_for_vmi(
+        ctx.client.clone(),
+        &ctx.namespace,
+        &ctx.vmi_name,
+        "guestkit.storageTrim",
+        params,
+    )
+    .await
+}
+
+/// List available OS package updates (structured — does not install anything).
+pub async fn guestkit_packages_updates(ctx: &GuestContext) -> Result<Value> {
+    guestkit_client::guestkit_rpc_for_vmi(
+        ctx.client.clone(),
+        &ctx.namespace,
+        &ctx.vmi_name,
+        "guestkit.packages.updates",
+        json!({}),
+    )
+    .await
+}
+
+/// Install specific packages by name (`{"packages": [...]}, non-empty).
+pub async fn guestkit_packages_install(ctx: &GuestContext, params: Value) -> Result<Value> {
+    guestkit_client::guestkit_rpc_for_vmi(
+        ctx.client.clone(),
+        &ctx.namespace,
+        &ctx.vmi_name,
+        "guestkit.packages.install",
+        params,
+    )
+    .await
+}
+
 pub async fn guestkit_enable_rdp(ctx: &GuestContext) -> Result<Value> {
     guestkit_client::guestkit_rpc_for_vmi(
         ctx.client.clone(),
