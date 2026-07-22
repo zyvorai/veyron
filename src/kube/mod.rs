@@ -1642,6 +1642,56 @@ impl KubeClient {
         guest_runtime::guestkit_exec(&ctx, params).await
     }
 
+    /// Thin-provisioning reclaim (`fstrim`) via the structured GuestKit RPC.
+    pub async fn guest_storage_trim(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("Storage trim requires GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_storage_trim(&ctx, params).await
+    }
+
+    /// List available OS package updates via the structured GuestKit RPC.
+    pub async fn guest_packages_updates(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("Package updates require GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_packages_updates(&ctx).await
+    }
+
+    /// Install specific packages by name via the structured GuestKit RPC.
+    pub async fn guest_packages_install(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("Package install requires GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_packages_install(&ctx, params).await
+    }
+
     /// Read bundled GuestKit musl binary for cloud-init / platform endpoint.
     pub fn guestkit_binary_bytes() -> Result<Vec<u8>> {
         std::fs::read(guestkit_client::guestkit_binary_path()).with_context(|| {
