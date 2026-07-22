@@ -107,6 +107,15 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
     };
     let cdi_present = crd_exists("cdi.kubevirt.io", "v1beta1", "CDI").await;
     let velero_present = crd_exists("velero.io", "v1", "Backup").await;
+    // Same "API type servable != usable" trap the comment above already
+    // calls out for snapshots (see snapshots_usable) — velero_present alone
+    // just missed it. Reproduced live: velero_present was true (CRDs
+    // installed) with no Velero controller and no BackupStorageLocation at
+    // all running on the cluster; every backup created then sat with an
+    // empty status forever. day2_ops.velero_backups is what customers/tests
+    // gate real backup attempts on, so it needs the real-object check.
+    let velero_functional =
+        velero_present && super::velero::velero_backups_functional(client.clone()).await;
 
     // --- StorageClasses: which exist, which is default, and is it node-local? ---
     let sc_api: Api<StorageClass> = Api::all(client.clone());
@@ -276,7 +285,7 @@ async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_j
             "storage_class_migration": has("VolumesUpdateStrategy") || has("VolumeMigration"),
             // Snapshots need an actual VolumeSnapshotClass object, not just the CRD.
             "snapshots": snapshots_usable,
-            "velero_backups": velero_present,
+            "velero_backups": velero_functional,
             "cdi_import_convert": cdi_present,
             "live_migration": live_migration,
             "windows_golden_images": windows_golden_images,
