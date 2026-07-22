@@ -122,7 +122,7 @@ fi
 # MERGE, never replace: the cluster may already rely on gates we don't manage
 # (e.g. VideoConfig for the dashboard console).
 echo; echo "2) KubeVirt feature gates"
-WANT_GATES=(VMLiveUpdateFeatures VolumesUpdateStrategy VMPersistentState)
+WANT_GATES=(VMLiveUpdateFeatures VolumesUpdateStrategy VMPersistentState Snapshot)
 CUR_GATES_JSON="$($K get kubevirt kubevirt -n kubevirt -o jsonpath='{.spec.configuration.developerConfiguration.featureGates}' 2>/dev/null || echo '[]')"
 [[ -z "${CUR_GATES_JSON}" ]] && CUR_GATES_JSON='[]'
 
