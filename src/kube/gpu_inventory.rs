@@ -8,6 +8,8 @@
 //! handlers (`handlers/gpus.rs`, `handlers/operators.rs`) do the listing.
 
 use k8s_openapi::api::core::v1::Node;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 /// Vendor extended-resource prefixes that denote a GPU device plugin.
@@ -41,16 +43,28 @@ pub fn is_gpu_resource(name: &str) -> bool {
     GPU_RESOURCE_PREFIXES.iter().any(|p| name.starts_with(p))
 }
 
+/// NVIDIA vGPU mdev profile suffix: a size in GiB/fraction followed by the
+/// profile-class letter (`Q` virtual workstation, `C` compute, `B` vApps/vPC,
+/// `A` vApps), e.g. `-2Q`, `-4C`, `-1-5C` (MIG-backed fractional profile).
+/// This is what actually distinguishes a vGPU mdev name from a passthrough
+/// resource that merely has an uppercase model name (`nvidia.com/A100`,
+/// `H100`, `T4`, `L40`) — matching on "contains any uppercase letter" flagged
+/// those whole-GPU passthrough resources as vGPU too.
+static VGPU_PROFILE_SUFFIX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"-\d+(-\d+)?[QCBA]$").expect("static vGPU profile regex"));
+
 /// Classify a GPU extended resource by its naming convention:
-/// `*/mig-*` ⇒ MIG slice, an uppercase mdev profile (`GRID_*`, `*-2Q`) ⇒ vGPU,
-/// anything else (`nvidia.com/gpu`, PCI-model slugs) ⇒ whole-GPU passthrough.
+/// `*/mig-*` ⇒ MIG slice, a `GRID_*` prefix or an mdev profile suffix
+/// (`*-2Q`, `*-4C`, `*-1-5C`) ⇒ vGPU, anything else (`nvidia.com/gpu`,
+/// PCI-model slugs like `nvidia.com/A100`) ⇒ whole-GPU passthrough.
 pub fn classify_gpu_resource(name: &str) -> GpuResourceKind {
     let suffix = name.rsplit('/').next().unwrap_or(name);
     if suffix.starts_with("mig-") {
         GpuResourceKind::Mig
-    } else if suffix.starts_with("GRID_") || suffix.chars().any(|c| c.is_ascii_uppercase()) {
+    } else if suffix.starts_with("GRID_") || VGPU_PROFILE_SUFFIX.is_match(suffix) {
         // NVIDIA mdev profile names keep their marketing case (GRID_T4-2Q,
-        // A100D-40C); device-plugin passthrough resources are lowercase.
+        // A100D-40C); device-plugin passthrough resources are lowercase but
+        // may still carry an uppercase model name (nvidia.com/A100).
         GpuResourceKind::Vgpu
     } else {
         GpuResourceKind::Passthrough
@@ -131,6 +145,37 @@ mod tests {
         assert_eq!(
             classify_gpu_resource("nvidia.com/GRID_T4-2Q"),
             GpuResourceKind::Vgpu
+        );
+        assert_eq!(
+            classify_gpu_resource("nvidia.com/T4-4C"),
+            GpuResourceKind::Vgpu
+        );
+        assert_eq!(
+            classify_gpu_resource("nvidia.com/A100-1-5C"),
+            GpuResourceKind::Vgpu
+        );
+    }
+
+    /// Passthrough resources with uppercase NVIDIA model names must not be
+    /// misclassified as vGPU — that previously let migration_guard treat a
+    /// non-migratable passthrough GPU as migration-eligible.
+    #[test]
+    fn uppercase_model_names_are_still_passthrough() {
+        assert_eq!(
+            classify_gpu_resource("nvidia.com/A100"),
+            GpuResourceKind::Passthrough
+        );
+        assert_eq!(
+            classify_gpu_resource("nvidia.com/H100"),
+            GpuResourceKind::Passthrough
+        );
+        assert_eq!(
+            classify_gpu_resource("nvidia.com/T4"),
+            GpuResourceKind::Passthrough
+        );
+        assert_eq!(
+            classify_gpu_resource("nvidia.com/L40"),
+            GpuResourceKind::Passthrough
         );
     }
 

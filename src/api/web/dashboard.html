@@ -5502,6 +5502,9 @@ html.glass-deck .mac-page-toolbar{
           <button type="button" class="mac-menu-item" role="menuitem" onclick="openSpotlight();closeMacMenus()">Spotlight <span class="mac-menu-shortcut">⌘K</span></button>
           <button type="button" class="mac-menu-item" role="menuitem" id="mac-menu-zen-toggle" onclick="toggleZenMode();closeMacMenus()">Zen mode</button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="setShell(shellMode==='orbit'?'desktop':'orbit');closeMacMenus()">Toggle Orbit shell <span class="mac-menu-shortcut">⌘⇧O</span></button>
+          <div class="mac-menu-sep"></div>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="toggleActionLog();closeMacMenus()">Session Action Log <span class="mac-menu-shortcut">⌘⇧L</span></button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="openClusterSwitcher();closeMacMenus()">Switch Cluster Context…</button>
         </div>
       </div>
     </div>
@@ -14773,6 +14776,7 @@ function renderSettingsVmr() {
     ['↑ / ↓ or j / k', 'Navigate VM list (vi-style j/k also works)'],
     ['1/2/3/4', 'Switch view: Cards / Table / Topology / Map (VMs page)'],
     ['⌘L',  'Select all running VMs (VMs page)'],
+    ['⌘⇧L', 'Toggle Session Action Log'],
     ['c',    'Forge new VM shortcut'],
     ['p',    'Pause / unpause selected VM (VMs page, VM selected)'],
     ['s',    'Quick snapshot selected VM (VMs page, VM selected)'],
@@ -20193,6 +20197,16 @@ document.addEventListener('keydown', e => {
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
       e.preventDefault();
       setShell(shellMode === 'orbit' ? 'desktop' : 'orbit');
+      return;
+    }
+  }
+  // ⌘⇧L — Session Action Log. Always available, since the toolbar button
+  // (#vmr-action-log-btn) is shed below 1500px viewport width.
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      toggleActionLog();
       return;
     }
   }
@@ -27831,7 +27845,7 @@ async function fetchClusterContext(opts) {
     if (finderLoc) {
       finderLoc.textContent = clusters.length <= 1
         ? (clusters[0] ? clusters[0].name + ' (' + clusters[0].health + ')' : current)
-        : current + ' — use top bar to switch';
+        : current + ' — use top bar or View ▸ Switch Cluster Context… to switch';
     }
     if (sel && btn) {
       if (clusters.length <= 1) {
@@ -27868,6 +27882,25 @@ async function activateClusterContext() {
     if (currentPage === 'dashboard') { fetchEvents(false); await fetchOverview(); }
     loadPageData(currentPage);
   } catch (e) { toast('Activate cluster: ' + (e.message || String(e)), 'error'); }
+}
+
+// Reachable regardless of viewport width — the topbar cluster switcher
+// (#topbar-location-wrap) is shed below 1500px to keep the menubar from
+// overflowing, so this View-menu entry / ⌘⇧L-adjacent action is the only
+// way to switch cluster context on narrower screens.
+async function openClusterSwitcher() {
+  const sel = document.getElementById('cluster-activate-select');
+  const names = sel ? Array.from(sel.options).map(function(o) { return o.value; }).filter(Boolean) : [];
+  if (!sel || sel.disabled || names.length <= 1) {
+    toast('Only one cluster context is configured', 'info');
+    return;
+  }
+  const current = sel.value;
+  const choice = window.prompt('Switch cluster context to one of:\n' + names.join('\n'), current);
+  if (!choice || choice === current) return;
+  if (names.indexOf(choice) === -1) { toast('Unknown cluster context: ' + choice, 'error'); return; }
+  sel.value = choice;
+  await activateClusterContext();
 }
 
 async function fetchIncidents() {
