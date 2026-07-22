@@ -131,13 +131,19 @@ pub="$(IMG_NS="${IMG_NS}" python3 -c \
 code="$(api -o /tmp/pub.json -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "${pub}" "${BASE}/api/v1/images/publish")"
 [ "${code}" = "200" ] || die "publish returned HTTP ${code}: $(cat /tmp/pub.json)"
 ok "DataSource windows-golden published"
-api "${BASE}/api/v1/images/datasources" | grep -q '"windows-golden"' \
+# windows-golden lives in IMG_NS, not the API's default namespace — an
+# unscoped query silently returns an empty list (namespace-scoped by
+# default, not all-namespaces), which looks identical to "not published".
+api "${BASE}/api/v1/images/datasources?namespace=${IMG_NS}" | grep -q '"windows-golden"' \
   && ok "DataSource visible in catalog" || die "DataSource not in catalog"
 
 # ── 5. Clone a tenant VM from the image ─────────────────────────────────────
+# disk_size must be >= win-builder.yaml's dataVolumeTemplates storage request
+# (70Gi) — CDI's clone validator rejects a target smaller than its source
+# ("target resources requests storage size is smaller than the source").
 step "Create tenant VM from the image via POST /vms {image:...}"
 create="$(TENANT_NS="${TENANT_NS}" IMG_NS="${IMG_NS}" python3 -c \
-  "import json,os;print(json.dumps({'name':'win01','namespace':os.environ['TENANT_NS'],'template':'windows-2022','disk_size':'50Gi','image':{'name':'windows-golden','namespace':os.environ['IMG_NS']},'start':True}))")"
+  "import json,os;print(json.dumps({'name':'win01','namespace':os.environ['TENANT_NS'],'template':'windows-2022','disk_size':'70Gi','image':{'name':'windows-golden','namespace':os.environ['IMG_NS']},'start':True}))")"
 code="$(api -o /tmp/create.json -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "${create}" "${BASE}/api/v1/vms")"
 echo "${code}" | grep -qE '^20' || die "create VM returned HTTP ${code}: $(cat /tmp/create.json)"
 ok "win01 created"
