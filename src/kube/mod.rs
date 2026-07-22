@@ -668,6 +668,38 @@ impl KubeClient {
         }
     }
 
+    /// Merge-patch a single annotation onto a VM. Used for state that must
+    /// survive process/leader-election restarts (e.g. self-healing cooldown
+    /// tracking) — unlike an in-process map, an annotation on the VM object
+    /// itself is visible to whichever replica becomes leader next.
+    pub async fn annotate_vm(
+        &self,
+        namespace: &str,
+        name: &str,
+        key: &str,
+        value: &str,
+    ) -> Result<()> {
+        let vms: Api<VirtualMachine> = self.vm_api(namespace);
+        let mut annotations = serde_json::Map::new();
+        annotations.insert(
+            key.to_string(),
+            serde_json::Value::String(value.to_string()),
+        );
+        let patch = json!({
+            "metadata": {
+                "annotations": annotations
+            }
+        });
+        let pp = PatchParams::default();
+        match vms.patch(name, &pp, &Patch::Merge(&patch)).await {
+            Ok(_) => Ok(()),
+            Err(kube::Error::Api(ae)) if ae.code == 404 => {
+                Err(VeyronError::VmNotFound(name.to_string()).into())
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
+
     /// Stop a VM (set running: false)
     pub async fn stop_vm(&self, namespace: &str, name: &str) -> Result<VirtualMachine> {
         let vms: Api<VirtualMachine> = self.vm_api(namespace);
@@ -1710,7 +1742,12 @@ impl KubeClient {
     /// flag: --pvc` — every hotplug call failed 100% of the time before this
     /// fix). Callers wanting a distinct internal label independent of the PVC
     /// name would need the raw KubeVirt subresource API instead of virtctl.
-    pub async fn add_vm_volume(&self, namespace: &str, vm_name: &str, pvc_name: &str) -> Result<()> {
+    pub async fn add_vm_volume(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        pvc_name: &str,
+    ) -> Result<()> {
         let output = tokio::process::Command::new("virtctl")
             .args([
                 "addvolume",
