@@ -71,9 +71,42 @@ pub struct VeleroRestoreRecord {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VeleroStatusResponse {
     pub veyron_context: super::feature_context::VmrogueFeatureContext,
+    /// The Velero API type is servable (CRDs installed) — does NOT mean
+    /// backups will actually complete, see `backups_functional`.
     pub velero_available: bool,
+    /// A real, `Available`-phase BackupStorageLocation exists. Reproduced
+    /// live: velero_available can be true (CRDs installed) while Velero has
+    /// no controller and no storage location at all — every Backup object
+    /// created then sits with an empty status forever, no error, no
+    /// progress. This is the signal that actually predicts whether
+    /// `POST /velero/backups` will do anything.
+    pub backups_functional: bool,
     pub backups: Vec<VeleroBackupRecord>,
     pub restores: Vec<VeleroRestoreRecord>,
+}
+
+/// A real, ready-to-use BackupStorageLocation exists — the signal that
+/// distinguishes "Velero CRDs are installed" from "Velero backups will
+/// actually work here" (see `VeleroStatusResponse::backups_functional`).
+#[cfg(feature = "web")]
+pub(crate) async fn velero_backups_functional(client: kube::Client) -> bool {
+    use kube::api::{Api, ApiResource, DynamicObject};
+    let ar = ApiResource::from_gvk(&kube::core::GroupVersionKind::gvk(
+        "velero.io",
+        "v1",
+        "BackupStorageLocation",
+    ));
+    let api: Api<DynamicObject> = Api::all_with(client, &ar);
+    let Ok(list) = api.list(&kube::api::ListParams::default()).await else {
+        return false;
+    };
+    list.items.iter().any(|o| {
+        o.data
+            .get("status")
+            .and_then(|s| s.get("phase"))
+            .and_then(|p| p.as_str())
+            == Some("Available")
+    })
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -235,6 +268,7 @@ async fn velero_status(
         plural: "restores".to_string(),
     };
 
+    let client_for_bsl_check = client.clone();
     let backup_api: Api<DynamicObject> = Api::all_with(client.clone(), &backup_ar);
     let restore_api: Api<DynamicObject> = Api::all_with(client, &restore_ar);
 
@@ -335,9 +369,12 @@ async fn velero_status(
         })
         .unwrap_or_default();
 
+    let backups_functional = velero_backups_functional(client_for_bsl_check).await;
+
     Json(VeleroStatusResponse {
         veyron_context: velero_context(velero_available),
         velero_available,
+        backups_functional,
         backups,
         restores,
     })
