@@ -1311,7 +1311,13 @@ pub mod web {
     /// Maps known error types to safe user-facing messages.
     /// For anything else, returns a generic message to avoid leaking internals.
     fn sanitize_error(e: &dyn std::fmt::Display) -> String {
-        let msg = e.to_string();
+        // `{}` on an anyhow::Error built with `.context(...)` only shows the
+        // outer context message — the real cause (e.g. a KubeVirt admission
+        // webhook denial) is invisible to `e.to_string()` and every pattern
+        // below silently never matches. `{:#}` (alternate) walks the full
+        // chain ("context: cause1: cause2"); harmless no-op for any other
+        // Display impl that doesn't special-case the alternate flag.
+        let msg = format!("{e:#}");
         let lower = msg.to_lowercase();
 
         // Forge VM / CRUD: Kubernetes returns NotFound for missing namespaces and missing APIs —
@@ -4386,7 +4392,15 @@ pub mod web {
                             &ctx.request_id,
                         ))
                     }
-                    Err(e) => err_json(500, "CREATE_FAILED", &sanitize_error(&e)),
+                    Err(e) => {
+                        // sanitize_error collapses unmatched causes to a generic
+                        // "Internal server error" for the client — log the real
+                        // cause server-side or it's unrecoverable from the API
+                        // response alone (e.g. an admission-webhook denial like
+                        // "snapshot feature gate not enabled").
+                        log::error!("Create snapshot '{}/{}' failed: {}", ns, vm, e);
+                        err_json(500, "CREATE_FAILED", &sanitize_error(&e))
+                    }
                 }
             }
             Err(e) => err_json(503, "SERVICE_UNAVAILABLE", &sanitize_error(&e)),
