@@ -33,7 +33,7 @@ pub mod web {
         response::{Html, IntoResponse},
         routing::{delete, get, post, put},
     };
-    use k8s_openapi::api::core::v1::Service;
+    use k8s_openapi::api::core::v1::{PersistentVolumeClaim, Service};
     use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
     use once_cell::sync::Lazy;
     use serde::{Deserialize, Serialize};
@@ -1318,6 +1318,14 @@ pub mod web {
         // chain ("context: cause1: cause2"); harmless no-op for any other
         // Display impl that doesn't special-case the alternate flag.
         let msg = format!("{e:#}");
+        // This is the single choke point ~75 handler error paths in this file
+        // funnel through before returning a client-facing message — most of
+        // them never separately log the real cause, so an error that doesn't
+        // match one of the patterns below (falls through to a generic
+        // "Internal server error") was previously unrecoverable from the API
+        // response AND invisible in the logs. Log it here once, centrally,
+        // instead of requiring every call site to remember to.
+        log::error!("API error (sanitized for client): {msg}");
         let lower = msg.to_lowercase();
 
         // Forge VM / CRUD: Kubernetes returns NotFound for missing namespaces and missing APIs —
@@ -3714,6 +3722,52 @@ pub mod web {
     /// Namespace holding the golden-image catalog when the caller doesn't say.
     const DEFAULT_IMAGE_NAMESPACE: &str = "vm-images";
 
+    /// Resolve the actual size of a golden image's backing PVC, so a caller
+    /// who omits `disk_size` doesn't inherit the template's container-disk
+    /// placeholder ("0" — see `add_container_disk`, "container disks don't
+    /// need size") as the clone's target size. CDI rejects a zero-or-less
+    /// storage request outright ("Storage size can't be equal or less than
+    /// zero"), and separately requires the clone target to be >= the source,
+    /// so matching the source's own size is the only value that always works.
+    async fn resolve_golden_image_size(
+        client: &kube::Client,
+        name: &str,
+        namespace: &str,
+        from_pvc: bool,
+    ) -> Option<String> {
+        use kube::Api;
+        use kube::api::{ApiResource, DynamicObject};
+        let pvc_api: Api<PersistentVolumeClaim> = Api::namespaced(client.clone(), namespace);
+        let (pvc_name, pvc_ns) = if from_pvc {
+            (name.to_string(), namespace.to_string())
+        } else {
+            let ar = ApiResource {
+                group: "cdi.kubevirt.io".to_string(),
+                version: "v1beta1".to_string(),
+                api_version: "cdi.kubevirt.io/v1beta1".to_string(),
+                kind: "DataSource".to_string(),
+                plural: "datasources".to_string(),
+            };
+            let ds_api: Api<DynamicObject> = Api::namespaced_with(client.clone(), namespace, &ar);
+            let ds = ds_api.get(name).await.ok()?;
+            let src = ds.data.get("spec")?.get("source")?.get("pvc")?;
+            let src_name = src.get("name")?.as_str()?.to_string();
+            let src_ns = src
+                .get("namespace")
+                .and_then(|n| n.as_str())
+                .unwrap_or(namespace)
+                .to_string();
+            (src_name, src_ns)
+        };
+        let pvc_api: Api<PersistentVolumeClaim> = if pvc_ns == namespace {
+            pvc_api
+        } else {
+            Api::namespaced(client.clone(), &pvc_ns)
+        };
+        let pvc = pvc_api.get(&pvc_name).await.ok()?;
+        Some(pvc.spec?.resources?.requests?.get("storage")?.0.clone())
+    }
+
     fn default_allow_internet() -> bool {
         true
     }
@@ -3865,10 +3919,12 @@ pub mod web {
         let mut config = builder.build();
 
         // Override disk size if specified
+        let mut disk_size_explicit = false;
         if let Some(ref ds) = req.disk_size {
             if let Some(disk) = config.disks.first_mut() {
                 disk.size = ds.clone();
             }
+            disk_size_explicit = true;
         } else if let Some(ref profile_name) = req.profile {
             // Apply profile disk size if no explicit override
             if let Ok(profiles) = PROFILES.read() {
@@ -3876,6 +3932,7 @@ pub mod web {
                     if let Some(disk) = config.disks.first_mut() {
                         disk.size = profile.disk_size.clone();
                     }
+                    disk_size_explicit = true;
                 }
             }
         }
@@ -3886,6 +3943,41 @@ pub mod web {
         if let Some(ref img) = req.image {
             if img.name.is_empty() {
                 return err_json(400, "INVALID_IMAGE", "image.name cannot be empty");
+            }
+            let img_ns = img
+                .namespace
+                .clone()
+                .unwrap_or_else(|| DEFAULT_IMAGE_NAMESPACE.to_string());
+            // Most templates' root disk starts as a containerDisk, whose size
+            // defaults to the placeholder "0" ("container disks don't need
+            // size" — see add_container_disk). Left as-is, that "0" gets sent
+            // to CDI verbatim as the clone's target size and is rejected
+            // ("Storage size can't be equal or less than zero"). If the
+            // caller didn't pin a size explicitly, infer it from the source
+            // PVC instead of silently shipping an unusable "0" — CDI also
+            // requires the clone target to be >= the source, so matching it
+            // is the only value that's always valid.
+            if !disk_size_explicit {
+                let client = { state.read().await.kube_client.client() };
+                match resolve_golden_image_size(&client, &img.name, &img_ns, img.from_pvc).await {
+                    Some(size) => {
+                        if let Some(disk) = config.disks.first_mut() {
+                            disk.size = size;
+                        }
+                    }
+                    None => {
+                        return err_json(
+                            400,
+                            "INVALID_IMAGE",
+                            &format!(
+                                "could not resolve a size for image '{}' in namespace '{}' \
+                                 (DataSource/source PVC not found or not yet bound) — pass \
+                                 disk_size explicitly",
+                                img.name, img_ns
+                            ),
+                        );
+                    }
+                }
             }
             let Some(root) = config.disks.first_mut() else {
                 return err_json(
