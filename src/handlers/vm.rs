@@ -926,10 +926,17 @@ pub async fn handle_volume_add(
     pvc: String,
     namespace: &str,
 ) -> Result<()> {
+    // virtctl addvolume has no way to give the hotplugged volume an internal
+    // label distinct from the PVC it references — `--volume-name` must be
+    // the PVC's own name (see KubeClient::add_vm_volume).
+    if volume_name != pvc {
+        anyhow::bail!(
+            "volume name must equal the PVC name — virtctl addvolume can only reference a \
+             volume by its actual PVC name, it has no separate internal-label flag"
+        );
+    }
     let client = crate::kube::KubeClient::new().await?;
-    client
-        .add_vm_volume(namespace, &name, &volume_name, &pvc)
-        .await?;
+    client.add_vm_volume(namespace, &name, &pvc).await?;
     println!(
         "{}",
         color::success(&format!(

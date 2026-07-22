@@ -3305,11 +3305,20 @@ pub mod web {
         if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
             return resp;
         }
+        // virtctl's addvolume has no way to give the hotplugged volume an
+        // internal label distinct from the PVC it references (see
+        // add_vm_volume) — `--volume-name` must literally be the PVC's own
+        // name. Reject up front rather than silently ignoring volume_name.
+        if req.volume_name != req.pvc_name {
+            return err_json(
+                400,
+                "INVALID_VOLUME_NAME",
+                "volume_name must equal pvc_name — virtctl addvolume can only reference a \
+                 volume by its actual PVC name, it has no separate internal-label flag",
+            );
+        }
         let client = { state.read().await.kube_client.clone() };
-        match client
-            .add_vm_volume(&ns, &name, &req.volume_name, &req.pvc_name)
-            .await
-        {
+        match client.add_vm_volume(&ns, &name, &req.pvc_name).await {
             Ok(()) => {
                 let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/volumes/hotplug");
                 ok_json(&ApiResponse::success(

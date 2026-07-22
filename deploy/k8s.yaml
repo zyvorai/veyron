@@ -60,6 +60,14 @@ rules:
     resources:
       - "virtualmachineinstances/guest-exec-status"
     verbs: ["get"]
+  # Volume hotplug/hotremove (virtctl addvolume/removevolume act on the VMI,
+  # not the VM, even though the CLI takes the VM name) — reproduced live:
+  # "cannot update resource virtualmachineinstances/addvolume" without this.
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - "virtualmachineinstances/addvolume"
+      - "virtualmachineinstances/removevolume"
+    verbs: ["update"]
   # Snapshots
   - apiGroups: ["snapshot.kubevirt.io"]
     resources: ["virtualmachinesnapshots", "virtualmachinesnapshotcontents", "virtualmachinerestores"]
