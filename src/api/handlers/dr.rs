@@ -85,10 +85,10 @@ pub fn router(state: SharedState) -> Router {
 
 #[cfg(feature = "web")]
 async fn dr_failover(
-    State(_state): State<SharedState>,
+    State(state): State<SharedState>,
     Json(req): Json<DrFailoverRequest>,
 ) -> Result<Json<DrFailoverResponse>, (StatusCode, Json<serde_json::Value>)> {
-    perform_dr_restore(req, "failover").await
+    perform_dr_restore(state, req, "failover").await
 }
 
 /// Failback: restore the VM from its latest ready snapshot when returning the
@@ -96,14 +96,15 @@ async fn dr_failover(
 /// failover, direction-labelled — pair with `GET /dr/export` for cross-cluster.
 #[cfg(feature = "web")]
 async fn dr_failback(
-    State(_state): State<SharedState>,
+    State(state): State<SharedState>,
     Json(req): Json<DrFailoverRequest>,
 ) -> Result<Json<DrFailoverResponse>, (StatusCode, Json<serde_json::Value>)> {
-    perform_dr_restore(req, "failback").await
+    perform_dr_restore(state, req, "failback").await
 }
 
 #[cfg(feature = "web")]
 async fn perform_dr_restore(
+    state: SharedState,
     req: DrFailoverRequest,
     direction: &str,
 ) -> Result<Json<DrFailoverResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -112,6 +113,31 @@ async fn perform_dr_restore(
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({ "error": "namespace and vm_name required" })),
         ));
+    }
+
+    // A real disaster-recovery call shouldn't require the caller to remember
+    // a separate "stop the VM, wait, then fail over" dance — reproduced
+    // live: failover on a still-running VM silently rode restore_in_place's
+    // internal up-to-60s wait-for-stop loop straight into the HTTP layer's
+    // default 30s timeout, returning a bare 408 with no body — the worst
+    // possible failure mode for an operation invoked during an actual
+    // outage. Stop it here, up front, if it's running: fast (a delete-VMI
+    // call, not a wait), and it's what "fail over now" should mean anyway.
+    if !req.dry_run {
+        let kube = { state.read().await.kube_client.clone() };
+        // A VMI existing at all means the VM is running or starting —
+        // matches the same "get_vmi Ok ⇒ running" convention used elsewhere
+        // in this codebase (e.g. get_vm_node/get_vm_ip treat 404 as stopped).
+        if kube.get_vmi(&req.namespace, &req.vm_name).await.is_ok() {
+            if let Err(e) = kube.stop_vm(&req.namespace, &req.vm_name).await {
+                return Err((
+                    StatusCode::BAD_GATEWAY,
+                    Json(serde_json::json!({
+                        "error": format!("could not stop VM '{}' before {direction}: {e}", req.vm_name)
+                    })),
+                ));
+            }
+        }
     }
 
     let manager = crate::snapshots::SnapshotManager::new(&req.namespace)

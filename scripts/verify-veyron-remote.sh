@@ -182,8 +182,23 @@ check_json_grep "GET /api/v1/costs/summary" \
     "${BASE}/api/v1/costs/summary?namespace=all" 'total_cost'
 check_json_ok "GET /api/v1/vms?ns=veyron-system" "${BASE}/api/v1/vms?namespace=veyron-system" yes
 check_json_ok "GET /api/v1/vms?ns=all" "${BASE}/api/v1/vms?namespace=all" yes
-check_json_grep "GET /api/v1/vms (drift fields)" \
-    "${BASE}/api/v1/vms?namespace=all" '"veyron_managed"'
+# check_json_grep would hard-fail here whenever the cluster simply has zero
+# VMs at the moment this runs (e.g. right after P7's E2E VM self-cleans) —
+# there's no VM object for the "veyron_managed" field to appear on, which is
+# not a defect. Only fail when the list is non-empty and the field is still
+# missing.
+vms_body=$(curl -skS --connect-timeout 15 --max-time 45 \
+    -H "X-API-Key: ${KEY}" "${BASE}/api/v1/vms?namespace=all" || true)
+if echo "${vms_body}" | grep -q '"veyron_managed"'; then
+    echo "  ✔ GET /api/v1/vms (drift fields)"
+elif echo "${vms_body}" | grep -qE '"data"\s*:\s*\[\]'; then
+    echo "  ○ GET /api/v1/vms (drift fields) — skipped, no VMs currently exist"
+else
+    echo "  ✗ GET /api/v1/vms (drift fields)"
+    echo "${vms_body}" | head -c 400 | sed 's/^/    /'
+    echo ""
+    FAIL=$((FAIL + 1))
+fi
 drift_code=$(curl -skS --connect-timeout 15 --max-time 45 -o /dev/null -w '%{http_code}' \
     -H "X-API-Key: ${KEY}" \
     "${BASE}/api/v1/vms/default/nonexistent-vm/drift" || echo "000")

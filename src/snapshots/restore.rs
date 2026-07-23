@@ -128,21 +128,28 @@ impl RestoreManager {
     ) -> Result<RestoreInfo> {
         // Verify the VM is not running before an in-place restore. A VM's
         // printableStatus can read "Stopped" while its VMI is still terminating,
-        // so wait out that race (up to ~60s) instead of rejecting immediately —
-        // otherwise a stop-then-restore sequence intermittently fails with
-        // "currently running".
+        // so wait out that race instead of rejecting immediately — otherwise a
+        // stop-then-restore sequence intermittently fails with "currently
+        // running". Capped well under the default HTTP request timeout
+        // (VEYRON_HTTP_REQUEST_TIMEOUT_SECS, 30s) — this loop previously
+        // waited up to 60s, so any caller hitting it (e.g. DR failover on a
+        // still-running VM) got a bare, bodyless 408 from the timeout layer
+        // instead of ever seeing this function's own clear error message.
+        // Increase VEYRON_HTTP_REQUEST_TIMEOUT_SECS if VMs on this cluster
+        // routinely take longer than that to terminate.
         let mut waited_secs = 0u64;
+        const MAX_WAIT_SECS: u64 = 20;
         loop {
             match self.is_vm_running(&self.namespace, vm_name).await {
                 Ok(false) => break, // VMI gone — safe to proceed
-                Ok(true) if waited_secs < 60 => {
+                Ok(true) if waited_secs < MAX_WAIT_SECS => {
                     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
                     waited_secs += 3;
                 }
                 Ok(true) => {
                     return Err(anyhow::anyhow!(
                         "Cannot restore in-place: VM '{}' is still running after waiting {}s \
-                         for it to stop. Stop the VM first.",
+                         for it to stop. It may still be terminating — retry shortly.",
                         vm_name,
                         waited_secs
                     ));

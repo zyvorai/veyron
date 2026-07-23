@@ -217,5 +217,11 @@ func mergeVMSpec(base, overlay veyronv1alpha1.VeyronVMSpec) veyronv1alpha1.Veyro
 	if overlay.Windows != nil {
 		out.Windows = overlay.Windows
 	}
+	if len(overlay.GPUs) > 0 {
+		out.GPUs = overlay.GPUs
+	}
+	if len(overlay.HostDevices) > 0 {
+		out.HostDevices = overlay.HostDevices
+	}
 	return out
 }

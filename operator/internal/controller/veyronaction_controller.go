@@ -355,6 +355,10 @@ func (r *VeyronActionReconciler) deleteVM(ctx context.Context, namespace, name s
 }
 
 func (r *VeyronActionReconciler) migrateVM(ctx context.Context, namespace, vmName string) error {
+	if err := r.checkMigrationEligible(ctx, namespace, vmName); err != nil {
+		return fmt.Errorf("migration blocked: %w", err)
+	}
+
 	migration := &unstructured.Unstructured{}
 	migration.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "kubevirt.io",

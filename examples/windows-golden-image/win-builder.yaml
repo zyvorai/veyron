@@ -21,6 +21,9 @@ spec:
           storageClassName: zyvor-rbd-prod
           accessModes: ["ReadWriteOnce"]
           volumeMode: Block
+          # If you change this, also bump disk_size in
+          # test-windows-golden-image-remote.sh's tenant-clone request —
+          # CDI's clone validator rejects a target smaller than its source.
           resources:
             requests:
               storage: 70Gi

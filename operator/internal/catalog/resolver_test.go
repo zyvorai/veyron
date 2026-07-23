@@ -82,6 +82,43 @@ func TestProfileGrantsGpusButVmWins(t *testing.T) {
 	}
 }
 
+// A VM's explicit GPUs must survive the template-default merge in
+// ResolveSpec (mergeVMSpec previously had no case for GPUs/HostDevices, so
+// they silently reverted to the template's, which is nil for virtually
+// every template).
+func TestTemplateMergePreservesGpus(t *testing.T) {
+	r := &Resolver{}
+	ctx := t.Context()
+	base := veyronv1alpha1.VeyronVMSpec{
+		GPUs: []veyronv1alpha1.GPUSpec{{Name: "gpu0", DeviceName: "nvidia.com/gpu"}},
+	}
+	out, err := r.ResolveSpec(ctx, "ubuntu-22.04", "", base, BlueprintOverrides{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.GPUs) != 1 || out.GPUs[0].DeviceName != "nvidia.com/gpu" {
+		t.Fatalf("expected VM's explicit GPUs to survive template merge, got %#v", out.GPUs)
+	}
+}
+
+// A VeyronBlueprint per-VM override's GPUs/HostDevices must win last, per
+// the documented "override wins last" contract.
+func TestBlueprintOverrideGpus(t *testing.T) {
+	r := &Resolver{}
+	ctx := t.Context()
+	out, err := r.ResolveSpec(ctx, "ubuntu-22.04", "", veyronv1alpha1.VeyronVMSpec{}, BlueprintOverrides{
+		Override: &veyronv1alpha1.VeyronVMSpec{
+			GPUs: []veyronv1alpha1.GPUSpec{{Name: "gpu0", DeviceName: "nvidia.com/gpu"}},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.GPUs) != 1 || out.GPUs[0].DeviceName != "nvidia.com/gpu" {
+		t.Fatalf("expected blueprint override GPUs to be applied, got %#v", out.GPUs)
+	}
+}
+
 func TestSpecHashStable(t *testing.T) {
 	spec := ubuntu2204Default()
 	h1, err := SpecHash(spec)

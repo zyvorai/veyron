@@ -906,6 +906,15 @@ pub struct VirtualMachineInstanceStatus {
     pub guest_os_info: Option<GuestOsInfo>,
     #[serde(default)]
     pub conditions: Vec<VmiCondition>,
+    /// Every other status field (volumeStatus, migrationState,
+    /// qemuGuestAgentVersionInfo, …) that isn't modeled above. Without this,
+    /// any such field is silently dropped whenever a VMI round-trips through
+    /// this typed struct — reproduced live: GET .../volumes/status always
+    /// returned `[]` despite `.status.volumeStatus` genuinely holding a
+    /// hotplugged volume's real AttachedToNode state. Mirrors the same
+    /// flatten pattern already used for `VmiSpec` above.
+    #[serde(flatten)]
+    pub extra: BTreeMap<String, serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -1098,6 +1107,7 @@ mod tests {
                 kernel_release: Some("5.15.0".to_string()),
             }),
             conditions: vec![],
+            extra: Default::default(),
         };
 
         let json = serde_json::to_value(&status).unwrap();
@@ -1110,6 +1120,42 @@ mod tests {
             deserialized.interfaces[0].ip_address,
             status.interfaces[0].ip_address
         );
+    }
+
+    /// Regression: a real KubeVirt VMI status carries fields (volumeStatus,
+    /// migrationState, …) that VirtualMachineInstanceStatus doesn't model
+    /// explicitly. Without #[serde(flatten)] extra, these are silently
+    /// dropped on deserialize — reproduced live via GET .../volumes/status
+    /// always returning [] despite a real hotplugged volume's status
+    /// existing on the cluster.
+    #[test]
+    fn test_vmi_status_preserves_unmodeled_fields() {
+        let json = serde_json::json!({
+            "phase": "Running",
+            "volumeStatus": [
+                {
+                    "name": "hotvol1",
+                    "target": "",
+                    "phase": "AttachedToNode",
+                    "hotplugVolume": {"attachPodName": "hp-volume-abc123"}
+                }
+            ],
+            "migrationState": {"completed": true}
+        });
+        let status: VirtualMachineInstanceStatus = serde_json::from_value(json).unwrap();
+        assert_eq!(status.phase.as_deref(), Some("Running"));
+
+        let round_tripped = serde_json::to_value(&status).unwrap();
+        let volume_status = round_tripped
+            .get("volumeStatus")
+            .and_then(|v| v.as_array())
+            .expect("volumeStatus must survive the round-trip");
+        assert_eq!(volume_status.len(), 1);
+        assert_eq!(
+            volume_status[0].get("phase").and_then(|p| p.as_str()),
+            Some("AttachedToNode")
+        );
+        assert!(round_tripped.get("migrationState").is_some());
     }
 
     /// Regression: KubeVirt returns `devices.video` as a single object, not an array.
@@ -1203,6 +1249,7 @@ mod tests {
             interfaces: vec![],
             guest_os_info: None,
             conditions: vec![],
+            extra: Default::default(),
         };
 
         let json = serde_json::to_value(&status).unwrap();
@@ -1247,6 +1294,7 @@ mod tests {
             ],
             guest_os_info: None,
             conditions: vec![],
+            extra: Default::default(),
         };
 
         // Should return the first interface's IP
@@ -1276,6 +1324,7 @@ mod tests {
             ],
             guest_os_info: None,
             conditions: vec![],
+            extra: Default::default(),
         };
 
         // Should skip empty string and return the second IP
@@ -1290,6 +1339,7 @@ mod tests {
             interfaces: vec![],
             guest_os_info: None,
             conditions: vec![],
+            extra: Default::default(),
         };
 
         assert_eq!(extract_first_ip(&status), None);
@@ -1309,6 +1359,7 @@ mod tests {
             }],
             guest_os_info: None,
             conditions: vec![],
+            extra: Default::default(),
         };
 
         assert_eq!(extract_first_ip(&status), None);

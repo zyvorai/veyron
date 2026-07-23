@@ -113,6 +113,28 @@ fi
 REMOTE_HOME=$(deploy_ssh "${REMOTE}" "echo \$HOME")
 DEPLOY_DIR="${REMOTE_HOME}/.deployment/veyron"
 
+# ── Serialize deploys targeting the same host ──
+# DEPLOY_DIR is shared remote state with no isolation between runs. A second
+# deploy started before a first one finishes will have its freshly-synced
+# source wiped by the first run's own step-6 `rm -rf ${DEPLOY_DIR}` cleanup,
+# mid-pipeline, right as it tries to apply CRDs/RBAC/NATS — silent corruption,
+# not a clean failure. Fail fast instead of racing. `mkdir` (not flock, which
+# isn't installed on macOS by default) gives a portable atomic lock.
+DEPLOY_LOCK_DIR="/tmp/veyron-deploy-${HOST}.lock.d"
+if ! mkdir "${DEPLOY_LOCK_DIR}" 2>/dev/null; then
+    _lock_pid=""
+    [ -f "${DEPLOY_LOCK_DIR}/pid" ] && _lock_pid="$(cat "${DEPLOY_LOCK_DIR}/pid" 2>/dev/null)"
+    if [ -n "${_lock_pid}" ] && kill -0 "${_lock_pid}" 2>/dev/null; then
+        pkg_fail "A deploy to ${HOST} is already in progress (pid ${_lock_pid}, lock: ${DEPLOY_LOCK_DIR}). Wait for it to finish before starting another."
+        exit 1
+    fi
+    # Owning process is gone — stale lock left by a crash/kill. Reclaim it.
+    rm -rf "${DEPLOY_LOCK_DIR}"
+    mkdir "${DEPLOY_LOCK_DIR}" || { pkg_fail "Could not acquire deploy lock for ${HOST}"; exit 1; }
+fi
+echo $$ > "${DEPLOY_LOCK_DIR}/pid"
+trap 'rm -rf "${DEPLOY_LOCK_DIR}"' EXIT
+
 SUDO=""
 [ "$USER" != "root" ] && SUDO="sudo"
 

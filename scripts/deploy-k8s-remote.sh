@@ -281,6 +281,9 @@ rules:
   - apiGroups: ['subresources.kubevirt.io']
     resources: ['virtualmachineinstances/guest-exec-status']
     verbs: ['get']
+  - apiGroups: ['subresources.kubevirt.io']
+    resources: ['virtualmachineinstances/addvolume', 'virtualmachineinstances/removevolume']
+    verbs: ['update']
   - apiGroups: ['snapshot.kubevirt.io']
     resources: ['virtualmachinesnapshots', 'virtualmachinesnapshotcontents', 'virtualmachinerestores']
     verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
@@ -443,27 +446,14 @@ spec:
                 secretKeyRef:
                   name: veyron-api-key
                   key: api-key
-            - name: VEYRON_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: veyron-api-key
-                  key: api-key
             - name: RUST_LOG
               value: info
             - name: VEYRON_API_NODE_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: VEYRON_API_NODE_HOST
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
             - name: VEYRON_API_NODE_PORT
               value: '${NODE_PORT}'
-            - name: VEYRON_API_NODE_PORT
-              value: '${NODE_PORT}'
-            - name: VEYRON_CLUSTER_DNS
-              value: '10.43.0.10'
             - name: VEYRON_CLUSTER_DNS
               value: '10.43.0.10'
           ports:

@@ -150,32 +150,46 @@ async fn set_policy(
     }
 }
 
+/// Annotation persisting the last self-heal restart time on the VM object
+/// itself, in RFC 3339. An in-process cooldown map doesn't survive a leader
+/// failover of the lease-guarded scheduler loop — the newly-elected replica
+/// would immediately re-heal a VM still inside its cooldown window. The VM
+/// object outlives any one replica, so this is the source of truth.
+const LAST_HEAL_ANNOTATION: &str = "veyron.io/last-self-heal";
+
 /// Background reconciler tick: when the policy is enabled, restart unhealthy
-/// VMs, respecting a per-VM cooldown (in-process loop guard). Called from the
-/// lease-guarded scheduler loop so only the leader replica heals.
+/// VMs, respecting a per-VM cooldown persisted via [`LAST_HEAL_ANNOTATION`].
+/// Called from the lease-guarded scheduler loop so only the leader replica
+/// heals.
 #[cfg(feature = "web")]
 pub async fn self_healing_tick(kube: crate::kube::KubeClient) -> anyhow::Result<()> {
-    use std::collections::HashMap;
-    use std::sync::Mutex;
-    use std::time::{Duration, Instant};
-
-    static LAST_HEAL: std::sync::OnceLock<Mutex<HashMap<String, Instant>>> =
-        std::sync::OnceLock::new();
-    let last_heal = LAST_HEAL.get_or_init(|| Mutex::new(HashMap::new()));
+    use chrono::{DateTime, Utc};
 
     let policy = read_policy(&kube.client()).await;
     if !policy.enabled {
         return Ok(());
     }
-    let cooldown = Duration::from_secs(policy.cooldown_secs.max(60));
+    let cooldown = chrono::Duration::seconds(policy.cooldown_secs.max(60) as i64);
     let scope = policy.namespaces.clone().unwrap_or_default();
 
     let vmis = if scope.is_empty() || scope == "all" {
-        kube.list_all_vmis().await.unwrap_or_default()
+        kube.list_all_vmis()
+            .await
+            .inspect_err(|e| {
+                log::error!("self-healing tick: failed to list VMIs cluster-wide: {e}")
+            })
+            .unwrap_or_default()
     } else {
         let mut all = Vec::new();
         for ns in scope.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()) {
-            all.extend(kube.list_vmis(ns).await.unwrap_or_default());
+            all.extend(
+                kube.list_vmis(ns)
+                    .await
+                    .inspect_err(|e| {
+                        log::error!("self-healing tick: failed to list VMIs in {ns}: {e}")
+                    })
+                    .unwrap_or_default(),
+            );
         }
         all
     };
@@ -192,17 +206,37 @@ pub async fn self_healing_tick(kube: crate::kube::KubeClient) -> anyhow::Result<
         let ns = vmi.metadata.namespace.clone().unwrap_or_default();
         let name = vmi.metadata.name.clone().unwrap_or_default();
         let key = format!("{ns}/{name}");
-        {
-            let mut m = last_heal.lock().unwrap();
-            if let Some(t) = m.get(&key) {
-                if t.elapsed() < cooldown {
-                    continue;
+
+        match kube.get_vm(&ns, &name).await {
+            Ok(vm) => {
+                let last_heal = vm
+                    .metadata
+                    .annotations
+                    .as_ref()
+                    .and_then(|a| a.get(LAST_HEAL_ANNOTATION))
+                    .and_then(|t| DateTime::parse_from_rfc3339(t).ok());
+                if let Some(t) = last_heal {
+                    if Utc::now().signed_duration_since(t) < cooldown {
+                        continue;
+                    }
                 }
             }
-            m.insert(key.clone(), Instant::now());
+            Err(e) => {
+                log::warn!("self-heal: failed to read VM {key} for cooldown check: {e}");
+                continue;
+            }
         }
+
         match kube.restart_vm(&ns, &name).await {
-            Ok(_) => log::info!("self-heal restarted {key} (phase {phase})"),
+            Ok(_) => {
+                log::info!("self-heal restarted {key} (phase {phase})");
+                if let Err(e) = kube
+                    .annotate_vm(&ns, &name, LAST_HEAL_ANNOTATION, &Utc::now().to_rfc3339())
+                    .await
+                {
+                    log::warn!("self-heal: failed to record cooldown annotation on {key}: {e}");
+                }
+            }
             Err(e) => log::warn!("self-heal restart {key} failed: {e}"),
         }
     }
@@ -227,9 +261,15 @@ async fn run_self_healing(
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
 
     let vmis = if namespace_scope::is_all_namespaces(&scope) {
-        kube.list_all_vmis().await.unwrap_or_default()
+        kube.list_all_vmis()
+            .await
+            .inspect_err(|e| log::error!("self-healing run: failed to list VMIs cluster-wide: {e}"))
+            .unwrap_or_default()
     } else {
-        kube.list_vmis(&scope).await.unwrap_or_default()
+        kube.list_vmis(&scope)
+            .await
+            .inspect_err(|e| log::error!("self-healing run: failed to list VMIs in {scope}: {e}"))
+            .unwrap_or_default()
     };
 
     let mut actions = Vec::new();

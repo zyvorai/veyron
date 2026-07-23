@@ -44,9 +44,26 @@ To remediate an existing cluster in place:
 ```
 
 It moves the default StorageClass off node-local storage, **merges** the missing
-KubeVirt feature gates, sets `vmStateStorageClass`, and adds a VolumeSnapshotClass for
-any CSI driver lacking one. It will not silently paper over a single-node cluster or a
-degraded Ceph — those are reported and left to a human.
+KubeVirt feature gates, sets `vmStateStorageClass`, adds a VolumeSnapshotClass for
+any CSI driver lacking one, and (on k3s) enables `nonroot-devices` so containerd lets
+CDI's non-root importer pods open Block-mode PVCs (see callout below). It will not
+silently paper over a single-node cluster or a degraded Ceph — those are reported and
+left to a human.
+
+**Block-mode DataVolumes silently break without a containerd setting.** CDI's importer
+pods run as a non-root UID by default. Unless containerd is configured with
+`device_ownership_from_security_context = true` (k3s: `nonroot-devices: true` in
+`/etc/rancher/k3s/config.yaml`, then restart k3s), every blank Block-mode
+DataVolume — including the Windows golden-image builder's root disk — fails with
+`blockdev: cannot open /dev/cdi-block-volume: Permission denied` and sits in
+`ImportInProgress`/`CrashLoopBackOff` forever. This is **not** caught by the standard
+capability gate (it checks that the feature/CRDs exist, not that a real Block PVC can
+actually import), so verify it explicitly on any customer cluster that will use Windows
+golden images or any other Block-mode storage: `adapt-existing-cluster.sh` now checks
+and fixes this for k3s automatically; on non-k3s hosts it's flagged as a manual step
+(edit `/etc/containerd/config.toml`, restart containerd). See
+[block_cri_ownership_config.md](https://github.com/kubevirt/containerized-data-importer/blob/main/doc/block_cri_ownership_config.md)
+upstream.
 
 Windows golden images (ISO upload → sysprep → versioned image → cloned VMs) are
 documented in [WINDOWS_GOLDEN_IMAGES.md](WINDOWS_GOLDEN_IMAGES.md).

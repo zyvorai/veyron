@@ -48,15 +48,6 @@ async fn guest_sh(
     kube.guest_exec_via_guestkit(ns, name, params).await
 }
 
-/// Distro-detecting package update: apt / dnf / yum / zypper / apk.
-const DEFAULT_PATCH_CMD: &str = "set -e; \
-if command -v apt-get >/dev/null 2>&1; then export DEBIAN_FRONTEND=noninteractive; apt-get update && apt-get -y upgrade; \
-elif command -v dnf >/dev/null 2>&1; then dnf -y upgrade; \
-elif command -v yum >/dev/null 2>&1; then yum -y update; \
-elif command -v zypper >/dev/null 2>&1; then zypper -n update; \
-elif command -v apk >/dev/null 2>&1; then apk update && apk upgrade; \
-else echo 'no supported package manager found' >&2; exit 3; fi";
-
 #[cfg(feature = "web")]
 async fn guest_patch(
     State(state): State<SharedState>,
@@ -94,8 +85,39 @@ async fn guest_patch(
         }
     }
 
-    let script = req.command.as_deref().unwrap_or(DEFAULT_PATCH_CMD);
-    match guest_sh(&kube, &ns, &name, script).await {
+    // An explicit `command` override is a deliberate escape hatch into raw
+    // shell exec (`guestkit.exec`) — kept as-is (it's the caller's own
+    // opt-in, and may still be blocked by GuestKit policy on some agents).
+    // The DEFAULT distro-detecting path previously ran a hardcoded shell
+    // script the same way, which made it permanently non-functional
+    // wherever GuestKit's default policy disables shell exec ("capability
+    // denied: shell exec disabled by policy") — switched to GuestKit's
+    // structured packages.updates + packages.install RPCs instead.
+    let result = if let Some(script) = req.command.as_deref() {
+        guest_sh(&kube, &ns, &name, script).await
+    } else {
+        match kube.guest_packages_updates(&ns, &name).await {
+            Ok(updates) => {
+                let packages: Vec<String> = updates
+                    .get("packages")
+                    .and_then(|p| p.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|v| v.as_str().map(str::to_string))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                if packages.is_empty() {
+                    Ok(serde_json::json!({ "message": "no updates available", "updates": updates }))
+                } else {
+                    kube.guest_packages_install(&ns, &name, serde_json::json!({ "packages": packages }))
+                        .await
+                }
+            }
+            Err(e) => Err(e),
+        }
+    };
+    match result {
         Ok(result) => (
             StatusCode::OK,
             Json(serde_json::json!({
@@ -109,14 +131,17 @@ async fn guest_patch(
 }
 
 /// Thin-provisioning reclaim: `fstrim -av` in the guest returns freed space to
-/// the underlying (thin) storage.
+/// the underlying (thin) storage. Uses GuestKit's structured `storageTrim` RPC
+/// — NOT shell exec (`guest_sh`/`guestkit.exec`), which GuestKit's default
+/// policy disables ("capability denied: shell exec disabled by policy"),
+/// making the previous implementation permanently non-functional.
 #[cfg(feature = "web")]
 async fn disk_reclaim(
     State(state): State<SharedState>,
     Path((ns, name)): Path<(String, String)>,
 ) -> impl IntoResponse {
     let kube = { state.read().await.kube_client.clone() };
-    match guest_sh(&kube, &ns, &name, "fstrim -av 2>&1 || /sbin/fstrim -av").await {
+    match kube.guest_storage_trim(&ns, &name, serde_json::json!({})).await {
         Ok(result) => (
             StatusCode::OK,
             Json(serde_json::json!({ "ok": true, "vm": name, "namespace": ns, "result": result })),

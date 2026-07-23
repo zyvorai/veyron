@@ -435,6 +435,12 @@ async fn list_data_sources(
     let items = api
         .list(&Default::default())
         .await
+        .inspect_err(|e| {
+            // Silently defaulting to an empty list makes a real failure
+            // (RBAC, API discovery) indistinguishable from "nothing
+            // published yet" — log it so it's diagnosable.
+            log::error!("list DataSources (scope={scope}) failed: {e}");
+        })
         .map(|l| {
             l.items
                 .iter()
