@@ -63,14 +63,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "veyron.apiKeySecretName" . }}
                   key: api-key
-            - name: VEYRON_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "veyron.apiKeySecretName" . }}
-                  key: api-key
             {{- if .Values.auth.additionalKeys }}
-            - name: VEYRON_API_KEYS
-              value: {{ .Values.auth.additionalKeys | quote }}
             - name: VEYRON_API_KEYS
               value: {{ .Values.auth.additionalKeys | quote }}
             {{- end }}

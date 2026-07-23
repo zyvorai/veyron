@@ -162,15 +162,29 @@ async fn migrate_disk(
             .into_response();
     };
 
-    // Size the destination PVC to the source PVC's request.
+    // Size the destination PVC to the source PVC's request, and check whether
+    // the source access mode actually supports a *live* volume migration —
+    // KubeVirt only live-migrates RWX-backed volumes; an RWO source (the
+    // common case for block storage like Ceph RBD) is accepted but silently
+    // downgraded to "replace on next VM restart" (RestartRequired condition),
+    // not a live cutover. Surface that honestly instead of always claiming
+    // "migrating live".
     let src_api: Api<PersistentVolumeClaim> = Api::namespaced(kube.client(), &ns);
-    let size = match src_api.get(&src_claim).await {
-        Ok(p) => p
-            .spec
-            .and_then(|s| s.resources)
-            .and_then(|r| r.requests)
-            .and_then(|m| m.get("storage").map(|q| q.0.clone()))
-            .unwrap_or_else(|| "10Gi".to_string()),
+    let (size, rwx) = match src_api.get(&src_claim).await {
+        Ok(p) => {
+            let spec = p.spec.unwrap_or_default();
+            let size = spec
+                .resources
+                .clone()
+                .and_then(|r| r.requests)
+                .and_then(|m| m.get("storage").map(|q| q.0.clone()))
+                .unwrap_or_else(|| "10Gi".to_string());
+            let rwx = spec
+                .access_modes
+                .as_ref()
+                .is_some_and(|modes| modes.iter().any(|m| m == "ReadWriteMany"));
+            (size, rwx)
+        }
         Err(e) => {
             return (
                 StatusCode::BAD_GATEWAY,
@@ -183,13 +197,25 @@ async fn migrate_disk(
         "{src_claim}-mig-{}",
         req.target_storage_class.replace([':', '/'], "-")
     );
+    let live_note = if rwx {
+        "destination PVC created; KubeVirt is migrating the volume live"
+    } else {
+        "destination PVC created; source volume is not ReadWriteMany, so KubeVirt cannot migrate \
+         it live — it will be swapped on the VM's next restart instead (KubeVirt sets \
+         RestartRequired), not migrated with zero downtime"
+    };
 
     if req.dry_run {
         return Json(serde_json::json!({
             "dry_run": true, "vm": name, "volume": volume,
-            "source_pvc": src_claim, "size": size,
+            "source_pvc": src_claim, "size": size, "live_migration_supported": rwx,
             "target_storage_class": req.target_storage_class, "destination_pvc": dest_claim,
-            "note": "pass dry_run=false to provision the destination PVC and start KubeVirt volume migration"
+            "note": if rwx {
+                "pass dry_run=false to provision the destination PVC and start KubeVirt volume migration"
+            } else {
+                "pass dry_run=false to provision the destination PVC; source volume is not ReadWriteMany, \
+                 so this will require a VM restart to take effect, not a live migration"
+            }
         }))
         .into_response();
     }
@@ -231,7 +257,8 @@ async fn migrate_disk(
             "ok": true, "vm": name, "volume": volume,
             "from_pvc": src_claim, "to_pvc": dest_claim,
             "target_storage_class": req.target_storage_class,
-            "note": "destination PVC created; KubeVirt is migrating the volume live"
+            "live_migration_supported": rwx,
+            "note": live_note
         }))
         .into_response(),
         Err(e) => (

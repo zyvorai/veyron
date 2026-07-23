@@ -141,13 +141,24 @@ async fn create_migration(
             .await
         {
             if !elig.eligible {
+                let summary = elig
+                    .blockers
+                    .iter()
+                    .map(|b| b.message.as_str())
+                    .collect::<Vec<_>>()
+                    .join("; ");
+                let suggestion = elig.blockers.iter().find_map(|b| b.suggestion.clone());
                 return (
                     StatusCode::CONFLICT,
                     Json(serde_json::json!({
-                        "error": "MIGRATION_BLOCKED",
+                        "error": {
+                            "code": "MIGRATION_BLOCKED",
+                            "message": format!("VM '{}' cannot live-migrate: {}", req.vm_name, summary),
+                            "details": suggestion.clone(),
+                        },
                         "blockers": elig.blockers,
                         "warnings": elig.warnings,
-                        "suggestion": elig.blockers.iter().find_map(|b| b.suggestion.clone()),
+                        "suggestion": suggestion,
                     })),
                 )
                     .into_response();

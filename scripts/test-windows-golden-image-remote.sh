@@ -73,8 +73,8 @@ ok "cross-namespace clone RBAC (${TENANT_NS}:default → ${IMG_NS})"
 
 # ── 2. Import the ISO through the API ────────────────────────────────────────
 step "Import Windows ISO via POST /images/import"
-import_body="$(python3 -c "import json,os;print(json.dumps({'name':'win-iso','namespace':os.environ['IMG_NS'],'url':os.environ['ISO_URL'],'size':'8Gi','storage_class':os.environ['SC']}))" \
-  IMG_NS="${IMG_NS}" ISO_URL="${ISO_URL}" SC="${SC}")"
+import_body="$(IMG_NS="${IMG_NS}" ISO_URL="${ISO_URL}" SC="${SC}" python3 -c \
+  "import json,os;print(json.dumps({'name':'win-iso','namespace':os.environ['IMG_NS'],'url':os.environ['ISO_URL'],'size':'8Gi','storage_class':os.environ['SC']}))")"
 code="$(api -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "${import_body}" "${BASE}/api/v1/images/import")"
 [ "${code}" = "201" ] || die "import returned HTTP ${code}"
 ok "DataVolume win-iso created"
@@ -116,19 +116,34 @@ while [ $i -lt 180 ]; do   # up to 90 min
   printf "."; sleep 30; i=$((i+1))
 done
 [ $i -lt 180 ] || die "builder never sealed — VNC in and check Setup"
+# The VMI disappearing only means the guest shut down — CDI can still be
+# finalizing the underlying win-builder-root DataVolume for a beat after
+# that. Publish immediately rejects anything not yet 'Succeeded' (by
+# design — see the publish handler's incomplete-image guard), so without
+# this wait the very first publish attempt races it and always 400s.
+wait_dv "${IMG_NS}" win-builder-root 10 || die "win-builder-root DataVolume did not reach Succeeded after builder sealed"
+ok "win-builder-root DataVolume Succeeded"
 
 # ── 4. Publish ───────────────────────────────────────────────────────────────
 step "Publish golden image (Admin) via POST /images/publish"
-pub="$(python3 -c "import json,os;print(json.dumps({'name':'win-builder-root','namespace':os.environ['IMG_NS'],'data_source':'windows-golden','version':os.environ.get('VER','e2e')}))" IMG_NS="${IMG_NS}")"
+pub="$(IMG_NS="${IMG_NS}" python3 -c \
+  "import json,os;print(json.dumps({'name':'win-builder-root','namespace':os.environ['IMG_NS'],'data_source':'windows-golden','version':os.environ.get('VER','e2e')}))")"
 code="$(api -o /tmp/pub.json -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "${pub}" "${BASE}/api/v1/images/publish")"
 [ "${code}" = "200" ] || die "publish returned HTTP ${code}: $(cat /tmp/pub.json)"
 ok "DataSource windows-golden published"
-api "${BASE}/api/v1/images/datasources" | grep -q '"windows-golden"' \
+# windows-golden lives in IMG_NS, not the API's default namespace — an
+# unscoped query silently returns an empty list (namespace-scoped by
+# default, not all-namespaces), which looks identical to "not published".
+api "${BASE}/api/v1/images/datasources?namespace=${IMG_NS}" | grep -q '"windows-golden"' \
   && ok "DataSource visible in catalog" || die "DataSource not in catalog"
 
 # ── 5. Clone a tenant VM from the image ─────────────────────────────────────
+# disk_size must be >= win-builder.yaml's dataVolumeTemplates storage request
+# (70Gi) — CDI's clone validator rejects a target smaller than its source
+# ("target resources requests storage size is smaller than the source").
 step "Create tenant VM from the image via POST /vms {image:...}"
-create="$(python3 -c "import json,os;print(json.dumps({'name':'win01','namespace':os.environ['TENANT_NS'],'template':'windows-2022','disk_size':'50Gi','image':{'name':'windows-golden','namespace':os.environ['IMG_NS']},'start':True}))" TENANT_NS="${TENANT_NS}" IMG_NS="${IMG_NS}")"
+create="$(TENANT_NS="${TENANT_NS}" IMG_NS="${IMG_NS}" python3 -c \
+  "import json,os;print(json.dumps({'name':'win01','namespace':os.environ['TENANT_NS'],'template':'windows-2022','disk_size':'70Gi','image':{'name':'windows-golden','namespace':os.environ['IMG_NS']},'start':True}))")"
 code="$(api -o /tmp/create.json -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "${create}" "${BASE}/api/v1/vms")"
 echo "${code}" | grep -qE '^20' || die "create VM returned HTTP ${code}: $(cat /tmp/create.json)"
 ok "win01 created"

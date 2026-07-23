@@ -161,7 +161,7 @@ if [[ "${P1_PASSED}" -eq 1 ]]; then
 
     # ── P3–P6 · New coverage (JSONL) ────────────────────────────────────────
     run_new_phase "P3 security & multi-tenancy" "${LOG_DIR}/p3-security.log" \
-        "${SCRIPT_DIR}/test/security-rbac-remote.sh" "${HOST}" "${PORT}" || true
+        "${SCRIPT_DIR}/test/security-rbac-remote.sh" "${HOST}" "${PORT}" "${SSH_USER}" || true
     run_new_phase "P4 data safety" "${LOG_DIR}/p4-data-safety.log" \
         "${SCRIPT_DIR}/test/data-safety-remote.sh" "${HOST}" "${PORT}" || true
     run_new_phase "P5 resilience & recovery" "${LOG_DIR}/p5-resilience.log" \
@@ -183,12 +183,15 @@ if [[ "${P1_PASSED}" -eq 1 ]]; then
     fi
 
     # ── P9 · Windows golden image (opt-in --full) ───────────────────────────
-    if [[ "${RUN_FULL}" -eq 1 && -x "${SCRIPT_DIR}/test-windows-golden-image-remote.sh" ]]; then
+    # test-windows-golden-image-remote.sh needs SSH+kubectl access on the node
+    # (builder-VM VNC keypress injection, sysprep polling) — same requirement
+    # as P0, so it's gated on --ssh-user too, not just --full.
+    if [[ "${RUN_FULL}" -eq 1 && -n "${SSH_USER}" && -x "${SCRIPT_DIR}/test-windows-golden-image-remote.sh" ]]; then
         run_legacy_phase "P9 Windows golden image" "P9-windows" "${LOG_DIR}/p9-windows.log" \
-            env VEYRON_API_KEY="${KEY}" "${SCRIPT_DIR}/test-windows-golden-image-remote.sh" "${HOST}" "${PORT}" || true
+            env VEYRON_API_KEY="${KEY}" "${SCRIPT_DIR}/test-windows-golden-image-remote.sh" "${HOST}" "${SSH_USER}" "${PORT}" || true
     else
         skip_phase "P9 Windows golden image" "P9-windows" "Windows golden-image E2E" \
-            "$([[ "${RUN_FULL}" -eq 0 ]] && echo 'not_requested:pass --full' || echo 'windows_test_missing')"
+            "$([[ "${RUN_FULL}" -eq 0 ]] && echo 'not_requested:pass --full' || { [[ -z "${SSH_USER}" ]] && echo 'no_ssh_user:pass --ssh-user U' || echo 'windows_test_missing'; })"
     fi
 fi
 

@@ -459,7 +459,7 @@ async fn list_rdp_capable_vms(
 /// List active RDP sessions (stored as ConfigMaps).
 #[cfg(feature = "web")]
 async fn list_rdp_sessions(State(_state): State<SharedState>) -> Json<Vec<serde_json::Value>> {
-    // RDP session proxy requires an external gateway (e.g., Apache Guacamole, xrdp)
+    // RDP session proxy requires an external gateway (e.g., xrdp)
     // This endpoint returns the empty list until a gateway is configured
     Json(vec![])
 }
@@ -491,6 +491,6 @@ async fn get_default_config(State(_state): State<SharedState>) -> Json<serde_jso
         "audio_enabled": false,
         "drive_redirection": false,
         "gateway_configured": false,
-        "note": "Full RDP proxy requires an external gateway (Apache Guacamole or xrdp). Use /rdp/vms to discover VMs with RDP access."
+        "note": "Full RDP proxy requires an external gateway (e.g., xrdp). Use /rdp/vms to discover VMs with RDP access."
     }))
 }

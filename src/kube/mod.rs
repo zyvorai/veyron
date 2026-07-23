@@ -668,6 +668,38 @@ impl KubeClient {
         }
     }
 
+    /// Merge-patch a single annotation onto a VM. Used for state that must
+    /// survive process/leader-election restarts (e.g. self-healing cooldown
+    /// tracking) — unlike an in-process map, an annotation on the VM object
+    /// itself is visible to whichever replica becomes leader next.
+    pub async fn annotate_vm(
+        &self,
+        namespace: &str,
+        name: &str,
+        key: &str,
+        value: &str,
+    ) -> Result<()> {
+        let vms: Api<VirtualMachine> = self.vm_api(namespace);
+        let mut annotations = serde_json::Map::new();
+        annotations.insert(
+            key.to_string(),
+            serde_json::Value::String(value.to_string()),
+        );
+        let patch = json!({
+            "metadata": {
+                "annotations": annotations
+            }
+        });
+        let pp = PatchParams::default();
+        match vms.patch(name, &pp, &Patch::Merge(&patch)).await {
+            Ok(_) => Ok(()),
+            Err(kube::Error::Api(ae)) if ae.code == 404 => {
+                Err(VeyronError::VmNotFound(name.to_string()).into())
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
+
     /// Stop a VM (set running: false)
     pub async fn stop_vm(&self, namespace: &str, name: &str) -> Result<VirtualMachine> {
         let vms: Api<VirtualMachine> = self.vm_api(namespace);
@@ -1188,7 +1220,25 @@ impl KubeClient {
         caps: migration_guard::ClusterMigrationCaps,
     ) -> Result<migration_guard::MigrationEligibility> {
         let vm = self.get_vm(namespace, name).await?;
-        let vmi = self.get_vmi(namespace, name).await.ok();
+        // A missing VMI (404) genuinely means "not running" and should feed
+        // evaluate_eligibility as such. Any other error (throttling, a
+        // transient API hiccup, a brief race right after start) must NOT be
+        // folded into that same "not running" state — propagate it instead
+        // of letting it silently become a false VM_NOT_RUNNING blocker.
+        let vmi = match self.get_vmi(namespace, name).await {
+            Ok(vmi) => Some(vmi),
+            Err(e) => {
+                let not_found = matches!(
+                    e.downcast_ref::<kube::Error>(),
+                    Some(kube::Error::Api(ae)) if ae.code == 404
+                );
+                if not_found {
+                    None
+                } else {
+                    return Err(e).context("checking VMI status for migration eligibility");
+                }
+            }
+        };
         Ok(migration_guard::evaluate_eligibility(
             &vm,
             vmi.as_ref(),
@@ -1624,6 +1674,56 @@ impl KubeClient {
         guest_runtime::guestkit_exec(&ctx, params).await
     }
 
+    /// Thin-provisioning reclaim (`fstrim`) via the structured GuestKit RPC.
+    pub async fn guest_storage_trim(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("Storage trim requires GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_storage_trim(&ctx, params).await
+    }
+
+    /// List available OS package updates via the structured GuestKit RPC.
+    pub async fn guest_packages_updates(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("Package updates require GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_packages_updates(&ctx).await
+    }
+
+    /// Install specific packages by name via the structured GuestKit RPC.
+    pub async fn guest_packages_install(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("Package install requires GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_packages_install(&ctx, params).await
+    }
+
     /// Read bundled GuestKit musl binary for cloud-init / platform endpoint.
     pub fn guestkit_binary_bytes() -> Result<Vec<u8>> {
         std::fs::read(guestkit_client::guestkit_binary_path()).with_context(|| {
@@ -1635,11 +1735,17 @@ impl KubeClient {
     }
 
     /// Hotplug a PVC volume onto a VM (`virtctl addvolume`).
+    ///
+    /// The bundled virtctl (pinned via VIRTCTL_VERSION) has no `--pvc` flag —
+    /// `--volume-name` is the ONLY way to identify the source, and it must be
+    /// the actual PVC/DataVolume object's name (reproduced live: `unknown
+    /// flag: --pvc` — every hotplug call failed 100% of the time before this
+    /// fix). Callers wanting a distinct internal label independent of the PVC
+    /// name would need the raw KubeVirt subresource API instead of virtctl.
     pub async fn add_vm_volume(
         &self,
         namespace: &str,
         vm_name: &str,
-        volume_name: &str,
         pvc_name: &str,
     ) -> Result<()> {
         let output = tokio::process::Command::new("virtctl")
@@ -1647,8 +1753,6 @@ impl KubeClient {
                 "addvolume",
                 vm_name,
                 "--volume-name",
-                volume_name,
-                "--pvc",
                 pvc_name,
                 "-n",
                 namespace,

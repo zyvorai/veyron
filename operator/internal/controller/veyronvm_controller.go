@@ -176,6 +176,20 @@ func (r *VeyronVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	} else if err != nil {
 		return ctrl.Result{}, err
 	} else {
+		// Compare against the object AS FETCHED from the cluster, before
+		// anything below self-heals it back to the desired spec — otherwise
+		// this always compares the (already-corrected) spec against its own
+		// freshly-updated annotation and can never observe real external
+		// tampering: status.driftDetected would go straight from
+		// false -> false every time, silently losing the signal that a
+		// correction even happened.
+		drift, driftMsg := catalog.CompareKubeVirtSpec(specHash, existing)
+		if drift {
+			driftDetected = true
+			driftMessage = driftMsg
+			_ = r.ensureDriftInsight(ctx, &vm, driftMsg)
+		}
+
 		// Update existing KubeVirt VM spec only when it changed
 		existingSpec, _, _ := unstructured.NestedMap(existing.Object, "spec")
 		desiredSpec, _, _ := unstructured.NestedMap(desired.Object, "spec")
@@ -196,13 +210,6 @@ func (r *VeyronVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 				return ctrl.Result{}, err
 			}
 			r.publishEvent(eventbus.SubjectVMUpdated, &vm, "Updated")
-		}
-
-		drift, driftMsg := catalog.CompareKubeVirtSpec(specHash, existing)
-		if drift {
-			driftDetected = true
-			driftMessage = driftMsg
-			_ = r.ensureDriftInsight(ctx, &vm, driftMsg)
 		}
 	}
 
