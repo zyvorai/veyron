@@ -1,0 +1,2844 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Page-by-Page Product Manual — Veyron</title>
+<style>
+@page{size:A4;margin:15mm 16mm}*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Segoe UI',system-ui,sans-serif;color:#1f2937;line-height:1.58;font-size:10.5pt}
+.cover{height:262mm;margin:-15mm -16mm 0;background:linear-gradient(135deg,#0f0a1a,#4c1d95,#0d1b2a);color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;page-break-after:always;position:relative}
+.cover .kicker{letter-spacing:5px;text-transform:uppercase;opacity:.72;margin-bottom:1.4em}
+.cover h1{font-size:3.2em;font-weight:800;letter-spacing:-2px}
+.cover h1 span{color:#a78bfa}
+.cover .sub{font-size:1.3em;font-weight:300;opacity:.93;margin:1em 0;max-width:24em}
+.cover .badge{display:inline-block;background:rgba(96,165,250,.2);border:1px solid #a78bfa;padding:8px 22px;border-radius:20px;margin-top:2em}
+.cover .foot{position:absolute;bottom:34px;font-size:.82em;opacity:.6}
+h2{page-break-before:always;margin:0 0 .35em;font-size:1.55em;font-weight:750;color:#12203a;border-bottom:2px solid #e5edfb;padding-bottom:.28em}
+h2:first-of-type{page-break-before:avoid}
+h3{margin:1.1em 0 .4em;font-size:1.12em;font-weight:700}
+p,li{margin:.4em 0}ul,ol{margin:.5em 0 .9em 1.4em}
+a{color:#2563eb;text-decoration:none}
+code{background:#eef2f7;padding:1px 6px;border-radius:4px;font-size:.86em;font-family:ui-monospace,Menlo,monospace}
+pre{background:#0f172a;color:#e2e8f0;padding:12px 15px;border-radius:9px;overflow-x:auto;margin:.8em 0}
+table{width:100%;border-collapse:collapse;margin:.8em 0 1.1em;font-size:9.5pt}
+th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;vertical-align:top}th{background:#f1f5f9}
+hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
+</style></head><body>
+<section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
+<h1>Vey<span>ron</span></h1>
+<div class="sub">Page-by-Page Product Manual</div>
+<div class="badge">2026-07-26</div>
+<div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
+<main><h2>Page-by-page guides</h2>
+<p>Each guide follows: Purpose → When to use it → How to get there → What you can do → Related pages.</p>
+<p>Every route is also listed in the <a href="../PAGE_INDEX.md">complete page index</a>.</p>
+<h3>Ask Zeus</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="ask-zeus/ask-zeus.md">Ask Zeus</a></td>
+<td>Ask Zeus — AI assistant grounded on this cluster.</td>
+</tr>
+</tbody></table>
+<h3>Compute</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="compute/autoscaler.md">Autoscaler</a></td>
+<td>Cluster / VM autoscaler status and recommendations.</td>
+</tr>
+<tr>
+<td><a href="compute/hpa.md">HPA</a></td>
+<td>Horizontal Pod Autoscaler objects affecting related workloads.</td>
+</tr>
+<tr>
+<td><a href="compute/nodes.md">Nodes</a></td>
+<td>Kubernetes / virt node capacity and placement view.</td>
+</tr>
+<tr>
+<td><a href="compute/pods.md">Pods</a></td>
+<td>Pod inventory including virt-launcher pods.</td>
+</tr>
+<tr>
+<td><a href="compute/scheduling.md">Scheduling</a></td>
+<td>Scheduling constraints, node affinity, and placement hints.</td>
+</tr>
+<tr>
+<td><a href="compute/vms.md">VMs</a></td>
+<td>VirtualMachine inventory — create, power, migrate, and inspect KubeVirt VMs.</td>
+</tr>
+<tr>
+<td><a href="compute/workloads.md">Workloads</a></td>
+<td>Cross-workload view of Deployments, StatefulSets, and VMs.</td>
+</tr>
+</tbody></table>
+<h3>Favorites</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="favorites/console-hub.md">ConsoleHub</a></td>
+<td>Console hub for VNC, serial, and remote access sessions.</td>
+</tr>
+<tr>
+<td><a href="favorites/dashboard.md">Mission Control</a></td>
+<td>Mission Control home — fleet health, shortcuts, and live KubeVirt signals.</td>
+</tr>
+<tr>
+<td><a href="favorites/fleet-constellation.md">Fleet Constellation</a></td>
+<td>Visual constellation of the VM fleet across namespaces and nodes.</td>
+</tr>
+<tr>
+<td><a href="favorites/gallery-wall.md">Gallery Wall</a></td>
+<td>Gallery of VM cards and status tiles for at-a-glance browsing.</td>
+</tr>
+<tr>
+<td><a href="favorites/reactor.md">Reactor Core</a></td>
+<td>Reactor Core — high-density operational wall for hot workloads.</td>
+</tr>
+<tr>
+<td><a href="favorites/vcentre.md">vCentre</a></td>
+<td>vCentre-style inventory and ops surface for KubeVirt VMs.</td>
+</tr>
+<tr>
+<td><a href="favorites/vm-capsule.md">VM Capsule</a></td>
+<td>Focused single-VM capsule view for deep workbench ops.</td>
+</tr>
+</tbody></table>
+<h3>Finops</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="finops/costs.md">Costs</a></td>
+<td>FinOps cost view for VM and cluster spend.</td>
+</tr>
+<tr>
+<td><a href="finops/forecasting.md">Forecasting</a></td>
+<td>Cost and capacity forecasting.</td>
+</tr>
+</tbody></table>
+<h3>Network</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="network/cilium.md">Cilium</a></td>
+<td>Cilium network status when Cilium is the CNI.</td>
+</tr>
+<tr>
+<td><a href="network/dependencies.md">Dependencies</a></td>
+<td>Service dependency graph for selected workloads.</td>
+</tr>
+<tr>
+<td><a href="network/ingress.md">Ingress</a></td>
+<td>Ingress / route inventory for exposed services.</td>
+</tr>
+<tr>
+<td><a href="network/network-intel.md">Network Intelligence</a></td>
+<td>Network intelligence summary for the virtualization plane.</td>
+</tr>
+<tr>
+<td><a href="network/network-policies.md">Network Policies</a></td>
+<td>Kubernetes NetworkPolicy objects affecting VM namespaces.</td>
+</tr>
+<tr>
+<td><a href="network/topology.md">Topology</a></td>
+<td>Network topology across VMs, services, and nodes.</td>
+</tr>
+</tbody></table>
+<h3>Observe</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="observe/alerts.md">Alerts</a></td>
+<td>Active alerts from the observability stack.</td>
+</tr>
+<tr>
+<td><a href="observe/custom-dashboards.md">Custom Dashboards</a></td>
+<td>User-defined observability dashboards.</td>
+</tr>
+<tr>
+<td><a href="observe/events.md">Events</a></td>
+<td>Kubernetes and KubeVirt events.</td>
+</tr>
+<tr>
+<td><a href="observe/heatmap.md">Heatmap</a></td>
+<td>Density heatmap of resource pressure.</td>
+</tr>
+<tr>
+<td><a href="observe/incidents.md">Incidents</a></td>
+<td>Incident timeline and response hooks.</td>
+</tr>
+<tr>
+<td><a href="observe/insights.md">Insights</a></td>
+<td>AI / analytics insights over fleet telemetry.</td>
+</tr>
+<tr>
+<td><a href="observe/logs.md">Logs</a></td>
+<td>Log explorer for VM and platform workloads.</td>
+</tr>
+<tr>
+<td><a href="observe/metrics.md">Metrics</a></td>
+<td>Live and historical metrics for VMs and nodes.</td>
+</tr>
+<tr>
+<td><a href="observe/mission-control.md">Mission Control Wall</a></td>
+<td>Full-wall Mission Control display mode.</td>
+</tr>
+<tr>
+<td><a href="observe/monitoring.md">Monitoring</a></td>
+<td>Monitoring overview for the Veyron-managed estate.</td>
+</tr>
+<tr>
+<td><a href="observe/observability.md">Observability Overview</a></td>
+<td>Observability overview landing page.</td>
+</tr>
+<tr>
+<td><a href="observe/performance.md">Performance</a></td>
+<td>Performance profiles and hotspots across the fleet.</td>
+</tr>
+<tr>
+<td><a href="observe/slo.md">SLO</a></td>
+<td>Service level objectives and burn-rate views.</td>
+</tr>
+<tr>
+<td><a href="observe/traces.md">Traces</a></td>
+<td>Distributed traces when tracing backends are configured.</td>
+</tr>
+</tbody></table>
+<h3>Ops</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="ops/actions.md">Actions</a></td>
+<td>Queued / recent operator actions.</td>
+</tr>
+<tr>
+<td><a href="ops/chaos.md">Chaos</a></td>
+<td>Chaos experiments against the virtualization stack.</td>
+</tr>
+<tr>
+<td><a href="ops/dr.md">Disaster Recovery</a></td>
+<td>Disaster recovery plans for VMs and namespaces.</td>
+</tr>
+<tr>
+<td><a href="ops/notifications.md">Notifications</a></td>
+<td>Notification channels and delivery preferences.</td>
+</tr>
+</tbody></table>
+<h3>Platform</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="platform/app-store.md">Template Foundry</a></td>
+<td>Template Foundry — OS templates and app blueprints.</td>
+</tr>
+<tr>
+<td><a href="platform/blueprint-studio.md">Blueprint Studio</a></td>
+<td>Multi-VM blueprint authoring and apply.</td>
+</tr>
+<tr>
+<td><a href="platform/catalog.md">Catalog</a></td>
+<td>Workload and template catalog.</td>
+</tr>
+<tr>
+<td><a href="platform/crds.md">CRDs</a></td>
+<td>CustomResourceDefinition catalog.</td>
+</tr>
+<tr>
+<td><a href="platform/custom-resources.md">Custom Resources</a></td>
+<td>Browse and edit custom resources.</td>
+</tr>
+<tr>
+<td><a href="platform/gitops.md">GitOps</a></td>
+<td>GitOps export and sync status for VeyronVM declarations.</td>
+</tr>
+<tr>
+<td><a href="platform/helm.md">Helm</a></td>
+<td>Helm release inventory for the cluster.</td>
+</tr>
+<tr>
+<td><a href="platform/integrations.md">Integrations</a></td>
+<td>External integrations (ticketing, chat, IdP).</td>
+</tr>
+<tr>
+<td><a href="platform/operators.md">Operators</a></td>
+<td>Operator / OLM status relevant to KubeVirt and companions.</td>
+</tr>
+<tr>
+<td><a href="platform/settings.md">Settings</a></td>
+<td>Dashboard, auth, and AI provider settings.</td>
+</tr>
+<tr>
+<td><a href="platform/stack-health.md">Stack Health</a></td>
+<td>End-to-end stack health for Veyron + KubeVirt + CDI.</td>
+</tr>
+<tr>
+<td><a href="platform/tenants.md">Tenants</a></td>
+<td>Multi-tenant boundaries and namespace mapping.</td>
+</tr>
+<tr>
+<td><a href="platform/webhooks.md">Webhooks</a></td>
+<td>Webhook endpoints for automation.</td>
+</tr>
+</tbody></table>
+<h3>Security</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="security/audit.md">Audit</a></td>
+<td>Audit trail of mutating Veyron and cluster actions.</td>
+</tr>
+<tr>
+<td><a href="security/compliance.md">Compliance</a></td>
+<td>Compliance checks and evidence for the fleet.</td>
+</tr>
+<tr>
+<td><a href="security/policies.md">Policies</a></td>
+<td>Admission / VM policy enforcement surfaces.</td>
+</tr>
+<tr>
+<td><a href="security/quotas.md">Quotas</a></td>
+<td>ResourceQuota and LimitRange views.</td>
+</tr>
+<tr>
+<td><a href="security/rbac.md">RBAC</a></td>
+<td>Kubernetes RBAC review for Veyron operators and tenants.</td>
+</tr>
+<tr>
+<td><a href="security/security.md">Security Posture</a></td>
+<td>Security posture across VMs and namespaces.</td>
+</tr>
+<tr>
+<td><a href="security/soc.md">SOC</a></td>
+<td>SOC-style security operations board.</td>
+</tr>
+</tbody></table>
+<h3>Storage</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="storage/backups.md">Backups</a></td>
+<td>Backup jobs and restore entry points for VMs.</td>
+</tr>
+<tr>
+<td><a href="storage/images.md">Images</a></td>
+<td>ContainerDisk / golden image catalog.</td>
+</tr>
+<tr>
+<td><a href="storage/snapshots.md">Snapshots</a></td>
+<td>VolumeSnapshot / VM snapshot inventory and actions.</td>
+</tr>
+<tr>
+<td><a href="storage/storage.md">Storage</a></td>
+<td>PVC, DataVolume, and storage class inventory for VMs.</td>
+</tr>
+</tbody></table>
+<hr>
+<p>65 guides. Regenerate: <code>node scripts/customer-docs/generate-guide-index.mjs</code>.</p>
+<hr>
+<h2>Ask Zeus</h2>
+<h3>Purpose</h3>
+<p>Ask Zeus — AI assistant grounded on this cluster.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#ask-zeus</code></li>
+<li>Nav: <strong>Ask Zeus → Ask Zeus</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#ask-zeus</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Autoscaler</h2>
+<h3>Purpose</h3>
+<p>Cluster / VM autoscaler status and recommendations.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#autoscaler</code></li>
+<li>Nav: <strong>Compute → Autoscaler</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#autoscaler</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>HPA</h2>
+<h3>Purpose</h3>
+<p>Horizontal Pod Autoscaler objects affecting related workloads.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#hpa</code></li>
+<li>Nav: <strong>Compute → HPA</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#hpa</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Nodes</h2>
+<h3>Purpose</h3>
+<p>Kubernetes / virt node capacity and placement view.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#nodes</code></li>
+<li>Nav: <strong>Compute → Nodes</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#nodes</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Pods</h2>
+<h3>Purpose</h3>
+<p>Pod inventory including virt-launcher pods.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#pods</code></li>
+<li>Nav: <strong>Compute → Pods</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#pods</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Scheduling</h2>
+<h3>Purpose</h3>
+<p>Scheduling constraints, node affinity, and placement hints.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#scheduling</code></li>
+<li>Nav: <strong>Compute → Scheduling</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#scheduling</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>VMs</h2>
+<h3>Purpose</h3>
+<p>VirtualMachine inventory — create, power, migrate, and inspect KubeVirt VMs.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#vms</code></li>
+<li>Nav: <strong>Compute → VMs</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#vms</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Workloads</h2>
+<h3>Purpose</h3>
+<p>Cross-workload view of Deployments, StatefulSets, and VMs.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#workloads</code></li>
+<li>Nav: <strong>Compute → Workloads</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#workloads</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>ConsoleHub</h2>
+<h3>Purpose</h3>
+<p>Console hub for VNC, serial, and remote access sessions.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#console-hub</code></li>
+<li>Nav: <strong>Favorites → ConsoleHub</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#console-hub</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Mission Control</h2>
+<h3>Purpose</h3>
+<p>Mission Control home — fleet health, shortcuts, and live KubeVirt signals.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#dashboard</code></li>
+<li>Nav: <strong>Favorites → Mission Control</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#dashboard</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Fleet Constellation</h2>
+<h3>Purpose</h3>
+<p>Visual constellation of the VM fleet across namespaces and nodes.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#fleet-constellation</code></li>
+<li>Nav: <strong>Favorites → Fleet Constellation</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#fleet-constellation</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Gallery Wall</h2>
+<h3>Purpose</h3>
+<p>Gallery of VM cards and status tiles for at-a-glance browsing.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#gallery-wall</code></li>
+<li>Nav: <strong>Favorites → Gallery Wall</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#gallery-wall</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Reactor Core</h2>
+<h3>Purpose</h3>
+<p>Reactor Core — high-density operational wall for hot workloads.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#reactor</code></li>
+<li>Nav: <strong>Favorites → Reactor Core</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#reactor</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>vCentre</h2>
+<h3>Purpose</h3>
+<p>vCentre-style inventory and ops surface for KubeVirt VMs.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#vcentre</code></li>
+<li>Nav: <strong>Favorites → vCentre</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#vcentre</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>VM Capsule</h2>
+<h3>Purpose</h3>
+<p>Focused single-VM capsule view for deep workbench ops.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#vm-capsule</code></li>
+<li>Nav: <strong>Favorites → VM Capsule</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#vm-capsule</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Costs</h2>
+<h3>Purpose</h3>
+<p>FinOps cost view for VM and cluster spend.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#costs</code></li>
+<li>Nav: <strong>FinOps → Costs</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#costs</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Forecasting</h2>
+<h3>Purpose</h3>
+<p>Cost and capacity forecasting.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#forecasting</code></li>
+<li>Nav: <strong>FinOps → Forecasting</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#forecasting</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Cilium</h2>
+<h3>Purpose</h3>
+<p>Cilium network status when Cilium is the CNI.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#cilium</code></li>
+<li>Nav: <strong>Network → Cilium</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#cilium</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Dependencies</h2>
+<h3>Purpose</h3>
+<p>Service dependency graph for selected workloads.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#dependencies</code></li>
+<li>Nav: <strong>Network → Dependencies</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#dependencies</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Ingress</h2>
+<h3>Purpose</h3>
+<p>Ingress / route inventory for exposed services.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#ingress</code></li>
+<li>Nav: <strong>Network → Ingress</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#ingress</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Network Intelligence</h2>
+<h3>Purpose</h3>
+<p>Network intelligence summary for the virtualization plane.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#network-intel</code></li>
+<li>Nav: <strong>Network → Network Intelligence</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#network-intel</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Network Policies</h2>
+<h3>Purpose</h3>
+<p>Kubernetes NetworkPolicy objects affecting VM namespaces.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#network-policies</code></li>
+<li>Nav: <strong>Network → Network Policies</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#network-policies</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Topology</h2>
+<h3>Purpose</h3>
+<p>Network topology across VMs, services, and nodes.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#topology</code></li>
+<li>Nav: <strong>Network → Topology</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#topology</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Alerts</h2>
+<h3>Purpose</h3>
+<p>Active alerts from the observability stack.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#alerts</code></li>
+<li>Nav: <strong>Observe → Alerts</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#alerts</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Custom Dashboards</h2>
+<h3>Purpose</h3>
+<p>User-defined observability dashboards.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#custom-dashboards</code></li>
+<li>Nav: <strong>Observe → Custom Dashboards</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#custom-dashboards</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Events</h2>
+<h3>Purpose</h3>
+<p>Kubernetes and KubeVirt events.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#events</code></li>
+<li>Nav: <strong>Observe → Events</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#events</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Heatmap</h2>
+<h3>Purpose</h3>
+<p>Density heatmap of resource pressure.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#heatmap</code></li>
+<li>Nav: <strong>Observe → Heatmap</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#heatmap</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Incidents</h2>
+<h3>Purpose</h3>
+<p>Incident timeline and response hooks.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#incidents</code></li>
+<li>Nav: <strong>Observe → Incidents</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#incidents</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Insights</h2>
+<h3>Purpose</h3>
+<p>AI / analytics insights over fleet telemetry.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#insights</code></li>
+<li>Nav: <strong>Observe → Insights</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#insights</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Logs</h2>
+<h3>Purpose</h3>
+<p>Log explorer for VM and platform workloads.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#logs</code></li>
+<li>Nav: <strong>Observe → Logs</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#logs</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Metrics</h2>
+<h3>Purpose</h3>
+<p>Live and historical metrics for VMs and nodes.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#metrics</code></li>
+<li>Nav: <strong>Observe → Metrics</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#metrics</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Mission Control Wall</h2>
+<h3>Purpose</h3>
+<p>Full-wall Mission Control display mode.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#mission-control</code></li>
+<li>Nav: <strong>Observe → Mission Control Wall</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#mission-control</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Monitoring</h2>
+<h3>Purpose</h3>
+<p>Monitoring overview for the Veyron-managed estate.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#monitoring</code></li>
+<li>Nav: <strong>Observe → Monitoring</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#monitoring</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Observability Overview</h2>
+<h3>Purpose</h3>
+<p>Observability overview landing page.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#observability</code></li>
+<li>Nav: <strong>Observe → Observability Overview</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#observability</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Performance</h2>
+<h3>Purpose</h3>
+<p>Performance profiles and hotspots across the fleet.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#performance</code></li>
+<li>Nav: <strong>Observe → Performance</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#performance</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>SLO</h2>
+<h3>Purpose</h3>
+<p>Service level objectives and burn-rate views.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#slo</code></li>
+<li>Nav: <strong>Observe → SLO</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#slo</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Traces</h2>
+<h3>Purpose</h3>
+<p>Distributed traces when tracing backends are configured.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#traces</code></li>
+<li>Nav: <strong>Observe → Traces</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#traces</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Actions</h2>
+<h3>Purpose</h3>
+<p>Queued / recent operator actions.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#actions</code></li>
+<li>Nav: <strong>Ops → Actions</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#actions</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Chaos</h2>
+<h3>Purpose</h3>
+<p>Chaos experiments against the virtualization stack.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#chaos</code></li>
+<li>Nav: <strong>Ops → Chaos</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#chaos</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Disaster Recovery</h2>
+<h3>Purpose</h3>
+<p>Disaster recovery plans for VMs and namespaces.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#dr</code></li>
+<li>Nav: <strong>Ops → Disaster Recovery</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#dr</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Notifications</h2>
+<h3>Purpose</h3>
+<p>Notification channels and delivery preferences.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#notifications</code></li>
+<li>Nav: <strong>Ops → Notifications</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#notifications</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Template Foundry</h2>
+<h3>Purpose</h3>
+<p>Template Foundry — OS templates and app blueprints.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#app-store</code></li>
+<li>Nav: <strong>Platform → Template Foundry</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#app-store</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Blueprint Studio</h2>
+<h3>Purpose</h3>
+<p>Multi-VM blueprint authoring and apply.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#blueprint-studio</code></li>
+<li>Nav: <strong>Platform → Blueprint Studio</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#blueprint-studio</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Catalog</h2>
+<h3>Purpose</h3>
+<p>Workload and template catalog.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#catalog</code></li>
+<li>Nav: <strong>Platform → Catalog</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#catalog</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>CRDs</h2>
+<h3>Purpose</h3>
+<p>CustomResourceDefinition catalog.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#crds</code></li>
+<li>Nav: <strong>Platform → CRDs</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#crds</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Custom Resources</h2>
+<h3>Purpose</h3>
+<p>Browse and edit custom resources.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#custom-resources</code></li>
+<li>Nav: <strong>Platform → Custom Resources</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#custom-resources</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>GitOps</h2>
+<h3>Purpose</h3>
+<p>GitOps export and sync status for VeyronVM declarations.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#gitops</code></li>
+<li>Nav: <strong>Platform → GitOps</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#gitops</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Helm</h2>
+<h3>Purpose</h3>
+<p>Helm release inventory for the cluster.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#helm</code></li>
+<li>Nav: <strong>Platform → Helm</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#helm</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Integrations</h2>
+<h3>Purpose</h3>
+<p>External integrations (ticketing, chat, IdP).</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#integrations</code></li>
+<li>Nav: <strong>Platform → Integrations</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#integrations</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Operators</h2>
+<h3>Purpose</h3>
+<p>Operator / OLM status relevant to KubeVirt and companions.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#operators</code></li>
+<li>Nav: <strong>Platform → Operators</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#operators</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Settings</h2>
+<h3>Purpose</h3>
+<p>Dashboard, auth, and AI provider settings.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#settings</code></li>
+<li>Nav: <strong>Platform → Settings</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#settings</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Stack Health</h2>
+<h3>Purpose</h3>
+<p>End-to-end stack health for Veyron + KubeVirt + CDI.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#stack-health</code></li>
+<li>Nav: <strong>Platform → Stack Health</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#stack-health</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Tenants</h2>
+<h3>Purpose</h3>
+<p>Multi-tenant boundaries and namespace mapping.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#tenants</code></li>
+<li>Nav: <strong>Platform → Tenants</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#tenants</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Webhooks</h2>
+<h3>Purpose</h3>
+<p>Webhook endpoints for automation.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#webhooks</code></li>
+<li>Nav: <strong>Platform → Webhooks</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#webhooks</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Audit</h2>
+<h3>Purpose</h3>
+<p>Audit trail of mutating Veyron and cluster actions.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#audit</code></li>
+<li>Nav: <strong>Security → Audit</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#audit</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Compliance</h2>
+<h3>Purpose</h3>
+<p>Compliance checks and evidence for the fleet.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#compliance</code></li>
+<li>Nav: <strong>Security → Compliance</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#compliance</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Policies</h2>
+<h3>Purpose</h3>
+<p>Admission / VM policy enforcement surfaces.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#policies</code></li>
+<li>Nav: <strong>Security → Policies</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#policies</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Quotas</h2>
+<h3>Purpose</h3>
+<p>ResourceQuota and LimitRange views.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#quotas</code></li>
+<li>Nav: <strong>Security → Quotas</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#quotas</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>RBAC</h2>
+<h3>Purpose</h3>
+<p>Kubernetes RBAC review for Veyron operators and tenants.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#rbac</code></li>
+<li>Nav: <strong>Security → RBAC</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#rbac</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Security Posture</h2>
+<h3>Purpose</h3>
+<p>Security posture across VMs and namespaces.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#security</code></li>
+<li>Nav: <strong>Security → Security Posture</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#security</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>SOC</h2>
+<h3>Purpose</h3>
+<p>SOC-style security operations board.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#soc</code></li>
+<li>Nav: <strong>Security → SOC</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#soc</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Backups</h2>
+<h3>Purpose</h3>
+<p>Backup jobs and restore entry points for VMs.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#backups</code></li>
+<li>Nav: <strong>Storage → Backups</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#backups</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Images</h2>
+<h3>Purpose</h3>
+<p>ContainerDisk / golden image catalog.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#images</code></li>
+<li>Nav: <strong>Storage → Images</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#images</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Snapshots</h2>
+<h3>Purpose</h3>
+<p>VolumeSnapshot / VM snapshot inventory and actions.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#snapshots</code></li>
+<li>Nav: <strong>Storage → Snapshots</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#snapshots</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Storage</h2>
+<h3>Purpose</h3>
+<p>PVC, DataVolume, and storage class inventory for VMs.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#storage</code></li>
+<li>Nav: <strong>Storage → Storage</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#storage</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Veyron — Complete page index</h2>
+<p>Every primary navigable dashboard route.</p>
+<p><em>Generated: 2026-07-26 · 65 routes</em></p>
+<p>Regenerate: <code>node scripts/customer-docs/generate-page-index.mjs</code></p>
+<h3>Favorites</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Mission Control</td>
+<td><code>dashboard</code></td>
+<td>Mission Control home — fleet health, shortcuts, and live KubeVirt signals.</td>
+<td><a href="pages/favorites/dashboard.md">Open</a></td>
+</tr>
+<tr>
+<td>Fleet Constellation</td>
+<td><code>fleet-constellation</code></td>
+<td>Visual constellation of the VM fleet across namespaces and nodes.</td>
+<td><a href="pages/favorites/fleet-constellation.md">Open</a></td>
+</tr>
+<tr>
+<td>Reactor Core</td>
+<td><code>reactor</code></td>
+<td>Reactor Core — high-density operational wall for hot workloads.</td>
+<td><a href="pages/favorites/reactor.md">Open</a></td>
+</tr>
+<tr>
+<td>Gallery Wall</td>
+<td><code>gallery-wall</code></td>
+<td>Gallery of VM cards and status tiles for at-a-glance browsing.</td>
+<td><a href="pages/favorites/gallery-wall.md">Open</a></td>
+</tr>
+<tr>
+<td>vCentre</td>
+<td><code>vcentre</code></td>
+<td>vCentre-style inventory and ops surface for KubeVirt VMs.</td>
+<td><a href="pages/favorites/vcentre.md">Open</a></td>
+</tr>
+<tr>
+<td>ConsoleHub</td>
+<td><code>console-hub</code></td>
+<td>Console hub for VNC, serial, and remote access sessions.</td>
+<td><a href="pages/favorites/console-hub.md">Open</a></td>
+</tr>
+<tr>
+<td>VM Capsule</td>
+<td><code>vm-capsule</code></td>
+<td>Focused single-VM capsule view for deep workbench ops.</td>
+<td><a href="pages/favorites/vm-capsule.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Compute</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>VMs</td>
+<td><code>vms</code></td>
+<td>VirtualMachine inventory — create, power, migrate, and inspect KubeVirt VMs.</td>
+<td><a href="pages/compute/vms.md">Open</a></td>
+</tr>
+<tr>
+<td>Nodes</td>
+<td><code>nodes</code></td>
+<td>Kubernetes / virt node capacity and placement view.</td>
+<td><a href="pages/compute/nodes.md">Open</a></td>
+</tr>
+<tr>
+<td>Pods</td>
+<td><code>pods</code></td>
+<td>Pod inventory including virt-launcher pods.</td>
+<td><a href="pages/compute/pods.md">Open</a></td>
+</tr>
+<tr>
+<td>Workloads</td>
+<td><code>workloads</code></td>
+<td>Cross-workload view of Deployments, StatefulSets, and VMs.</td>
+<td><a href="pages/compute/workloads.md">Open</a></td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td><code>scheduling</code></td>
+<td>Scheduling constraints, node affinity, and placement hints.</td>
+<td><a href="pages/compute/scheduling.md">Open</a></td>
+</tr>
+<tr>
+<td>HPA</td>
+<td><code>hpa</code></td>
+<td>Horizontal Pod Autoscaler objects affecting related workloads.</td>
+<td><a href="pages/compute/hpa.md">Open</a></td>
+</tr>
+<tr>
+<td>Autoscaler</td>
+<td><code>autoscaler</code></td>
+<td>Cluster / VM autoscaler status and recommendations.</td>
+<td><a href="pages/compute/autoscaler.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Observe</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Monitoring</td>
+<td><code>monitoring</code></td>
+<td>Monitoring overview for the Veyron-managed estate.</td>
+<td><a href="pages/observe/monitoring.md">Open</a></td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td><code>metrics</code></td>
+<td>Live and historical metrics for VMs and nodes.</td>
+<td><a href="pages/observe/metrics.md">Open</a></td>
+</tr>
+<tr>
+<td>Alerts</td>
+<td><code>alerts</code></td>
+<td>Active alerts from the observability stack.</td>
+<td><a href="pages/observe/alerts.md">Open</a></td>
+</tr>
+<tr>
+<td>Events</td>
+<td><code>events</code></td>
+<td>Kubernetes and KubeVirt events.</td>
+<td><a href="pages/observe/events.md">Open</a></td>
+</tr>
+<tr>
+<td>SLO</td>
+<td><code>slo</code></td>
+<td>Service level objectives and burn-rate views.</td>
+<td><a href="pages/observe/slo.md">Open</a></td>
+</tr>
+<tr>
+<td>Performance</td>
+<td><code>performance</code></td>
+<td>Performance profiles and hotspots across the fleet.</td>
+<td><a href="pages/observe/performance.md">Open</a></td>
+</tr>
+<tr>
+<td>Heatmap</td>
+<td><code>heatmap</code></td>
+<td>Density heatmap of resource pressure.</td>
+<td><a href="pages/observe/heatmap.md">Open</a></td>
+</tr>
+<tr>
+<td>Custom Dashboards</td>
+<td><code>custom-dashboards</code></td>
+<td>User-defined observability dashboards.</td>
+<td><a href="pages/observe/custom-dashboards.md">Open</a></td>
+</tr>
+<tr>
+<td>Observability Overview</td>
+<td><code>observability</code></td>
+<td>Observability overview landing page.</td>
+<td><a href="pages/observe/observability.md">Open</a></td>
+</tr>
+<tr>
+<td>Insights</td>
+<td><code>insights</code></td>
+<td>AI / analytics insights over fleet telemetry.</td>
+<td><a href="pages/observe/insights.md">Open</a></td>
+</tr>
+<tr>
+<td>Traces</td>
+<td><code>traces</code></td>
+<td>Distributed traces when tracing backends are configured.</td>
+<td><a href="pages/observe/traces.md">Open</a></td>
+</tr>
+<tr>
+<td>Logs</td>
+<td><code>logs</code></td>
+<td>Log explorer for VM and platform workloads.</td>
+<td><a href="pages/observe/logs.md">Open</a></td>
+</tr>
+<tr>
+<td>Incidents</td>
+<td><code>incidents</code></td>
+<td>Incident timeline and response hooks.</td>
+<td><a href="pages/observe/incidents.md">Open</a></td>
+</tr>
+<tr>
+<td>Mission Control Wall</td>
+<td><code>mission-control</code></td>
+<td>Full-wall Mission Control display mode.</td>
+<td><a href="pages/observe/mission-control.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Storage</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Snapshots</td>
+<td><code>snapshots</code></td>
+<td>VolumeSnapshot / VM snapshot inventory and actions.</td>
+<td><a href="pages/storage/snapshots.md">Open</a></td>
+</tr>
+<tr>
+<td>Storage</td>
+<td><code>storage</code></td>
+<td>PVC, DataVolume, and storage class inventory for VMs.</td>
+<td><a href="pages/storage/storage.md">Open</a></td>
+</tr>
+<tr>
+<td>Images</td>
+<td><code>images</code></td>
+<td>ContainerDisk / golden image catalog.</td>
+<td><a href="pages/storage/images.md">Open</a></td>
+</tr>
+<tr>
+<td>Backups</td>
+<td><code>backups</code></td>
+<td>Backup jobs and restore entry points for VMs.</td>
+<td><a href="pages/storage/backups.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Network</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Ingress</td>
+<td><code>ingress</code></td>
+<td>Ingress / route inventory for exposed services.</td>
+<td><a href="pages/network/ingress.md">Open</a></td>
+</tr>
+<tr>
+<td>Network Policies</td>
+<td><code>network-policies</code></td>
+<td>Kubernetes NetworkPolicy objects affecting VM namespaces.</td>
+<td><a href="pages/network/network-policies.md">Open</a></td>
+</tr>
+<tr>
+<td>Cilium</td>
+<td><code>cilium</code></td>
+<td>Cilium network status when Cilium is the CNI.</td>
+<td><a href="pages/network/cilium.md">Open</a></td>
+</tr>
+<tr>
+<td>Topology</td>
+<td><code>topology</code></td>
+<td>Network topology across VMs, services, and nodes.</td>
+<td><a href="pages/network/topology.md">Open</a></td>
+</tr>
+<tr>
+<td>Dependencies</td>
+<td><code>dependencies</code></td>
+<td>Service dependency graph for selected workloads.</td>
+<td><a href="pages/network/dependencies.md">Open</a></td>
+</tr>
+<tr>
+<td>Network Intelligence</td>
+<td><code>network-intel</code></td>
+<td>Network intelligence summary for the virtualization plane.</td>
+<td><a href="pages/network/network-intel.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Security</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Security Posture</td>
+<td><code>security</code></td>
+<td>Security posture across VMs and namespaces.</td>
+<td><a href="pages/security/security.md">Open</a></td>
+</tr>
+<tr>
+<td>Compliance</td>
+<td><code>compliance</code></td>
+<td>Compliance checks and evidence for the fleet.</td>
+<td><a href="pages/security/compliance.md">Open</a></td>
+</tr>
+<tr>
+<td>RBAC</td>
+<td><code>rbac</code></td>
+<td>Kubernetes RBAC review for Veyron operators and tenants.</td>
+<td><a href="pages/security/rbac.md">Open</a></td>
+</tr>
+<tr>
+<td>Policies</td>
+<td><code>policies</code></td>
+<td>Admission / VM policy enforcement surfaces.</td>
+<td><a href="pages/security/policies.md">Open</a></td>
+</tr>
+<tr>
+<td>Quotas</td>
+<td><code>quotas</code></td>
+<td>ResourceQuota and LimitRange views.</td>
+<td><a href="pages/security/quotas.md">Open</a></td>
+</tr>
+<tr>
+<td>Audit</td>
+<td><code>audit</code></td>
+<td>Audit trail of mutating Veyron and cluster actions.</td>
+<td><a href="pages/security/audit.md">Open</a></td>
+</tr>
+<tr>
+<td>SOC</td>
+<td><code>soc</code></td>
+<td>SOC-style security operations board.</td>
+<td><a href="pages/security/soc.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Platform</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Helm</td>
+<td><code>helm</code></td>
+<td>Helm release inventory for the cluster.</td>
+<td><a href="pages/platform/helm.md">Open</a></td>
+</tr>
+<tr>
+<td>Operators</td>
+<td><code>operators</code></td>
+<td>Operator / OLM status relevant to KubeVirt and companions.</td>
+<td><a href="pages/platform/operators.md">Open</a></td>
+</tr>
+<tr>
+<td>CRDs</td>
+<td><code>crds</code></td>
+<td>CustomResourceDefinition catalog.</td>
+<td><a href="pages/platform/crds.md">Open</a></td>
+</tr>
+<tr>
+<td>Blueprint Studio</td>
+<td><code>blueprint-studio</code></td>
+<td>Multi-VM blueprint authoring and apply.</td>
+<td><a href="pages/platform/blueprint-studio.md">Open</a></td>
+</tr>
+<tr>
+<td>Custom Resources</td>
+<td><code>custom-resources</code></td>
+<td>Browse and edit custom resources.</td>
+<td><a href="pages/platform/custom-resources.md">Open</a></td>
+</tr>
+<tr>
+<td>Catalog</td>
+<td><code>catalog</code></td>
+<td>Workload and template catalog.</td>
+<td><a href="pages/platform/catalog.md">Open</a></td>
+</tr>
+<tr>
+<td>Template Foundry</td>
+<td><code>app-store</code></td>
+<td>Template Foundry — OS templates and app blueprints.</td>
+<td><a href="pages/platform/app-store.md">Open</a></td>
+</tr>
+<tr>
+<td>GitOps</td>
+<td><code>gitops</code></td>
+<td>GitOps export and sync status for VeyronVM declarations.</td>
+<td><a href="pages/platform/gitops.md">Open</a></td>
+</tr>
+<tr>
+<td>Integrations</td>
+<td><code>integrations</code></td>
+<td>External integrations (ticketing, chat, IdP).</td>
+<td><a href="pages/platform/integrations.md">Open</a></td>
+</tr>
+<tr>
+<td>Webhooks</td>
+<td><code>webhooks</code></td>
+<td>Webhook endpoints for automation.</td>
+<td><a href="pages/platform/webhooks.md">Open</a></td>
+</tr>
+<tr>
+<td>Tenants</td>
+<td><code>tenants</code></td>
+<td>Multi-tenant boundaries and namespace mapping.</td>
+<td><a href="pages/platform/tenants.md">Open</a></td>
+</tr>
+<tr>
+<td>Stack Health</td>
+<td><code>stack-health</code></td>
+<td>End-to-end stack health for Veyron + KubeVirt + CDI.</td>
+<td><a href="pages/platform/stack-health.md">Open</a></td>
+</tr>
+<tr>
+<td>Settings</td>
+<td><code>settings</code></td>
+<td>Dashboard, auth, and AI provider settings.</td>
+<td><a href="pages/platform/settings.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>FinOps</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Costs</td>
+<td><code>costs</code></td>
+<td>FinOps cost view for VM and cluster spend.</td>
+<td><a href="pages/finops/costs.md">Open</a></td>
+</tr>
+<tr>
+<td>Forecasting</td>
+<td><code>forecasting</code></td>
+<td>Cost and capacity forecasting.</td>
+<td><a href="pages/finops/forecasting.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Ops</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Chaos</td>
+<td><code>chaos</code></td>
+<td>Chaos experiments against the virtualization stack.</td>
+<td><a href="pages/ops/chaos.md">Open</a></td>
+</tr>
+<tr>
+<td>Disaster Recovery</td>
+<td><code>dr</code></td>
+<td>Disaster recovery plans for VMs and namespaces.</td>
+<td><a href="pages/ops/dr.md">Open</a></td>
+</tr>
+<tr>
+<td>Actions</td>
+<td><code>actions</code></td>
+<td>Queued / recent operator actions.</td>
+<td><a href="pages/ops/actions.md">Open</a></td>
+</tr>
+<tr>
+<td>Notifications</td>
+<td><code>notifications</code></td>
+<td>Notification channels and delivery preferences.</td>
+<td><a href="pages/ops/notifications.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Ask Zeus</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Ask Zeus</td>
+<td><code>ask-zeus</code></td>
+<td>Ask Zeus — AI assistant grounded on this cluster.</td>
+<td><a href="pages/ask-zeus/ask-zeus.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Related</h3>
+<ul>
+<li><a href="README.md">Customer docs home</a></li>
+<li><a href="pages/README.md">Page-by-page guides</a></li>
+</ul>
+</main></body></html>

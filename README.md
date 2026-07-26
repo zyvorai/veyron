@@ -7,6 +7,8 @@
 
 **[Veyron — Customer Feature Guide](docs/veyron-customer-feature-guide.md)** — a complete, customer-facing reference covering all **58 features** across **12 areas**, grounded in the product's actual capabilities. Also available as a print-ready **[PDF](docs/veyron-customer-feature-guide.pdf)**.
 
+**[Customer manual (page-by-page)](docs/customer/README.md)** — getting started, admin basics, and a guide for every Mission Control page (PDFs under `docs/customer/pdf/`).
+
 Rogue VM management for **KubeVirt** — forged in Rust. Declarative VM builder, 44 OS templates, multi-VM blueprints, browser VNC console, GitOps export, policy enforcement, and a Mission Control web dashboard with 40+ advanced pages.
 
 ```text

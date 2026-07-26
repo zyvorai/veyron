@@ -47,3 +47,6 @@ web/**/.vite/
 
 # Local presentation exports
 presentations/
+
+# local docs tooling
+.docs-tools/

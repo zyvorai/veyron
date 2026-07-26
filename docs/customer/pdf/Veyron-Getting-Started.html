@@ -1,0 +1,160 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Getting Started — Veyron</title>
+<style>
+@page{size:A4;margin:15mm 16mm}*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Segoe UI',system-ui,sans-serif;color:#1f2937;line-height:1.58;font-size:10.5pt}
+.cover{height:262mm;margin:-15mm -16mm 0;background:linear-gradient(135deg,#0f0a1a,#4c1d95,#0d1b2a);color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;page-break-after:always;position:relative}
+.cover .kicker{letter-spacing:5px;text-transform:uppercase;opacity:.72;margin-bottom:1.4em}
+.cover h1{font-size:3.2em;font-weight:800;letter-spacing:-2px}
+.cover h1 span{color:#a78bfa}
+.cover .sub{font-size:1.3em;font-weight:300;opacity:.93;margin:1em 0;max-width:24em}
+.cover .badge{display:inline-block;background:rgba(96,165,250,.2);border:1px solid #a78bfa;padding:8px 22px;border-radius:20px;margin-top:2em}
+.cover .foot{position:absolute;bottom:34px;font-size:.82em;opacity:.6}
+h2{page-break-before:always;margin:0 0 .35em;font-size:1.55em;font-weight:750;color:#12203a;border-bottom:2px solid #e5edfb;padding-bottom:.28em}
+h2:first-of-type{page-break-before:avoid}
+h3{margin:1.1em 0 .4em;font-size:1.12em;font-weight:700}
+p,li{margin:.4em 0}ul,ol{margin:.5em 0 .9em 1.4em}
+a{color:#2563eb;text-decoration:none}
+code{background:#eef2f7;padding:1px 6px;border-radius:4px;font-size:.86em;font-family:ui-monospace,Menlo,monospace}
+pre{background:#0f172a;color:#e2e8f0;padding:12px 15px;border-radius:9px;overflow-x:auto;margin:.8em 0}
+table{width:100%;border-collapse:collapse;margin:.8em 0 1.1em;font-size:9.5pt}
+th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;vertical-align:top}th{background:#f1f5f9}
+hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
+</style></head><body>
+<section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
+<h1>Vey<span>ron</span></h1>
+<div class="sub">Getting Started</div>
+<div class="badge">2026-07-26</div>
+<div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
+<main><h2>What you need</h2>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Kubernetes + KubeVirt</td>
+<td>CDI recommended for disk imports</td>
+</tr>
+<tr>
+<td>Veyron API / dashboard</td>
+<td>Local <strong><code>:8080</code></strong> or cluster HTTPS <strong><code>:5151</code></strong> (NodePort often <strong>30151</strong>)</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td><code>VEYRON_API_KEY</code> / <code>VEYRON_API_KEYS</code>, or OIDC</td>
+</tr>
+</tbody></table>
+<h2>1. Open the UI</h2>
+<ul>
+<li>Local: <code>http://127.0.0.1:8080/dashboard</code></li>
+<li>Cluster: <code>https://&lt;host&gt;:30151/dashboard</code> (chart defaults vary — use your deploy output)</li>
+<li>Ask Zeus deep link: <code>https://&lt;host&gt;:30151/ask-zeus</code></li>
+</ul>
+<h2>2. Sign in</h2>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>What you do</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>API key</td>
+<td>Bearer / <code>X-API-Key</code> from <code>VEYRON_API_KEY</code> (or named keys with roles)</td>
+</tr>
+<tr>
+<td>OIDC</td>
+<td>PKCE browser login when <code>VEYRON_OIDC_*</code> is configured</td>
+</tr>
+<tr>
+<td>Local lab</td>
+<td>Auth may be <code>none</code> on :8080 — do not expose publicly</td>
+</tr>
+</tbody></table>
+<h2>3. Orient yourself</h2>
+<ol>
+<li><strong>Mission Control</strong> (<code>/dashboard</code>) — home wall and Finder.</li>
+<li><strong>Browse mega-menu</strong> — Compute, Observe, Storage, Network, Security, Platform, FinOps, Ops.</li>
+<li><strong>Spotlight (<code>⌘K</code>)</strong> — jump to any page by label.</li>
+<li>Hash routes: <code>/dashboard#vms</code>, <code>/dashboard#console-hub</code>, etc.</li>
+</ol>
+<h2>4. First workflows</h2>
+<h3>A. List and open a VM</h3>
+<p><strong>VMs</strong> (<code>#vms</code>) → select a row → open <strong>VM Capsule</strong> or <strong>vCentre</strong> for detail.</p>
+<h3>B. Open a console</h3>
+<p><strong>ConsoleHub</strong> (<code>#console-hub</code>) — VNC / serial (WebSocket ticket flow).</p>
+<h3>C. Create from a template</h3>
+<p><strong>Template Foundry</strong> (<code>#app-store</code>) or <strong>Blueprint Studio</strong> (<code>#blueprint-studio</code>).</p>
+<h3>D. Ask Zeus</h3>
+<p><strong>Ask Zeus</strong> (<code>#ask-zeus</code>) — cluster-grounded Q&amp;A before mutating actions.</p>
+<h2>Next steps</h2>
+<ul>
+<li><a href="using-the-dashboard.md">Using the Dashboard</a></li>
+<li><a href="admin-basics.md">Admin basics</a></li>
+<li><a href="pages/README.md">Page guides</a></li>
+</ul>
+<hr>
+<p>Veyron Mission Control is a hash-routed SPA under <code>/dashboard</code> (<code>#page</code>).</p>
+<h2>Surfaces</h2>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Mission Control</strong></td>
+<td>Home wall and fleet signals</td>
+</tr>
+<tr>
+<td><strong>Finder / Browse</strong></td>
+<td>Sidebar + mega-menu navigation</td>
+</tr>
+<tr>
+<td><strong>Spotlight (<code>⌘K</code>)</strong></td>
+<td>Jump to any labeled page</td>
+</tr>
+<tr>
+<td><strong>Favorites</strong></td>
+<td>Fleet Constellation, Reactor, Gallery, vCentre, ConsoleHub, VM Capsule</td>
+</tr>
+<tr>
+<td><strong>Settings</strong></td>
+<td>Auth, theme, AI providers</td>
+</tr>
+</tbody></table>
+<h2>Browse vs act</h2>
+<p>Inventory and metrics pages are safe to explore. Create / power / migrate / policy apply actions follow role gates (<code>veyron-admin</code> / <code>veyron-write</code> for OIDC groups).</p>
+<h2>Related</h2>
+<ul>
+<li><a href="getting-started.md">Getting Started</a></li>
+<li><a href="pages/README.md">Page-by-page guides</a></li>
+</ul>
+<hr>
+<h2>Create and console into a VM</h2>
+<ol>
+<li><a href="pages/platform/app-store.md">Template Foundry</a> or <a href="pages/platform/blueprint-studio.md">Blueprint Studio</a></li>
+<li><a href="pages/compute/vms.md">VMs</a> — confirm Running</li>
+<li><a href="pages/favorites/console-hub.md">ConsoleHub</a> — open VNC/serial</li>
+</ol>
+<h2>Snapshot and protect</h2>
+<ol>
+<li><a href="pages/storage/snapshots.md">Snapshots</a></li>
+<li><a href="pages/storage/backups.md">Backups</a></li>
+<li><a href="pages/ops/dr.md">Disaster Recovery</a> when configured</li>
+</ol>
+<h2>Investigate an incident</h2>
+<ol>
+<li><a href="pages/favorites/dashboard.md">Mission Control</a></li>
+<li><a href="pages/observe/alerts.md">Alerts</a> / <a href="pages/observe/incidents.md">Incidents</a></li>
+<li><a href="pages/ask-zeus/ask-zeus.md">Ask Zeus</a></li>
+</ol>
+<h2>Related</h2>
+<ul>
+<li><a href="getting-started.md">Getting Started</a></li>
+</ul>
+</main></body></html>
