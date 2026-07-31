@@ -1186,7 +1186,9 @@ pub mod web {
                 concat!(
                     include_str!("web/dashboard-veyron.css"),
                     "\n",
-                    include_str!("web/dashboard-packetwolf-themes.css")
+                    include_str!("web/dashboard-ironwolf-themes.css"),
+                    "\n",
+                    include_str!("web/dashboard-ironwolf-login.css")
                 ),
             )
             .replace("/*__VMR_JS__*/", include_str!("web/dashboard-veyron.js"))

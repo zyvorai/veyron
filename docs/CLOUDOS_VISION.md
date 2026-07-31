@@ -4,21 +4,24 @@ CloudOS is the default shell for the Veyron dashboard: a macOS Tahoe–inspired 
 
 **Current dashboard revision:** `20260618f` (cache-bust via `?dash=<rev>` and `<meta name="veyron-dashboard-rev">`).
 
+> **Staleness note:** this doc predates the **IronWolf** theme pivot (see `CLAUDE.md` § Design system) and the growth to 65 pages. The Themes section and page/line counts below have been corrected; other sections (tier gating, chrome-layer specifics) may still describe an earlier revision and would benefit from a fuller refresh alongside the active 65-page redesign sweep.
+
 ---
 
 ## 1. Overview
 
 | Asset | Source | Role |
 |---|---|---|
-| HTML shell + inline JS | `src/api/web/dashboard.html` (~15k lines) | All 15 pages, CloudOS chrome, Ask Zeus modal |
-| Layout & VMR panels | `src/api/web/dashboard-veyron.css` | Glass surfaces, dock, Finder, fleet cards |
-| Page renderers | `src/api/web/dashboard-veyron.js` | Mission Control, Fleet, Foundry, capsule tabs |
-| Legacy shim | `src/api/web/dashboard-vmr.css` | Compat tokens |
+| HTML shell + inline JS | `src/api/web/dashboard.html` (~30k lines) | All 65 pages, CloudOS chrome, Ask Zeus modal |
+| Layout & VMR panels | `src/api/web/dashboard-veyron.css` | Glass surfaces, dock, fleet cards |
+| Theme tokens | `src/api/web/dashboard-ironwolf-themes.css` | IronWolf `tahoe`/`light` token blocks |
+| Sign-in page | `src/api/web/dashboard-ironwolf-login.css` | Split-screen login hero + glass panel |
+| Page renderers | `src/api/web/dashboard-veyron.js` | Mission Control, Signal Desk, Fleet, Foundry, capsule tabs |
 
 At startup, `src/api/http_server.rs` reads the CSS/JS siblings via `include_str!` and performs literal `replace()` into the HTML template before serving `GET /`:
 
 ```text
-/*__VMR_CSS__*/  →  dashboard-veyron.css (+ vmr shim)
+/*__VMR_CSS__*/  →  dashboard-veyron.css + dashboard-ironwolf-themes.css + dashboard-ironwolf-login.css
 /*__VMR_JS__*/   →  dashboard-veyron.js
 ```
 
@@ -35,7 +38,7 @@ The active layout uses `body.mac-desktop-root`. Legacy `veyron-topbar` / `veyron
 | Layer | Purpose | Key shortcuts |
 |---|---|---|
 | **Menubar** (40px) | App menu, View, tier badge, clock, Control Center | ⌘J Ask Zeus, ⌘K Spotlight, ⌘⇧B Browse |
-| **Finder sidebar** | Collapsible sections: Favorites, VMs, Ask Zeus quick prompts, Platform | Visible on **Power** and **Advanced** tiers |
+| ~~Finder sidebar~~ | Legacy collapsible sidebar (`#cloudos-finder`) — force-hidden at boot (`initFinderCollapsed()`), its reopen control permanently disabled. Dead code pending removal; **not** live navigation. | — |
 | **Dock** | Pinned pages + Ask Zeus (✦) + trash metaphor | Click or Launchpad |
 | **mac-page-window** | Content pane for the active `data-page` section | `.mac-page-toolbar` replaces legacy `.page-header` on Normal/Power |
 | **Mission Control overlay** | Cluster overview grid (F3) | Fleet health at a glance |
@@ -73,30 +76,24 @@ The default Mission Control home matches the `veyron.png` reference layout:
 
 Zen mode: `veyron_zen_mode` in `localStorage`, or on by default when desktop tier is Automatic. Hides desktop tabs and shows the status-bar label.
 
-### Themes & wallpapers
+### Themes & wallpapers — IronWolf
 
-Eight themes aligned with PacketWolf macOS Liquid Glass presets (Settings → Theme, Control Center, menubar):
+Two themes ship today (Settings → Theme, Control Center, menubar), branded **IronWolf**:
 
-| Category | Theme key | Mood |
-|---|---|---|
-| macOS | `tahoe` | Default dark Liquid Glass (replaces legacy `slate`) |
-| macOS | `tahoe-light` | Light vibrancy (replaces legacy `frost`) |
-| macOS | `sonoma` | Indigo aurora (replaces legacy `aurora`) |
-| macOS | `graphite` | Neutral pro gray (replaces `steel` / `zinc` / `obsidian`) |
-| Classic | `wolf` | Amber fire (replaces legacy `neon`) |
-| Classic | `forge` | Hot steel red |
-| Classic | `ember` | Deep crimson |
-| Classic | `light` | Daylight ops console |
+| Theme key | Mood |
+|---|---|
+| `tahoe` | Default dark — calm steel-blue metal-sheen surfaces (`#64a0dc` accent) |
+| `light` | Daylight counterpart |
 
-Five wallpapers in the picker: `tahoe`, `tahoe-light`, `sonoma`, `graphite`, `aurora`. Classic themes default to `aurora`.
+Every previous theme id (`holo`, `nebula`, `solaris`, `biolume`, `sakura`, `mono`, `inferno`, `voltage`, `daylight`, `prism`, `wolf`, `forge`, `ember`, `sonoma`, `graphite`, `slate`, `frost`, etc.) is remapped onto `tahoe` or `light` via `LEGACY_THEME_ALIASES` in `dashboard.html` — existing `localStorage` values migrate silently on load, no user-visible break.
 
-Keys: `veyron_theme`, `veyron_wallpaper`. Themes auto-pair with wallpaper when the user has not set `veyron_wallpaper_manual`. Legacy theme IDs in `localStorage` migrate on load (e.g. `frost` → `tahoe-light`, `slate` → `tahoe`).
+Keys: `veyron_theme`, `veyron_wallpaper`.
 
-**Surface tokens:** `dashboard-packetwolf-themes.css` mirrors PacketWolf `glass.css` — per-theme `--pw-surface-glass`, `--pw-field-bg`, `--glass-*`, accent mixins (`--pw-accent-soft/medium/border`), and a Veyron bridge (`--panel`, `--text`, `--line`). Glass cards, forms, tables, hero panels, and charts read these vars so Tahoe/Sonoma/Graphite/Wolf each tint hovers and KPI accents correctly.
+**Surface tokens:** `dashboard-ironwolf-themes.css` defines the token blocks under `html[data-theme='tahoe']`/`html.theme-tahoe` and a `light` counterpart — `--void`, `--hull`, `--panel*`, `--plasma`, `--ink*`, `--metal-sheen`/`--metal-highlight`/`--accent-steel*`. Status tokens (`--nominal/--caution/--critical/--inert`) are theme-independent, defined once in `dashboard.html`'s base `:root`. Glass cards, forms, tables, hero panels, and charts read these vars so both themes tint correctly with no per-page work.
 
-**Sign-in theme picker:** the API key modal includes an 8-theme appearance grid (same presets as Control Center). Theme choice persists via `veyron_theme` before connect.
+**Sign-in theme picker:** the API key modal (`dashboard-ironwolf-login.css` split-screen hero + glass panel) includes a tahoe/light appearance grid. Theme choice persists via `veyron_theme` before connect.
 
-**Advanced context bar:** on **Advanced** desktop tier, the legacy page toolbar is replaced by PacketWolf-style `.tahoe-context-bar` — app icon, section pills (Fleet / Network / Security / …), namespace chip, and page actions. Legacy inline theme CSS blocks (`steel`, `zinc`, `aurora`, `frost`, etc.) were removed; all styling lives in `dashboard-packetwolf-themes.css`.
+**Retired:** the prior 8/10-theme "Holographic Ops" `glass-deck` family and its PacketWolf-mirrored `dashboard-packetwolf-themes.css` surface tokens have been removed. See `CLAUDE.md` § "The retired `glass-deck` family" for what's left to prune.
 
 ### Typography & density
 

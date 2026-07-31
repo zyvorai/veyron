@@ -279,9 +279,296 @@
       (actionHtml || '');
   };
 
+  window.pickForgeSignals = function pickForgeSignals(vms, limit) {
+    limit = limit == null ? 3 : limit;
+    var list = vms || [];
+    var alertNames = {};
+    try {
+      var evs = typeof lastEvents !== 'undefined' ? lastEvents : [];
+      for (var e = 0; e < (evs || []).length; e++) {
+        var ev = evs[e];
+        if (!ev || (ev.type !== 'Warning' && ev.type !== 'Error')) continue;
+        var involved = ev.involvedObject || ev.object || {};
+        if (involved.name) alertNames[involved.name] = true;
+        if (ev.vm || ev.vm_name) alertNames[ev.vm || ev.vm_name] = true;
+      }
+    } catch (err) {}
+    var scored = [];
+    for (var i = 0; i < list.length; i++) {
+      var v = list[i];
+      var st = v.status || '';
+      var score = 0;
+      var reason = '';
+      if (st === 'Failed' || st === 'Error') { score = 100; reason = st; }
+      else if (st === 'Starting' || st === 'Stopping' || st === 'Provisioning' || st === 'Paused' || st === 'Pausing') { score = 72; reason = st; }
+      else if (v.drift_detected) { score = 60; reason = 'Drift'; }
+      else if (alertNames[v.name]) { score = 55; reason = 'Alert'; }
+      else if (st && st !== 'Running') { score = 38; reason = st; }
+      if (score > 0) scored.push({ v: v, score: score, reason: reason, tone: score >= 90 ? 'crit' : (score >= 55 ? 'warn' : 'off') });
+    }
+    scored.sort(function (a, b) { return b.score - a.score || String(a.v.name).localeCompare(String(b.v.name)); });
+    return scored.slice(0, limit);
+  };
+
+  window.iwCcAnimateStat = function iwCcAnimateStat(el, nextVal, loaded) {
+    if (!el) return;
+    if (!loaded) {
+      el.textContent = '—';
+      return;
+    }
+    var next = Number(nextVal);
+    if (!isFinite(next)) {
+      el.textContent = String(nextVal);
+      return;
+    }
+    var prev = parseInt(el.dataset.num, 10);
+    if (!isFinite(prev)) prev = next;
+    el.dataset.num = String(next);
+    if (prev === next) {
+      el.textContent = String(next);
+      return;
+    }
+    el.classList.add('iw-cc-stat-flash');
+    var start = performance.now();
+    var dur = 420;
+    function frame(now) {
+      var t = Math.min(1, (now - start) / dur);
+      var eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = String(Math.round(prev + (next - prev) * eased));
+      if (t < 1) requestAnimationFrame(frame);
+      else {
+        el.textContent = String(next);
+        setTimeout(function () { el.classList.remove('iw-cc-stat-flash'); }, 280);
+      }
+    }
+    requestAnimationFrame(frame);
+  };
+
+  window.renderForgeSignalDesk = function renderForgeSignalDesk() {
+    var briefing = document.getElementById('forge-briefing');
+    var rail = document.getElementById('forge-signal-rail');
+    var fav = document.getElementById('forge-fav-chips');
+    var home = document.querySelector('#page-dashboard .iw-home.iw-cc');
+    var vms = typeof vmData !== 'undefined' ? vmData : [];
+    var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
+    var failed = vms.filter(function (v) { return v.status === 'Failed' || v.status === 'Error'; }).length;
+    var signals = pickForgeSignals(vms, 3);
+    var loaded = !!window._vmsLoaded;
+    var warnings = typeof islandAlertCount !== 'undefined' ? islandAlertCount
+      : (typeof lastEvents !== 'undefined' ? lastEvents.filter(function (e) { return e.type === 'Warning' || e.type === 'Error'; }).length : 0);
+    var alertCount = Math.max(failed, warnings, signals.length);
+
+    var runEl = document.getElementById('iw-stat-running');
+    var totEl = document.getElementById('iw-stat-total');
+    var alertEl = document.getElementById('iw-stat-alerts');
+    var boardCount = document.getElementById('iw-cc-board-count');
+    iwCcAnimateStat(runEl, running, loaded);
+    if (runEl) runEl.className = 'iw-home-stat-value' + (running ? ' tone-ok' : '');
+    iwCcAnimateStat(totEl, vms.length, loaded);
+    iwCcAnimateStat(alertEl, alertCount, loaded);
+    if (alertEl) alertEl.className = 'iw-home-stat-value' + (alertCount ? (failed ? ' tone-bad' : ' tone-warn') : '');
+    if (boardCount) {
+      if (!loaded || !signals.length) {
+        boardCount.hidden = true;
+        boardCount.textContent = '0';
+      } else {
+        boardCount.hidden = false;
+        boardCount.textContent = String(signals.length);
+      }
+    }
+
+    var hour = new Date().getHours();
+    var dayPart = hour < 5 ? 'late night' : hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
+    var quietLines = [
+      'Fleet is humming. Coffee optional.',
+      'Nothing on fire. Enjoy the quiet.',
+      'All green — the rare good kind of boring.',
+      'Zero attention items. Pocket the pager.',
+      'Smooth seas. Keep one eye on the orb.'
+    ];
+    var alertLines = [
+      'Something wants a look. You’ve got this.',
+      'Attention board is awake — pick a seal.',
+      'A few nodes are waving. Don’t leave them hanging.'
+    ];
+    window.__iwCcTips = [
+      'Tip: ⌘K opens Spotlight anywhere.',
+      'Tip: double-click the fleet orb for a pulse.',
+      'Tip: Ask Zeus when the board gets noisy.',
+      'Tip: Enter Orbit for a spatial fleet view.',
+      'Tip: Zen mode clears chrome so the bridge breathes.',
+      'Tip: ⌘N creates a VM from anywhere.'
+    ];
+    var tips = window.__iwCcTips;
+    var kickers = [
+      'Veyron · macOS Tahoe 26',
+      'Veyron · Live Fleet Bridge',
+      'Veyron · ' + dayPart + ' watch',
+      'Veyron · Liquid Glass desk'
+    ];
+
+    var descEl = document.getElementById('iw-home-desc');
+    var kickerEl = document.getElementById('iw-cc-kicker-text');
+    var tipEl = document.getElementById('iw-cc-surprise-tip');
+    var moodEl = document.getElementById('iw-cc-mood');
+    var chipEl = document.getElementById('iw-cc-cluster-chip');
+    var quiet = loaded && vms.length && !signals.length;
+    var tick = Math.floor(Date.now() / 45000);
+
+    if (kickerEl) kickerEl.textContent = kickers[tick % kickers.length];
+    if (descEl) {
+      if (!loaded) descEl.textContent = 'Tuning the bridge… standing by for fleet telemetry.';
+      else if (!vms.length) descEl.textContent = 'Empty seas this ' + dayPart + ' — forge a VM and the orb wakes up.';
+      else if (quiet) descEl.textContent = 'Good ' + dayPart + '. Full-page bridge is calm — posture green, signals clear.';
+      else descEl.textContent = 'Good ' + dayPart + '. Attention board has the story — inventory stays in Fleet Command.';
+    }
+    if (tipEl && !tipEl.dataset.locked) {
+      tipEl.hidden = false;
+      tipEl.textContent = tips[(window.__iwCcTipIdx || tick) % tips.length];
+    }
+    if (moodEl) {
+      moodEl.textContent = !loaded ? '…' : quiet ? 'All quiet' : (failed ? 'Needs care' : 'Watching');
+      moodEl.dataset.mood = !loaded ? 'boot' : quiet ? 'quiet' : (failed ? 'alert' : 'watch');
+    }
+    if (chipEl && loaded) {
+      chipEl.textContent = vms.length ? (running + '/' + vms.length + ' online') : 'No VMs yet';
+    }
+    if (home) {
+      home.classList.toggle('iw-cc-quiet', !!quiet);
+      home.classList.toggle('iw-cc-alert', !!(loaded && signals.length));
+      if (!home.dataset.entered) {
+        home.dataset.entered = '1';
+        home.classList.add('iw-cc-enter');
+      }
+    }
+
+    if (briefing) {
+      if (!loaded) {
+        briefing.innerHTML = 'Listening for the fleet…';
+      } else if (!vms.length) {
+        briefing.innerHTML = 'No VMs yet. <strong>Create a VM</strong> to start the fleet.';
+      } else if (!signals.length) {
+        briefing.innerHTML = '<span class="forge-brief-quiet">All quiet.</span> <strong>' + running + '</strong> of <strong>' + vms.length + '</strong> online — ' + quietLines[tick % quietLines.length];
+      } else {
+        briefing.innerHTML = '<span class="forge-brief-alert">' + signals.length + ' need attention.</span> <strong>' + running + '</strong> of <strong>' + vms.length + '</strong> online. ' + alertLines[tick % alertLines.length];
+      }
+    }
+
+    if (rail) {
+      if (!signals.length) {
+        rail.innerHTML = loaded && vms.length
+          ? '<div class="forge-signal-empty iw-cc-empty-surprise" role="status">✦ Bridge clear — no attention items</div>'
+          : '';
+      } else {
+        rail.innerHTML = signals.map(function (s) {
+          var v = s.v;
+          var ns = v.namespace || v.ns || 'default';
+          var tone = s.tone || 'warn';
+          return '<button type="button" class="forge-signal-seal tone-' + tone + '" role="listitem" ' +
+            onHandler('navigateToVmCapsule(' + jsArgs(ns, v.name) + ')') + '>' +
+            '<span class="forge-signal-seal-dot tone-' + tone + '" aria-hidden="true"></span>' +
+            '<span class="forge-signal-seal-body">' +
+            '<span class="forge-signal-seal-name">' + esc(v.name) + '</span>' +
+            '<span class="forge-signal-seal-meta">' + esc(ns) + ' · ' + esc(s.reason || v.status || '—') + '</span>' +
+            '</span><span class="forge-signal-seal-act">Open</span></button>';
+        }).join('');
+      }
+    }
+
+    if (fav) {
+      var pins = [];
+      try {
+        if (typeof getPinnedVms === 'function') pins = getPinnedVms() || [];
+        else if (window.pinnedVms) pins = window.pinnedVms;
+      } catch (e2) {}
+      pins = (pins || []).slice(0, 2);
+      if (!pins.length) {
+        fav.hidden = true;
+        fav.innerHTML = '';
+      } else {
+        fav.hidden = false;
+        fav.innerHTML = pins.map(function (p) {
+          var vm = typeof p === 'object' ? p : { name: p, namespace: 'default' };
+          var ns = vm.namespace || vm.ns || 'default';
+          return '<button type="button" class="forge-fav-chip" ' +
+            onHandler('navigateToVmCapsule(' + jsArgs(ns, vm.name) + ')') + '>★ ' + esc(vm.name) + '</button>';
+        }).join('');
+      }
+    }
+
+    try { if (window.renderHoloFleetOrb) window.renderHoloFleetOrb(); } catch (e3) {}
+  };
+
+  window.iwCcOrbSurprise = function iwCcOrbSurprise() {
+    var orb = document.getElementById('holo-fleet-orb');
+    var burst = document.getElementById('iw-cc-orb-burst');
+    var tip = document.getElementById('iw-cc-surprise-tip');
+    if (orb) {
+      orb.classList.remove('iw-cc-orb-pop');
+      void orb.offsetWidth;
+      orb.classList.add('iw-cc-orb-pop');
+    }
+    if (burst) {
+      burst.classList.remove('on');
+      void burst.offsetWidth;
+      burst.classList.add('on');
+      setTimeout(function () { burst.classList.remove('on'); }, 900);
+    }
+    if (tip) {
+      tip.hidden = false;
+      tip.dataset.locked = '1';
+      tip.textContent = 'Surprise pulse — fleet sees you. ⌘J asks Zeus next.';
+      tip.classList.add('iw-cc-tip-pop');
+      setTimeout(function () {
+        tip.dataset.locked = '';
+        tip.classList.remove('iw-cc-tip-pop');
+      }, 5000);
+    }
+  };
+
+  (function initIwCcParallax() {
+    var banner = null;
+    function bind() {
+      banner = document.getElementById('iw-cc-banner');
+      if (!banner || banner.dataset.parallaxBound) return;
+      banner.dataset.parallaxBound = '1';
+      banner.addEventListener('pointermove', function (e) {
+        var r = banner.getBoundingClientRect();
+        var x = ((e.clientX - r.left) / r.width - 0.5) * 12;
+        var y = ((e.clientY - r.top) / r.height - 0.5) * 8;
+        banner.style.setProperty('--iw-px', x.toFixed(2) + 'px');
+        banner.style.setProperty('--iw-py', y.toFixed(2) + 'px');
+      });
+      banner.addEventListener('pointerleave', function () {
+        banner.style.setProperty('--iw-px', '0px');
+        banner.style.setProperty('--iw-py', '0px');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+    else bind();
+    document.addEventListener('veyron:page', bind);
+  })();
+
+  (function initIwCcTipRotator() {
+    if (window.__iwCcTipTimer) return;
+    window.__iwCcTipIdx = 0;
+    window.__iwCcTipTimer = setInterval(function () {
+      var tip = document.getElementById('iw-cc-surprise-tip');
+      var tips = window.__iwCcTips;
+      if (!tip || tip.dataset.locked || !tips || !tips.length) return;
+      if (!document.getElementById('page-dashboard') || !document.getElementById('page-dashboard').classList.contains('active')) return;
+      window.__iwCcTipIdx = (window.__iwCcTipIdx + 1) % tips.length;
+      tip.hidden = false;
+      tip.classList.remove('iw-cc-tip-pop');
+      void tip.offsetWidth;
+      tip.textContent = tips[window.__iwCcTipIdx];
+      tip.classList.add('iw-cc-tip-pop');
+    }, 12000);
+  })();
+
   window.renderMissionControlVmr = function renderMissionControlVmr() {
     var heroEl = document.getElementById('vmr-mission-hero');
-    if (!heroEl) return;
+    if (!heroEl && !document.getElementById('page-dashboard')) return;
     var ns = typeof currentNamespace !== 'undefined' ? currentNamespace : 'all';
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
@@ -294,23 +581,27 @@
     var uiTier = typeof uiTierForPage === 'function' ? uiTierForPage('dashboard') : 'power';
     var showAdvancedHome = uiTier === 'advanced';
 
-    if (showAdvancedHome) {
-      renderVmrPageHero('vmr-mission-hero', 'Veyron Mission Control',
-        'Kubernetes-native VM command center · ' + ns + ' workspace',
-        '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>');
-      renderVmrMetricsStrip('vmr-mission-metrics', [
-        { label: 'Total VMs', value: vms.length },
-        { label: 'Running', value: running, tone: 'ok' },
-        { label: 'Stopped', value: stopped },
-        { label: 'Failed', value: failed, tone: failed ? 'bad' : '' },
-        { label: 'Open Alerts', value: warnings, tone: warnings ? 'warn' : '' },
-        { label: 'Nodes Ready', value: (nodes.ready_nodes != null ? nodes.ready_nodes + '/' + nodes.total_nodes : '—') },
-        { label: 'Est. Monthly Cost', value: (typeof lastCostSummary !== 'undefined' && lastCostSummary) ? lastCostSummary : '—' }
-      ]);
-    } else {
-      heroEl.innerHTML = '';
-      var metricsEl = document.getElementById('vmr-mission-metrics');
-      if (metricsEl) metricsEl.innerHTML = '';
+    renderForgeSignalDesk();
+
+    if (heroEl) {
+      if (showAdvancedHome) {
+        renderVmrPageHero('vmr-mission-hero', 'Veyron Mission Control',
+          'Kubernetes-native VM command center · ' + ns + ' workspace',
+          '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>');
+        renderVmrMetricsStrip('vmr-mission-metrics', [
+          { label: 'Total VMs', value: vms.length },
+          { label: 'Running', value: running, tone: 'ok' },
+          { label: 'Stopped', value: stopped },
+          { label: 'Failed', value: failed, tone: failed ? 'bad' : '' },
+          { label: 'Open Alerts', value: warnings, tone: warnings ? 'warn' : '' },
+          { label: 'Nodes Ready', value: (nodes.ready_nodes != null ? nodes.ready_nodes + '/' + nodes.total_nodes : '—') },
+          { label: 'Est. Monthly Cost', value: (typeof lastCostSummary !== 'undefined' && lastCostSummary) ? lastCostSummary : '—' }
+        ]);
+      } else {
+        heroEl.innerHTML = '';
+        var metricsEl = document.getElementById('vmr-mission-metrics');
+        if (metricsEl) metricsEl.innerHTML = '';
+      }
     }
 
     var qa = document.getElementById('vmr-quick-actions');
@@ -344,7 +635,9 @@
       if (recentEl) recentEl.innerHTML = '';
     }
     renderVeyronMissionBottom();
-    if (typeof renderPinnedVmsFromClient === 'function') renderPinnedVmsFromClient();
+    // Signal Desk: do not dump pinned VM cards on the hearth
+    var pinSec = document.getElementById('dc-pinned-section');
+    if (pinSec) { pinSec.hidden = true; pinSec.style.display = 'none'; }
     if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
     if (typeof syncMissionRefreshLabel === 'function') syncMissionRefreshLabel();
     if (typeof updateClusterPulse === 'function') updateClusterPulse(vms.length);
@@ -2767,12 +3060,6 @@
   function settingsThemeSwatchGrid() {
     var themes = [
       { id: 'tahoe', label: 'Tahoe', cls: 'tahoe' },
-      { id: 'tahoe-light', label: 'Tahoe Light', cls: 'tahoe-light' },
-      { id: 'sonoma', label: 'Sonoma', cls: 'sonoma' },
-      { id: 'graphite', label: 'Graphite', cls: 'graphite' },
-      { id: 'wolf', label: 'Wolf', cls: 'wolf' },
-      { id: 'forge', label: 'Forge', cls: 'forge' },
-      { id: 'ember', label: 'Ember', cls: 'ember' },
       { id: 'light', label: 'Light', cls: 'light' }
     ];
     return '<div class="theme-swatch-grid vmr-settings-theme-grid" role="radiogroup" aria-label="Theme">' +
