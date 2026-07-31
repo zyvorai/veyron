@@ -227,33 +227,33 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 - **KubeVirt virtio video (optional):** set `kubevirt_video_type` on `VMConfig` (builder: `.kubevirt_video_type("virtio")`) to emit `domain.devices.video`. This requires the cluster KubeVirt **`VideoConfig` alpha feature gate**; without it the API may reject or ignore the field depending on version.
 - **Windows day-to-day remoting:** prefer **RDP** for interactive work; KubeVirt VNC through the dashboard is best-effort over WebSockets. See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md`.
 
-## Design system — Holographic Ops (the design law)
+## Design system — IronWolf (the design law)
 
-The dashboard (`src/api/web/dashboard.html`) uses the **Holographic Ops** design language: volumetric glass, aurora depth, floating panels, pointer parallax, luminous multi-hue gradients. This **replaces** the retired *Instrument Deck* look (flat cockpit, single blue accent, hairline borders). Every dashboard edit must keep this language.
+The dashboard (`src/api/web/dashboard.html`) uses the **IronWolf** design language: calm steel-blue metal-sheen surfaces, flat borderless content, restrained two-theme palette (`tahoe` dark default + `light`). This **replaces** the retired *Holographic Ops* look (multi-hue aurora, 10-deck `glass-deck` family, volumetric glass) — that family's CSS blocks (`holo`, `nebula`, `solaris`, `biolume`, `sakura`, `mono`, `inferno`, `voltage`, `daylight`, `prism`, plus older ones like `carbon`/`forge`/`synthwave`) are unreachable dead weight now (`THEME_PRESETS`/`VALID_THEMES` only ship `tahoe`/`light`; everything else is remapped onto them via `LEGACY_THEME_ALIASES`) and are being pruned rather than maintained. **"Wow" now comes from motion and interaction, not color** — the editorial **Signal Desk** home page (contextual briefing, scored attention rail, animated stat tiles, orb micro-interactions) is the reference for that direction.
 
-**It lives in a theme layer.** Holographic Ops is the `holo` theme — the default. It is defined **once** under `html[data-theme="holo"]` in the `<style>` block (search `◜ HOLOGRAPHIC OPS`) and cascades to all 67 pages by overriding the shared surface classes (`.card .glass-card .chart-card .vm-card .tile .panel .vmr-panel .id-*`). The token-consuming surfaces (`.card`, `.chart-card`, `.vm-card`) restyle automatically because holo redefines the glass tokens. **To restyle every page, edit the holo block — do not touch 67 pages.**
+**It lives in a theme layer.** IronWolf's tokens are defined in `src/api/web/dashboard-ironwolf-themes.css` under `html[data-theme='tahoe']`/`html.theme-tahoe` (and a `light` counterpart), embedded via `include_str!` in `src/api/http_server.rs` (concatenated with `dashboard-veyron.css` and `dashboard-ironwolf-login.css` into the `/*__VMR_CSS__*/` placeholder). It cascades to all pages by overriding the same shared surface classes (`.card .glass-card .chart-card .vm-card .tile .panel .vmr-panel .id-*`) the old themes used — the token *names* are unchanged (`--void`, `--panel`, `--plasma`, `--ink`, etc.), only the values and the absence of the `.glass-deck` aurora engine. **To restyle every page, edit the IronWolf token block — do not touch 65 pages.**
 
-### Color — tokens + intentional aurora gradients
+### Color — tokens, not raw hex
 
-Prefer CSS custom properties for surfaces, text, and status. The token table below is the contract. **Unlike the old Instrument Deck, gradients and a multi-hue aurora are wanted, not bugs** — the design is deliberately gradient-rich. Use the aurora hues for ambient glow, sheen, and accent blooms.
+Prefer CSS custom properties for surfaces, text, and status — this contract is unchanged from before, just recolored calmer.
 
 | Purpose | Token / value |
 |---|---|
 | Deepest background | `--void` |
-| Page background | `--hull` (holo: deep-space radial) |
+| Page background | `--hull` |
 | Glass surface | `--glass-bg` + `--glass-blur` (`.card`, `.chart-card`, `.vm-card` consume these) |
 | Card surface (id-*) | `--panel` `--panel-2` `--panel-hi` |
 | Default / emphasis border | `--hairline` / `--hairline-hi` |
-| Primary accent | `--plasma` (holo: luminous blue `#5b8cff`) |
+| Primary accent | `--plasma` (IronWolf tahoe: steel blue `#64a0dc`) |
 | Plasma variants | `--plasma-deep` `--plasma-glow` `--plasma-line` |
-| Aurora accent hues | `--aurora-1` blue · `--aurora-2` violet `#a78bfa` · `--aurora-3` cyan · `--aurora-4` indigo |
+| Metal accents | `--metal-sheen` `--metal-highlight` `--accent-steel` `--accent-steel-bright` |
 | Status: healthy/running | `--nominal` + `--nominal-bg` |
 | Status: warning | `--caution` + `--caution-bg` |
 | Status: error/critical | `--critical` + `--critical-bg` |
 | Status: stopped/off | `--inert` + `--inert-bg` |
 | Text | `--ink` / `--ink-2` / `--ink-3` |
 
-Status must always use the four signal colors above — never invent a new color for a state. Brand accent stays in the blue→violet→cyan aurora family; don't add an unrelated brand hue (e.g. orange/green) outside status.
+Status tokens (`--nominal/--caution/--critical/--inert`) are theme-independent — defined once in `dashboard.html`'s base `:root` (~line 129), not per-theme. Status must always use these four signal colors — never invent a new color for a state. There is no aurora/multi-hue mandate anymore: keep the brand accent in the steel-blue family; reserve color for status and sparing accent use, not ambient decoration.
 
 ### Surfaces — flat web-page content (NOT floating boxes)
 
@@ -261,14 +261,13 @@ Status must always use the four signal colors above — never invent a new color
 
 - The flatten layer is one block, **`FLAT WEB CONTENT`**, appended at the end of the first `<style>` in `dashboard.html` (search `FLAT WEB CONTENT`). It targets `html.glass-deck .card/.glass-card/.chart-card/.vm-card/.vmr-panel/.tile/.panel/.id-tile/.id-vmcard/.id-tpl/.mac-page-window` with `background:transparent; border:none; border-radius:0; box-shadow:none; backdrop-filter:none` (all `!important`, placed last so it beats the glass-deck box rules). **To change surface framing globally, edit this block — do not touch 67 pages or the per-theme variants.**
 - **Sections, not cards:** top-level groups (`.space-y > .card/.glass-card/.chart-card/.vmr-panel`) get a **top hairline divider** (`border-top:1px solid var(--hairline)`) + gutter-aligned padding; the first child stays flush. Card headers (`.card-header`, `.id-card-h`) render as flat **section headings** with a bottom hairline, no fill.
-- **No fake window chrome:** the per-page `.mac-page-window` frame is stripped and the `.mac-page-toolbar` fake title bar (traffic-light dots `.mac-page-toolbar-traffic`) is hidden. **Nav stays:** menubar, left Finder sidebar, and dock are the navigation and are unchanged.
-- **Ambience is RETAINED:** aurora field (`body::before`), grid veil (`body::after`), deck tint, palette/tokens, pointer parallax, fleet orb, and the luminous status orbs all stay. Keep the atmospheric background; only content surfaces are flat.
+- **No fake window chrome:** the per-page `.mac-page-window` frame is stripped and the `.mac-page-toolbar` fake title bar (traffic-light dots `.mac-page-toolbar-traffic`) is hidden. **Nav is menubar + dock, not the sidebar:** the left Finder sidebar (`#cloudos-finder`) is force-hidden at boot (`initFinderCollapsed()`, called unconditionally on init) with its reopen button permanently disabled — it is dead code being removed, not live navigation. The menubar's icon-nav menus and the "Browse all pages" mega-menu are the real, live navigation surface.
+- **Ambience is page-scoped, not global, under IronWolf:** there is no persistent aurora field/grid veil (`body::before`/`::after`) — those were part of the retired Holographic Ops `.glass-deck` engine and only still render for legacy theme ids that alias away in practice. IronWolf's motion budget is spent locally: the Signal Desk home hero has its own pointer parallax (`initIwCcParallax`) and rotating tips (`initIwCcTipRotator`), the fleet orb (`#holo-fleet-orb.iw-home-orb`) is scoped to the dashboard page, and card/tile hover-float plus status-orb pulse still apply everywhere.
 
 ### Depth & motion
 
-- **Aurora field**: animated multi-hue radial-gradient mesh behind the UI (`body::before` under holo), drifting on `holo-drift`.
-- **Pointer parallax**: the aurora shifts with the cursor via `--holo-px/--holo-py` (set by the rAF-throttled script at end of `<body>`; respects `prefers-reduced-motion`). Keep new ambient layers reading those vars for cohesion.
-- **Holographic grid veil**: faint masked scan-grid (`body::after` under holo).
+- **Home hero parallax**: the Signal Desk hero tracks the pointer (`initIwCcParallax` in `dashboard-veyron.js`), scoped to `#page-dashboard` — not a global background effect.
+- **Micro-interactions carry the "wow"**: animated count-up stat tiles (`iwCcAnimateStat`), the fleet-orb surprise pulse/burst on click or hover (`iwCcOrbSurprise`), and rotating contextual tips are the signature IronWolf motion language — favor these over ambient background effects when adding new interactions.
 
 ### Status rendering — luminous signal orbs, never flat rectangles
 
@@ -297,69 +296,41 @@ Never use a flat colored badge, colored background div, or colored text alone to
 
 ### Signature interactions (apply to every interactive element)
 
-- **Cards/panels**: float on hover (`translateY(-4px)` + plasma bloom) — built into the holo surface overrides; reuse `.card`/`.id-tile`/`.id-vmcard`/`.vmr-panel`.
+- **Cards/panels**: float on hover (`translateY(-4px)` + plasma bloom) — reuse `.card`/`.id-tile`/`.id-vmcard`/`.vmr-panel`.
 - **Running VMs**: glowing pulse on the status orb (built into `.id-sig-ok`).
 - **KPI tiles**: soft plasma bloom via `.id-tile::after` (built in).
 - **New pages**: always wire `openCopilotWithVm()` on VM-level click actions for Ask Zeus integration.
 
-> Other themes (`tahoe`, `sonoma`, `graphite`, etc.) remain available via the theme picker; `holo` is the default and the canonical look. When in doubt, design for holo first.
+> Only `tahoe` (dark, default) and `light` ship today. `THEME_PRESETS`/`VALID_THEMES` reduced to these two; every legacy theme id remaps onto one of them via `LEGACY_THEME_ALIASES` in `dashboard.html`.
 
-### The `glass-deck` family
+### The retired `glass-deck` family (historical — being pruned, not maintained)
 
-Holographic Ops is one of a **family** of glass themes. The full engine — floating-glass surfaces, aurora field, pointer parallax, fleet orb, cursor spotlight, twinkling starfield, depth tiers — is keyed to the `html.glass-deck` class (toggled in `applyTheme` + the early bootstrap for any family member), **not** to a single theme id. Structural rules use `html.glass-deck …`; only the **colour skin** is per-theme.
+Before IronWolf, Holographic Ops was one of a **family** of ten glass themes (`holo`, `nebula`, `solaris`, `biolume`, `sakura`, `mono`, `inferno`, `voltage`, `daylight`, `prism`) keyed to an `html.glass-deck` class — floating-glass surfaces, aurora field, pointer parallax, fleet orb, cursor spotlight, twinkling starfield. **None of this is reachable via the UI anymore** (the theme picker only offers tahoe/light/auto) but the CSS blocks for it (`dashboard.html` lines roughly 191-1835, keyed by `html[data-theme="<old-id>"]`) still exist as dead weight pending a dedicated CSS-aware pruning pass — the selectors are heavily interleaved with other per-component rules across the file, so removing them requires careful brace-matched extraction rather than a blind line-range delete. **Do not add new content to these blocks; do not use them as a reference for new work.**
 
-Ten glass decks ship today: **`holo`** (blue, default), **`nebula`** (cosmic violet), **`solaris`** (golden amber), **`biolume`** (ocean teal), **`sakura`** (rose), **`mono`** (platinum), **`inferno`** (ember), **`voltage`** (electric lime), **`daylight`** (light — the only light deck; shares the light theme's token base, flips the dark structural hardcodes back to light glass), **`prism`** (iridescent magenta→cyan oil-slick — a hotter, rainbow sibling of holo; magenta `#e64bff` accent + cyan `#45e0ff` secondary). Each non-holo deck's colour skin uses `html[data-theme="<id>"].glass-deck …` (specificity `(0,3,1)`) to beat the shared blue structural rules regardless of source order; their token + skin blocks are generated by a small template (see the `theme_css(d)` palette dicts referenced in commit history).
-
-Deck membership is a single list — `['holo','nebula','solaris','biolume','sakura','mono','inferno','voltage','daylight','prism']` — repeated in the four JS gates (early bootstrap glass-deck toggle, `applyTheme` toggle, parallax `holoOn()`, orb `active()`) and `DECK_CYCLE`. **`setTheme('cycle')`** drifts through the whole family every 12s (persisted via `veyron_deck_cycle`).
-
-The **fleet orb** reads `--plasma` at runtime (`accentHex()`) so it themes automatically, and renders into whichever `.holo-orb-wrap` lives on the currently visible page (`curWrap()`) — present on the dashboard plus the Topology and Fleet-Constellation headers (`.holo-orb-mini`). Boot sequence (rings sweep, nodes ignite, % count-up, "SYSTEM ONLINE" flash) replays on each (re)entry.
-
-To add another glass theme: (1) add a token block + a colour-skin override block (mirror the generator output / specificity trick), (2) register it in the early valid-list, `THEME_PRESETS`, `THEME_WALLPAPER_PAIRING`, both swatch grids, and a `.theme-swatch-preview.<id>` rule, (3) add its id to the deck-membership list in all four JS gates and `DECK_CYCLE`.
-
-### Component library — `web/src/components/instrument/`
-
-All reusable UI is in this directory. **Never hand-roll equivalent components in page HTML** — compose pages from these:
-
-| Component | File | Purpose |
-|---|---|---|
-| `SignalDot` | `SignalDot.tsx` | Pulsing status dot (ok/warn/crit/off) |
-| `MetricTile` | `MetricTile.tsx` | KPI tile with sparkline |
-| `Gauge` | `Gauge.tsx` | SVG arc gauge for single metric |
-| `VmCard` | `VmCard.tsx` | VM summary card with status strip + bars |
-| `AlertRow` | `AlertRow.tsx` | Alert list item with level icon |
-| `TelemetrySpine` | `TelemetrySpine.tsx` | React version of the id-spine strip |
-| `ZeusPanel` | `ZeusPanel.tsx` | Ask Zeus input panel with plasma orb |
-| `SectionHeading` | `SectionHeading.tsx` | h2 with eyebrow + fade line |
-| `Chip` | `Chip.tsx` | Filter/tag chip (active/idle) |
-| `ReactorCore` | `ReactorCore.tsx` | Canvas fleet instrument (orbital rings) |
-| `TopologySurface` | `TopologySurface.tsx` | vCenter-killer host/VM capacity map, drag-to-migrate |
-| `useFleetTelemetry` | `useFleetTelemetry.ts` | SSE+polling fleet data hook |
-
-Tokens standalone file: `web/src/styles/tokens.css` — import first in any React app.
-
-Stylelint guardrail: `web/.stylelintrc` — `color-no-hex: true` (ignores `tokens.css`).
+**Also pending the same pass:** the Finder sidebar (`#cloudos-finder`, `.finder-*`, `.cloudos-finder-item`) was deleted (markup + all its JS, `dashboard.html` — the menubar + "Browse all pages" mega-menu are the real, live navigation now, see `finderNavigate`/`finderRunCopilotQuick`/`finderBackupAdvisor`/`syncFinderActive`/`syncFinderTierLocks`/`updateFinderBadges`, the only "finder"-named functions still live). Its CSS (`dashboard.html` roughly lines 1609-5492, `dashboard-veyron.css`, `dashboard-ironwolf-themes.css` — see prior survey) is now equally unreachable but is interleaved with genuinely live rules (e.g. `.cloudos-body-row`, menubar tier-gating) in the same blocks, so it wasn't blind-deleted either — fold it into the same dedicated CSS-pruning pass as the glass-deck cleanup above.
 
 ### Per-page sweep procedure
 
-Holographic Ops applies globally via the `holo` theme block, so most pages need no per-page work. When a specific page section in `dashboard.html` still needs hand-tuning:
+IronWolf applies globally via the `tahoe`/`light` theme blocks in `dashboard-ironwolf-themes.css`, so most pages need no per-page work. When a specific page section in `dashboard.html` still needs hand-tuning:
 
 1. **Read** the page's `<div class="page section-shell" id="page-…">` block
-2. **Identify violations**: raw hex colors, flat status badges, non-Signal-Dot status indicators, missing KPI tiles, non-`--ink/ink-2/ink-3` text colors
+2. **Identify violations**: raw hex colors, flat status badges, non-Signal-Dot status indicators, missing KPI tiles, non-`--ink/ink-2/ink-3` text colors, any reference to a retired glass-deck class/id
 3. **Replace** status badges with `.id-sig.id-sig-ok/warn/crit/inert` pills
 4. **Replace** KPI numbers with `.id-tile > .id-eyebrow + .id-big` patterns
 5. **Replace** any `color:#xxx` or `background:#xxx` inline styles with `var(--token)`
 6. **Replace** JS canvas/SVG hex strings with `VMR_SIG.ok / .warn / .crit / .off`
 7. **Add** section heading with `.id-sec-h` if missing
 8. **Wire** VM-level clicks to `openCopilotWithVm()`
-9. **Test**: `cargo build --features web` must succeed; no new raw hex in the diff
+9. **Test**: `cargo build --features web` must succeed; no new raw hex in the diff; `./scripts/dashboard-console-check.sh --host HOST` clean
 
-### Batch sequence
+### Batch sequence (active — full 65-page IronWolf sweep)
 
-Work pages in this order (each batch is a single commit+push):
+Work pages in this order (each batch is a single commit+push; never skip the build + console-check gate between batches):
 
-- **Batch 1** (done) — token foundation, component library, `.stylelintrc`
-- **Batch 2** — Hero pages: `#page-vms`, `#page-vm-capsule`, `#page-fleet-constellation`, `#page-topology`
-- **Batch 3** — Platform pages: `#page-storage`, `#page-networking`, `#page-nodes`, `#page-monitoring`, `#page-alerts`
-- **Batch 4** — Long tail: SOC, compliance, cost, backup, gitops, chaos, inference, and all remaining sections
-
-Never skip the build check between batches.
+- **Batch 0** (done) — token foundation; legacy scaffold/CSS cleanup (dead `web/src/components/instrument` React library removed, unused `dashboard-packetwolf-themes.css` removed)
+- **Batch A** — Signature surfaces: Home/Signal Desk, Reactor Core, Topology, Fleet Constellation, Ask Zeus (these get 3D/WebGL treatment for the fleet visualizations; every other page stays vanilla canvas/CSS)
+- **Batch B** — Compute pages: vms, nodes, pods, workloads, scheduling, hpa, autoscaler, vm-capsule, console-hub, gallery-wall, vcentre
+- **Batch C** — Observe pages: monitoring, metrics, alerts, events, slo, performance, heatmap, custom-dashboards, observability, insights, traces, logs, incidents, dependencies
+- **Batch D** — Storage + Network: snapshots, storage, images, backups, ingress, network-policies, cilium, network-intel
+- **Batch E** — Security + Platform: security, compliance, rbac, policies, quotas, audit, soc, helm, operators, crds, blueprint-studio, custom-resources, catalog, app-store, gitops, integrations, webhooks, tenants, stack-health, settings
+- **Batch F** — FinOps + Ops: costs, forecasting, chaos, dr, actions, notifications

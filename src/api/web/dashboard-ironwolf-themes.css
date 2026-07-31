@@ -1,0 +1,2808 @@
+/* IronWolf themes for Veyron — ported from ../Ironwolf/web/dashboard/src/index.css
+   Themes: tahoe (dark default) · light
+   Wallpapers: tahoe · aurora · midnight · ocean */
+
+:root,
+html[data-theme='tahoe'],
+html.theme-tahoe {
+  --bg-primary: #111318;
+  --bg-secondary: #1a1d24;
+  --bg-tertiary: #2a2d35;
+  --text-primary: #e8e9ec;
+  --text-secondary: #9ca0ab;
+  --text-muted: #6b7080;
+  --border-color: rgba(156, 163, 175, 0.1);
+  --border-hover: rgba(192, 197, 206, 0.18);
+  --accent-blue: #64a0dc;
+  --accent-green: #4ead8a;
+  --accent-purple: #9580d4;
+  --accent-cyan: #5eb8c9;
+  --accent-orange: #d4915a;
+  --accent-red: #d45a5a;
+  --accent-yellow: #c4a83a;
+  --metal-sheen: rgba(192, 197, 206, 0.06);
+  --metal-highlight: rgba(220, 225, 232, 0.08);
+  --accent-steel: #94a3b8;
+  --accent-steel-bright: #cbd5e1;
+  --accent-steel-muted: rgba(148, 163, 184, 0.12);
+
+  --void: #080c16;
+  --hull: #0c1220;
+  --panel: #111826;
+  --panel-2: #1a1d24;
+  --panel-hi: #2a2d35;
+  --hairline: rgba(156, 163, 175, 0.12);
+  --hairline-hi: rgba(192, 197, 206, 0.22);
+  --plasma: #64a0dc;
+  --plasma-deep: #3b82b8;
+  --plasma-glow: rgba(100, 160, 220, 0.2);
+  --plasma-line: rgba(100, 160, 220, 0.45);
+  --deck-temp: #64a0dc;
+  --deck-temp-glow: rgba(100, 160, 220, 0.18);
+  --ink: #e8e9ec;
+  --ink-2: #9ca0ab;
+  --ink-3: #6b7080;
+  --primary: #64a0dc;
+  --primary-dim: rgba(100, 160, 220, 0.14);
+  --primary-glow: rgba(100, 160, 220, 0.28);
+  --primary-blue: #64a0dc;
+  --primary-purple: #9580d4;
+  --bg-0: #080c16;
+  --bg: #111318;
+  --bg-deep: #080c16;
+  --bg-card: rgba(26, 29, 36, 0.88);
+  --bg-card-solid: #1a1d24;
+  --bg-elevated: #2a2d35;
+  --text: #e8e9ec;
+  --text-bright: #f8fafc;
+  --text-muted: #9ca0ab;
+  --text-dim: #6b7080;
+  --border: rgba(156, 163, 175, 0.12);
+  --border-hot: rgba(100, 160, 220, 0.35);
+  --blue: #64a0dc;
+  --cyan: #5eb8c9;
+  --violet: #9580d4;
+  --green: #4ead8a;
+  --orange: #d4915a;
+  --red: #d45a5a;
+  --accent: #64a0dc;
+  --molten: #5eb8c9;
+  --ember: #64a0dc;
+  --forge: #64a0dc;
+  --spark: #5eb8c9;
+  --glass-bg: rgba(12, 18, 32, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  --mac-vibrancy: rgba(12, 18, 32, 0.88);
+  --mac-border: rgba(255, 255, 255, 0.06);
+  --ironwolf-glass-chrome-bg: rgba(12, 18, 32, 0.55);
+  --ironwolf-glass-chrome-blur: 32px;
+  --pw-color-data: #64a0dc;
+  --pw-color-network: #5eb8c9;
+  --pw-color-info: #64a0dc;
+  --pw-color-ai: #9580d4;
+  --pw-color-success: #4ead8a;
+  --pw-color-warning: #d4915a;
+  --pw-color-critical: #d45a5a;
+  --pw-table-accent: #64a0dc;
+  --pw-accent-glow: color-mix(in srgb, #64a0dc 16%, transparent);
+  --pw-cockpit-panel-bg: rgb(17 19 24);
+  --pw-chart-1: #64a0dc;
+  --pw-chart-2: #4ead8a;
+  --pw-chart-3: #d4915a;
+  --pw-chart-4: #9580d4;
+  --pw-chart-5: #5eb8c9;
+  --pw-chart-6: #d45a5a;
+  --chart-primary: #64a0dc;
+  --chart-secondary: #4ead8a;
+}
+
+html[data-theme='light'],
+html.theme-light,
+html.light-theme {
+  --bg-primary: #f7f8fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eef0f4;
+  --text-primary: #111318;
+  --text-secondary: #3d4558;
+  --text-muted: #6b7080;
+  --border-color: rgba(15, 23, 42, 0.1);
+  --border-hover: rgba(15, 23, 42, 0.18);
+  --void: #eef0f5;
+  --hull: #f7f8fc;
+  --panel: #ffffff;
+  --panel-2: #f0f2f7;
+  --panel-hi: #e6e9f0;
+  --hairline: rgba(0, 0, 0, 0.09);
+  --hairline-hi: rgba(0, 0, 0, 0.16);
+  --plasma: #2563eb;
+  --plasma-deep: #1d4ed8;
+  --plasma-glow: rgba(37, 99, 235, 0.14);
+  --plasma-line: rgba(37, 99, 235, 0.35);
+  --deck-temp: #2563eb;
+  --deck-temp-glow: rgba(37, 99, 235, 0.12);
+  --ink: #111318;
+  --ink-2: #3d4558;
+  --ink-3: #6b7080;
+  --primary: #2563eb;
+  --primary-dim: rgba(37, 99, 235, 0.1);
+  --primary-glow: rgba(37, 99, 235, 0.2);
+  --primary-blue: #2563eb;
+  --bg-0: #eef0f5;
+  --bg: #f7f8fa;
+  --bg-deep: #e8ebf2;
+  --bg-card: rgba(255, 255, 255, 0.92);
+  --bg-card-solid: #ffffff;
+  --bg-elevated: #f0f2f7;
+  --text: #111318;
+  --text-bright: #0a0c10;
+  --text-muted: #3d4558;
+  --text-dim: #6b7080;
+  --border: rgba(15, 23, 42, 0.1);
+  --border-hot: rgba(37, 99, 235, 0.35);
+  --blue: #2563eb;
+  --cyan: #0891b2;
+  --accent: #2563eb;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(15, 23, 42, 0.1);
+  --mac-vibrancy: rgba(247, 248, 252, 0.88);
+  --mac-border: rgba(15, 23, 42, 0.08);
+  --ironwolf-glass-chrome-bg: rgba(255, 255, 255, 0.72);
+  color-scheme: light;
+}
+
+/* Tahoe desktop canvas (IronWolf) */
+html[data-theme='tahoe'] body.mac-desktop-root,
+body.mac-desktop-root[data-theme='tahoe'],
+body.mac-desktop-root {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(30, 58, 95, 0.35), transparent 55%),
+    linear-gradient(180deg, rgb(8, 12, 22) 0%, rgb(6, 10, 18) 100%) !important;
+  color: var(--ink);
+}
+html[data-theme='tahoe'] body.mac-desktop-root::before,
+body.mac-desktop-root::before {
+  opacity: 0 !important;
+}
+
+html[data-theme='light'] body.mac-desktop-root,
+html.light-theme body.mac-desktop-root {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(100, 160, 220, 0.12), transparent 55%),
+    linear-gradient(180deg, #f5f7fb 0%, #eef1f6 100%) !important;
+  color: var(--ink);
+}
+
+/* IronWolf wallpapers */
+body.mac-desktop-root[data-wallpaper='tahoe'] {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(30, 58, 95, 0.35), transparent 55%),
+    linear-gradient(180deg, rgb(8, 12, 22) 0%, rgb(6, 10, 18) 100%) !important;
+}
+body.mac-desktop-root[data-wallpaper='aurora'] {
+  background:
+    radial-gradient(ellipse 100% 70% at 20% -10%, rgba(124, 58, 237, 0.28), transparent 50%),
+    linear-gradient(180deg, rgb(10, 8, 24) 0%, rgb(6, 10, 18) 100%) !important;
+}
+body.mac-desktop-root[data-wallpaper='midnight'] {
+  background: linear-gradient(180deg, rgb(2, 6, 14) 0%, rgb(0, 0, 0) 100%) !important;
+}
+body.mac-desktop-root[data-wallpaper='ocean'] {
+  background:
+    radial-gradient(ellipse 110% 75% at 50% -15%, rgba(6, 78, 120, 0.35), transparent 52%),
+    linear-gradient(180deg, rgb(4, 16, 28) 0%, rgb(2, 10, 18) 100%) !important;
+}
+
+.mac-wallpaper-swatch-tahoe { background: linear-gradient(135deg, rgb(8, 12, 22), rgb(30, 58, 95)); }
+.mac-wallpaper-swatch-aurora { background: linear-gradient(135deg, rgb(10, 8, 24), rgb(124, 58, 237)); }
+.mac-wallpaper-swatch-midnight { background: linear-gradient(135deg, rgb(0, 0, 0), rgb(15, 23, 42)); }
+.mac-wallpaper-swatch-ocean { background: linear-gradient(135deg, rgb(2, 10, 18), rgb(6, 78, 120)); }
+
+.theme-swatch-preview.tahoe { background: linear-gradient(135deg, rgb(8, 12, 22), rgb(30, 58, 95) 55%, rgb(100, 160, 220)); }
+.theme-swatch-preview.light { background: linear-gradient(135deg, #f7f8fa, #dbeafe 50%, #2563eb); }
+
+/* Chrome — IronWolf glass menubar / dock */
+html[data-theme='tahoe'] .mac-menubar.navbar,
+html[data-theme='tahoe'] .mac-dock-inner,
+html[data-theme='tahoe'] .mac-menubar-inner {
+  background: var(--ironwolf-glass-chrome-bg) !important;
+  -webkit-backdrop-filter: blur(var(--ironwolf-glass-chrome-blur)) saturate(1.35);
+  backdrop-filter: blur(var(--ironwolf-glass-chrome-blur)) saturate(1.35);
+  border-color: var(--mac-border) !important;
+}
+html[data-theme='tahoe'] .glass-btn-primary,
+html[data-theme='tahoe'] .btn-create {
+  background: linear-gradient(180deg, #7ab3e8, #64a0dc) !important;
+  color: #0a1220 !important;
+  border: 1px solid rgba(100, 160, 220, 0.55) !important;
+  box-shadow: 0 8px 28px rgba(100, 160, 220, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+html[data-theme='tahoe'] .glass-btn-primary:hover,
+html[data-theme='tahoe'] .btn-create:hover {
+  background: linear-gradient(180deg, #9ec8f0, #64a0dc) !important;
+}
+
+html[data-theme='light'] .glass-btn-primary,
+html[data-theme='light'] .btn-create {
+  background: linear-gradient(180deg, #3b82f6, #2563eb) !important;
+  color: #fff !important;
+  border: 1px solid rgba(37, 99, 235, 0.45) !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   IronWolf LOOK — make Veyron chrome/surfaces match IronWolf Tahoe shell
+   ════════════════════════════════════════════════════════════════════════ */
+
+html, body, body.mac-desktop-root {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0.01em;
+}
+
+body.mac-desktop-root {
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --font-display: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --sans-deck: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  --veyron-menubar-h: 2.75rem;
+  --veyron-dock-strip-h: 2.55rem;
+  --veyron-chrome-stack-h: calc(var(--veyron-menubar-h) + var(--veyron-dock-strip-h));
+}
+
+/* Soft steel ambient wash (IronWolf page-bg) */
+body.mac-desktop-root .container,
+body.mac-desktop-root .cloudos-main,
+body.mac-desktop-root .mac-desktop-main {
+  background:
+    radial-gradient(ellipse at 15% 50%, rgba(156, 163, 175, 0.025) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 20%, rgba(100, 160, 220, 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 85%, rgba(149, 128, 212, 0.015) 0%, transparent 50%),
+    transparent;
+}
+
+/* Menubar — IronWolf glass bar */
+body.mac-desktop-root .mac-menubar.navbar,
+body.mac-desktop-root header.mac-menubar,
+body.mac-desktop-root .mac-menubar-inner {
+  background: var(--ironwolf-glass-chrome-bg, rgba(12, 18, 32, 0.55)) !important;
+  -webkit-backdrop-filter: blur(var(--ironwolf-glass-chrome-blur, 32px)) saturate(1.35) !important;
+  backdrop-filter: blur(var(--ironwolf-glass-chrome-blur, 32px)) saturate(1.35) !important;
+  border-bottom: 1px solid var(--mac-border, rgba(255, 255, 255, 0.06)) !important;
+  box-shadow: none !important;
+  min-height: 2.75rem;
+}
+body.mac-desktop-root .mac-menubar .btn-spotlight {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 0.5rem;
+}
+body.mac-desktop-root .mac-menubar .btn-spotlight:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #fff;
+}
+body.mac-desktop-root .theme-select,
+body.mac-desktop-root .ns-select,
+body.mac-desktop-root .refresh-select {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 0.5rem;
+}
+
+/* Dock — IronWolf pill */
+body.mac-desktop-root .mac-dock-inner,
+body.mac-desktop-root #cloudos-dock .mac-dock-inner,
+body.mac-desktop-root .mac-dock-utilities-inner {
+  background: rgba(15, 23, 42, 0.72) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.4) !important;
+  backdrop-filter: blur(28px) saturate(1.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45) !important;
+  padding: 0.45rem 0.65rem !important;
+}
+body.mac-desktop-root .mac-dock-item:hover,
+body.mac-desktop-root .mac-dock-item.active {
+  background: rgba(56, 189, 248, 0.15) !important;
+}
+
+/* Finder / sidebar — Tahoe glass */
+body.mac-desktop-root .cloudos-finder,
+body.mac-desktop-root #cloudos-finder {
+  width: 252px !important;
+  background: rgba(8, 12, 22, 0.55) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.2) !important;
+  backdrop-filter: blur(24px) saturate(1.2) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+body.finder-top .cloudos-finder {
+  background: rgba(12, 18, 32, 0.72) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+body.mac-desktop-root .cloudos-finder-item,
+body.mac-desktop-root .finder-item,
+body.mac-desktop-root .cloudos-finder button.cloudos-finder-item {
+  color: rgba(248, 250, 252, 0.78);
+  border-radius: 0.75rem;
+}
+body.mac-desktop-root .cloudos-finder-item:hover,
+body.mac-desktop-root .cloudos-finder-item.active,
+body.mac-desktop-root .finder-item:hover,
+body.mac-desktop-root .finder-item.active {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+}
+body.mac-desktop-root .cloudos-finder-item.active {
+  box-shadow: inset 2px 0 0 rgba(56, 189, 248, 0.55);
+}
+
+/* Open-document surfaces (IronWolf: no heavy boxed tiles) */
+body.mac-desktop-root .vmr-panel,
+body.mac-desktop-root .glass-card,
+body.mac-desktop-root .card:not(.modal):not([role="dialog"]),
+body.mac-desktop-root .chart-card,
+body.mac-desktop-root .mac-page-window {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-color, rgba(156, 163, 175, 0.1)) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.mac-desktop-root .vmr-panel:hover,
+body.mac-desktop-root .glass-card:hover,
+body.mac-desktop-root .card:not(.modal):hover {
+  border-color: var(--border-hover, rgba(192, 197, 206, 0.18)) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+body.mac-desktop-root .vmr-panel-title,
+body.mac-desktop-root .card-title,
+body.mac-desktop-root .chart-title {
+  font-size: 0.7rem !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  color: var(--text-muted, #6b7080) !important;
+}
+
+/* Keep modals / dialogs as real panels */
+body.mac-desktop-root .modal,
+body.mac-desktop-root .modal-overlay .modal,
+body.mac-desktop-root [role="dialog"] .modal,
+body.mac-desktop-root .mac-sheet-modal,
+body.mac-desktop-root .mac-control-center,
+body.mac-desktop-root .spotlight-panel {
+  background: rgba(15, 23, 42, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.65) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  backdrop-filter: blur(24px) !important;
+}
+
+/* Forms */
+body.mac-desktop-root .form-input,
+body.mac-desktop-root .form-select,
+body.mac-desktop-root textarea.form-input {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-primary, #e8e9ec) !important;
+  border-radius: 0.5rem !important;
+}
+body.mac-desktop-root .form-input:focus,
+body.mac-desktop-root .form-select:focus {
+  border-color: rgba(100, 160, 220, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(100, 160, 220, 0.18) !important;
+}
+
+/* Scrollbars — IronWolf thin steel */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.35); }
+
+/* ── IronWolf home desk + open-document surfaces ── */
+.iw-home-title,
+.login-brand-name,
+.login-hero-headline,
+.login-panel-title {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
+}
+
+body.mac-desktop-root .page.section-shell > .space-y,
+body.mac-desktop-root .cloudos-main .container,
+body.mac-desktop-root .mac-desktop-main .container {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+body.mac-desktop-root .vmr-primary-tabs,
+body.mac-desktop-root #mac-desktop-tabs {
+  gap: 0.25rem;
+}
+body.mac-desktop-root .vmr-primary-tabs button,
+body.mac-desktop-root #mac-desktop-tabs button,
+body.mac-desktop-root .mac-desk-tab {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
+  font-size: 0.8rem !important;
+  border-radius: 0.55rem !important;
+}
+
+/* Open-document: VM cards, stats grids, tables, buttons */
+body.mac-desktop-root .vm-card,
+body.mac-desktop-root .vmr-card,
+body.mac-desktop-root .stat-card,
+body.mac-desktop-root #stat-cards > *,
+body.mac-desktop-root .page-glass-stats > * {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-color, rgba(156, 163, 175, 0.1)) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.mac-desktop-root .vm-card:hover,
+body.mac-desktop-root .vmr-card:hover {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03), transparent 70%) !important;
+  border-color: var(--border-hover, rgba(192, 197, 206, 0.18)) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+body.mac-desktop-root table.data-table,
+body.mac-desktop-root .data-table,
+body.mac-desktop-root table.vm-table {
+  border-collapse: collapse;
+}
+body.mac-desktop-root table.data-table th,
+body.mac-desktop-root table.data-table td,
+body.mac-desktop-root .data-table th,
+body.mac-desktop-root .data-table td,
+body.mac-desktop-root table.vm-table th,
+body.mac-desktop-root table.vm-table td {
+  border-bottom: 1px solid var(--border-color, rgba(156, 163, 175, 0.1)) !important;
+  background: transparent !important;
+}
+body.mac-desktop-root .btn-secondary,
+body.mac-desktop-root .glass-btn-secondary,
+body.mac-desktop-root .vmr-quick-btn,
+body.mac-desktop-root .vmr-chip {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.55rem !important;
+  box-shadow: none !important;
+  color: var(--text-secondary, #9ca0ab) !important;
+}
+body.mac-desktop-root .btn-secondary:hover,
+body.mac-desktop-root .glass-btn-secondary:hover,
+body.mac-desktop-root .vmr-quick-btn:hover,
+body.mac-desktop-root .vmr-chip:hover,
+body.mac-desktop-root .vmr-chip.vmr-chip-active {
+  background: var(--accent-steel-muted, rgba(148, 163, 184, 0.12)) !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+  color: var(--accent-steel-bright, #cbd5e1) !important;
+}
+
+.iw-home-orb .holo-orb-pct {
+  background: linear-gradient(180deg, #ffffff, #9ec8f0) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+html[data-theme='light'] body.mac-desktop-root .mac-menubar.navbar,
+html.light-theme body.mac-desktop-root .mac-menubar.navbar {
+  background: rgba(240, 241, 244, 0.88) !important;
+  border-bottom: 1px solid rgba(26, 29, 36, 0.08) !important;
+}
+html[data-theme='light'] body.mac-desktop-root .cloudos-finder {
+  background: rgba(248, 249, 251, 0.9) !important;
+  border-right-color: rgba(26, 29, 36, 0.08) !important;
+}
+html[data-theme='light'] body.mac-desktop-root .mac-dock-inner {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(26, 29, 36, 0.1) !important;
+}
+html[data-theme='light'] .iw-home-title {
+  color: #111318 !important;
+}
+html[data-theme='light'] .iw-home-desc,
+html[data-theme='light'] .forge-briefing {
+  color: #4a4f5c !important;
+}
+html[data-theme='light'] #page-dashboard #holo-fleet-orb.iw-home-orb {
+  background:
+    radial-gradient(55% 60% at 50% 55%, rgba(100, 160, 220, 0.1), transparent 68%),
+    rgba(255, 255, 255, 0.55) !important;
+  border-color: rgba(26, 29, 36, 0.1) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   Machina chrome — dock attached under menubar + Inter / JetBrains Mono
+   ════════════════════════════════════════════════════════════════════════ */
+
+html, body, body.mac-desktop-root,
+body.mac-desktop-root .mac-menubar,
+body.mac-desktop-root .cloudos-finder,
+body.mac-desktop-root .container,
+body.mac-desktop-root button,
+body.mac-desktop-root input,
+body.mac-desktop-root select {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+}
+body.mac-desktop-root .mac-menubar-crumb,
+body.mac-desktop-root .vmr-header-search,
+body.mac-desktop-root .iw-home-stat-value,
+body.mac-desktop-root .iw-home-kicker,
+body.mac-desktop-root .mission-live-badge,
+body.mac-desktop-root #mission-last-refresh,
+body.mac-desktop-root .forge-signal-seal-meta,
+body.mac-desktop-root code,
+body.mac-desktop-root kbd,
+body.mac-desktop-root .holo-orb-pct,
+body.mac-desktop-root .holo-orb-cap {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+/* Menubar — fixed top chrome so dock strip can sit flush under it */
+body.mac-desktop-root .mac-menubar.navbar,
+body.mac-desktop-root header.mac-menubar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  z-index: 170 !important;
+  min-height: var(--veyron-menubar-h, 2.75rem) !important;
+  height: var(--veyron-menubar-h, 2.75rem) !important;
+  --cloudos-menubar-h: var(--veyron-menubar-h, 2.75rem);
+  padding: 0 1rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+}
+
+/* ONE chrome bar only — menubar. Dock strip retired. */
+body.mac-desktop-root {
+  padding-top: var(--veyron-menubar-h, 2.75rem) !important;
+  --veyron-chrome-stack-h: var(--veyron-menubar-h, 2.75rem) !important;
+}
+
+body.mac-desktop-root .mac-dock,
+body.mac-desktop-root #cloudos-dock,
+body.mac-desktop-root #cloudos-dock.mac-dock,
+body.vmr-ticker-on .mac-dock,
+body.vmr-ticker-on #cloudos-dock,
+body.mac-desktop-root.vmr-ticker-on .mac-dock,
+body.mac-desktop-root.vmr-ticker-on #cloudos-dock.mac-dock {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+}
+
+body:has(#apikey-modal.open) .mac-dock,
+body:has(#apikey-modal.open) #cloudos-dock {
+  display: none !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   NO SIDE MENU — top menubar (word menus + icon submenus) only
+   ════════════════════════════════════════════════════════════════════════ */
+body.mac-desktop-root #cloudos-finder,
+body.mac-desktop-root .cloudos-finder,
+body.mac-desktop-root #cloudos-dock,
+body.mac-desktop-root .mac-dock,
+body.mac-desktop-root #cloudos-dock.mac-dock,
+body.mac-desktop-root .finder-toggle,
+body.mac-desktop-root #mac-menubar-sidebar-btn,
+body.mac-desktop-root .mac-menubar-sidebar-btn,
+body.mac-desktop-root .mac-quick-nav,
+body.mac-desktop-root .cloudos-finder-backdrop,
+body.mac-desktop-root #cloudos-browse-rail,
+body.mac-desktop-root .cloudos-browse-rail,
+body.mac-desktop-root.finder-collapsed .cloudos-browse-rail,
+body.mac-desktop-root.finder-collapsed:not([data-desktop-tier="advanced"]) .cloudos-browse-rail,
+body.mac-desktop-root #mac-desktop-tabs,
+body.mac-desktop-root .mac-desktop-tabs,
+body.mac-desktop-root .tahoe-context-bar-wrap,
+body.mac-desktop-root #tahoe-context-bar,
+body.mac-desktop-root.finder-collapsed #mac-menubar-sidebar-btn,
+body.mac-desktop-root.finder-collapsed[data-desktop-tier] #mac-menubar-sidebar-btn,
+body.mac-desktop-root.finder-collapsed[data-desktop-tier="power"] #mac-menubar-sidebar-btn,
+body.mac-desktop-root[data-desktop-tier="power"] .finder-toggle,
+body.mac-desktop-root[data-desktop-tier="power"] #mac-menubar-sidebar-btn {
+  display: none !important;
+}
+body.mac-desktop-root {
+  --veyron-chrome-stack-h: var(--veyron-menubar-h, 2.75rem) !important;
+  padding-top: var(--veyron-menubar-h, 2.75rem) !important;
+}
+body.mac-desktop-root .cloudos-body-row {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
+}
+body.mac-desktop-root .cloudos-main {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+}
+body.mac-desktop-root .container {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Unified menubar — ONE bar: word menus + graphic icon submenus
+   ════════════════════════════════════════════════════════════════════════ */
+body.mac-desktop-root,
+body.mac-desktop-root.finder-top,
+body.mac-desktop-root.zen-mode-on {
+  --veyron-chrome-stack-h: var(--veyron-menubar-h, 2.75rem) !important;
+  padding-top: var(--veyron-menubar-h, 2.75rem) !important;
+}
+
+/* Hide second strip — nav icons live in the menubar */
+body.mac-desktop-root.finder-top .cloudos-finder,
+body.mac-desktop-root.finder-top #cloudos-finder {
+  display: none !important;
+}
+body.mac-desktop-root.finder-top .mac-dock,
+body.mac-desktop-root.finder-top #cloudos-dock,
+body.mac-desktop-root .mac-dock,
+body.mac-desktop-root #cloudos-dock {
+  display: none !important;
+}
+body.mac-desktop-root.finder-top .cloudos-body-row {
+  flex-direction: row !important;
+  min-height: calc(100dvh - var(--veyron-menubar-h, 2.75rem)) !important;
+}
+body.mac-desktop-root,
+body.mac-desktop-root[data-desktop-tier],
+body.mac-desktop-root[data-desktop-tier="normal"] {
+  padding-bottom: 2.25rem !important;
+}
+
+/* Power tier used to cap left at 240px + overflow:hidden — that clipped
+   the unified icon menus (Veyron/Go/View alone already fill ~205px). */
+body.mac-desktop-root .mac-menubar-left,
+body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-left,
+body.mac-desktop-root[data-desktop-tier="advanced"] .mac-menubar-left,
+body.mac-desktop-root[data-desktop-tier="normal"] .mac-menubar-left {
+  max-width: none !important;
+  overflow: visible !important;
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+body.mac-desktop-root .mac-menubar.navbar {
+  overflow: visible !important; /* allow menu panels; icons must not clip */
+}
+body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-center-inner {
+  max-width: min(220px, 28vw) !important;
+}
+
+.mac-menubar-nav-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+.mac-menu-trigger {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+}
+.mac-menu-trigger-icon { opacity: 0.75; flex-shrink: 0; }
+.mac-nav-icon-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: rgba(232, 233, 236, 0.85);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.mac-nav-icon-btn:hover,
+.mac-nav-icon-btn.open,
+.mac-nav-icon-btn[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+}
+.mac-nav-icon-btn.mac-nav-icon-ai { color: #a78bfa; }
+.mac-nav-icon-btn.mac-nav-icon-ai:hover,
+.mac-nav-icon-btn.mac-nav-icon-ai.open {
+  background: rgba(167, 139, 250, 0.16);
+  color: #c4b5fd;
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.28);
+}
+.mac-nav-icon-btn svg { display: block; }
+.mac-menu-panel-icons .mac-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mac-menu-item-ico {
+  display: inline-flex;
+  width: 1.15rem;
+  height: 1.15rem;
+  align-items: center;
+  justify-content: center;
+  color: rgba(148, 163, 184, 0.95);
+  flex-shrink: 0;
+}
+.mac-menu-item:hover .mac-menu-item-ico { color: #7ab3e8; }
+body.mac-desktop-root .mac-menubar-title,
+body.mac-desktop-root .mac-menubar-crumb {
+  display: none !important;
+}
+
+html[data-theme='light'] .mac-menubar-nav-icons { border-left-color: rgba(26, 29, 36, 0.1); }
+html[data-theme='light'] .mac-nav-icon-btn { color: rgba(26, 29, 36, 0.72); }
+html[data-theme='light'] .mac-nav-icon-btn:hover,
+html[data-theme='light'] .mac-nav-icon-btn.open {
+  background: rgba(26, 29, 36, 0.06);
+  color: #111318;
+}
+@media (max-width: 1100px) {
+  .mac-menubar-nav-icons { margin-left: 4px; padding-left: 6px; }
+  .mac-nav-icon-btn { width: 1.7rem; height: 1.7rem; }
+}
+
+body.mac-desktop-root,
+body.mac-desktop-root[data-desktop-tier],
+body.mac-desktop-root[data-desktop-tier="normal"] {
+  padding-bottom: 2.25rem !important; /* ticker clearance only */
+}
+
+/* Finder / main offset under chrome stack */
+body.mac-desktop-root .cloudos-body-row {
+  min-height: calc(100dvh - var(--veyron-chrome-stack-h, 5.3rem)) !important;
+}
+body.mac-desktop-root .cloudos-finder {
+  top: 0 !important;
+}
+
+/* ── Command Centre PRO — ops bridge, not a SaaS dash ── */
+#page-dashboard.iw-home-page {
+  position: relative;
+}
+#page-dashboard .iw-home.iw-cc {
+  position: relative !important;
+  gap: 1.5rem !important;
+  padding: 1.35rem clamp(1.25rem, 3vw, 2.5rem) 3rem !important;
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  isolation: isolate;
+}
+.iw-cc-atmosphere {
+  position: absolute !important;
+  inset: -1.25rem -2rem auto !important;
+  height: min(560px, 68vh) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  overflow: hidden !important;
+}
+.iw-cc-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(52px);
+  opacity: 0.6;
+}
+.iw-cc-glow-a {
+  width: 520px;
+  height: 340px;
+  top: -60px;
+  left: 4%;
+  background: radial-gradient(circle, rgba(100, 160, 220, 0.42), transparent 68%);
+  animation: iw-cc-drift 16s ease-in-out infinite alternate;
+}
+.iw-cc-glow-b {
+  width: 380px;
+  height: 280px;
+  top: 60px;
+  right: 2%;
+  background: radial-gradient(circle, rgba(78, 173, 138, 0.22), transparent 70%);
+  animation: iw-cc-drift 20s ease-in-out infinite alternate-reverse;
+}
+.iw-cc-glow-c {
+  width: 260px;
+  height: 200px;
+  top: 180px;
+  left: 42%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.14), transparent 70%);
+  animation: iw-cc-drift 22s ease-in-out infinite alternate;
+}
+.iw-cc-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.28;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 20%, transparent 75%);
+}
+.iw-cc-scan {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent, rgba(120, 180, 255, 0.07), transparent);
+  background-size: 100% 220%;
+  animation: iw-cc-scan 7.5s linear infinite;
+  opacity: 0.55;
+  mask-image: linear-gradient(180deg, #000, transparent 85%);
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 85%);
+}
+.iw-cc-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,.55), transparent),
+    radial-gradient(1px 1px at 28% 42%, rgba(190,220,255,.45), transparent),
+    radial-gradient(1.5px 1.5px at 63% 22%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1px 1px at 78% 48%, rgba(170,210,255,.5), transparent),
+    radial-gradient(1px 1px at 88% 16%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1.5px 1.5px at 46% 8%, rgba(200,230,255,.45), transparent);
+  animation: iw-cc-twinkle 5s ease-in-out infinite alternate;
+  opacity: 0.7;
+}
+@keyframes iw-cc-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(22px, 14px, 0) scale(1.08); }
+}
+@keyframes iw-cc-scan {
+  0% { background-position: 0% -40%; }
+  100% { background-position: 0% 140%; }
+}
+@keyframes iw-cc-twinkle {
+  from { opacity: 0.45; }
+  to { opacity: 0.85; }
+}
+@keyframes iw-cc-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes iw-cc-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(54, 211, 154, 0.55); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(54, 211, 154, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iw-cc-glow, .iw-cc-scan, .iw-cc-stars, .iw-cc-orb-ring { animation: none !important; }
+}
+
+#page-dashboard .iw-cc > *:not(.iw-cc-atmosphere) {
+  position: relative;
+  z-index: 1;
+}
+
+.iw-cc-banner {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 1.5rem !important;
+  padding: 1.6rem 1.75rem 1.7rem !important;
+  border-radius: 1.35rem !important;
+  border: 1px solid rgba(170, 200, 255, 0.2) !important;
+  background:
+    linear-gradient(125deg, rgba(100, 160, 220, 0.2), rgba(12, 18, 36, 0.45) 48%, rgba(8, 12, 22, 0.78)),
+    rgba(8, 12, 22, 0.55) !important;
+  box-shadow:
+    0 28px 70px rgba(2, 4, 16, 0.55),
+    0 0 0 1px rgba(100, 160, 220, 0.08),
+    inset 0 1px 0 rgba(220, 235, 255, 0.16) !important;
+  overflow: hidden;
+  position: relative;
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+}
+.iw-cc-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  transform: translateX(-120%);
+  animation: iw-cc-sheen 8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes iw-cc-sheen {
+  0%, 60% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+.iw-cc-banner::after {
+  content: "";
+  position: absolute;
+  top: -45%;
+  right: -4%;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(100, 160, 220, 0.4), transparent 68%);
+  filter: blur(20px);
+  pointer-events: none;
+}
+.iw-home-kicker {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 0.64rem !important;
+  letter-spacing: 0.24em !important;
+  text-transform: uppercase;
+  color: rgba(164, 210, 255, 0.95) !important;
+}
+.iw-cc-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #36d39a;
+  animation: iw-cc-pulse 2s ease-out infinite;
+  flex-shrink: 0;
+}
+.iw-home-title {
+  margin-top: 0.35rem !important;
+  font-size: 16px !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.25 !important;
+  background: linear-gradient(180deg, #ffffff 10%, #d7e6ff 55%, #8eb6e8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+  filter: none;
+}
+.iw-home-desc {
+  margin-top: 0.7rem !important;
+  max-width: 40rem;
+  font-size: 1rem !important;
+  line-height: 1.55 !important;
+  color: #b4bccb !important;
+}
+.iw-cc-meta {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 0.68rem !important;
+  gap: 0.65rem !important;
+  color: #8b93a5 !important;
+  z-index: 1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.iw-cc-meta-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(160, 188, 255, 0.22);
+  background: rgba(100, 160, 220, 0.1);
+  color: #c5d6f0;
+}
+.iw-cc-banner .mission-live-badge {
+  background: rgba(29, 158, 117, 0.18) !important;
+  border: 1px solid rgba(29, 158, 117, 0.48) !important;
+  color: #36d39a !important;
+  box-shadow: 0 0 18px rgba(29, 158, 117, 0.32);
+  letter-spacing: 0.12em;
+}
+
+.iw-cc-bridge {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 1.05fr) minmax(0, 1fr) !important;
+  gap: 1.5rem !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+  margin: 0.2rem 0 0 !important;
+  border: none !important;
+}
+.iw-cc-orb-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+.iw-cc-orb-halo {
+  position: absolute;
+  width: min(92%, 420px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(100, 160, 220, 0.22), transparent 62%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+.iw-cc-orb-ring {
+  position: absolute;
+  width: min(78%, 340px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px dashed rgba(160, 200, 255, 0.28);
+  box-shadow: 0 0 40px rgba(91, 140, 255, 0.12), inset 0 0 30px rgba(91, 140, 255, 0.06);
+  animation: iw-cc-spin 48s linear infinite;
+  pointer-events: none;
+}
+.iw-cc-orb-ring::after {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  border: 1px solid rgba(120, 180, 255, 0.12);
+}
+#page-dashboard #holo-fleet-orb.iw-home-orb,
+#page-dashboard .iw-home-orb.holo-orb-wrap,
+#page-dashboard .iw-cc-orb {
+  display: block !important;
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px) !important;
+  height: 300px !important;
+  border-radius: 1.35rem !important;
+  border: 1px solid rgba(170, 200, 255, 0.22) !important;
+  background:
+    radial-gradient(55% 60% at 50% 48%, rgba(100, 160, 220, 0.28), transparent 68%),
+    radial-gradient(90% 90% at 50% 100%, rgba(8, 12, 28, 0.65), rgba(4, 8, 18, 0.85)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(220, 235, 255, 0.14),
+    0 24px 60px rgba(2, 4, 16, 0.5),
+    0 0 50px rgba(91, 140, 255, 0.14) !important;
+}
+#page-dashboard .iw-cc-orb .holo-orb-pct {
+  font-size: 2.55rem !important;
+  filter: drop-shadow(0 0 22px rgba(120, 180, 255, 0.45));
+}
+#page-dashboard .iw-cc-orb .holo-orb-cap {
+  font-size: 0.72rem !important;
+  letter-spacing: 0.32em !important;
+  color: #b0c4e8 !important;
+  margin-top: 0.35rem;
+}
+
+.iw-cc-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: center;
+}
+.iw-cc-readouts {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.85rem !important;
+  flex: none !important;
+}
+.iw-cc-readouts .iw-home-stat {
+  padding: 1.15rem 1rem 1.2rem !important;
+  border: 1px solid rgba(170, 200, 255, 0.16) !important;
+  border-right: 1px solid rgba(170, 200, 255, 0.16) !important;
+  border-radius: 1.05rem !important;
+  background:
+    linear-gradient(165deg, rgba(48, 68, 110, 0.42), rgba(10, 14, 28, 0.62)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(210, 230, 255, 0.1),
+    0 12px 28px rgba(2, 4, 16, 0.28);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.iw-cc-readouts .iw-home-stat:hover {
+  transform: translateY(-2px);
+  border-color: rgba(140, 180, 255, 0.35) !important;
+  box-shadow: 0 16px 36px rgba(2, 4, 16, 0.35), 0 0 24px rgba(91, 140, 255, 0.12);
+}
+.iw-home-stat-label {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 0.58rem !important;
+  letter-spacing: 0.2em !important;
+  margin-bottom: 0.5rem !important;
+  color: #93a0b8 !important;
+}
+.iw-home-stat-value {
+  font-size: 2.35rem !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.035em !important;
+}
+.iw-home-stat-sub {
+  margin: 0.45rem 0 0;
+  font-size: 0.68rem;
+  color: #6f788a;
+}
+
+.iw-cc-channels {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem !important;
+  padding-top: 0;
+}
+.iw-home-action {
+  justify-content: flex-start !important;
+  padding: 0.78rem 1rem !important;
+  font-size: 0.84rem !important;
+  font-weight: 575 !important;
+  border-radius: 0.8rem !important;
+  letter-spacing: 0.01em;
+  background: rgba(14, 20, 36, 0.78) !important;
+  border: 1px solid rgba(160, 188, 255, 0.16) !important;
+  color: #d5dce8 !important;
+  transition: transform 0.18s ease, border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+.iw-cc-act-ico {
+  display: inline-flex;
+  width: 1.35rem;
+  justify-content: center;
+  opacity: 0.85;
+  color: #9ec8f0;
+}
+.iw-home-action:hover {
+  transform: translateY(-1px);
+  border-color: rgba(124, 162, 255, 0.5) !important;
+  box-shadow: 0 0 22px rgba(91, 140, 255, 0.16);
+  background: rgba(24, 34, 58, 0.9) !important;
+  color: #fff !important;
+}
+.iw-home-action-primary {
+  background: linear-gradient(180deg, #9ec8f0, #5f96d8) !important;
+  color: #061018 !important;
+  border-color: rgba(140, 190, 240, 0.65) !important;
+  box-shadow: 0 10px 28px rgba(91, 140, 255, 0.34);
+  grid-column: 1 / -1;
+}
+.iw-home-action-primary .iw-cc-act-ico { color: #061018; }
+.iw-home-action-primary:hover {
+  background: linear-gradient(180deg, #b6d8f8, #6ea4e4) !important;
+  color: #041018 !important;
+}
+
+.iw-cc-board {
+  gap: 0.75rem !important;
+  padding: 1.15rem 1.25rem 1.3rem !important;
+  border-radius: 1.15rem !important;
+  border: 1px solid rgba(170, 200, 255, 0.14) !important;
+  background:
+    linear-gradient(180deg, rgba(18, 26, 46, 0.72), rgba(8, 12, 22, 0.42)) !important;
+  box-shadow: inset 0 1px 0 rgba(200, 220, 255, 0.08), 0 16px 40px rgba(2, 4, 16, 0.28);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.iw-cc-board-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.iw-cc-board-label {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.64rem;
+  font-weight: 650;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #a8c0e8;
+}
+.iw-cc-board-hint {
+  font-size: 0.7rem;
+  color: #6b7080;
+}
+.forge-briefing {
+  font-size: 0.94rem !important;
+  color: #b4bccb !important;
+}
+.forge-signal-seal,
+.iw-signal-row {
+  padding: 0.95rem 0.35rem !important;
+  border-radius: 0.55rem;
+}
+.forge-signal-seal:hover,
+.iw-signal-row:hover {
+  background: linear-gradient(90deg, rgba(100, 160, 220, 0.1), transparent 75%) !important;
+}
+.forge-signal-seal-name {
+  font-size: 0.9rem !important;
+  font-weight: 580 !important;
+}
+.iw-operator > summary,
+.forge-operator > summary {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 0.62rem !important;
+  letter-spacing: 0.16em !important;
+  padding: 1rem 0.15rem !important;
+}
+
+@media (max-width: 900px) {
+  .iw-cc-bridge {
+    grid-template-columns: 1fr !important;
+  }
+  #page-dashboard .iw-cc-orb {
+    height: 240px !important;
+    width: 100% !important;
+  }
+  .iw-cc-orb-stage { min-height: 240px; }
+  .iw-cc-channels { grid-template-columns: 1fr 1fr; }
+}
+
+html[data-theme='light'] body.mac-desktop-root .mac-dock-inner {
+  background: rgba(248, 249, 251, 0.92) !important;
+  border-bottom-color: rgba(26, 29, 36, 0.08) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   macOS 26 Tahoe — Liquid Glass
+   Translucent, refractive chrome + floating materials (inspired by Tahoe).
+   ════════════════════════════════════════════════════════════════════════ */
+:root,
+html[data-theme='tahoe'],
+html.theme-tahoe {
+  --liquid-glass: rgba(255, 255, 255, 0.06);
+  --liquid-glass-tint: rgba(18, 28, 48, 0.38);
+  --liquid-glass-elevated: rgba(22, 32, 54, 0.52);
+  --liquid-glass-border: rgba(255, 255, 255, 0.18);
+  --liquid-glass-border-soft: rgba(255, 255, 255, 0.1);
+  --liquid-glass-highlight: rgba(255, 255, 255, 0.42);
+  --liquid-glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.38), 0 2px 8px rgba(0, 0, 0, 0.22);
+  --liquid-glass-blur: blur(40px) saturate(1.85);
+  --liquid-radius: 1.35rem;
+  --liquid-radius-sm: 0.85rem;
+  --liquid-radius-pill: 999px;
+  --glass-bg: rgba(16, 24, 42, 0.42);
+  --glass-bg-elevated: rgba(22, 32, 54, 0.58);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-strong: rgba(255, 255, 255, 0.2);
+  --glass-blur: blur(40px) saturate(1.8);
+  --ironwolf-glass-chrome-bg: rgba(12, 18, 32, 0.28);
+  --ironwolf-glass-chrome-blur: 48px;
+  --mac-vibrancy: rgba(12, 18, 32, 0.32);
+  --mac-border: rgba(255, 255, 255, 0.1);
+}
+
+/* Desktop canvas breathes under transparent chrome */
+html[data-theme='tahoe'] body.mac-desktop-root,
+body.mac-desktop-root {
+  background:
+    radial-gradient(ellipse 110% 70% at 50% -18%, rgba(90, 150, 220, 0.28), transparent 52%),
+    radial-gradient(ellipse 60% 40% at 85% 20%, rgba(100, 180, 220, 0.1), transparent 50%),
+    linear-gradient(180deg, #070b14 0%, #0a101c 42%, #080c16 100%) !important;
+}
+
+/* ── Floating transparent menu bar (Tahoe) ── */
+body.mac-desktop-root .mac-menubar.navbar,
+body.mac-desktop-root header.mac-menubar {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(16, 24, 42, 0.22) 38%,
+    rgba(10, 16, 28, 0.18) 100%
+  ) !important;
+  backdrop-filter: var(--liquid-glass-blur) !important;
+  -webkit-backdrop-filter: var(--liquid-glass-blur) !important;
+  border-bottom: 1px solid transparent !important;
+  border-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.22) 20%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.22) 80%,
+    transparent 100%
+  ) 1 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 36px rgba(0, 0, 0, 0.18) !important;
+  height: 2.85rem !important;
+  min-height: 2.85rem !important;
+}
+body.mac-desktop-root .mac-menubar.navbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 18% -40%, rgba(255, 255, 255, 0.22), transparent 45%),
+    linear-gradient(90deg, transparent, rgba(140, 190, 255, 0.06), transparent);
+  opacity: 0.9;
+}
+body.mac-desktop-root .mac-menubar.navbar {
+  position: fixed !important;
+  overflow: visible !important;
+}
+
+.mac-menu-trigger {
+  border-radius: 0.65rem !important;
+  color: rgba(248, 250, 252, 0.92) !important;
+  font-weight: 575 !important;
+  letter-spacing: -0.01em;
+  transition: background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+.mac-menu-trigger:hover,
+.mac-menu-trigger.open,
+.mac-menu-trigger[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: #fff !important;
+}
+
+/* Liquid Glass dropdown panels */
+.mac-menu-panel,
+.mac-menu-panel.open {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.12), rgba(18, 26, 46, 0.55) 35%, rgba(10, 14, 28, 0.72)) !important;
+  backdrop-filter: blur(48px) saturate(1.9) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(1.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 1rem !important;
+  box-shadow:
+    var(--liquid-glass-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08) !important;
+  overflow: hidden;
+}
+.mac-menu-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 40%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent);
+  opacity: 0.55;
+}
+.mac-menu-item {
+  border-radius: 0.65rem !important;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.mac-menu-item:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  transform: translateX(1px);
+}
+
+/* Icon cluster as Control Center–style glass capsule */
+.mac-menubar-nav-icons {
+  margin-left: 10px !important;
+  padding: 3px 5px !important;
+  border-radius: var(--liquid-radius-pill) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+}
+.mac-nav-icon-btn {
+  border-radius: var(--liquid-radius-pill) !important;
+  width: 1.95rem !important;
+  height: 1.95rem !important;
+  color: rgba(240, 245, 255, 0.9) !important;
+}
+.mac-nav-icon-btn:hover,
+.mac-nav-icon-btn.open,
+.mac-nav-icon-btn[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  color: #fff !important;
+}
+.mac-nav-icon-btn.mac-nav-icon-ai {
+  color: #c4b5fd !important;
+}
+.mac-nav-icon-btn.mac-nav-icon-ai:hover,
+.mac-nav-icon-btn.mac-nav-icon-ai.open {
+  background: rgba(167, 139, 250, 0.22) !important;
+  box-shadow: 0 0 0 1px rgba(196, 181, 253, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Status pills — liquid glass */
+.mac-alert-pill,
+.mac-zen-pill,
+.mission-live-badge,
+.iw-cc-meta-chip {
+  backdrop-filter: blur(18px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.5) !important;
+  border-radius: var(--liquid-radius-pill) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+.mac-alert-pill {
+  background: rgba(212, 145, 90, 0.16) !important;
+  border: 1px solid rgba(212, 145, 90, 0.35) !important;
+}
+.mac-zen-pill {
+  background: rgba(100, 160, 220, 0.16) !important;
+  border: 1px solid rgba(100, 160, 220, 0.35) !important;
+}
+
+/* Right-side chrome controls */
+body.mac-desktop-root .navbar-right .btn,
+body.mac-desktop-root .navbar-right button,
+body.mac-desktop-root .ns-select {
+  border-radius: 0.7rem !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+}
+
+/* ── Command Centre surfaces → Liquid Glass ── */
+.iw-cc-banner,
+.iw-cc-orb,
+#page-dashboard .iw-cc-orb,
+.iw-cc-readouts .iw-home-stat,
+.iw-cc-board,
+.iw-home-action:not(.iw-home-action-primary) {
+  backdrop-filter: var(--liquid-glass-blur) !important;
+  -webkit-backdrop-filter: var(--liquid-glass-blur) !important;
+}
+.iw-cc-banner {
+  border-radius: calc(var(--liquid-radius) + 0.15rem) !important;
+  border: 1px solid var(--liquid-glass-border) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(100, 160, 220, 0.1) 28%, rgba(12, 18, 36, 0.35) 62%, rgba(8, 12, 22, 0.5)),
+    var(--liquid-glass-tint) !important;
+  box-shadow:
+    var(--liquid-glass-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+.iw-cc-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(80% 60% at 15% 0%, rgba(255, 255, 255, 0.22), transparent 50%),
+    linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.08) 50%, transparent 60%);
+  background-size: 100% 100%, 220% 100%;
+  animation: liquid-sheen 9s ease-in-out infinite;
+  opacity: 0.85;
+  z-index: 0;
+}
+@keyframes liquid-sheen {
+  0%, 55% { background-position: 0 0, -40% 0; }
+  100% { background-position: 0 0, 140% 0; }
+}
+.iw-cc-banner > * { position: relative; z-index: 1; }
+
+#page-dashboard .iw-cc-orb {
+  border-radius: calc(var(--liquid-radius) + 0.25rem) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background:
+    radial-gradient(55% 55% at 50% 42%, rgba(140, 190, 255, 0.28), transparent 65%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(8, 14, 28, 0.55)) !important;
+  box-shadow:
+    var(--liquid-glass-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 60px rgba(100, 160, 220, 0.18) !important;
+}
+.iw-cc-orb-ring {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  box-shadow:
+    0 0 50px rgba(120, 180, 255, 0.16),
+    inset 0 0 40px rgba(120, 180, 255, 0.08) !important;
+}
+.iw-cc-orb-halo {
+  background: radial-gradient(circle, rgba(160, 210, 255, 0.28), transparent 62%) !important;
+  filter: blur(14px);
+}
+
+.iw-cc-readouts .iw-home-stat {
+  border-radius: var(--liquid-radius) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.12), rgba(20, 30, 52, 0.42) 45%, rgba(10, 14, 28, 0.55)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 14px 32px rgba(0, 0, 0, 0.28) !important;
+}
+.iw-cc-readouts .iw-home-stat:hover {
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 18px 40px rgba(0, 0, 0, 0.32),
+    0 0 28px rgba(100, 160, 220, 0.14) !important;
+}
+
+.iw-home-action:not(.iw-home-action-primary) {
+  border-radius: var(--liquid-radius-sm) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(14, 20, 36, 0.45)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+.iw-home-action:not(.iw-home-action-primary):hover {
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(24, 34, 58, 0.55)) !important;
+}
+.iw-home-action-primary {
+  border-radius: var(--liquid-radius-sm) !important;
+  background: linear-gradient(180deg, #b8d8f8 0%, #7eb0e4 45%, #5a94d0 100%) !important;
+  box-shadow:
+    0 12px 32px rgba(91, 140, 255, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+  border: 1px solid rgba(200, 230, 255, 0.55) !important;
+}
+
+.iw-cc-board {
+  border-radius: var(--liquid-radius) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(12, 18, 32, 0.4)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 16px 40px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* Live ticker — frosted strip */
+body.mac-desktop-root .vmr-ticker,
+body.mac-desktop-root #vmr-ticker {
+  background: rgba(10, 14, 24, 0.42) !important;
+  backdrop-filter: blur(28px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.5) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Content pages float in liquid glass frames when open */
+body.mac-desktop-root .mac-page-toolbar-wrap,
+body.mac-desktop-root .page .page-header,
+body.mac-desktop-root .glass-card,
+body.mac-desktop-root .card.glass-card {
+  border-radius: var(--liquid-radius) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(16, 24, 42, 0.4) !important;
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme='light'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='light'] body.mac-desktop-root header.mac-menubar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(248, 250, 252, 0.45)) !important;
+  border-image: none !important;
+  border-bottom: 1px solid rgba(26, 29, 36, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 28px rgba(15, 23, 42, 0.06) !important;
+}
+html[data-theme='light'] .mac-menu-panel {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.82)) !important;
+  border-color: rgba(26, 29, 36, 0.1) !important;
+  color: #111318;
+}
+html[data-theme='light'] .mac-menubar-nav-icons {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border-color: rgba(26, 29, 36, 0.1) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iw-cc-banner::before,
+  .mac-menubar.navbar::before { animation: none !important; }
+}
+
+
+/* ── Command Centre: ONE top bar + balanced hero ── */
+body.mac-desktop-root.vmr-ticker-on .mac-dock,
+body.mac-desktop-root.vmr-ticker-on #cloudos-dock.mac-dock,
+body.mac-desktop-root #cloudos-dock.mac-dock {
+  display: none !important;
+}
+body.finder-collapsed:not([data-desktop-tier="advanced"]) .cloudos-browse-rail,
+#cloudos-browse-rail {
+  display: none !important;
+}
+
+#page-dashboard .iw-home.iw-cc {
+  min-height: calc(100dvh - var(--veyron-menubar-h, 2.75rem) - 2.25rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  padding: clamp(0.75rem, 1.5vh, 1.1rem) clamp(1rem, 2.5vw, 2rem) 1.5rem !important;
+  gap: 1rem !important;
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+.iw-cc-banner {
+  padding: 1rem 1.25rem 1.1rem !important;
+  min-height: 0 !important;
+  align-items: flex-end !important;
+  width: 100% !important;
+}
+.iw-home-kicker {
+  font-size: 0.62rem !important;
+  letter-spacing: 0.2em !important;
+}
+.iw-home-title {
+  margin-top: 0.2rem !important;
+  font-size: 16px !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.25 !important;
+  filter: none !important;
+}
+.iw-home-desc {
+  margin-top: 0.35rem !important;
+  font-size: 0.84rem !important;
+  max-width: none !important;
+  color: rgba(210, 220, 235, 0.88) !important;
+}
+.iw-cc-bridge {
+  margin-top: 0.1rem !important;
+  gap: 1.15rem !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+}
+.iw-cc-orb-stage {
+  min-height: 0 !important;
+  height: 100% !important;
+}
+#page-dashboard .iw-cc-orb,
+#page-dashboard #holo-fleet-orb.iw-home-orb {
+  height: min(42vh, 360px) !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+.iw-cc-side {
+  gap: 0.85rem !important;
+}
+.iw-cc-board {
+  margin-top: auto;
+  width: 100% !important;
+}
+#page-dashboard.iw-home-page,
+#page-dashboard .container {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+
+/* ── Dash surprises (quiet glow, tips, orb easter egg) ── */
+.iw-cc-surprise-tip {
+  margin: 0.55rem 0 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: rgba(158, 200, 255, 0.85);
+}
+.iw-cc-mood[data-mood="quiet"] {
+  color: #36d39a !important;
+  border-color: rgba(54, 211, 154, 0.35) !important;
+  background: rgba(54, 211, 154, 0.12) !important;
+}
+.iw-cc-mood[data-mood="alert"] {
+  color: #f0a070 !important;
+  border-color: rgba(212, 145, 90, 0.4) !important;
+  background: rgba(212, 145, 90, 0.14) !important;
+}
+.iw-cc-mood[data-mood="watch"] {
+  color: #9ec8f0 !important;
+}
+#iw-cc-banner {
+  --iw-px: 0px;
+  --iw-py: 0px;
+  transition: transform 0.35s ease;
+}
+#iw-cc-banner::after {
+  transform: translate3d(var(--iw-px), var(--iw-py), 0);
+}
+.iw-home.iw-cc-quiet .iw-cc-atmosphere .iw-cc-glow-b {
+  opacity: 0.85;
+  background: radial-gradient(circle, rgba(54, 211, 154, 0.28), transparent 70%) !important;
+}
+.iw-home.iw-cc-quiet .iw-cc-board {
+  border-color: rgba(54, 211, 154, 0.22) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 40px rgba(54, 211, 154, 0.08) !important;
+}
+.iw-home.iw-cc-alert .iw-cc-board {
+  border-color: rgba(212, 145, 90, 0.28) !important;
+}
+.iw-cc-empty-surprise {
+  color: rgba(54, 211, 154, 0.9) !important;
+  letter-spacing: 0.02em;
+}
+.iw-cc-orb-burst {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(180, 220, 255, 0.55), transparent 68%);
+  transform: scale(0.4);
+}
+.iw-cc-orb-burst.on {
+  animation: iw-cc-burst 0.85s ease-out forwards;
+}
+@keyframes iw-cc-burst {
+  0% { opacity: 0.9; transform: scale(0.35); }
+  100% { opacity: 0; transform: scale(1.55); }
+}
+.iw-cc-orb.iw-cc-orb-pop {
+  animation: iw-cc-orb-pop 0.55s cubic-bezier(.22,1,.36,1);
+}
+@keyframes iw-cc-orb-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.035); filter: saturate(1.25); }
+  100% { transform: scale(1); }
+}
+.iw-cc-readouts .iw-home-stat-value {
+  transition: color 0.35s ease, transform 0.35s ease;
+}
+.iw-home.iw-cc-quiet .iw-home-stat-value.tone-ok {
+  text-shadow: 0 0 18px rgba(54, 211, 154, 0.35);
+}
+@media (prefers-reduced-motion: reduce) {
+  #iw-cc-banner, .iw-cc-orb-burst, .iw-cc-orb.iw-cc-orb-pop { animation: none !important; transition: none !important; }
+}
+
+
+/* ── Enhancement pass: motion, shortcuts, board badge ── */
+.iw-cc-kbd {
+  margin-left: auto;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(200, 214, 235, 0.75);
+}
+.iw-home-action-primary .iw-cc-kbd {
+  border-color: rgba(6, 16, 24, 0.18);
+  background: rgba(6, 16, 24, 0.12);
+  color: rgba(6, 16, 24, 0.72);
+}
+.iw-cc-board-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.15rem;
+  margin-left: 0.45rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  vertical-align: middle;
+  color: #1a1208;
+  background: linear-gradient(180deg, #f0b27a, #d4915a);
+  box-shadow: 0 0 12px rgba(212, 145, 90, 0.35);
+}
+.iw-home-stat-value.iw-cc-stat-flash {
+  transform: scale(1.06);
+  filter: brightness(1.15);
+}
+.iw-cc-tip-pop {
+  animation: iw-cc-tip-in 0.35s ease;
+}
+@keyframes iw-cc-tip-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.iw-home.iw-cc-enter .iw-cc-banner,
+.iw-home.iw-cc-enter .iw-cc-bridge,
+.iw-home.iw-cc-enter .iw-cc-board {
+  animation: iw-cc-rise 0.55s cubic-bezier(.22,1,.36,1) both;
+}
+.iw-home.iw-cc-enter .iw-cc-bridge { animation-delay: 0.07s; }
+.iw-home.iw-cc-enter .iw-cc-board { animation-delay: 0.14s; }
+@keyframes iw-cc-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.iw-cc-channels .iw-home-action {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .iw-home.iw-cc-enter .iw-cc-banner,
+  .iw-home.iw-cc-enter .iw-cc-bridge,
+  .iw-home.iw-cc-enter .iw-cc-board,
+  .iw-cc-tip-pop,
+  .iw-home-stat-value.iw-cc-stat-flash {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   macOS native chrome pass — Tahoe menubar, menus, Control Center
+   ════════════════════════════════════════════════════════════════════════ */
+body.mac-desktop-root,
+body.mac-desktop-root .mac-menubar,
+body.mac-desktop-root .mac-menu-trigger,
+body.mac-desktop-root .mac-menu-item,
+body.mac-desktop-root .mac-menubar-clock,
+body.mac-desktop-root .iw-home {
+  font-family: "SF Pro Text", "SF Pro Display", Inter, -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Nearly transparent Tahoe menu bar */
+body.mac-desktop-root .mac-menubar.navbar,
+body.mac-desktop-root header.mac-menubar {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.03) 55%,
+    rgba(8, 12, 22, 0.12) 100%
+  ) !important;
+  backdrop-filter: blur(52px) saturate(2) !important;
+  -webkit-backdrop-filter: blur(52px) saturate(2) !important;
+  border-bottom: none !important;
+  border-image: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.04) !important;
+  height: 2.4rem !important;
+  min-height: 2.4rem !important;
+  padding: 0 0.65rem 0 0.45rem !important;
+}
+body.mac-desktop-root {
+  --veyron-menubar-h: 2.4rem !important;
+  padding-top: 2.4rem !important;
+}
+
+/* App name bold like macOS; menus regular */
+body.mac-desktop-root .mac-menu-trigger {
+  padding: 0.2rem 0.55rem !important;
+  border-radius: 0.4rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 450 !important;
+  letter-spacing: -0.015em !important;
+  color: rgba(248, 250, 252, 0.9) !important;
+}
+body.mac-desktop-root .mac-menu-trigger.mac-app-menu {
+  font-weight: 650 !important;
+  letter-spacing: -0.02em !important;
+}
+body.mac-desktop-root .mac-menu-trigger:hover,
+body.mac-desktop-root .mac-menu-trigger.open,
+body.mac-desktop-root .mac-menu-trigger[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: none !important;
+}
+
+/* Native macOS menu panels */
+body.mac-desktop-root .mac-menu-panel,
+body.mac-desktop-root .mac-menu-panel.open {
+  min-width: 13.5rem !important;
+  padding: 0.35rem !important;
+  border-radius: 0.65rem !important;
+  background: rgba(36, 36, 38, 0.72) !important;
+  backdrop-filter: blur(60px) saturate(2.2) !important;
+  -webkit-backdrop-filter: blur(60px) saturate(2.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.25),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.28) !important;
+}
+body.mac-desktop-root .mac-menu-panel::before { display: none !important; }
+body.mac-desktop-root .mac-menu-item {
+  min-height: 1.55rem;
+  padding: 0.28rem 0.65rem !important;
+  border-radius: 0.4rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 450 !important;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.92) !important;
+  transform: none !important;
+}
+body.mac-desktop-root .mac-menu-item:hover {
+  background: rgba(10, 132, 255, 0.92) !important;
+  color: #fff !important;
+}
+body.mac-desktop-root .mac-menu-item:hover .mac-menu-shortcut,
+body.mac-desktop-root .mac-menu-item:hover .mac-menu-item-ico {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+body.mac-desktop-root .mac-menu-shortcut {
+  font-size: 0.72rem !important;
+  font-weight: 450;
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-variant-numeric: tabular-nums;
+}
+body.mac-desktop-root .mac-menu-sep {
+  height: 1px !important;
+  margin: 0.3rem 0.55rem !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Icon capsule = Control Center–adjacent status cluster */
+body.mac-desktop-root .mac-menubar-nav-icons {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.18) !important;
+  padding: 0.12rem 0.28rem !important;
+  gap: 0.05rem !important;
+}
+body.mac-desktop-root .mac-nav-icon-btn {
+  width: 1.7rem !important;
+  height: 1.7rem !important;
+  border-radius: 0.45rem !important;
+}
+body.mac-desktop-root .mac-nav-icon-btn:hover,
+body.mac-desktop-root .mac-nav-icon-btn.open {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Right status extras — menubar widgets, not a toolbar dump */
+body.mac-desktop-root .navbar-right {
+  gap: 0.28rem !important;
+  align-items: center !important;
+}
+body.mac-desktop-root .mac-menubar-clock {
+  display: inline-flex !important;
+  align-items: center;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em;
+  color: rgba(248, 250, 252, 0.92) !important;
+  padding: 0 0.45rem !important;
+  opacity: 1 !important;
+}
+body.mac-desktop-root .mac-nc-toggle,
+body.mac-desktop-root .mac-cc-toggle,
+body.mac-desktop-root .btn-spotlight,
+body.mac-desktop-root .navbar-right > button.glass-btn-secondary {
+  width: 1.7rem !important;
+  height: 1.7rem !important;
+  min-width: 1.7rem !important;
+  padding: 0 !important;
+  border-radius: 0.45rem !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(248, 250, 252, 0.88) !important;
+  box-shadow: none !important;
+  font-size: 0.78rem !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+body.mac-desktop-root .mac-nc-toggle:hover,
+body.mac-desktop-root .mac-cc-toggle:hover,
+body.mac-desktop-root .btn-spotlight:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+body.mac-desktop-root .ns-select,
+body.mac-desktop-root .theme-select,
+body.mac-desktop-root .refresh-select {
+  appearance: none;
+  height: 1.7rem !important;
+  border-radius: 0.45rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(248, 250, 252, 0.88) !important;
+  font-size: 0.72rem !important;
+  padding: 0 0.5rem !important;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+}
+body.mac-desktop-root .mac-alert-pill,
+body.mac-desktop-root .mac-zen-pill {
+  height: 1.55rem !important;
+  padding: 0 0.65rem !important;
+  font-size: 0.7rem !important;
+  font-weight: 550 !important;
+  border-radius: 999px !important;
+  backdrop-filter: blur(20px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
+}
+
+/* Control Center — floating Liquid Glass sheet */
+body.mac-desktop-root .mac-control-center {
+  top: calc(var(--veyron-menubar-h, 2.4rem) + 0.45rem) !important;
+  right: 0.65rem !important;
+  width: min(22rem, calc(100vw - 1.2rem)) !important;
+  padding: 0.85rem !important;
+  border-radius: 1.15rem !important;
+  background: rgba(32, 32, 36, 0.55) !important;
+  backdrop-filter: blur(56px) saturate(2) !important;
+  -webkit-backdrop-filter: blur(56px) saturate(2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.5),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.26) !important;
+}
+body.mac-desktop-root .mac-cc-section-title {
+  font-size: 0.65rem !important;
+  letter-spacing: 0.06em !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+body.mac-desktop-root .mac-cc-tile,
+body.mac-desktop-root .mac-cc-row select,
+body.mac-desktop-root .mac-cc-row .form-select {
+  border-radius: 0.75rem !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* Command Centre surfaces — softer macOS window chrome */
+body.mac-desktop-root .iw-cc-banner,
+body.mac-desktop-root .iw-cc-board,
+body.mac-desktop-root .iw-cc-readouts .iw-home-stat,
+body.mac-desktop-root #page-dashboard .iw-cc-orb {
+  border-radius: 1.05rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.28),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.22) !important;
+}
+body.mac-desktop-root .iw-home-action:not(.iw-home-action-primary) {
+  border-radius: 0.7rem !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+body.mac-desktop-root .iw-home-action-primary {
+  border-radius: 0.7rem !important;
+  background: linear-gradient(180deg, #6cb4ff, #0a84ff) !important;
+  border: 1px solid rgba(120, 190, 255, 0.55) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.32), inset 0 0.5px 0 rgba(255, 255, 255, 0.35) !important;
+}
+body.mac-desktop-root .iw-home-action-primary .iw-cc-act-ico,
+body.mac-desktop-root .iw-home-action-primary .iw-cc-kbd {
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Keep clock visible (macOS always shows time) */
+@media (max-width: 1700px) {
+  body.mac-desktop-root .mac-menubar-clock { display: inline-flex !important; }
+}
+@media (max-width: 1280px) {
+  body.mac-desktop-root .mac-menubar-clock { display: inline-flex !important; }
+  body.mac-desktop-root .theme-select,
+  body.mac-desktop-root .refresh-select,
+  body.mac-desktop-root .refresh-ring,
+  body.mac-desktop-root .refresh-text { display: none !important; }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   macOS Tahoe pass w — NC glass, wallpaper swatches, Focus, Spotlight, sheets
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Split menubar clock: muted weekday + bold time */
+body.mac-desktop-root .mac-menubar-clock {
+  gap: 0.35rem !important;
+}
+body.mac-desktop-root .mac-menubar-clock-date {
+  font-weight: 450 !important;
+  color: rgba(248, 250, 252, 0.55) !important;
+  font-size: 0.75rem !important;
+}
+body.mac-desktop-root .mac-menubar-clock-time {
+  font-weight: 600 !important;
+  color: rgba(248, 250, 252, 0.94) !important;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem !important;
+}
+
+/* Status cluster separator before clock (macOS feel) */
+body.mac-desktop-root .navbar-right::before {
+  content: "";
+  width: 1px;
+  height: 0.95rem;
+  margin: 0 0.15rem 0 0.05rem;
+  background: rgba(255, 255, 255, 0.14);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Wallpaper swatches in Control Center */
+body.mac-desktop-root .mac-cc-wallpaper-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+}
+body.mac-desktop-root .mac-cc-wp-swatch {
+  height: 2.35rem;
+  border-radius: 0.55rem;
+  border: 2px solid transparent;
+  cursor: pointer;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.22);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+body.mac-desktop-root .mac-cc-wp-swatch:hover {
+  transform: translateY(-1px);
+}
+body.mac-desktop-root .mac-cc-wp-swatch.is-active {
+  border-color: #0a84ff !important;
+  box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.45), inset 0 0.5px 0 rgba(255, 255, 255, 0.28);
+}
+
+/* Focus tiles */
+body.mac-desktop-root .mac-cc-focus-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
+}
+body.mac-desktop-root .mac-cc-focus-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 0.65rem 0.7rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  text-align: left;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.14);
+}
+body.mac-desktop-root .mac-cc-focus-tile:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+body.mac-desktop-root .mac-cc-focus-tile[aria-pressed="true"] {
+  background: rgba(10, 132, 255, 0.28);
+  border-color: rgba(10, 132, 255, 0.55);
+}
+body.mac-desktop-root .mac-cc-focus-ico {
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+body.mac-desktop-root .mac-cc-focus-label {
+  font-size: 0.72rem;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+
+/* Notification Center — Liquid Glass twin of Control Center */
+body.mac-desktop-root .mac-notification-center {
+  top: calc(var(--veyron-menubar-h, 2.4rem) + 0.45rem) !important;
+  right: 0.65rem !important;
+  width: min(22rem, calc(100vw - 1.2rem)) !important;
+  padding: 0.85rem !important;
+  border-radius: 1.15rem !important;
+  background: rgba(32, 32, 36, 0.55) !important;
+  backdrop-filter: blur(56px) saturate(2) !important;
+  -webkit-backdrop-filter: blur(56px) saturate(2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.5),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.26) !important;
+  max-height: min(68vh, 520px) !important;
+}
+body.mac-desktop-root .mac-nc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.55rem;
+}
+body.mac-desktop-root .mac-nc-clear {
+  border: none;
+  background: transparent;
+  color: #0a84ff;
+  font-size: 0.78rem;
+  font-weight: 550;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+}
+body.mac-desktop-root .mac-nc-clear:hover { opacity: 0.85; }
+body.mac-desktop-root .mac-nc-list { font-size: 0.8rem; color: rgba(255, 255, 255, 0.55); }
+body.mac-desktop-root .mac-nc-empty {
+  padding: 1.1rem 0.5rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.8rem;
+}
+body.mac-desktop-root .mac-nc-item {
+  border-radius: 0.75rem !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+}
+body.mac-desktop-root .mac-nc-item:hover {
+  background: rgba(10, 132, 255, 0.16) !important;
+}
+body.mac-desktop-root .mac-nc-show-all {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.78rem;
+  font-weight: 550;
+  cursor: pointer;
+}
+body.mac-desktop-root .mac-nc-show-all:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Spotlight — floating Liquid Glass search */
+body.mac-desktop-root #spotlight-modal .spotlight-panel {
+  border-radius: 1.1rem !important;
+  background: rgba(28, 28, 32, 0.62) !important;
+  backdrop-filter: blur(48px) saturate(2) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.55),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.28) !important;
+}
+body.mac-desktop-root #spotlight-modal .spotlight-input {
+  font-family: "SF Pro Text", "SF Pro Display", Inter, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 1.05rem !important;
+  font-weight: 450 !important;
+  letter-spacing: -0.02em;
+}
+body.mac-desktop-root #spotlight-modal .spotlight-footer {
+  color: rgba(255, 255, 255, 0.42) !important;
+  font-size: 0.72rem !important;
+}
+
+/* Sheets — native traffic lights + frosted titlebar */
+body.mac-desktop-root .mac-sheet-titlebar {
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body.mac-desktop-root .mac-traffic-btn {
+  width: 0.72rem !important;
+  height: 0.72rem !important;
+  border-radius: 999px !important;
+  border: none !important;
+}
+body.mac-desktop-root .mac-traffic-close { background: #ff5f57 !important; }
+body.mac-desktop-root .mac-traffic-min { background: #febc2e !important; }
+body.mac-desktop-root .mac-traffic-full { background: #28c840 !important; }
+body.mac-desktop-root .mac-window-traffic {
+  display: inline-flex !important;
+  gap: 0.42rem !important;
+  align-items: center;
+  padding-left: 0.15rem;
+}
+
+/* Browse mega — Liquid Glass sheet */
+body.mac-desktop-root .browse-mega-header,
+body.mac-desktop-root #browse-mega-header {
+  backdrop-filter: blur(40px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(1.8) !important;
+  background: rgba(28, 28, 32, 0.55) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+body.mac-desktop-root .browse-mega-menu,
+body.mac-desktop-root #browse-mega-menu {
+  backdrop-filter: blur(36px) saturate(1.7) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(1.7) !important;
+  background: rgba(22, 22, 26, 0.52) !important;
+}
+
+/* Calm density — quieter motion + softer atmosphere */
+body.mac-desktop-root.mac-calm .iw-cc-scan,
+body.mac-desktop-root.mac-calm .iw-cc-stars,
+body.mac-desktop-root.mac-calm .iw-cc-glow {
+  animation: none !important;
+  opacity: 0.35 !important;
+}
+body.mac-desktop-root.mac-calm .iw-cc-orb-halo,
+body.mac-desktop-root.mac-calm .iw-cc-orb-ring {
+  animation-duration: 28s !important;
+}
+body.mac-desktop-root.mac-calm .iw-home-action,
+body.mac-desktop-root.mac-calm .forge-signal-seal {
+  transition: none !important;
+}
+body.mac-desktop-root.mac-dnd .mac-nc-badge {
+  display: none !important;
+}
+
+/* Checkmarks only on Go / wallpaper items — never on icon submenus */
+body.mac-desktop-root #mac-menu-go .mac-menu-item.active-tier::before,
+body.mac-desktop-root .mac-menu-item[data-wallpaper-opt].active-tier::before {
+  content: "✓";
+  display: inline-block;
+  width: 1rem;
+  margin-right: 0.15rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+body.mac-desktop-root #mac-menu-go .mac-menu-item:not(.active-tier)::before,
+body.mac-desktop-root .mac-menu-item[data-wallpaper-opt]:not(.active-tier)::before {
+  content: "";
+  display: inline-block;
+  width: 1rem;
+  margin-right: 0.15rem;
+  flex-shrink: 0;
+}
+body.mac-desktop-root .mac-menu-panel-icons .mac-menu-item::before {
+  content: none !important;
+  display: none !important;
+  width: 0 !important;
+  margin: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   macOS Tahoe pass x — banners, Mission Control/Launchpad, CC status, light
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Notification banners (toasts) — macOS style */
+body.mac-desktop-root .toast-container {
+  top: calc(var(--veyron-menubar-h, 2.4rem) + 0.55rem) !important;
+  right: 0.75rem !important;
+  gap: 0.55rem !important;
+}
+body.mac-desktop-root .toast {
+  pointer-events: auto;
+  min-width: 16rem;
+  max-width: min(22rem, calc(100vw - 1.5rem));
+  padding: 0.7rem 0.85rem !important;
+  border-radius: 0.95rem !important;
+  background: rgba(36, 36, 40, 0.62) !important;
+  backdrop-filter: blur(40px) saturate(2) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.42),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.24) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 450 !important;
+  letter-spacing: -0.01em;
+}
+body.mac-desktop-root .toast-icon {
+  width: 1.55rem !important;
+  height: 1.55rem !important;
+  border-radius: 0.45rem !important;
+  font-size: 0.7rem !important;
+}
+body.mac-desktop-root .toast-dismiss {
+  border-radius: 0.4rem !important;
+  opacity: 0.4;
+}
+
+/* Control Center live status */
+body.mac-desktop-root .mac-cc-status-section {
+  padding: 0.55rem 0.65rem;
+  margin-bottom: 0.75rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+}
+body.mac-desktop-root .mac-cc-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  font-size: 0.78rem;
+}
+body.mac-desktop-root .mac-cc-status-label {
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+}
+body.mac-desktop-root .mac-cc-status-value {
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+body.mac-desktop-root .mac-cc-status-value[data-state="ok"] {
+  color: #30d158;
+}
+body.mac-desktop-root .mac-cc-status-value[data-state="warn"] {
+  color: #ffd60a;
+}
+
+/* Mission Control + Launchpad Liquid Glass */
+body.mac-desktop-root .mission-control-overlay {
+  background: rgba(8, 10, 16, 0.55) !important;
+  backdrop-filter: blur(36px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(1.6) !important;
+}
+body.mac-desktop-root .mission-control-header h2,
+body.mac-desktop-root .mission-control-header .mac-sheet-title {
+  font-family: "SF Pro Display", "SF Pro Text", Inter, -apple-system, sans-serif !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.025em;
+}
+body.mac-desktop-root .mission-window-card {
+  border-radius: 1rem !important;
+  background: rgba(40, 40, 46, 0.45) !important;
+  backdrop-filter: blur(28px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), inset 0 0.5px 0 rgba(255, 255, 255, 0.18) !important;
+}
+body.mac-desktop-root .mission-window-card:hover {
+  border-color: rgba(10, 132, 255, 0.45) !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(10, 132, 255, 0.25) !important;
+}
+body.mac-desktop-root .mission-window-card.active {
+  border-color: rgba(10, 132, 255, 0.65) !important;
+}
+body.mac-desktop-root .launchpad-overlay {
+  background: rgba(8, 10, 16, 0.58) !important;
+  backdrop-filter: blur(40px) saturate(1.7) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(1.7) !important;
+}
+body.mac-desktop-root .launchpad-app {
+  border-radius: 1rem !important;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+body.mac-desktop-root .launchpad-app:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: scale(1.04);
+}
+
+/* Ask Zeus / sheets — system blue actions */
+body.mac-desktop-root .mac-copilot-sheet,
+body.mac-desktop-root .modal.mac-sheet-modal {
+  background: rgba(28, 28, 32, 0.72) !important;
+  backdrop-filter: blur(48px) saturate(1.9) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(1.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5), inset 0 0.5px 0 rgba(255, 255, 255, 0.2) !important;
+}
+body.mac-desktop-root .mac-copilot-sheet .glass-btn-primary,
+body.mac-desktop-root .modal.mac-sheet-modal .glass-btn-primary {
+  background: linear-gradient(180deg, #6cb4ff, #0a84ff) !important;
+  border: 1px solid rgba(120, 190, 255, 0.5) !important;
+  color: #fff !important;
+  border-radius: 0.55rem !important;
+}
+
+/* Light theme parity for new chrome */
+html[data-theme='light'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='tahoe-light'] body.mac-desktop-root .mac-menubar.navbar {
+  background: rgba(246, 246, 248, 0.55) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+html[data-theme='light'] body.mac-desktop-root .mac-menu-trigger,
+html[data-theme='light'] body.mac-desktop-root .mac-menubar-clock-time,
+html[data-theme='light'] body.mac-desktop-root .mac-nav-icon-btn {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+html[data-theme='light'] body.mac-desktop-root .mac-menubar-clock-date {
+  color: rgba(0, 0, 0, 0.45) !important;
+}
+html[data-theme='light'] body.mac-desktop-root .mac-menu-panel,
+html[data-theme='light'] body.mac-desktop-root .mac-control-center,
+html[data-theme='light'] body.mac-desktop-root .mac-notification-center,
+html[data-theme='light'] body.mac-desktop-root .toast {
+  background: rgba(246, 246, 248, 0.72) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+html[data-theme='light'] body.mac-desktop-root .mac-menu-item {
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+html[data-theme='light'] body.mac-desktop-root .mac-menu-item:hover {
+  background: rgba(10, 132, 255, 0.92) !important;
+  color: #fff !important;
+}
+html[data-theme='light'] body.mac-desktop-root .navbar-right::before {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* Soft press on focus tiles */
+body.mac-desktop-root .mac-cc-focus-tile:active {
+  transform: scale(0.97);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   macOS Tahoe pass y — Display sliders, menu checks, System Settings, shortcuts
+   ════════════════════════════════════════════════════════════════════════ */
+
+body.mac-desktop-root {
+  --mac-display-bright: 1;
+  --mac-display-warm: 0;
+}
+/* Brightness/warmth via wallpaper + desk atmosphere — never filter the menubar */
+body.mac-desktop-root::before {
+  filter: brightness(var(--mac-display-bright)) sepia(calc(var(--mac-display-warm) * 0.4));
+}
+body.mac-desktop-root .iw-cc-atmosphere {
+  opacity: calc(0.35 + (var(--mac-display-bright) * 0.65));
+  filter: sepia(calc(var(--mac-display-warm) * 0.45));
+}
+body.mac-desktop-root.mac-night-warm .mac-menubar.navbar {
+  box-shadow: inset 0 -1px 0 rgba(255, 170, 80, 0.12);
+}
+body.mac-desktop-root.mac-night-warm::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: rgba(255, 140, 60, calc(var(--mac-display-warm) * 0.08));
+}
+
+/* CC display sliders */
+body.mac-desktop-root .mac-cc-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.55rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.14);
+}
+body.mac-desktop-root .mac-cc-slider-ico {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  width: 1.1rem;
+  text-align: center;
+}
+body.mac-desktop-root .mac-cc-slider {
+  flex: 1;
+  appearance: none;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.15), rgba(10,132,255,0.85));
+  outline: none;
+}
+body.mac-desktop-root .mac-cc-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: #f5f5f7;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  cursor: pointer;
+}
+
+/* Active nav icon */
+body.mac-desktop-root .mac-nav-icon-btn.is-active {
+  background: rgba(10, 132, 255, 0.28) !important;
+  color: #fff !important;
+}
+
+/* System Settings sheet */
+body.mac-desktop-root #mac-preferences-modal .mac-sheet-modal {
+  max-width: 28rem !important;
+  border-radius: 1.1rem !important;
+}
+body.mac-desktop-root #mac-preferences-modal .mac-pref-section-title {
+  font-size: 0.65rem !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45) !important;
+  margin-bottom: 0.55rem;
+}
+body.mac-desktop-root #mac-preferences-modal .mac-pref-section {
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+body.mac-desktop-root #mac-preferences-modal .mac-pref-section:last-child {
+  border-bottom: none;
+}
+
+/* Shortcuts overlay */
+body.mac-desktop-root .mac-shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 280;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: min(12vh, 6rem);
+  background: rgba(8, 10, 16, 0.45);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+body.mac-desktop-root .mac-shortcuts-overlay.open {
+  display: flex;
+}
+body.mac-desktop-root .mac-shortcuts-panel {
+  width: min(28rem, calc(100vw - 1.5rem));
+  padding: 1rem 1.1rem 1.15rem;
+  border-radius: 1.15rem;
+  background: rgba(32, 32, 36, 0.62);
+  backdrop-filter: blur(48px) saturate(2);
+  -webkit-backdrop-filter: blur(48px) saturate(2);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5), inset 0 0.5px 0 rgba(255, 255, 255, 0.24);
+}
+body.mac-desktop-root .mac-shortcuts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+body.mac-desktop-root .mac-shortcuts-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.94);
+}
+body.mac-desktop-root .mac-shortcuts-grid {
+  display: grid;
+  gap: 0.35rem;
+}
+body.mac-desktop-root .mac-shortcuts-grid > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.55rem;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+body.mac-desktop-root .mac-shortcuts-grid > div:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+body.mac-desktop-root .mac-shortcuts-grid kbd {
+  font-family: "SF Pro Text", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 550;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   scroll + icon submenu align fix (20260731z)
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Body is the chrome shell; cloudos-main is the ONLY page scrollport */
+body.mac-desktop-root {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+body.mac-desktop-root > .cloudos-body-row {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+}
+body.mac-desktop-root .cloudos-main {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Icon submenus: left-aligned icon column + label (not space-between) */
+body.mac-desktop-root .mac-menu-panel-icons .mac-menu-item,
+.mac-menu-panel-icons .mac-menu-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.65rem !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+body.mac-desktop-root .mac-menu-panel-icons .mac-menu-item-ico,
+.mac-menu-panel-icons .mac-menu-item-ico {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 1.25rem !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  margin: 0 !important;
+}
+body.mac-desktop-root .mac-menu-panel-icons .mac-menu-item-ico svg,
+.mac-menu-panel-icons .mac-menu-item-ico svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+body.mac-desktop-root .mac-menu-panel-icons .mac-menu-shortcut,
+.mac-menu-panel-icons .mac-menu-shortcut {
+  margin-left: auto !important;
+  flex-shrink: 0;
+}
+
+/* Non-icon menus keep space-between for shortcuts */
+body.mac-desktop-root .mac-menu-panel:not(.mac-menu-panel-icons) .mac-menu-item {
+  justify-content: flex-start;
+}
+body.mac-desktop-root .mac-menu-panel:not(.mac-menu-panel-icons) .mac-menu-shortcut {
+  margin-left: auto;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   macOS pass aa — active nav icons, menubar cleanup, scroll shadow
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Menubar must clip chrome, but menus need to escape */
+body.mac-desktop-root .mac-menubar.navbar {
+  overflow: visible !important;
+}
+body.mac-desktop-root .mac-menubar-left,
+body.mac-desktop-root .mac-menubar-menus,
+body.mac-desktop-root .mac-menubar-nav-icons {
+  overflow: visible !important;
+}
+body.mac-desktop-root .navbar-right {
+  overflow: hidden !important; /* right cluster may shed controls */
+}
+
+/* Redundant text Browse hidden — icon lives in nav capsule */
+body.mac-desktop-root #btn-classic-nav {
+  display: none !important;
+}
+
+/* Active section icon */
+body.mac-desktop-root .mac-nav-icon-btn.is-active {
+  background: rgba(10, 132, 255, 0.32) !important;
+  color: #fff !important;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.22);
+}
+body.mac-desktop-root .mac-nav-icon-btn.is-active svg {
+  stroke: #fff;
+}
+
+/* Icon submenu: keep icons aligned + white on blue hover */
+body.mac-desktop-root .mac-menu-panel-icons .mac-menu-item:hover .mac-menu-item-ico,
+body.mac-desktop-root .mac-menu-panel-icons .mac-menu-item.active-tier .mac-menu-item-ico {
+  color: #fff !important;
+}
+body.mac-desktop-root .mac-menu-panel-icons .mac-menu-item.active-tier {
+  background: rgba(10, 132, 255, 0.28) !important;
+  color: #fff !important;
+}
+body.mac-desktop-root .mac-menu-panel-icons .mac-menu-item.active-tier::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Scroll shadow under menubar */
+body.mac-desktop-root.mac-scrolled .mac-menubar.navbar {
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.18),
+    0 10px 28px rgba(0, 0, 0, 0.28) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Page content — consistent breathing room under chrome */
+body.mac-desktop-root .cloudos-main > .container {
+  padding-top: 0.85rem !important;
+  padding-bottom: 2.5rem !important;
+}
+body.mac-desktop-root .page.section-shell > .space-y {
+  padding-bottom: 1.5rem;
+}
+
+/* Ticker shouldn't steal scroll */
+body.mac-desktop-root .vmr-ticker,
+body.mac-desktop-root #vmr-ticker {
+  z-index: 120;
+}

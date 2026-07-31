@@ -2826,8 +2826,9 @@ body.mission-control-home #page-dashboard .vmr-panel:has(#vmr-recent-activity) {
   display: none !important;
 }
 
+/* Forge Signal Desk — never dump the fleet as pinned cards on the hearth */
 body.mission-control-home #dc-pinned-section {
-  display: block !important;
+  display: none !important;
 }
 
 .vmr-forge-placeholder {
