@@ -108,7 +108,7 @@ for (const file of walk(CUSTOMER)) {
 
 writeFileSync(
   join(TARGET, 'pages/_category_.json'),
-  JSON.stringify({ label: 'Page-by-page guides', position: 6, collapsed: true }, null, 2) + '\n',
+  JSON.stringify({ label: 'Page-by-page guides', position: 6, collapsed: true, key: `${MANUAL_DIR || SLUG + '-manual'}-pages` }, null, 2) + '\n',
 )
 
 const pagesDir = join(TARGET, 'pages')
@@ -118,7 +118,7 @@ if (existsSync(pagesDir)) {
     const full = join(pagesDir, dir)
     if (!statSync(full).isDirectory()) continue
     const label = dir.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-    writeFileSync(join(full, '_category_.json'), JSON.stringify({ label, position: i++, collapsed: true }, null, 2) + '\n')
+    writeFileSync(join(full, '_category_.json'), JSON.stringify({ label, position: i++, collapsed: true, key: `${SLUG}-manual-pages-${dir}` }, null, 2) + '\n')
   }
 }
 

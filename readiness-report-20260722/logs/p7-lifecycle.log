@@ -1,0 +1,55 @@
+[1mVeyron daily-ops E2E[0m → https://212.8.248.187:30151 (ns=default, vm=veyron-e2e-1784707485)
+
+
+[1m── Tier A — API contract (no VM) ──[0m
+  [0;32m✔[0m GET /api/v1/vms without API key rejected
+  [0;32m✔[0m PUT expose on missing VM → not found (HTTP 404)
+  [0;32m✔[0m PUT rdp-expose without node_port → 400
+
+[1m── Tier C — Day-2 ops (contract / dry-run) ──[0m
+  [0;32m✔[0m hotplug empty body → 400
+  [0;32m✔[0m run-strategy invalid → 400
+  [0;32m✔[0m bulk invalid action → 400
+  [0;32m✔[0m capacity headroom → 200
+  [0;32m✔[0m platform versions → 200
+  [0;32m✔[0m disk-conversion capabilities → 200
+  [0;32m✔[0m self-healing policy → 200
+  [0;32m✔[0m orphan list → 200
+  [0;32m✔[0m GPU inventory → 200 (0 allocatable)
+  [0;32m✔[0m GPU create preflight → 422 GPU_RESOURCE_UNAVAILABLE
+  [0;32m✔[0m self-healing/run dry → 200
+  [0;32m✔[0m platform upgrade dry-run → 200
+
+[1m── Tier B — disposable VM lifecycle ──[0m
+  [0;32m✔[0m POST /api/v1/vms create veyron-e2e-1784707485
+  [0;32m✔[0m VM reached Running
+  [0;32m✔[0m Guest agent connected
+  [0;32m✔[0m GET guest/status connected
+  [0;32m✔[0m GET guest/evidence
+  [0;32m✔[0m GET guest/doctor
+  [0;32m✔[0m GET guest/metrics
+  [0;32m✔[0m GET guest/migrate-score
+  [0;32m✔[0m POST VNC ws/ticket issued
+  [0;32m✔[0m POST stop
+  [0;32m✔[0m VM reached Stopped
+  [0;32m✔[0m POST start
+  [0;32m✔[0m VM Running after start
+  [0;32m✔[0m POST pause
+  [0;32m✔[0m POST unpause
+  [0;32m✔[0m PUT SSH expose enabled
+  [0;32m✔[0m GET SSH expose status
+  [0;32m✔[0m PUT SSH expose disable
+  [0;32m✔[0m PUT RDP expose refused by policy (secure default — set VEYRON_ALLOW_PUBLIC_RDP=1 to allow)
+  [0;33m○[0m GET RDP expose status (PUT did not succeed)
+  [0;32m✔[0m PUT RDP expose disable
+  [0;31m✗[0m POST snapshot create
+    {"status":500,"success":false,"data":null,"error":{"code":"CREATE_FAILED","message":"Internal server error","details":null},"metadata":{"request_id":"req-1784707711968851-2467f8e8632b4c0e","timestamp":"2026-07-22T08:08:31.968855092Z","duration_ms":null}}
+  [0;33m○[0m snapshot list/restore (create failed)
+  [0;32m✔[0m POST stop (pre-delete)
+  [0;32m✔[0m DELETE VM veyron-e2e-1784707485
+
+[1m═══════════════════════════════════════════[0m
+[1m  Results: [0;32m37 passed[0m, [0;31m1 failed[0m, [0;33m2 skipped[0m
+[1m═══════════════════════════════════════════[0m
+
+[0;31m[1m  SOME CHECKS FAILED[0m

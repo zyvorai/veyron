@@ -1,0 +1,20 @@
+
+── P6 · Upgrade path ──
+  ✔ platform upgrade dry-run → 200
+  ✔ created upgrade test VM veyron-readiness-upg-1784709849 (Running)
+  ✔ same-version KubeVirt patch (v1.8.4) accepted
+  ✔ test VM survived operator bounce (still Running)
+
+── P6 · Monitoring actually scrapes ──
+  ✔ created monitoring test VM veyron-readiness-mon-1784709849 (Running)
+  ✔ GET /metrics/veyron-readiness-mon-1784709849 returned data (scrape working)
+
+── P6 · Day-2 hotplug seen by guest ──
+  ○ day-2 hotplug guest verification
+      (no_guest_agent)
+
+── P6 · Version drift vs versions.env ──
+  ✔ KubeVirt version matches baseline (v1.8.4)
+  ✔ CDI version matches baseline (v1.65.0)
+
+P6 upgrade-ops: 8 passed, 0 failed, 0 warn, 1 skipped
