@@ -685,7 +685,7 @@ body{
   font-family:var(--font-sans);
   font-size:1rem;
   line-height:1.55;
-  background:var(--bg-deep);
+  background:linear-gradient(180deg, var(--bg-deep) 0%, var(--hull) 100%) fixed;
   color:var(--text);
   min-height:100vh;
   overflow-x:hidden;
@@ -7427,6 +7427,15 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
             <div class="auth-divider">or use API key</div>
           </div>
 
+          <!-- display name field (cosmetic only — not sent to the server, not verified) -->
+          <div style="margin-bottom:20px">
+            <label style="display:block;font-size:.875rem;font-weight:500;color:#cbd5e1;margin-bottom:8px" for="login-username-input">Your name</label>
+            <div style="position:relative" class="group">
+              <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" class="login-input" id="login-username-input" placeholder="e.g. Jordan" autocomplete="name">
+            </div>
+          </div>
+
           <!-- API key field -->
           <div style="margin-bottom:20px">
             <label style="display:block;font-size:.875rem;font-weight:500;color:#cbd5e1;margin-bottom:8px" for="apikey-input">API key</label>
@@ -10003,14 +10012,22 @@ function getAuthCredential() {
   return null;
 }
 
+// Cosmetic display name only — never sent to the server, never verified.
+// Purely a client-side label so the signed-in chip can read "Jordan" instead
+// of the generic "API key" text.
+function getDisplayName() {
+  return localStorage.getItem('veyron_display_name') || sessionStorage.getItem('veyron_display_name') || '';
+}
+
 function updateAuthSessionUI() {
   const label = document.getElementById('auth-session-label');
   const btn = document.getElementById('auth-signout-btn');
   const cred = getAuthCredential();
   if (!label || !btn) return;
   if (cred) {
+    const name = getDisplayName();
     label.style.display = 'inline';
-    label.textContent = cred.mode === 'oidc' ? 'SSO session' : 'API key';
+    label.textContent = name || (cred.mode === 'oidc' ? 'SSO session' : 'API key');
     btn.style.display = 'inline-block';
   } else {
     label.style.display = 'none';
@@ -10022,6 +10039,8 @@ function signOut() {
   sessionStorage.removeItem(OIDC_TOKEN_KEY);
   localStorage.removeItem('veyron_api_key');
   sessionStorage.removeItem('veyron_api_key');
+  localStorage.removeItem('veyron_display_name');
+  sessionStorage.removeItem('veyron_display_name');
   updateAuthSessionUI();
   requireApiKey();
 }
@@ -10170,6 +10189,15 @@ function submitApiKey() {
   sessionStorage.removeItem(OIDC_TOKEN_KEY);
   const rememberEl = document.getElementById('apikey-remember');
   const remember = rememberEl ? rememberEl.checked : false;
+
+  // Cosmetic display name — not validated, not sent anywhere; stored the same
+  // way as the key so it survives/expires alongside the session that set it.
+  const nameInp = document.getElementById('login-username-input');
+  const name = nameInp ? nameInp.value.trim() : '';
+  localStorage.removeItem('veyron_display_name'); sessionStorage.removeItem('veyron_display_name');
+  if (name) {
+    if (remember) { localStorage.setItem('veyron_display_name', name); } else { sessionStorage.setItem('veyron_display_name', name); }
+  }
 
   // Store key then probe to validate before closing the modal
   if (remember) { localStorage.setItem('veyron_api_key', key); } else { sessionStorage.setItem('veyron_api_key', key); localStorage.removeItem('veyron_api_key'); }
