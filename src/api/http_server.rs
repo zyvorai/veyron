@@ -753,6 +753,8 @@ pub mod web {
                 .route("/", get(root_redirect))
                 .route("/dashboard", get(dashboard_handler))
                 .route("/assets/novnc.min.js", get(novnc_handler))
+                .route("/assets/three.module.min.js", get(three_handler))
+                .route("/assets/dashboard-veyron-3d.js", get(veyron_3d_handler))
                 .route("/assets/zyvor-logo.png", get(zyvor_logo_handler))
                 // VM endpoints
                 .route("/api/v1/vms", get(list_vms_handler))
@@ -1209,6 +1211,20 @@ pub mod web {
         (
             [(header::CONTENT_TYPE, "application/javascript")],
             include_str!("web/vendor/novnc.min.js"),
+        )
+    }
+
+    async fn three_handler() -> impl IntoResponse {
+        (
+            [(header::CONTENT_TYPE, "application/javascript")],
+            include_str!("web/vendor/three.module.min.js"),
+        )
+    }
+
+    async fn veyron_3d_handler() -> impl IntoResponse {
+        (
+            [(header::CONTENT_TYPE, "application/javascript")],
+            include_str!("web/dashboard-veyron-3d.js"),
         )
     }
 

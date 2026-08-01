@@ -70,27 +70,6 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
   max-width: var(--vmr-canvas-max);
 }
 
-body.mac-desktop-root[data-desktop-tier="normal"] .cloudos-finder {
-  display: none !important;
-}
-
-body.mac-desktop-root.finder-collapsed .cloudos-finder {
-  width: 0 !important;
-  min-width: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  opacity: 0;
-  pointer-events: none;
-  overflow: hidden;
-  border: none !important;
-}
-
-body.mac-desktop-root[data-desktop-tier="power"]:not(.finder-collapsed) .cloudos-finder,
-body.mac-desktop-root[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder,
-body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
-  display: flex !important;
-}
-
 /* Primary tab bar */
 .vmr-primary-tabs {
   display: flex;
@@ -799,15 +778,12 @@ body.veyron-shell {
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
-}
-
-body.veyron-shell .cloudos-topbar.mac-menubar,
+}body.veyron-shell .cloudos-topbar.mac-menubar,
 body.veyron-shell .vmr-primary-tabs,
 body.veyron-shell .mac-desktop-tabs,
 body.veyron-shell #cloudos-dock,
-body.veyron-shell .cloudos-finder,
 body.veyron-shell .cloudos-browse-rail,
-body.veyron-shell .mac-page-toolbar-wrap {
+body.veyron-shell .mac-page-toolbar-wrap{
   display: none !important;
 }
 
@@ -1815,23 +1791,6 @@ body.mac-desktop-root[data-desktop-tier="advanced"] .vmr-page-hero {
   display: none !important;
 }
 
-.cloudos-finder-item.tier-locked {
-  opacity: 0.72;
-  cursor: pointer;
-}
-
-body[data-tier-mode="manual"] .cloudos-finder-item.tier-locked {
-  opacity: 0.52;
-  cursor: not-allowed;
-}
-
-.cloudos-finder-item.tier-locked .fi-icon::after {
-  content: '🔒';
-  margin-left: 4px;
-  font-size: 0.62rem;
-  opacity: 0.85;
-}
-
 /* ── VM Capsule page ── */
 .vmr-capsule-hero {
   display: flex;
@@ -1971,11 +1930,7 @@ body.mac-desktop-root .vmr-capsule-hero[data-vm-status="pending"]::after { backg
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-html[data-theme="tahoe-light"] .vmr-network-flow-wrap,
-html[data-theme="light"] .vmr-network-flow-wrap,
-html[data-theme="frost"] .vmr-network-flow-wrap {
+}html[data-theme="light"] .vmr-network-flow-wrap{
   background: rgba(255, 255, 255, 0.72);
 }
 
@@ -2331,11 +2286,7 @@ html[data-theme="frost"] .vmr-network-flow-wrap {
 
 .mac-dock-ask:hover {
   background: linear-gradient(165deg, rgba(155, 124, 255, 0.28), rgba(99, 102, 241, 0.12)) !important;
-}
-
-html[data-theme="tahoe-light"] .vmr-copilot-panel-main,
-html[data-theme="light"] .vmr-copilot-panel-main,
-html[data-theme="frost"] .vmr-copilot-panel-main {
+}html[data-theme="light"] .vmr-copilot-panel-main{
   background: linear-gradient(165deg, rgba(139, 92, 246, 0.06), rgba(255, 255, 255, 0.88));
   border-color: rgba(139, 92, 246, 0.18);
 }
@@ -2552,59 +2503,25 @@ html[data-theme="frost"] .vmr-copilot-panel-main {
 .vmr-foundry-rail button.active {
   border-color: color-mix(in srgb, var(--blue) 22%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--blue) 12%, transparent);
-}
-
-html[data-theme="tahoe-light"] .vmr-page-hero::before,
-html[data-theme="light"] .vmr-page-hero::before,
-html[data-theme="frost"] .vmr-page-hero::before {
+}html[data-theme="light"] .vmr-page-hero::before{
   background: linear-gradient(90deg,
     var(--pw-color-info, #0891b2),
     var(--pw-color-data, #2563eb),
     var(--pw-color-ai, #7c3aed));
-}
-
-html[data-theme="tahoe-light"] .vmr-fleet-card,
-html[data-theme="light"] .vmr-fleet-card,
-html[data-theme="frost"] .vmr-fleet-card,
-html[data-theme="tahoe-light"] .vmr-template-card,
+}html[data-theme="light"] .vmr-fleet-card,
 html[data-theme="light"] .vmr-template-card,
-html[data-theme="frost"] .vmr-template-card,
-html[data-theme="tahoe-light"] .vmr-metric,
 html[data-theme="light"] .vmr-metric,
-html[data-theme="frost"] .vmr-metric,
-html[data-theme="tahoe-light"] .vmr-panel,
-html[data-theme="light"] .vmr-panel,
-html[data-theme="frost"] .vmr-panel {
+html[data-theme="light"] .vmr-panel{
   background: rgba(255, 255, 255, 0.84);
-}
-
-html[data-theme="tahoe-light"] .vmr-quick-btn,
-html[data-theme="light"] .vmr-quick-btn,
-html[data-theme="frost"] .vmr-quick-btn {
+}html[data-theme="light"] .vmr-quick-btn{
   background: linear-gradient(165deg,
     color-mix(in srgb, var(--pw-color-data, #2563eb) 8%, transparent),
     color-mix(in srgb, var(--pw-color-data, #2563eb) 3%, transparent));
-}
-
-html[data-theme="tahoe-light"] .vmr-foundry-drawer,
-html[data-theme="light"] .vmr-foundry-drawer,
-html[data-theme="frost"] .vmr-foundry-drawer {
+}html[data-theme="light"] .vmr-foundry-drawer{
   background: rgba(255, 255, 255, 0.96);
 }
 /* Daylight (the only light deck) parity — flip opaque dark drawers/overlays/chrome to
    light glass so they don't render dark-on-light. Scoped to daylight; no effect on dark decks. */
-html[data-theme="daylight"] .vmr-foundry-drawer,
-html[data-theme="daylight"] .veyron-shell .mac-inspector-pane,
-html[data-theme="daylight"] .vmr-pod-logs-overlay,
-html[data-theme="daylight"] .finder-item-tooltip,
-html[data-theme="daylight"] .vmr-primary-tabs,
-html[data-theme="daylight"] .veyron-topbar,
-html[data-theme="daylight"] .veyron-sidebar,
-html[data-theme="daylight"] .veyron-user-block {
-  background: rgba(255, 255, 255, 0.92) !important;
-  color: var(--ink);
-  border-color: rgba(20, 45, 95, 0.12);
-}
 /* Veyron mock alignment — menubar, finder, mission home, status bar, dock */
 
 body.mac-desktop-root {
@@ -2617,43 +2534,6 @@ body.mac-desktop-root .vmr-panel {
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
-}
-
-body.mac-desktop-root .cloudos-finder {
-  /* base layout — see pw-desktop-sidebar block at end of file */
-}
-
-body.mac-desktop-root .cloudos-finder-item.active {
-  border-left: none;
-  padding-left: 10px;
-}
-
-.finder-section-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  padding: 10px 12px 6px;
-}
-
-body.mac-desktop-root .finder-toolbar-title {
-  letter-spacing: 0.14em;
-}
-
-body.finder-tier-compact #finder-sec-favorites {
-  display: none;
-}
-
-body.finder-tier-compact #finder-sec-operations {
-  display: none;
-}
-
-body.finder-tier-compact #finder-sec-network,
-body.finder-tier-compact #finder-sec-compute,
-body.finder-tier-compact #finder-sec-observe,
-body.finder-tier-compact #finder-sec-security-grp {
-  display: none;
 }
 
 .mac-menubar-title {
@@ -3180,10 +3060,6 @@ body.mac-desktop-root .vmr-table tbody tr:last-child td {
   align-items: start;
 }
 
-body.mac-desktop-root[data-page="settings"] #finder-sec-ai {
-  display: none;
-}
-
 body.mac-desktop-root[data-page="settings"] .vmr-settings-shell {
   grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
 }
@@ -3586,14 +3462,8 @@ body.mac-desktop-root .card-title {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
-}
-
-html[data-theme="tahoe-light"] body.mac-desktop-root .vmr-surface-card,
-html[data-theme="light"] body.mac-desktop-root .vmr-surface-card,
-html[data-theme="frost"] body.mac-desktop-root .vmr-surface-card,
-html[data-theme="tahoe-light"] body.mac-desktop-root .mac-page-window > .card,
-html[data-theme="light"] body.mac-desktop-root .mac-page-window > .card,
-html[data-theme="frost"] body.mac-desktop-root .mac-page-window > .card {
+}html[data-theme="light"] body.mac-desktop-root .vmr-surface-card,
+html[data-theme="light"] body.mac-desktop-root .mac-page-window > .card{
   background: rgba(255, 255, 255, 0.88);
 }
 
@@ -3602,237 +3472,6 @@ html[data-theme="frost"] body.mac-desktop-root .mac-page-window > .card {
 body.mac-desktop-root .cloudos-body-row {
   gap: 0;
   align-items: stretch;
-}
-
-body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
-  display: flex;
-  flex-direction: column;
-  width: 220px;
-  flex-shrink: 0;
-  margin: 10px 0 10px 10px;
-  padding: 8px 8px 10px;
-  max-height: calc(100dvh - 108px);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
-  border-right: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
-  border-radius: 0 1.25rem 1.25rem 0;
-  background: rgba(28, 31, 40, 0.82);
-  backdrop-filter: blur(calc(20px + 10px)) saturate(1.45);
-  -webkit-backdrop-filter: blur(calc(20px + 10px)) saturate(1.45);
-  box-shadow:
-    inset -1px 0 0 rgba(255, 255, 255, 0.04),
-    4px 0 24px -12px rgba(0, 0, 0, 0.35);
-  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), padding 0.28s ease, opacity 0.2s ease, margin 0.28s ease;
-  overflow: hidden;
-}
-
-body.mac-desktop-root.finder-narrow .cloudos-finder.pw-desktop-sidebar {
-  width: 64px;
-  padding: 8px 6px 10px;
-}
-
-body.mac-desktop-root .finder-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 4px 10px;
-  margin-bottom: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-body.mac-desktop-root .finder-sidebar-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(248, 250, 252, 0.82);
-  cursor: pointer;
-  font-family: inherit;
-  flex-shrink: 0;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-}
-
-body.mac-desktop-root .finder-sidebar-toggle:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(56, 189, 248, 0.25);
-  transform: scale(1.04);
-}
-
-body.mac-desktop-root .finder-toolbar-title {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-
-body.mac-desktop-root .finder-search-wrap {
-  position: relative;
-  padding: 8px 4px 10px;
-}
-
-body.mac-desktop-root .finder-search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.75rem;
-  color: var(--muted);
-  pointer-events: none;
-  z-index: 1;
-}
-
-body.mac-desktop-root .finder-nav-search {
-  width: 100%;
-  padding: 7px 10px 7px 28px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.22);
-  color: var(--text-bright);
-  font-size: 0.72rem;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-body.mac-desktop-root .finder-nav-search:focus {
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.12);
-}
-
-body.mac-desktop-root .finder-nav-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0 2px 8px;
-  scrollbar-width: thin;
-}
-
-body.mac-desktop-root .finder-section-label {
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  padding: 10px 10px 6px;
-}
-
-body.mac-desktop-root .cloudos-finder-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 10px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
-}
-
-body.mac-desktop-root .cloudos-finder-item .fi-icon {
-  width: 1.25rem;
-  text-align: center;
-  flex-shrink: 0;
-  opacity: 0.9;
-}
-
-body.mac-desktop-root .cloudos-finder-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-bright);
-}
-
-body.mac-desktop-root .cloudos-finder-item.active {
-  border-color: rgba(56, 189, 248, 0.28);
-  background: linear-gradient(90deg, rgba(56, 189, 248, 0.16), rgba(56, 189, 248, 0.05));
-  color: var(--cyan);
-  font-weight: 600;
-  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.1);
-}
-
-body.mac-desktop-root.finder-narrow .finder-toolbar-title,
-body.mac-desktop-root.finder-narrow .finder-search-wrap,
-body.mac-desktop-root.finder-narrow .finder-section-label,
-body.mac-desktop-root.finder-narrow .finder-section-toggle,
-body.mac-desktop-root.finder-narrow .finder-footer,
-body.mac-desktop-root.finder-narrow .finder-browse-all .fi-label {
-  display: none;
-}
-
-body.mac-desktop-root.finder-narrow .cloudos-finder-item {
-  justify-content: center;
-  padding: 10px 6px;
-  font-size: 0;
-  gap: 0;
-}
-
-body.mac-desktop-root.finder-narrow .cloudos-finder-item .fi-icon {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-body.mac-desktop-root.finder-narrow .finder-browse-all {
-  font-size: 0;
-}
-
-body.mac-desktop-root.finder-narrow .finder-browse-all .fi-icon {
-  font-size: 1rem;
-}
-
-body.mac-desktop-root.finder-narrow .finder-toolbar {
-  justify-content: center;
-  padding-bottom: 8px;
-}
-
-body.mac-desktop-root.finder-narrow .finder-section.collapsed .finder-section-body {
-  display: flex;
-}
-
-body.mac-desktop-root.finder-narrow .finder-section-body {
-  gap: 4px;
-}
-
-.finder-item-tooltip {
-  position: absolute;
-  left: calc(100% + 0.5rem);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 60;
-  white-space: nowrap;
-  padding: 0.35rem 0.65rem;
-  border-radius: 0.5rem;
-  font-size: 0.75rem;
-  color: rgba(248, 250, 252, 0.95);
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.15s ease, visibility 0.15s ease;
-}
-
-body.finder-narrow .cloudos-finder-item:hover .finder-item-tooltip,
-body.finder-narrow .cloudos-finder-item:focus-visible .finder-item-tooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
-.cloudos-finder-item.finder-filter-hidden {
-  display: none !important;
-}
-
-.finder-section.finder-filter-empty {
-  display: none !important;
 }
 
 .mac-menubar-sidebar-btn {
@@ -3855,28 +3494,6 @@ body.finder-narrow .cloudos-finder-item:focus-visible .finder-item-tooltip {
   border-color: rgba(56, 189, 248, 0.25);
 }
 
-body.mac-desktop-root .finder-footer {
-  margin-top: auto;
-  padding: 10px 6px 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-body.mac-desktop-root .finder-current-window {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--cyan);
-  padding: 4px 8px 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-html[data-theme="tahoe-light"] body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar,
-html[data-theme="light"] body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar,
-html[data-theme="frost"] body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
-  background: rgba(255, 255, 255, 0.88);
-}
-
 /* ── CloudOS menubar overlap fix (PacketWolf-style chrome) ── */
 
 body.mac-desktop-root {
@@ -3893,10 +3510,6 @@ body.mac-desktop-root .mac-desktop-tabs {
 
 body.mac-desktop-root[data-desktop-tier="advanced"]:not(.zen-mode-on) .mac-desktop-tabs:not(:empty) {
   --cloudos-chrome-top: calc(var(--cloudos-menubar-h) + 34px);
-}
-
-body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
-  max-height: calc(100dvh - var(--cloudos-chrome-top) - 88px);
 }
 
 body.mac-desktop-root .cloudos-main {

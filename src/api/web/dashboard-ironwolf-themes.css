@@ -310,34 +310,6 @@ body.mac-desktop-root .mac-dock-item.active {
 }
 
 /* Finder / sidebar — Tahoe glass */
-body.mac-desktop-root .cloudos-finder,
-body.mac-desktop-root #cloudos-finder {
-  width: 252px !important;
-  background: rgba(8, 12, 22, 0.55) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.2) !important;
-  backdrop-filter: blur(24px) saturate(1.2) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
-}
-body.finder-top .cloudos-finder {
-  background: rgba(12, 18, 32, 0.72) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-}
-body.mac-desktop-root .cloudos-finder-item,
-body.mac-desktop-root .finder-item,
-body.mac-desktop-root .cloudos-finder button.cloudos-finder-item {
-  color: rgba(248, 250, 252, 0.78);
-  border-radius: 0.75rem;
-}
-body.mac-desktop-root .cloudos-finder-item:hover,
-body.mac-desktop-root .cloudos-finder-item.active,
-body.mac-desktop-root .finder-item:hover,
-body.mac-desktop-root .finder-item.active {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: #fff !important;
-}
-body.mac-desktop-root .cloudos-finder-item.active {
-  box-shadow: inset 2px 0 0 rgba(56, 189, 248, 0.55);
-}
 
 /* Open-document surfaces (IronWolf: no heavy boxed tiles) */
 body.mac-desktop-root .vmr-panel,
@@ -500,10 +472,6 @@ html.light-theme body.mac-desktop-root .mac-menubar.navbar {
   background: rgba(240, 241, 244, 0.88) !important;
   border-bottom: 1px solid rgba(26, 29, 36, 0.08) !important;
 }
-html[data-theme='light'] body.mac-desktop-root .cloudos-finder {
-  background: rgba(248, 249, 251, 0.9) !important;
-  border-right-color: rgba(26, 29, 36, 0.08) !important;
-}
 html[data-theme='light'] body.mac-desktop-root .mac-dock-inner {
   background: rgba(255, 255, 255, 0.82) !important;
   border-color: rgba(26, 29, 36, 0.1) !important;
@@ -525,15 +493,14 @@ html[data-theme='light'] #page-dashboard #holo-fleet-orb.iw-home-orb {
 
 /* ════════════════════════════════════════════════════════════════════════
    Machina chrome — dock attached under menubar + Inter / JetBrains Mono
-   ════════════════════════════════════════════════════════════════════════ */
-
-html, body, body.mac-desktop-root,
+   ════════════════════════════════════════════════════════════════════════ */html,
+body,
+body.mac-desktop-root,
 body.mac-desktop-root .mac-menubar,
-body.mac-desktop-root .cloudos-finder,
 body.mac-desktop-root .container,
 body.mac-desktop-root button,
 body.mac-desktop-root input,
-body.mac-desktop-root select {
+body.mac-desktop-root select{
   font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
 }
 body.mac-desktop-root .mac-menubar-crumb,
@@ -598,30 +565,19 @@ body:has(#apikey-modal.open) #cloudos-dock {
 
 /* ════════════════════════════════════════════════════════════════════════
    NO SIDE MENU — top menubar (word menus + icon submenus) only
-   ════════════════════════════════════════════════════════════════════════ */
-body.mac-desktop-root #cloudos-finder,
-body.mac-desktop-root .cloudos-finder,
-body.mac-desktop-root #cloudos-dock,
+   ════════════════════════════════════════════════════════════════════════ */body.mac-desktop-root #cloudos-dock,
 body.mac-desktop-root .mac-dock,
 body.mac-desktop-root #cloudos-dock.mac-dock,
-body.mac-desktop-root .finder-toggle,
 body.mac-desktop-root #mac-menubar-sidebar-btn,
 body.mac-desktop-root .mac-menubar-sidebar-btn,
 body.mac-desktop-root .mac-quick-nav,
-body.mac-desktop-root .cloudos-finder-backdrop,
 body.mac-desktop-root #cloudos-browse-rail,
 body.mac-desktop-root .cloudos-browse-rail,
-body.mac-desktop-root.finder-collapsed .cloudos-browse-rail,
-body.mac-desktop-root.finder-collapsed:not([data-desktop-tier="advanced"]) .cloudos-browse-rail,
 body.mac-desktop-root #mac-desktop-tabs,
 body.mac-desktop-root .mac-desktop-tabs,
 body.mac-desktop-root .tahoe-context-bar-wrap,
 body.mac-desktop-root #tahoe-context-bar,
-body.mac-desktop-root.finder-collapsed #mac-menubar-sidebar-btn,
-body.mac-desktop-root.finder-collapsed[data-desktop-tier] #mac-menubar-sidebar-btn,
-body.mac-desktop-root.finder-collapsed[data-desktop-tier="power"] #mac-menubar-sidebar-btn,
-body.mac-desktop-root[data-desktop-tier="power"] .finder-toggle,
-body.mac-desktop-root[data-desktop-tier="power"] #mac-menubar-sidebar-btn {
+body.mac-desktop-root[data-desktop-tier="power"] #mac-menubar-sidebar-btn{
   display: none !important;
 }
 body.mac-desktop-root {
@@ -653,28 +609,15 @@ body.mac-desktop-root .container {
 
 /* ════════════════════════════════════════════════════════════════════════
    Unified menubar — ONE bar: word menus + graphic icon submenus
-   ════════════════════════════════════════════════════════════════════════ */
-body.mac-desktop-root,
-body.mac-desktop-root.finder-top,
-body.mac-desktop-root.zen-mode-on {
+   ════════════════════════════════════════════════════════════════════════ */body.mac-desktop-root,
+body.mac-desktop-root.zen-mode-on{
   --veyron-chrome-stack-h: var(--veyron-menubar-h, 2.75rem) !important;
   padding-top: var(--veyron-menubar-h, 2.75rem) !important;
 }
 
-/* Hide second strip — nav icons live in the menubar */
-body.mac-desktop-root.finder-top .cloudos-finder,
-body.mac-desktop-root.finder-top #cloudos-finder {
+/* Hide second strip — nav icons live in the menubar */body.mac-desktop-root .mac-dock,
+body.mac-desktop-root #cloudos-dock{
   display: none !important;
-}
-body.mac-desktop-root.finder-top .mac-dock,
-body.mac-desktop-root.finder-top #cloudos-dock,
-body.mac-desktop-root .mac-dock,
-body.mac-desktop-root #cloudos-dock {
-  display: none !important;
-}
-body.mac-desktop-root.finder-top .cloudos-body-row {
-  flex-direction: row !important;
-  min-height: calc(100dvh - var(--veyron-menubar-h, 2.75rem)) !important;
 }
 body.mac-desktop-root,
 body.mac-desktop-root[data-desktop-tier],
@@ -785,9 +728,6 @@ body.mac-desktop-root[data-desktop-tier="normal"] {
 /* Finder / main offset under chrome stack */
 body.mac-desktop-root .cloudos-body-row {
   min-height: calc(100dvh - var(--veyron-chrome-stack-h, 5.3rem)) !important;
-}
-body.mac-desktop-root .cloudos-finder {
-  top: 0 !important;
 }
 
 /* ── Command Centre PRO — ops bridge, not a SaaS dash ── */
@@ -1601,9 +1541,7 @@ body.mac-desktop-root.vmr-ticker-on .mac-dock,
 body.mac-desktop-root.vmr-ticker-on #cloudos-dock.mac-dock,
 body.mac-desktop-root #cloudos-dock.mac-dock {
   display: none !important;
-}
-body.finder-collapsed:not([data-desktop-tier="advanced"]) .cloudos-browse-rail,
-#cloudos-browse-rail {
+}#cloudos-browse-rail{
   display: none !important;
 }
 
@@ -2473,9 +2411,7 @@ body.mac-desktop-root .modal.mac-sheet-modal .glass-btn-primary {
   border-radius: 0.55rem !important;
 }
 
-/* Light theme parity for new chrome */
-html[data-theme='light'] body.mac-desktop-root .mac-menubar.navbar,
-html[data-theme='tahoe-light'] body.mac-desktop-root .mac-menubar.navbar {
+/* Light theme parity for new chrome */html[data-theme='light'] body.mac-desktop-root .mac-menubar.navbar{
   background: rgba(246, 246, 248, 0.55) !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
