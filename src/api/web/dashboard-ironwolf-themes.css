@@ -2742,3 +2742,26 @@ body.mac-desktop-root .vmr-ticker,
 body.mac-desktop-root #vmr-ticker {
   z-index: 120;
 }
+
+/* ── UNBOX THE FLEET ORB ──────────────────────────────────────────────────
+   The Signal Desk hero orb (#holo-fleet-orb) and its mini header widgets on
+   Topology/Fleet Constellation share one engine (dashboard.html curWrap()),
+   but several theme blocks above layer a border + a near-opaque radial/linear
+   gradient (fading to rgba(8,12,28,.85)-ish near-black, i.e. --void/--hull)
+   plus a heavy drop shadow onto the wrapping .holo-orb-wrap/.iw-cc-orb div —
+   that reads as a flat black rectangle instead of the orb floating on the
+   page's own aurora background, same complaint the FLAT WEB CONTENT pass
+   fixed for .card/.vm-card. This is the single, most-specific, last-in-file
+   override so it wins over every earlier declaration without having to
+   chase down and edit each one. The ring/halo glow accents are untouched —
+   they're the actual "wow", not the rectangular card fill. */
+body.mac-desktop-root #page-dashboard .iw-cc-orb,
+body.mac-desktop-root #page-dashboard #holo-fleet-orb.iw-home-orb,
+body.mac-desktop-root #page-dashboard .iw-home-orb.holo-orb-wrap,
+body.mac-desktop-root .holo-orb-wrap {
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
