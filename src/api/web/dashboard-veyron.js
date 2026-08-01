@@ -2489,16 +2489,16 @@
           ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openRdpSheet&&openRdpSheet(' + jsArgs(ns, vm.name) + ')') + '>RDP</button>'
           : '') +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof pauseVM===\'function\'&&pauseVM(' + jsArgs(ns, vm.name) + ')') + '>Pause</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof pauseVM==="function"&&pauseVM(' + jsArgs(ns, vm.name) + ')') + '>Pause</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>Restart</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')') + '>Snapshot</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof migrateVM===\'function\'&&migrateVM(' + jsArgs(ns, vm.name) + ')') + '>Migrate</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof openSnapModalFor==="function"?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate("snapshots")') + '>Snapshot</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof migrateVM==="function"&&migrateVM(' + jsArgs(ns, vm.name) + ')') + '>Migrate</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof cloneVM==="function"&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('VM ' + vm.name) + ')') + '>Ask Zeus</button>'
       : (isPaused
-          ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('typeof unpauseVM===\'function\'&&unpauseVM(' + jsArgs(ns, vm.name) + ')') + '>Unpause</button>'
+          ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('typeof unpauseVM==="function"&&unpauseVM(' + jsArgs(ns, vm.name) + ')') + '>Unpause</button>'
           : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>') +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof cloneVM==="function"&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openCopilotDoctor&&openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>' +
         '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('vmDelete&&vmDelete(' + jsArgs(ns, vm.name) + ')') + '>Delete</button>';
@@ -2626,7 +2626,7 @@
                   : 'Loading…') +
               '</span></div>' +
               '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">' +
-                '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')') + '>Create Snapshot</button>' +
+                '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('typeof openSnapModalFor==="function"?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate("snapshots")') + '>Create Snapshot</button>' +
                 '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">View Snapshots</button>' +
               '</div>' +
             '</div></div>',
@@ -3466,7 +3466,7 @@
       var lastSnap = hasSnap ? (vmSnaps[0].age || '—') : '—';
       var restorePoints = hasSnap ? vmSnaps.filter(function(s) { return s.ready; }).length : 0;
       var statusBadge = hasSnap ? '<span style="color:var(--green);font-weight:600">Protected</span>' : '<span style="color:var(--orange)">Unprotected</span>';
-      var snapBtn = onHandler('typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')');
+      var snapBtn = onHandler('typeof openSnapModalFor==="function"?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate("snapshots")');
       return '<tr><td>' + esc(vm.name) + '</td><td>' + esc(ns) + '</td><td>' + statusBadge + '</td>' +
         '<td>' + esc(lastSnap) + '</td><td>—</td><td>' + (hasSnap ? 'Ad-hoc' : '<span style="color:var(--orange)">⚠ None</span>') + '</td>' +
         '<td>' + restorePoints + '</td>' +
