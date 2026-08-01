@@ -329,6 +329,178 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
   gap: 16px;
 }
 
+/* ── VMs page roster + rail (replaces the old card-grid + tabbed inspector) ──
+   Pure IronWolf tokens throughout — no new palette, only new layout. */
+.vmr-roster-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.vmr-roster-filter-sp { flex: 1; }
+.vmr-roster-seg-ctl {
+  display: flex;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.vmr-roster-seg-btn {
+  padding: 6px 13px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--ink-3);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--hairline);
+  cursor: pointer;
+  transition: color .12s, background .12s;
+}
+.vmr-roster-seg-btn:last-child { border-right: none; }
+.vmr-roster-seg-btn:hover { color: var(--ink-2); background: var(--panel-2); }
+.vmr-roster-seg-btn.active { color: var(--ink); background: var(--panel-hi); box-shadow: inset 0 -2px 0 var(--plasma); }
+
+.vmr-roster-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  gap: 0;
+  min-height: min(72vh, 720px);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  overflow: hidden;
+}
+@media (max-width: 1000px) {
+  .vmr-roster-body { grid-template-columns: 1fr; }
+}
+
+/* Deviation bar — one segment per VM, colored by real status (idSig semantics). */
+.vmr-devbar-wrap { padding: 4px 0 14px; }
+.vmr-devbar-top {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.vmr-devbar-verdict {
+  font-family: var(--sans-deck, inherit);
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: .01em;
+  color: var(--ink);
+}
+.vmr-devbar-verdict.dev { color: var(--caution); }
+.vmr-devbar-sub {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: .72rem;
+  color: var(--ink-3);
+}
+.vmr-devbar {
+  display: flex;
+  gap: 2px;
+  height: 24px;
+}
+.vmr-devbar-seg {
+  flex: 1;
+  min-width: 3px;
+  border-radius: 2px;
+  background: var(--nominal);
+  transition: transform .12s;
+}
+.vmr-devbar-seg:hover { transform: scaleY(1.15); }
+.vmr-devbar-seg.warn { background: var(--caution); }
+.vmr-devbar-seg.crit { background: var(--critical); }
+.vmr-devbar-seg.off { background: var(--inert); }
+.vmr-devbar-seg.ghost { background: none; border: 1px dashed var(--hairline-hi); }
+
+/* Headroom — unprovisioned capacity, from /api/v1/capacity/headroom */
+.vmr-roster-headroom {
+  margin: 14px 0 0;
+  padding: 16px;
+  border: 1px dashed var(--hairline-hi);
+  border-radius: 10px;
+}
+.vmr-roster-headroom-h {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 12px;
+}
+.vmr-roster-headroom-slots { display: flex; gap: 5px; margin-bottom: 12px; }
+.vmr-roster-slot {
+  flex: 1;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px dashed var(--hairline-hi);
+  display: grid;
+  place-items: center;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: .62rem;
+  color: var(--ink-3);
+}
+.vmr-roster-slot.used { border-style: solid; background: var(--panel-2); color: var(--ink-2); }
+.vmr-roster-headroom p { font-size: .78rem; color: var(--ink-2); line-height: 1.5; }
+.vmr-roster-headroom p b { color: var(--ink); font-weight: 600; }
+
+/* Roster — dense rows, replaces the card grid */
+.vmr-roster-list { display: flex; flex-direction: column; }
+.vmr-roster-head {
+  display: grid;
+  grid-template-columns: 12px minmax(140px,1.3fr) 1.3fr 84px 120px;
+  gap: 14px;
+  align-items: center;
+  padding: 8px 16px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: .62rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--hairline);
+}
+.vmr-roster-row {
+  display: grid;
+  grid-template-columns: 12px minmax(140px,1.3fr) 1.3fr 84px 120px;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--hairline);
+  background: transparent;
+  cursor: pointer;
+  transition: background .1s;
+}
+.vmr-roster-row:hover { background: var(--panel-2); }
+.vmr-roster-row.selected { background: var(--panel-hi); box-shadow: inset 3px 0 0 var(--plasma); }
+.vmr-roster-tick { width: 7px; height: 7px; border-radius: 50%; background: var(--nominal); flex-shrink: 0; }
+.vmr-roster-tick.warn { background: var(--caution); }
+.vmr-roster-tick.crit { background: var(--critical); }
+.vmr-roster-tick.off { background: none; border: 1px solid var(--ink-3); }
+.vmr-roster-name { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .84rem; color: var(--ink); font-weight: 500; }
+.vmr-roster-state { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-top: 2px; }
+.vmr-roster-place, .vmr-roster-spec { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .74rem; color: var(--ink-2); line-height: 1.4; }
+.vmr-roster-spec sup { font-size: .55rem; color: var(--ink-3); letter-spacing: .04em; margin-left: 3px; text-transform: uppercase; }
+.vmr-roster-actions { display: flex; gap: 5px; justify-self: end; opacity: 0; transition: opacity .12s; }
+.vmr-roster-row:hover .vmr-roster-actions, .vmr-roster-row:focus-within .vmr-roster-actions { opacity: 1; }
+@media (max-width: 1300px) { .vmr-roster-actions { opacity: 1; } }
+
+/* Rail — always-visible detail panel, replaces the tabbed accordion */
+.vmr-roster-rail { display: flex; flex-direction: column; }
+.vmr-rail-h { padding: 16px 18px 14px; border-bottom: 1px solid var(--hairline); }
+.vmr-rail-name { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: 6px; word-break: break-all; }
+.vmr-rail-meta { display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .7rem; color: var(--ink-3); }
+.vmr-rail-acts { display: flex; flex-direction: column; gap: 7px; padding: 14px 18px; border-bottom: 1px solid var(--hairline); }
+.vmr-rail-act-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.vmr-rail-sec { padding: 14px 18px; border-bottom: 1px solid var(--hairline); }
+.vmr-rail-sec h4 { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; margin-bottom: 10px; }
+.vmr-rail-fact { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 5px 0; }
+.vmr-rail-fact dt { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .72rem; color: var(--ink-3); }
+.vmr-rail-fact dd { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .78rem; color: var(--ink); text-align: right; }
+.vmr-rail-cause { display: block; font-size: .58rem; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; margin-top: 1px; }
+.vmr-rail-dash { color: var(--ink-3); }
+
 .vmr-fleet-card {
   padding: 18px 20px;
   border-radius: 14px;
