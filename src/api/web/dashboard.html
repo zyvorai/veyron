@@ -5314,17 +5314,37 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 <div class="page section-shell" id="page-nodes" data-section="compute">
 <div class="space-y animate-fade-in">
   <div id="vmr-nodes-hero"></div>
-  <div id="vmr-nodes-metrics"></div>
-  <div id="vmr-nodes-placement"></div>
-  <div id="nodes-summary" class="grid-4 page-glass-stats"></div>
   <div id="node-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Node Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('node-advisor-card')">Dismiss</button></div>
     <div id="node-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Cluster Nodes</span><span id="node-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="node-search" class="form-input" placeholder="Filter nodes…" oninput="filterNodesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNodesCsv()" title="Export node list as CSV">↓ CSV</button></div>
-    <div class="table-header node-header"><span>Name</span><span>Status</span><span>Roles</span><span>VMs</span><span>CPU Cap</span><span>CPU Alloc</span><span>Mem Cap / Alloc</span><span>Kubelet</span><span>OS</span></div>
-    <div id="node-list"></div>
+  <div class="vmr-fleet-toolbar vmr-roster-filter-row">
+    <div style="position:relative;display:inline-flex;align-items:center">
+      <input type="search" id="node-search" class="form-input vmr-roster-search" placeholder="Search name · status · OS" oninput="filterNodesView(this.value)" style="min-width:220px">
+    </div>
+    <span id="node-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
+    <div class="vmr-roster-filter-sp"></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('heatmap')">Heatmap</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNodesCsv()" title="Export node list as CSV">Export</button>
+  </div>
+  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="node-workspace">
+    <div class="vm-list-pane">
+      <div class="vmr-roster-head"><span></span><span>Instance</span><span>Roles</span><span>Capacity</span><span></span></div>
+      <div id="node-list" class="vmr-roster-list"></div>
+      <div id="vmr-nodes-headroom" class="vmr-roster-headroom"></div>
+    </div>
+    <div class="vm-focus-pane mac-inspector-pane vmr-roster-rail" id="node-focus-pane">
+      <div class="mac-inspector-header">
+        <span class="mac-inspector-title">Inspector</span>
+        <button type="button" class="mac-inspector-close" onclick="clearNodeSelection()" aria-label="Close inspector">×</button>
+      </div>
+      <div class="vm-focus-empty" id="node-focus-empty">
+        <h3>Select a node</h3>
+        <p>Choose a node from the roster to inspect capacity, workloads, and cordon state.</p>
+      </div>
+      <div id="node-focus-content" style="display:none"></div>
+    </div>
   </div>
   <div class="card glass-card" style="margin-top:16px;display:none" id="gpu-inventory-card">
     <div class="card-header"><span class="card-title">GPU Inventory</span><span id="gpu-inventory-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchGpus()">&#8635;</button></div>
@@ -8518,7 +8538,7 @@ function applyDashboardHash() {
       } else if (d.kind === 'pod') {
         Promise.resolve(fetchPods()).finally(function() { togglePodDetail(d.ns, d.name, { skipHash: true }); });
       } else if (d.kind === 'node') {
-        Promise.resolve(fetchNodes()).finally(function() { toggleNodeDetail(d.name, { skipHash: true }); });
+        Promise.resolve(fetchNodes()).finally(function() { selectNode(d.name, { skipHash: true }); });
       }
     } finally {
       _applyingDashHash = false;
@@ -8535,7 +8555,7 @@ function openPodDetailDeep(ns, name) {
 function openNodeDetailDeep(nodeName) {
   navigate('nodes', { skipHash: true });
   setDashboardHash('nodes', { kind: 'node', name: nodeName }, true);
-  Promise.resolve(fetchNodes()).finally(function() { toggleNodeDetail(nodeName, { skipHash: true }); });
+  Promise.resolve(fetchNodes()).finally(function() { selectNode(nodeName, { skipHash: true }); });
 }
 
 function openVmDetailDeep(ns, name) {
@@ -17644,6 +17664,35 @@ function filterAuditView(query) {
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching entries</td></tr>';
 }
 
+function nodeTickClass(n) {
+  if ((n.status || '') !== 'Ready') return 'crit';
+  if (n.unschedulable) return 'off';
+  return '';
+}
+
+// Roster row for the Nodes page — mirrors vmrFleetCard()'s row on the VMs
+// page (dashboard-veyron.js). Uses a <div role="button"> (kbdActivate), not
+// a real <button>, since it contains a real <button> for Cordon/Uncordon —
+// nesting <button> inside <button> is invalid HTML and gets silently
+// mangled by the browser (see the fix on the VMs page roster row).
+function nodeRosterRow(n) {
+  const memCapGb = (parseMemK8s(n.memory_capacity) / (1024 * 1024 * 1024)).toFixed(1);
+  const memAllocGb = n.memory_allocatable ? (parseMemK8s(n.memory_allocatable) / (1024 * 1024 * 1024)).toFixed(1) : null;
+  const memGb = memCapGb + (memAllocGb ? ' / ' + memAllocGb : '') + ' GiB';
+  const roles = asArray(n.roles).length ? asArray(n.roles).join(', ') : (n.roles || 'worker');
+  const stateLabel = (n.unschedulable ? 'cordoned' : (n.status || '').toLowerCase()) + (n.vm_count != null ? ' · ' + n.vm_count + ' VM' + (n.vm_count === 1 ? '' : 's') : '');
+  const cordonBtn = n.unschedulable
+    ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('nodeCordon(' + jsArgs(n.name, false) + ')') + '>Uncordon</button>'
+    : '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('nodeCordon(' + jsArgs(n.name, true) + ')') + '>Cordon</button>';
+  return '<div class="vmr-roster-row" data-node-name="' + esc(n.name) + '" ' + kbdActivate('selectNode(' + jsArgs(n.name) + ')') + '>' +
+    '<span class="vmr-roster-tick ' + nodeTickClass(n) + '" aria-hidden="true"></span>' +
+    '<span><span class="vmr-roster-name">' + esc(n.name) + '</span>' +
+    '<span class="vmr-roster-state">' + esc(stateLabel) + '</span></span>' +
+    '<span class="vmr-roster-place">' + esc(roles) + '<br>' + esc(n.kubelet_version || '—') + '</span>' +
+    '<span class="vmr-roster-spec">' + esc(n.cpu_capacity || '—') + '<sup>cpu</sup><br>' + memGb + '<sup>mem</sup></span>' +
+    '<span class="vmr-roster-actions">' + cordonBtn + '</span></div>';
+}
+
 function filterNodesView(query) {
   const el = document.getElementById('node-list');
   if (!el) return;
@@ -17661,23 +17710,8 @@ function filterNodesView(query) {
     el.innerHTML = '<div class="empty-state"><p>' + (q ? 'No nodes match &ldquo;' + esc(q) + '&rdquo;' : 'No nodes found') + '</p></div>';
     return;
   }
-  el.innerHTML = filtered.map(function(n) {
-    const memCapGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1);
-    const memAllocGb = n.memory_allocatable ? (parseMemK8s(n.memory_allocatable) / (1024*1024*1024)).toFixed(1) : null;
-    const memGb = memCapGb + (memAllocGb ? ' / ' + memAllocGb : '') + ' GB';
-    const roles = asArray(n.roles).length ? asArray(n.roles).join(', ') : (n.roles || 'worker');
-    return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
-      '<span class="cell-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.name) + ')') + '>' + esc(n.name) + '<span class="vmr-copy-hint">copy</span></span>' +
-      idSig(n.status) +
-      '<span class="cell-mono" style="font-size:.76rem">' + esc(roles) + '</span>' +
-      '<span class="cell-mono">' + (n.vm_count != null ? n.vm_count : '—') + '</span>' +
-      '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
-      '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
-      '<span class="cell-mono" style="font-size:.82rem">' + memGb + '</span>' +
-      '<span class="cell-mono vmr-copy-tile" title="Copy version" ' + onStopHandler('copyToClipboard(' + jsArgs(n.kubelet_version) + ')') + '>' + esc(n.kubelet_version) + '<span class="vmr-copy-hint">copy</span></span>' +
-      '<span class="cell-mono" style="font-size:.9rem">' + esc(n.os_image) + '</span>' +
-      '</div>';
-  }).join('');
+  el.innerHTML = filtered.map(nodeRosterRow).join('');
+  if (typeof syncNodeSelectionUi === 'function') syncNodeSelectionUi();
 }
 
 function filterSocEventsView(query) {
@@ -22014,61 +22048,16 @@ async function fetchNodes(opts) {
     if (j == null) return;
     const nodes = asArray(j);
     window.lastNodes = nodes;
-    const summaryEl = document.getElementById('nodes-summary');
-    const vmrMetricsEl = document.getElementById('vmr-nodes-metrics');
-    const hideLegacySummary = vmrMetricsEl && vmrMetricsEl.children.length > 0;
-    if (summaryEl) summaryEl.style.display = hideLegacySummary ? 'none' : '';
     const el = document.getElementById('node-list');
     if (nodes.length === 0) {
-      if (summaryEl) summaryEl.innerHTML = renderGlassStatPills([{ label: 'Nodes', value: 0 }]);
       if (el) el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No nodes found</p></div>';
+      if (typeof renderNodesDeviationBar === 'function') renderNodesDeviationBar();
       return;
     }
-    const ready = nodes.filter(n => n.status === 'Ready').length;
-    const notReady = nodes.length - ready;
-    if (summaryEl) {
-      summaryEl.innerHTML = renderGlassStatPills([
-        { label: 'Nodes', value: nodes.length },
-        { label: 'Ready', value: ready, cls: ready === nodes.length ? ' ok' : ' warn' },
-        { label: 'Not ready', value: notReady, cls: notReady ? ' bad' : '' },
-        { label: 'Heatmap', value: '→', onclick: "navigate('heatmap')", title: 'Resource heatmap' }
-      ]);
-    }
-    // Populate nodes hero
-    const nodesHero = document.getElementById('vmr-nodes-hero');
-    if (nodesHero) {
-      const totalVms = nodes.reduce(function(n, nd) { return n + (nd.vm_count || 0); }, 0);
-      nodesHero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">◉</div>' +
-        '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Cluster Nodes</h1>' +
-        '<p class="vmr-hero-sub">' + ready + ' of ' + nodes.length + ' node' + (nodes.length !== 1 ? 's' : '') + ' ready' +
-        (notReady > 0 ? ' · <span style="color:var(--error)">' + notReady + ' not ready</span>' : '') +
-        ' · ' + totalVms + ' VM' + (totalVms !== 1 ? 's' : '') + ' scheduled</p></div>' +
-        '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'heatmap\')">Heatmap</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Node capacity and pressure\')">Ask Zeus</button></div></div>';
-    }
-    // Populate node placement summary (VM distribution across nodes)
-    const nodesPlacement = document.getElementById('vmr-nodes-placement');
-    if (nodesPlacement && nodes.some(function(n) { return n.vm_count > 0; })) {
-      const vmNodes = nodes.filter(function(n) { return n.vm_count > 0; }).sort(function(a, b) { return (b.vm_count || 0) - (a.vm_count || 0); });
-      const maxVms = vmNodes[0] ? (vmNodes[0].vm_count || 1) : 1;
-      nodesPlacement.innerHTML = '<div class="vmr-panel"><div class="vmr-panel-title">VM Placement</div>' +
-        vmNodes.map(function(n) {
-          const pct = Math.min(100, (n.vm_count / maxVms) * 100);
-          const statusCls = n.status === 'Ready' ? 'var(--success)' : 'var(--error)';
-          return '<div class="cost-ns-bar" style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px">' +
-            '<span class="vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.name) + ')') + '><span style="color:' + statusCls + '">●</span> ' + esc(n.name) + '<span class="vmr-copy-hint">copy</span></span>' +
-            '<span style="color:var(--text-muted)">' + (n.vm_count || 0) + ' VM' + ((n.vm_count || 0) !== 1 ? 's' : '') + '</span></div>' +
-            glassProgressBar('', pct) + '</div>';
-        }).join('') +
-        '</div>';
-    } else if (nodesPlacement) {
-      nodesPlacement.innerHTML = '';
-    }
-    const nodeCountEl = document.getElementById('node-count');
-    if (nodeCountEl) nodeCountEl.textContent = nodes.length + ' nodes';
     if (typeof updateHeadroomGauges === 'function') updateHeadroomGauges();
+    if (typeof renderNodesDeviationBar === 'function') renderNodesDeviationBar();
     if (!el) return;
-    filterNodesView((document.getElementById('nodes-search') || {}).value || '');
+    filterNodesView((document.getElementById('node-search') || {}).value || '');
   } catch (e) {
     const el = document.getElementById('node-list');
     if (el) el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchNodes()">&#8635; Retry</button></div>';
@@ -22108,64 +22097,80 @@ function podPhaseBadgeClass(phase) {
   return 'other';
 }
 
-function renderNodeDetailHeader(node) {
-  const badgeCls = nodeStatusBadgeClass(node.status);
+// Persistent node detail rail — mirrors the VMs page's renderVmRail().
+let selectedNodeName = null;
+
+function selectNode(name, opts) {
+  selectedNodeName = name;
+  const empty = document.getElementById('node-focus-empty');
+  const content = document.getElementById('node-focus-content');
+  if (empty) empty.style.display = 'none';
+  if (content) { content.style.display = 'block'; content.innerHTML = '<div class="detail-loading">Loading node…</div>'; }
+  if (typeof syncNodeSelectionUi === 'function') syncNodeSelectionUi();
+  if (!opts || !opts.skipHash) setDashboardHash('nodes', { kind: 'node', name: name }, true);
+  fetchNodeWorkspaceDetail(name);
+}
+
+function clearNodeSelection() {
+  selectedNodeName = null;
+  const empty = document.getElementById('node-focus-empty');
+  const content = document.getElementById('node-focus-content');
+  if (empty) empty.style.display = '';
+  if (content) { content.style.display = 'none'; content.innerHTML = ''; }
+  if (typeof syncNodeSelectionUi === 'function') syncNodeSelectionUi();
+  setDashboardHash('nodes', null, false);
+}
+
+function syncNodeSelectionUi() {
+  document.querySelectorAll('#node-list .vmr-roster-row').forEach(function(el) {
+    el.classList.toggle('selected', el.getAttribute('data-node-name') === selectedNodeName);
+  });
+}
+
+function renderNodeRail(node, pods) {
+  const isReady = node.status === 'Ready';
+  const tickCls = !isReady ? 'crit' : (node.unschedulable ? 'off' : '');
   const roles = (node.roles && node.roles.length) ? node.roles.join(', ') : 'worker';
-  const actions = '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('nodes', { kind: 'node', name: node.name }) + ')') + '>Copy link</button>';
-  return '<div class="vm-detail-header">' +
-    '<div class="vm-detail-header-left">' +
-      '<div class="vm-detail-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(node.name) + ')') + '>' + esc(node.name) + '<span class="vmr-copy-hint">copy</span> ' + idSig(node.status || 'Unknown') + '</div>' +
-      '<div class="vm-detail-meta">' +
-        '<span class="ns-chip">' + esc(roles) + '</span>' +
-        '<span class="ns-chip">' + (node.vm_count || 0) + ' VM' + ((node.vm_count || 0) === 1 ? '' : 's') + '</span>' +
-        (node.kubelet_version ? '<span>Kubelet: <strong class="vmr-copy-tile" title="Copy version" ' + onStopHandler('copyToClipboard(' + jsArgs(node.kubelet_version) + ')') + '>' + esc(node.kubelet_version) + '<span class="vmr-copy-hint">copy</span></strong></span>' : '') +
+  const cordonBtn = node.unschedulable
+    ? '<button type="button" class="glass-btn-primary" style="width:100%" ' + onHandler('nodeCordon(' + jsArgs(node.name, false) + ')') + '>Uncordon</button>'
+    : '<button type="button" class="glass-btn-secondary" style="width:100%" ' + onHandler('nodeCordon(' + jsArgs(node.name, true) + ')') + '>Cordon</button>';
+  const podsHtml = pods.length === 0
+    ? '<div style="color:var(--ink-3);font-size:.8rem;padding:4px 0">No pods scheduled on this node.</div>'
+    : pods.slice(0, 8).map(function(p) {
+        return '<div class="vmr-rail-fact"><dt style="max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(p.name) + '">' + esc(p.name) + '</dt>' +
+          '<dd>' + idSig(p.phase || 'Unknown') + ' <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:6px;padding:2px 8px" ' + onStopHandler('openPodDetailDeep(' + jsArgs(p.namespace, p.name) + ')') + '>Open</button></dd></div>';
+      }).join('');
+  return (
+    '<div class="vmr-rail-h">' +
+      '<div class="vmr-rail-name">' + esc(node.name) + '</div>' +
+      '<div class="vmr-rail-meta"><span class="vmr-roster-tick ' + tickCls + '"></span> ' + esc((node.status || '').toLowerCase()) + (node.unschedulable ? ' · cordoned' : '') + ' · ' + esc(roles) + '</div>' +
+    '</div>' +
+    '<div class="vmr-rail-acts">' + cordonBtn +
+      '<div class="vmr-rail-act-grid">' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'heatmap\')">Heatmap</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('copyDashboardDeepLink(' + jsArgs('nodes', { kind: 'node', name: node.name }) + ')') + '>Copy link</button>' +
       '</div>' +
     '</div>' +
-    '<div class="vm-detail-actions-hdr">' + actions + '</div>' +
-  '</div>';
+    '<div class="vmr-rail-sec"><h4>Capacity</h4>' +
+      '<div class="vmr-rail-fact"><dt>CPU capacity</dt><dd>' + esc(node.cpu_capacity || '—') + '</dd></div>' +
+      '<div class="vmr-rail-fact"><dt>CPU allocatable</dt><dd>' + esc(node.cpu_allocatable || '—') + '</dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Memory capacity</dt><dd>' + formatMemK8s(node.memory_capacity) + '</dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Memory allocatable</dt><dd>' + formatMemK8s(node.memory_allocatable) + '</dd></div>' +
+    '</div>' +
+    '<div class="vmr-rail-sec"><h4>System</h4>' +
+      '<div class="vmr-rail-fact"><dt>OS image</dt><dd>' + esc(node.os_image || '—') + '</dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Kernel</dt><dd>' + esc(node.kernel_version || '—') + '</dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Kubelet</dt><dd>' + esc(node.kubelet_version || '—') + '</dd></div>' +
+    '</div>' +
+    '<div class="vmr-rail-sec"><h4>Workloads (' + pods.length + ')</h4>' + podsHtml +
+      '<div style="margin-top:10px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'pods\')">View all pods</button></div>' +
+    '</div>'
+  );
 }
 
-function renderNodeCapacityColumn(node) {
-  let html = '<div class="vm-detail-col">';
-  html += '<div class="detail-section"><div class="detail-section-title">Capacity</div>';
-  html += detailRow('CPU capacity', node.cpu_capacity || 'N/A');
-  html += detailRow('CPU allocatable', node.cpu_allocatable || 'N/A');
-  html += detailRow('Memory capacity', formatMemK8s(node.memory_capacity));
-  html += detailRow('Memory allocatable', formatMemK8s(node.memory_allocatable));
-  html += '</div>';
-  html += '<div class="detail-section"><div class="detail-section-title">System</div>';
-  html += detailRow('OS image', node.os_image || 'N/A');
-  html += detailRow('Kernel', node.kernel_version || 'N/A');
-  html += detailRow('Kubelet', node.kubelet_version || 'N/A');
-  html += '</div></div>';
-  return html;
-}
-
-function renderNodeWorkloadsColumn(nodeName, pods) {
-  let html = '<div class="vm-detail-col">';
-  html += '<div class="detail-section"><div class="detail-section-title">Workloads on node</div>';
-  if (pods.length === 0) {
-    html += '<div style="color:var(--text-dim);font-size:.84rem">No pods scheduled on this node.</div>';
-  } else {
-    html += '<div style="display:flex;flex-direction:column;gap:6px">';
-    pods.forEach(p => {
-      const cls = podPhaseBadgeClass(p.phase);
-      html += '<div class="detail-row" style="align-items:flex-start">';
-      html += '<span class="lbl"><span style="font-family:var(--font-mono);font-size:.82em;color:var(--text-bright)">' + esc(p.name) + '</span>';
-      html += '<br><span style="font-size:.76rem;color:var(--text-dim)">' + esc(p.namespace) + '</span></span>';
-      html += '<span class="val">' + idSig(p.phase || 'Unknown');
-      html += ' <button type="button" class="glass-btn-secondary" style="padding:4px 10px;font-size:.72rem;margin-left:8px" onclick="openPodDetailDeep(' + jsArgs(p.namespace, p.name) + ')">Open</button></span></div>';
-    });
-    html += '</div>';
-  }
-  html += '<div style="margin-top:14px"><button type="button" class="glass-btn-secondary" onclick="navigate(\'pods\')">View all pods</button></div>';
-  html += '</div></div>';
-  return html;
-}
-
-async function fetchNodeDetail(nodeName) {
-  const holder = document.getElementById('node-detail-' + nodeName);
-  if (!holder) return;
+async function fetchNodeWorkspaceDetail(nodeName) {
+  const content = document.getElementById('node-focus-content');
+  if (!content || selectedNodeName !== nodeName) return;
   try {
     const [nodeResp, podsResp] = await Promise.all([
       apiJson('/api/v1/nodes/' + encodeURIComponent(nodeName)),
@@ -22173,26 +22178,14 @@ async function fetchNodeDetail(nodeName) {
     ]);
     const node = unwrapData(nodeResp);
     if (!node || !node.name) {
-      holder.innerHTML = '<div class="detail-loading" style="color:var(--error)">Node not found</div>';
+      if (selectedNodeName === nodeName) content.innerHTML = '<div style="padding:16px;color:var(--critical)">Node not found</div>';
       return;
     }
-    const pods = asArray(podsResp).filter(p => p.node_name === nodeName);
-    let inner = renderNodeDetailHeader(node);
-    // Node maintenance — cordon/uncordon (admin).
-    inner += '<div style="display:flex;gap:8px;align-items:center;padding:8px 14px;flex-wrap:wrap">' +
-      (node.unschedulable
-        ? '<span class="id-sig id-sig-warn"><span class="id-pulse"></span>cordoned</span>' +
-          '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="nodeCordon(' + jsArgs(nodeName) + ',false)">Uncordon</button>'
-        : '<span class="id-sig id-sig-ok"><span class="id-pulse"></span>schedulable</span>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="nodeCordon(' + jsArgs(nodeName) + ',true)">Cordon</button>') +
-      '</div>';
-    inner += '<div class="vm-detail-columns">';
-    inner += renderNodeCapacityColumn(node);
-    inner += renderNodeWorkloadsColumn(nodeName, pods);
-    inner += '</div>';
-    holder.innerHTML = inner;
+    if (selectedNodeName !== nodeName) return;
+    const pods = asArray(podsResp).filter(function(p) { return p.node_name === nodeName; });
+    content.innerHTML = renderNodeRail(node, pods);
   } catch (e) {
-    holder.innerHTML = '<div class="detail-loading" style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    if (selectedNodeName === nodeName) content.innerHTML = '<div style="padding:16px;color:var(--critical)">' + esc(e.message || String(e)) + '</div>';
   }
 }
 
@@ -23804,30 +23797,9 @@ async function nodeCordon(nodeName, cordon) {
     await apiJson('/api/v1/nodes/' + encodeURIComponent(nodeName) + '/' + verb, { method: 'POST' });
     toast('Node ' + nodeName + ' ' + verb + 'ed', 'success');
     if (typeof fetchNodes === 'function') fetchNodes();
-    if (typeof fetchNodeDetail === 'function') fetchNodeDetail(nodeName);
+    if (selectedNodeName === nodeName && typeof fetchNodeWorkspaceDetail === 'function') fetchNodeWorkspaceDetail(nodeName);
   } catch (e) {
     toast(verb + ' failed — ' + (e.message || e), 'error', 6000);
-  }
-}
-
-function toggleNodeDetail(nodeName, opts) {
-  const existing = document.getElementById('node-detail-' + nodeName);
-  if (existing) {
-    existing.remove();
-    if (!opts || !opts.skipHash) setDashboardHash('nodes', null, false);
-    return;
-  }
-  document.querySelectorAll('.vm-detail').forEach(d => d.remove());
-
-  const placeholder = '<div class="vm-detail" id="node-detail-' + nodeName + '"><div class="detail-loading">Loading node details\u2026</div></div>';
-  const rows = document.querySelectorAll('#node-list .table-row');
-  for (const row of rows) {
-    if (row.querySelector('.cell-name')?.textContent === nodeName) {
-      row.insertAdjacentHTML('afterend', placeholder);
-      fetchNodeDetail(nodeName);
-      if (!opts || !opts.skipHash) setDashboardHash('nodes', { kind: 'node', name: nodeName }, true);
-      return;
-    }
   }
 }
 
