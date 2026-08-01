@@ -12,10 +12,16 @@
 
   // Make a clickable non-<button> element keyboard-operable: focusable + Enter/Space
   // activate the same expression as its click handler.
+  // Exposed on window: this IIFE is spliced into the same physical <script>
+  // tag as dashboard.html's own code, but an IIFE still creates a real scope
+  // boundary — dashboard.html's top-level functions (e.g. the Nodes page
+  // roster row) can't see this closure's locals unless it's put on window,
+  // the same way every other cross-file helper here is exposed.
   function kbdActivate(expr) {
     return 'role="button" tabindex="0" ' + (typeof onHandler === 'function' ? onHandler(expr) : 'onclick=\'' + expr + '\'') +
       ' onkeydown=\'if(event.key==="Enter"||event.key===" "){event.preventDefault();' + expr + '}\'';
   }
+  window.kbdActivate = kbdActivate;
 
   // Dialog a11y: move focus into an opened modal, close it on Escape, and trap Tab
   // within it. Register on open, release on close. Keyed so re-opens don't stack.
@@ -919,12 +925,15 @@
         '</div>' +
         '<div class="vmr-devbar" role="img" aria-label="Fleet deviation: ' + vms.length + ' VMs">' + segs + '</div>' +
       '</div>';
-    loadVmrRosterHeadroom();
+    loadVmrRosterHeadroom('vmr-roster-headroom');
   };
 
+  // One cluster-wide headroom cache shared by every caller (VMs page, Nodes
+  // page, ...) — the underlying /api/v1/capacity/headroom number is the same
+  // regardless of which page asks for it, only the render target differs.
   var _rosterHeadroomCache = null, _rosterHeadroomAt = 0;
-  window.loadVmrRosterHeadroom = function loadVmrRosterHeadroom() {
-    var el = document.getElementById('vmr-roster-headroom');
+  window.loadVmrRosterHeadroom = function loadVmrRosterHeadroom(targetId) {
+    var el = document.getElementById(targetId || 'vmr-roster-headroom');
     if (!el) return;
     var now = Date.now ? Date.now() : new Date().getTime();
     if (_rosterHeadroomCache && (now - _rosterHeadroomAt) < 20000) {
@@ -1842,7 +1851,7 @@
         if (typeof fetchAppStore === 'function') fetchAppStore();
       }
       if (page === 'cilium' && typeof fetchCilium === 'function') fetchCilium();
-      if (page === 'nodes') renderNodesVmr();
+      if (page === 'nodes') renderNodesDeviationBar();
       if (page === 'security') { renderSecurityPostureVmr(); if (typeof fetchSecurityVmr === 'function') fetchSecurityVmr(); }
       if (page === 'snapshots') { renderSnapshotsVmr(); if (typeof fetchSnapshotsVmr === 'function') fetchSnapshotsVmr(); }
       if (page === 'workloads') { renderWorkloadsVmr(); if (typeof fetchWorkloadsVmr === 'function') fetchWorkloadsVmr(); }
@@ -1852,71 +1861,35 @@
     };
   };
 
-  window.renderNodesVmr = function renderNodesVmr() {
-    var placementEl = document.getElementById('vmr-nodes-placement');
-    if (!placementEl) return;
-    var vms = typeof vmData !== 'undefined' ? vmData : [];
-    var ov = (typeof lastOverview !== 'undefined' && lastOverview) ? lastOverview : {};
-    var n = ov.nodes || {};
-    // Prefer live lastNodes data for ready/total counts (updated by patchFetchNodes)
-    var liveNodes = typeof lastNodes !== 'undefined' ? lastNodes : null;
-    var ready = liveNodes ? liveNodes.filter(function(nd) { return nd.status === 'Ready'; }).length
-      : (n.ready_nodes != null ? n.ready_nodes : 0);
-    var total = liveNodes ? liveNodes.length : (n.total_nodes != null ? n.total_nodes : 0);
-    var unscheduled = vms.filter(function (v) { return !vmNodeName(v); }).length;
-    renderVmrPageHero('vmr-nodes-hero', 'Veyron Cluster Nodes',
-      ready + '/' + total + ' ready · ' + vms.length + ' VMs placed across cluster',
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor&&runNodeAdvisor()">Node Advisor</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Show KubeVirt status on all nodes\')">KubeVirt Status</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'workloads\')">Workloads</button>',
-      'nodes');
-    renderVmrMetricsStrip('vmr-nodes-metrics', [
-      { label: 'Nodes Ready', value: ready + '/' + total, tone: ready === total ? 'ok' : 'warn' },
-      { label: 'VMs Placed', value: vms.filter(function (v) { return !!vmNodeName(v); }).length },
-      { label: 'Unscheduled VMs', value: unscheduled, tone: unscheduled ? 'warn' : '' },
-      { label: 'CPU Alloc %', value: n.total_cpu_allocatable > 0 ? Math.min(100, Math.max(0, Math.round((((ov.cluster || {}).total_vcpus_allocated || 0) / n.total_cpu_allocatable) * 100))) + '%' : '—' },
-      { label: 'Memory Alloc %', value: n.total_memory_allocatable_gb > 0 ? Math.min(100, Math.max(0, Math.round((((ov.cluster || {}).total_memory_allocated_gb || 0) / n.total_memory_allocatable_gb) * 100))) + '%' : '—' },
-      (function(){ var sh = typeof lastStackHealth !== 'undefined' ? lastStackHealth : null; var kvOk = sh ? (sh.kubevirt_api_ok !== false) : null; return { label: 'KubeVirt', value: kvOk === null ? '—' : kvOk ? 'Running' : 'Degraded', tone: kvOk === false ? 'bad' : kvOk ? 'ok' : '' }; })()
-    ]);
-    /* build per-node VM placement table */
-    var byNode = {};
-    vms.forEach(function (v) {
-      var nd = vmNodeName(v) || 'Unscheduled';
-      if (!byNode[nd]) byNode[nd] = [];
-      byNode[nd].push(v);
-    });
-    var nodeNames = Object.keys(byNode).sort();
-    if (!nodeNames.length) { placementEl.innerHTML = ''; return; }
-    var rows = nodeNames.map(function (nodeName) {
-      var nodeVms = byNode[nodeName];
-      var running = nodeVms.filter(function (v) { return v.status === 'Running'; }).length;
-      var isUnscheduled = nodeName === 'Unscheduled';
-      return '<tr>' +
-        '<td><strong>' + esc(nodeName) + '</strong></td>' +
-        (function(){
-          if (isUnscheduled) return '<td><span class="vm-badge stopped">N/A</span></td>';
-          var liveNode = liveNodes && liveNodes.find(function(nd){ return nd.name === nodeName; });
-          var nodeStatus = liveNode ? liveNode.status : 'Unknown';
-          var isReady = nodeStatus === 'Ready';
-          return '<td><span class="vm-badge ' + (isReady ? 'running' : 'stopped') + '">' + esc(nodeStatus) + '</span></td>';
-        })() +
-        '<td>' + nodeVms.length + ' VMs · ' + running + ' running</td>' +
-        (function(){ var sh = typeof lastStackHealth !== 'undefined' ? lastStackHealth : null; var kvOk = sh ? (sh.kubevirt_api_ok !== false && sh.kubevirt_control_plane_ok !== false) : true; return '<td><span style="color:' + (kvOk ? 'var(--green)' : 'var(--orange)') + ';font-size:.82rem">' + (kvOk ? '◉ virt-handler Ready' : '⚠ virt-handler Unknown') + '</span></td>'; })() +
-        '<td>' +
-          (isUnscheduled ? '' :
-            '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" ' + onHandler('openAskZeus(' + jsArgs('Drain node ' + nodeName + ' safely') + ')') + '>Drain</button>' +
-            '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" ' + onHandler('openAskZeus(' + jsArgs('kubectl cordon ' + nodeName) + ')') + '>Cordon</button>') +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrGoToNodeVms=' + jsArgs(nodeName) + ';navigate("vms")') + '>View VMs</button>' +
-        '</td></tr>';
+  // Per-node deviation bar, mirroring renderVmrDeviationBar() on the VMs
+  // page. Replaces the old renderNodesVmr(), which rendered a redundant
+  // hero+metrics strip (fetchNodes() already wrote a *different* one into
+  // the same #vmr-nodes-hero, same double-render bug as the VMs page had)
+  // plus a "VM Placement by Node" table whose Drain/Cordon buttons only
+  // opened Ask Zeus with a canned prompt — never real actions. Real
+  // cordon/uncordon now lives on every roster row and in the node rail.
+  window.renderNodesDeviationBar = function renderNodesDeviationBar() {
+    var hero = document.getElementById('vmr-nodes-hero');
+    if (!hero) return;
+    var nodes = typeof lastNodes !== 'undefined' && lastNodes ? lastNodes : [];
+    var ready = nodes.filter(function (n) { return n.status === 'Ready'; }).length;
+    var notReady = nodes.length - ready;
+    var cordoned = nodes.filter(function (n) { return n.unschedulable; }).length;
+    var totalVms = nodes.reduce(function (sum, n) { return sum + (n.vm_count || 0); }, 0);
+    var isDev = notReady > 0;
+    var segs = nodes.map(function (n) {
+      var cls = n.status !== 'Ready' ? 'crit' : (n.unschedulable ? 'off' : '');
+      return '<div class="vmr-devbar-seg ' + cls + '" title="' + esc(n.name) + ' · ' + esc(n.status || '') + (n.unschedulable ? ' (cordoned)' : '') + '" ' + onStopHandler('selectNode(' + jsArgs(n.name) + ')') + '></div>';
     }).join('');
-    placementEl.innerHTML = '<div class="vmr-panel" style="margin-bottom:16px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-        '<div class="vmr-panel-title">VM Placement by Node</div>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Balance VM placement across nodes\')">Rebalance</button>' +
-      '</div>' +
-      '<div style="overflow-x:auto"><table class="table"><thead><tr>' +
-        '<th>Node</th><th>Status</th><th>VM Load</th><th>KubeVirt</th><th>Actions</th>' +
-      '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+    hero.innerHTML =
+      '<div class="vmr-devbar-wrap">' +
+        '<div class="vmr-devbar-top">' +
+          '<div class="vmr-devbar-verdict' + (isDev ? ' dev' : '') + '">' + (isDev ? 'Deviating' : 'Nominal') + '</div>' +
+          '<div class="vmr-devbar-sub">' + ready + ' ready · ' + notReady + ' not ready' + (cordoned ? ' · ' + cordoned + ' cordoned' : '') + ' · ' + totalVms + ' VM' + (totalVms === 1 ? '' : 's') + ' scheduled</div>' +
+        '</div>' +
+        '<div class="vmr-devbar" role="img" aria-label="Cluster deviation: ' + nodes.length + ' nodes">' + segs + '</div>' +
+      '</div>';
+    loadVmrRosterHeadroom('vmr-nodes-headroom');
   };
 
   window._vmrWorkloadsTab = window._vmrWorkloadsTab || 'all';
@@ -3610,8 +3583,11 @@
     if (!orig) return;
     window.fetchNodes = async function() {
       await orig.apply(this, arguments);
-      if (typeof currentPage !== 'undefined' && currentPage === 'nodes' && typeof renderNodesVmr === 'function') {
-        renderNodesVmr();
+      // fetchNodes() (dashboard.html) already calls renderNodesDeviationBar()
+      // itself now; this patch is kept only in case fetchNodes() is ever
+      // called from a page context where currentPage hasn't settled yet.
+      if (typeof currentPage !== 'undefined' && currentPage === 'nodes' && typeof renderNodesDeviationBar === 'function') {
+        renderNodesDeviationBar();
       }
     };
   };
