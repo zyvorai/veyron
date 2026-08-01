@@ -14760,7 +14760,7 @@ function vmRow(vm, showActions) {
   const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+rowRetireBadge+vmGenomeStrip(vm)+vmLastActionChip(ns, vm.name)+idSig(vm.status)+vmMomentum(ns, vm.name)+actions+'</div>'+sshBlock+'</div>';
   const nsLine = nsLabel(ns);
   const nodeChip = vm.node ? '<button type="button" class="vmr-node-chip" ' +
-    onStopHandler('document.getElementById(\'vm-search\').value=\'node:\'+' + jsArgs(vm.node) + ';filterVMsDebounced()') +
+    onStopHandler('document.getElementById("vm-search").value="node:"+' + jsArgs(vm.node) + ';filterVMsDebounced()') +
     ' title="Filter VMs on ' + esc(vm.node) + '">◉ ' + esc(vm.node) + '</button>' : '';
   const tagHtml = vmTagsHtml(ns, vm.name);
   const noteHtml = vmNoteHtml(ns, vm.name);
@@ -15037,7 +15037,7 @@ function fetchSecurityVmr(opts) {
             idSig(f.severity) + '</div>' +
             '<div style="font-size:.78rem;color:var(--text-dim);margin-top:4px">' + esc(f.recommendation || '') + '</div>' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:6px;font-size:.72rem" ' +
-            onHandler('openAskZeus(\'Fix: ' + (f.title || '').replace(/'/g, "\\'") + '\')') + '>Ask Zeus to fix</button></div>';
+            onHandler('openAskZeus(' + jsArgs('Fix: ' + (f.title || '')).replace(/'/g, '&#39;') + ')') + '>Ask Zeus to fix</button></div>';
         }).join('') + '</div>';
     } else {
       findingsEl.innerHTML = '<div class="vmr-panel" style="border-left:3px solid var(--success)">' +
@@ -19841,7 +19841,7 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'backups' ? ' active' : '') + '" data-panel="backups"><div class="zeus-inspector-body">' +
         '<div class="vm-inspector-backup-actions">' +
           '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>+ Snapshot</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof vmCephSnapshot===\'function\'?vmCephSnapshot(' + jsArgs(ns, name) + '):navigate(\'snapshots\')') + ' title="Snapshot Ceph-backed disks via Atlas">&#9673; Ceph Snapshot</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof vmCephSnapshot==="function"?vmCephSnapshot(' + jsArgs(ns, name) + '):navigate("snapshots")') + ' title="Snapshot Ceph-backed disks via Atlas">&#9673; Ceph Snapshot</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">All snapshots</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'backups\')">Velero</button>' +
         '</div>' +
