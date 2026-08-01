@@ -5026,96 +5026,37 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div id="vmr-fleet-metrics"></div>
   <div id="vmr-ns-overview" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:2px 0 4px;scrollbar-width:none"></div>
   <div id="vmr-recent-strip" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0 6px;scrollbar-width:none"></div>
-  <div class="vmr-fleet-toolbar">
+  <div class="vmr-fleet-toolbar vmr-roster-filter-row">
     <div style="position:relative;display:inline-flex;align-items:center" id="vm-search-wrap">
-      <input type="text" class="form-input" id="vm-search" placeholder="Search name · tag: node: ns: cpu>4 mem>8gi age>7d …" oninput="filterVMsDebounced();showVmSearchAC();(this.value?hideSearchSyntaxHint():showSearchSyntaxHint())" onfocus="showSearchHistory();if(!this.value)showSearchSyntaxHint()" onblur="setTimeout(function(){pushSearchHistory(document.getElementById('vm-search').value);hideSearchSyntaxHint()},200)" onkeydown="vmSearchAcKey(event)" autocomplete="off" style="min-width:220px;padding-right:28px" title="Tokens: node:, ip:, ns:, tag:, note:, os:, cpu>N, mem>Ngi, age>Nd">
-      <button type="button" id="vm-search-clear" onclick="document.getElementById('vm-search').value='';filterVMs();hideVmSearchAC()" aria-label="Clear search" title="Clear search" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;padding:0 2px;opacity:.7">×</button>
-      <div id="vm-search-ac" class="vmr-search-ac" style="display:none" role="listbox"></div>
+      <input type="text" class="form-input vmr-roster-search" id="vm-search" placeholder="Search name · node · namespace" oninput="filterVMsDebounced()" autocomplete="off" style="min-width:220px;padding-right:28px">
+      <button type="button" id="vm-search-clear" onclick="document.getElementById('vm-search').value='';filterVMs()" aria-label="Clear search" title="Clear search" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;padding:0 2px;opacity:.7">×</button>
     </div>
-    <div class="vmr-filter-chips" id="vmr-filter-chips" role="group" aria-label="Status filter">
-      <button type="button" class="vmr-chip vmr-chip-active" data-filter="" onclick="setVmStatusFilter(this,'')">All</button>
-      <button type="button" class="vmr-chip" data-filter="Running" onclick="setVmStatusFilter(this,'Running')"><span class="vmr-chip-dot running"></span>Running</button>
-      <button type="button" class="vmr-chip" data-filter="Stopped" onclick="setVmStatusFilter(this,'Stopped')"><span class="vmr-chip-dot stopped"></span>Stopped</button>
-      <button type="button" class="vmr-chip" data-filter="__issues__" onclick="setVmStatusFilter(this,'__issues__')">⚠ Issues</button>
-      <button type="button" class="vmr-chip" data-filter="__retire__" onclick="setVmStatusFilter(this,'__retire__')" title="Stopped VMs that look disposable — temp names, no keeper tag">♻ Stale</button>
-    </div>
-    <select class="form-select" id="vm-filter-status" style="display:none" onchange="syncChipsFromSelect();filterVMs()">
-      <option value="">All status</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="__issues__">Issues</option><option value="__retire__">Stale</option>
+    <select class="form-select" id="vm-filter-status" style="display:none" onchange="filterVMs()">
+      <option value="">All status</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="__issues__">Issues</option>
     </select>
-    <select id="vm-filter-drift" style="display:none" onchange="filterVMs()"><option value="">all</option><option value="drift">drift</option></select>
-    <div class="vmr-view-switch">
-      <button type="button" data-view="cards" class="active" onclick="setVmrFleetView('cards')">Cards</button>
-      <button type="button" data-view="table" onclick="setVmrFleetView('table')">Table</button>
-      <button type="button" data-view="topology" onclick="setVmrFleetView('topology')">Topology</button>
-      <button type="button" data-view="map" onclick="setVmrFleetView('map')">Map</button>
-      <button type="button" data-view="pulse" onclick="setVmrFleetView('pulse')">Pulse</button>
-      <button type="button" id="vm-density-btn" title="Toggle compact density" onclick="toggleVmDensity()" style="margin-left:4px;font-size:.85rem;padding:4px 8px">⇕</button>
-      <button type="button" id="vm-group-btn" title="Group VMs by name prefix (G)" onclick="toggleVmGrouping()" style="margin-left:2px;font-size:.85rem;padding:4px 8px">⊞</button>
-      <button type="button" id="vm-age-heat-btn" title="Age heat-map: tint cards by VM age (blue=new, amber=old)" onclick="toggleVmAgeHeat()" style="margin-left:2px;font-size:.85rem;padding:4px 8px">🌡</button>
-      <button type="button" title="Status Board — full-screen wall view" onclick="openStatusBoard()" style="margin-left:2px;font-size:.85rem;padding:4px 8px" aria-label="Status Board">⊡</button>
+    <div class="vmr-roster-seg-ctl" role="group" aria-label="View">
+      <button type="button" data-view="cards" class="active vmr-roster-seg-btn" onclick="setVmrFleetView('cards')">Roster</button>
+      <button type="button" data-view="table" class="vmr-roster-seg-btn" onclick="setVmrFleetView('table')">Table</button>
+      <button type="button" data-view="topology" class="vmr-roster-seg-btn" onclick="setVmrFleetView('topology')">Topology</button>
     </div>
     <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
-    <div id="vmr-fleet-status-bar" title="Fleet status: click to filter" style="display:none;flex-shrink:0;cursor:pointer;gap:1px;border-radius:4px;overflow:hidden;height:14px;width:72px;align-items:stretch"></div>
-    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0" title="Running VM count over time">
-      <canvas id="vmr-fleet-sparkline" width="80" height="22" style="display:block;width:80px;height:22px;border-radius:3px;opacity:.7"></canvas>
-      <span id="vmr-fleet-sparkline-label" style="font-size:.65rem;color:var(--text-dim);white-space:nowrap"></span>
-    </div>
-    <div id="vmr-fleet-cost-tile" role="button" tabindex="0" style="display:none;flex-shrink:0;font-size:.65rem;cursor:pointer;background:var(--nominal-bg);border:1px solid var(--nominal);border-radius:7px;padding:3px 8px;white-space:nowrap" onclick="openFleetCapacitySettings()" onkeydown="if(event.key==='Enter'||event.key===' ')openFleetCapacitySettings()" title="Estimated running fleet cost (click to set rate)"></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="toggleVmrFleetFull()" id="vmr-fleet-full-btn" title="Zen mode — expand list full-width (Z)">⊞</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportFleetJson()" title="Export fleet snapshot as JSON (includes tags, notes, drift state)">↓ JSON</button>
-    <button type="button" id="vmr-diff-btn" class="glass-btn-secondary glass-btn-sm" onclick="fleetDiffAction()" title="Save fleet baseline for diff, or compare current state to saved baseline">⧟ Diff</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="generateFleetReport()" title="Generate Markdown fleet report for sharing">📋</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="saveFilterPreset()" title="Save current search + status filter as a named preset">⊛ Preset</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="snapshotAllRunning()" title="Snapshot every currently-Running VM at once">◉ Snap All</button>
-    <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>
+    <div class="vmr-roster-filter-sp"></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="snapshotAllRunning()" title="Snapshot every currently-Running VM at once">Snapshot all</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export the fleet roster as CSV">Export</button>
+    <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">Forge VM</button>
   </div>
-  <div id="vmr-tag-filter-chips" class="vmr-filter-chips" style="display:none;gap:6px;padding:2px 0 4px;flex-wrap:wrap"></div>
-  <div id="vmr-preset-chips" class="vmr-filter-chips" style="display:none;gap:5px;padding:2px 0 4px;flex-wrap:wrap;align-items:center"></div>
   <div id="vm-search-node-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
-  <div id="vm-search-tag-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
-  <div id="vmr-fleet-pinned" style="display:none;flex-wrap:wrap;gap:6px;padding:4px 0 6px;align-items:center"></div>
-  <div class="vm-workspace zeus-glass mac-vm-workspace" id="vm-workspace">
+  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="vm-workspace">
     <div class="vm-list-pane">
-      <div class="vm-list-toolbar vmr-list-toolbar-compact">
-        <div class="bulk-bar" id="bulk-bar" style="margin-top:10px">
-          <input type="checkbox" class="bulk-check" id="bulk-select-all" onchange="toggleSelectAll(this.checked)" title="Select all (⌘A)">
-          <span id="bulk-count">0 selected</span>
-          <div class="bulk-actions" id="bulk-actions" style="display:none;gap:5px;align-items:center">
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('start')" title="Start selected VMs">▶ Start</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('stop')" title="Stop selected VMs">■ Stop</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkSnapshot()" title="Snapshot selected VMs">◉ Snap</button>
-            <button type="button" id="bulk-compare-btn" class="glass-btn-secondary glass-btn-sm" style="display:none;background:linear-gradient(90deg,rgba(56,189,248,.12),rgba(139,92,246,.12));border-color:rgba(56,189,248,.35)" onclick="bulkCompare()" title="Compare 2 selected VMs side by side">⧉ Compare</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkTagAll()" title="Add a tag to all selected VMs">🏷 Tag All…</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSelectedVmsJson()" title="Export selected VMs as JSON">↓ Export</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkPauseResume()" title="Pause all selected Running VMs / Resume all Paused VMs">⏸ Pause/↻</button>
-            <button type="button" class="glass-btn-destructive glass-btn-sm" onclick="bulkAction('delete')" title="Delete selected VMs">✕ Delete</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:4px" onclick="toggleSelectAll(false)">Clear</button>
-          </div>
-        </div>
-        <span id="vms-freshness" class="vmr-freshness-label"></span>
-        <div id="vmr-capacity-bar" style="display:none;margin-top:8px;padding:6px 10px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-            <span style="font-size:.67rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Fleet Capacity</span>
-            <button type="button" style="font-size:.65rem;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:0" onclick="openFleetCapacitySettings()" title="Set fleet CPU/memory cap">⚙</button>
-          </div>
-          <div id="vmr-capacity-cpu" style="margin-bottom:4px"></div>
-          <div id="vmr-capacity-mem"></div>
-        </div>
-      </div>
-      <div class="vm-list-header" id="vm-list-header" style="display:none">
-        <button type="button" class="vm-sort-col active" data-sort="status" onclick="setVmSort('status')">Status <span class="sort-arrow" id="sort-arrow-status">↑</span></button>
-        <button type="button" class="vm-sort-col" data-sort="name" onclick="setVmSort('name')">Name <span class="sort-arrow" id="sort-arrow-name"></span></button>
-        <button type="button" class="vm-sort-col" data-sort="cpu" onclick="setVmSort('cpu')">CPU <span class="sort-arrow" id="sort-arrow-cpu"></span></button>
-        <button type="button" class="vm-sort-col" data-sort="memory" onclick="setVmSort('memory')">Memory <span class="sort-arrow" id="sort-arrow-memory"></span></button>
-      </div>
+      <span id="vms-freshness" class="vmr-freshness-label"></span>
       <div id="vmr-delta-strip" style="display:none"></div>
       <div id="vmr-fleet-briefing" style="display:none"></div>
       <div id="vmr-anomaly-ribbon" style="display:none"></div>
       <div class="vm-list-scroll" id="vm-full-list"></div>
+      <div id="vmr-roster-headroom" class="vmr-roster-headroom"></div>
     </div>
-    <div class="vm-focus-pane mac-inspector-pane" id="vm-focus-pane">
+    <div class="vm-focus-pane mac-inspector-pane vmr-roster-rail" id="vm-focus-pane">
       <div class="mac-inspector-header" id="mac-inspector-header">
         <span class="mac-inspector-title" id="vm-inspector-title">Inspector</span>
         <button type="button" class="mac-inspector-close" onclick="clearVmSelection()" aria-label="Close inspector">×</button>
@@ -17507,7 +17448,10 @@ async function fetchEvents(full, opts) {
 }
 
 // ── Event Ticker ──
-var _tickerVisible = localStorage.getItem('veyron_ticker') !== 'off';
+// Defaults OFF now — the fixed bottom bar was overlapping page content and
+// forcing an extra scroll interaction. Still reachable via the 'T' shortcut
+// / toggleEventTicker() for anyone who wants it back.
+var _tickerVisible = localStorage.getItem('veyron_ticker') === 'on';
 function showEventTicker() {
   _tickerVisible = true;
   localStorage.setItem('veyron_ticker', 'on');
@@ -19562,9 +19506,9 @@ function parseSelectedVmKey() {
 }
 
 function syncVmSelectionUi() {
-  document.querySelectorAll('#vm-full-list .vm-row, #vm-full-list .vm-card').forEach(function(el) {
-    const name = el.querySelector('.vm-name, .vm-card-name');
-    const n = name ? name.textContent : '';
+  document.querySelectorAll('#vm-full-list .vm-row, #vm-full-list .vm-card, #vm-full-list .vmr-roster-row').forEach(function(el) {
+    const name = el.querySelector('.vm-name, .vm-card-name, .vmr-roster-name');
+    const n = name ? name.textContent : (el.getAttribute('data-vm-name') || '');
     const key = selectedVmKey;
     let match = false;
     if (key && n) {
@@ -19854,6 +19798,109 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
     '</div></div>';
 }
 
+// Compact always-visible detail rail — replaces the old hero + 6-tab
+// accordion. Deeper drill-down (guest filesystem, RDP setup, event history,
+// etc.) stays reachable via the "Full Capsule" link rather than being
+// reimplemented here. Every stat carries a cause (from spec / measured Ns
+// ago) so a viewer knows whether a number is real-time truth or allocation.
+function renderVmRail(vm, ns, name, vmi) {
+  var isRunning = vm.status === 'Running';
+  var isPaused = vm.status === 'Paused';
+  var tickCls = (vm.status === 'Failed' || vm.status === 'Error') ? 'crit'
+    : /^(Starting|Stopping|Provisioning|Pending|Migrating)$/.test(vm.status || '') ? 'warn'
+    : (isRunning ? '' : 'off');
+
+  var primary = isRunning
+    ? '<button type="button" class="glass-btn-primary" style="width:100%" ' + onHandler('openConnectModal(' + jsArgs(ns, name) + ')') + '>Open console</button>'
+    : '<button type="button" class="glass-btn-primary" style="width:100%" ' + onHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start VM</button>';
+
+  // SSH/RDP remote-access shortcuts — the deep Network tab this replaces
+  // buried these ~1000px below the fold behind a redundant summary card;
+  // give them a direct home in the rail instead.
+  var remoteAccess = isRunning
+    ? (isWindowsVm(vm)
+        ? '<button type="button" class="glass-btn-secondary glass-btn-sm" style="width:100%" ' + onHandler('openRdpSheet(' + jsArgs(ns, name) + ')') + '>RDP</button>'
+        : '<button type="button" class="glass-btn-secondary glass-btn-sm" style="width:100%" ' + onHandler('showSshPopover(' + jsArgs(ns, name) + ')') + '>SSH</button>')
+    : '';
+
+  var actGrid = '<div class="vmr-rail-act-grid">' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Capsule</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Edit hardware</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openCopilotWithVm(' + jsArgs('', ns, name) + ')') + '>Ask Zeus</button>' +
+  '</div>';
+
+  var secondary;
+  if (isRunning) {
+    secondary = '<div class="vmr-rail-act-grid">' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof pauseVM==="function"&&pauseVM(' + jsArgs(ns, name) + ')') + '>Pause</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>Restart</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof migrateVM==="function"&&migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>' +
+      '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, name, 'stop') + ')') + '>Stop</button>' +
+    '</div>';
+  } else {
+    secondary = '<div class="vmr-rail-act-grid">' +
+      (isPaused ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof unpauseVM==="function"&&unpauseVM(' + jsArgs(ns, name) + ')') + '>Unpause</button>' : '') +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof cloneVM==="function"&&cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>' +
+      '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>' +
+    '</div>';
+  }
+
+  var snaps = (typeof window.lastSnapshots !== 'undefined' && window.lastSnapshots)
+    ? window.lastSnapshots.filter(function(s){ return s.vm_name === name && (s.namespace || 'default') === ns; })
+    : null;
+  var snapCount = snaps === null ? null : snaps.length;
+
+  return (
+    '<div class="vmr-rail-h">' +
+      '<div class="vmr-rail-name">' + esc(name) + '</div>' +
+      '<div class="vmr-rail-meta"><span class="vmr-roster-tick ' + tickCls + '"></span> ' + esc((vm.status || '').toLowerCase()) + ' · ' + esc(ns) + (vm.age ? ' · ' + esc(vm.age) : '') + '</div>' +
+    '</div>' +
+    '<div class="vmr-rail-acts">' + primary + remoteAccess + actGrid + secondary + '</div>' +
+    '<div class="vmr-rail-sec"><h4>Shape</h4>' +
+      '<div class="vmr-rail-fact"><dt>CPU</dt><dd>' + esc(vm.cpu || '—') + '<span class="vmr-rail-cause">from spec</span></dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Memory</dt><dd>' + esc(vm.memory || '—') + '<span class="vmr-rail-cause">from spec</span></dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Disk</dt><dd>' + esc(vm.disk || '—') + '<span class="vmr-rail-cause">from spec</span></dd></div>' +
+    '</div>' +
+    '<div class="vmr-rail-sec" id="vmr-rail-observed-' + esc(name) + '"><h4>Observed</h4>' +
+      '<div class="vmr-rail-fact"><dt>CPU load</dt><dd><span class="vmr-rail-dash">—</span><span class="vmr-rail-cause">' + (isRunning ? 'loading…' : 'VM not running') + '</span></dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Memory used</dt><dd><span class="vmr-rail-dash">—</span></dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Network</dt><dd><span class="vmr-rail-dash">—</span></dd></div>' +
+    '</div>' +
+    '<div class="vmr-rail-sec" id="vmr-rail-protection-' + esc(name) + '"><h4>Protection</h4>' +
+      '<div class="vmr-rail-fact"><dt>Snapshots</dt><dd>' + (snapCount === null ? '<span class="vmr-rail-dash">—</span>' : snapCount) + '<span class="vmr-rail-cause">' + (snapCount === null ? 'loading…' : (snapCount ? 'measured · listed' : 'measured · none taken')) + '</span></dd></div>' +
+    '</div>'
+  );
+}
+
+function loadVmRailProtection(ns, name) {
+  var el = document.getElementById('vmr-rail-protection-' + name);
+  if (!el) return;
+  apiJson('/api/v1/snapshots?namespace=' + encodeURIComponent(ns)).then(function(j) {
+    var all = Array.isArray(j) ? j : (j && Array.isArray(j.data) ? j.data : (j && Array.isArray(j.items) ? j.items : []));
+    var snaps = all.filter(function(s) { return (s.vm_name || s.source_vm || '').toLowerCase() === name.toLowerCase(); });
+    window.lastSnapshots = all;
+    var target = document.getElementById('vmr-rail-protection-' + name);
+    if (!target) return;
+    target.innerHTML = '<h4>Protection</h4>' +
+      '<div class="vmr-rail-fact"><dt>Snapshots</dt><dd>' + snaps.length + '<span class="vmr-rail-cause">' + (snaps.length ? 'measured · listed' : 'measured · none taken') + '</span></dd></div>';
+  }).catch(function() {});
+}
+
+function loadVmRailObserved(ns, name, isRunning) {
+  var el = document.getElementById('vmr-rail-observed-' + name);
+  if (!el || !isRunning) return;
+  apiJson('/api/v1/metrics/' + encodeURIComponent(name) + '?namespace=' + encodeURIComponent(ns)).then(function(j) {
+    var m = unwrapData(j);
+    if (!m || !document.getElementById('vmr-rail-observed-' + name)) return;
+    var netRx = m.network_rx_bytes ? formatBytes(m.network_rx_bytes) + '/s' : '—';
+    document.getElementById('vmr-rail-observed-' + name).innerHTML = '<h4>Observed</h4>' +
+      '<div class="vmr-rail-fact"><dt>CPU load</dt><dd>' + (m.cpu_usage_percent != null ? m.cpu_usage_percent.toFixed(1) + '%' : '—') + '<span class="vmr-rail-cause">measured just now</span></dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Memory used</dt><dd>' + (m.memory_usage_percent != null ? m.memory_usage_percent.toFixed(1) + '%' : '—') + '<span class="vmr-rail-cause">measured just now</span></dd></div>' +
+      '<div class="vmr-rail-fact"><dt>Network rx</dt><dd>' + netRx + '<span class="vmr-rail-cause">measured just now</span></dd></div>';
+  }).catch(function() {});
+}
+
 async function fetchVmWorkspaceDetail(ns, name) {
   const content = document.getElementById('vm-focus-content');
   if (!content || selectedVmKey !== ns + '/' + name) return;
@@ -19863,35 +19910,10 @@ async function fetchVmWorkspaceDetail(ns, name) {
     if (!vm || selectedVmKey !== ns + '/' + name) return;
     _vmDetailCache = vm;
     const vmi = vm.vmi_status || {};
-    const ifaces = vmi.interfaces || [];
-    const guestOS = vmi.guest_os_info;
-    let extras = { securityScore: null, healthScore: null };
-    const h = fleetHealthMap[name];
-    if (h && h.health_score != null) extras.healthScore = h.health_score;
-    try {
-      const secJ = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/security');
-      const secD = unwrapData(secJ);
-      if (secD && secD.score != null) extras.securityScore = secD.score;
-    } catch (_) {}
-    content.innerHTML = renderVmHero(vm, ns, name, vmi, extras) + renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS);
+    content.innerHTML = renderVmRail(vm, ns, name, vmi);
     if (vm.status === 'Running') startUptimeClock(vm);
-    requestAnimationFrame(function() { mountVmSparklines(ns, name); });
-    fetchSecurity(ns, name).then(function(secHtml) {
-      const el = document.getElementById('security-' + name);
-      if (el && secHtml) el.innerHTML = secHtml;
-    });
-    loadExposePanel(ns, name);
-    loadRdpPanel(ns, name, vmi, vm);
-    loadGuestRuntimePanel(ns, name, vmi);
-    loadGuestFilesystemPanel(ns, name, vmi);
-    loadVmDriftPanel(ns, name, vm);
-    loadInternetPanel(ns, name);
-    loadDoctorPanel(ns, name);
-    loadVmMetricsPanel(ns, name);
-    loadVmSnapshotsPanel(ns, name);
-    loadVmEventHistory(ns, name);
-    loadVmSessionTimeline(ns, name);
-    loadVmPeersPanel(ns, name);
+    loadVmRailObserved(ns, name, vm.status === 'Running');
+    loadVmRailProtection(ns, name);
   } catch (e) {
     if (content) content.innerHTML = '<div class="zeus-glass" style="padding:20px;color:var(--critical)">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="selectVm(' + jsArgs(ns,name) + ',{})">&#8635; Retry</button></div>';
     toast('Failed to load VM: ' + (e.message || String(e)), 'error');
@@ -23202,8 +23224,10 @@ function parseVmSelectionKey(key) {
 
 function toggleBulkBar() {
   const bar = document.getElementById('bulk-bar');
+  if (!bar) return;
   bar.classList.toggle('visible', selectedVMs.size > 0);
-  document.getElementById('bulk-count').textContent = selectedVMs.size + ' selected';
+  const countEl = document.getElementById('bulk-count');
+  if (countEl) countEl.textContent = selectedVMs.size + ' selected';
   const acts = document.getElementById('bulk-actions');
   if (acts) acts.style.display = selectedVMs.size > 0 ? 'flex' : 'none';
   const cmpBtn = document.getElementById('bulk-compare-btn');
@@ -23927,7 +23951,7 @@ window.addEventListener('load', async () => {
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
   if (freshnessTimer) clearInterval(freshnessTimer);
   freshnessTimer = setInterval(updateVmFreshness, 15000);
-  if (localStorage.getItem('veyron_ticker') !== 'off') { _tickerVisible = true; }
+  if (localStorage.getItem('veyron_ticker') === 'on') { _tickerVisible = true; }
   renderVmrPrimaryTabs();
   if (location.hash) applyDashboardHash();
   window.addEventListener('popstate', function() { applyDashboardHash(); });

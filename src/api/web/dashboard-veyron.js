@@ -857,61 +857,99 @@
     if (typeof filterVMs === 'function') filterVMs();
   };
 
+  // One roster row per VM — replaces the old card grid. Status tick/badge use
+  // the same four IronWolf signal tokens as idSig() everywhere else in the
+  // app (nominal/caution/critical/inert) — this redesign changes the layout,
+  // not the color semantics.
   window.vmrFleetCard = function vmrFleetCard(vm, showActions) {
-    if (typeof window.vmCard === 'function' && window.vmrFleetViewMode !== 'cards') {
-      /* table/topology use alternate renderers */
-    }
     var ns = vm.namespace || 'default';
     var isRunning = vm.status === 'Running';
-    var isIssue = vm.status === 'Failed' || vm.status === 'Error' || vm.status === 'Pending';
-    var cardCls = 'vmr-fleet-card' + (isRunning ? ' running' : isIssue ? ' issue' : ' stopped');
-    var icon = typeof osFamilyIcon === 'function' ? osFamilyIcon(typeof guessOsFamily === 'function' ? guessOsFamily(vm) : 'linux') : '◫';
-    var meta = esc(ns) + ' · ' + esc(vmNodeName(vm) || 'no node') + (vm.ip && vm.ip !== 'N/A' ? ' · ' + esc(vm.ip) : '');
-    var stats = 'CPU: ' + esc(vm.cpu || '—') + ' · Memory: ' + esc(vm.memory || '—');
-    var _vmSnaps = (typeof window.lastSnapshots !== 'undefined' && window.lastSnapshots)
-      ? window.lastSnapshots.filter(function(s){ return s.vm_name === vm.name && (s.namespace || 'default') === ns; })
-      : null;
-    var backupLabel = _vmSnaps === null ? 'Backup: —' : (_vmSnaps.length > 0 ? 'Backup: ' + _vmSnaps.length + ' snap' + (_vmSnaps.length > 1 ? 's' : '') : 'Backup: None');
-    var guestLabel = vm.guest_agent_connected ? 'Guest: Active' : (isRunning ? 'Guest: Running' : 'Guest: —');
-    var extras = '<div class="vmr-fleet-card-stats">' +
-      '<span>Network: ' + (isRunning ? 'Live' : '—') + '</span>' +
-      '<span>' + backupLabel + '</span>' +
-      '<span>' + guestLabel + '</span></div>';
-    if (!isRunning && isIssue) {
-      var _lastIssue = '';
-      if (typeof lastEvents !== 'undefined' && Array.isArray(lastEvents)) {
-        var _ev = lastEvents.find(function(e){ return (e.namespace || '') === ns && (e.involved_object || '').toLowerCase().includes(vm.name.toLowerCase()) && /Failed|Error|BackOff/i.test(e.reason || ''); });
-        if (_ev) _lastIssue = _ev.reason || '';
-      }
-      extras = '<div class="vmr-fleet-card-stats issue-text">Last issue: ' + esc(_lastIssue || vm.status || 'Unknown') + '</div>';
-    }
+    var isPaused = vm.status === 'Paused';
+    var isIssue = vm.status === 'Failed' || vm.status === 'Error';
+    var isTransitional = /^(Starting|Stopping|Provisioning|Pending|Migrating)$/.test(vm.status || '');
+    var tickCls = isIssue ? 'crit' : isTransitional ? 'warn' : (isRunning ? '' : 'off');
+    var rowCls = 'vmr-roster-row' + (isIssue ? ' issue' : '');
+    var place = esc(vmNodeName(vm) || 'no node') + (vm.ip && vm.ip !== 'N/A' ? '<br>' + esc(vm.ip) : '');
+    var spec = esc(vm.cpu || '—') + '<sup>cpu</sup><br>' + esc(vm.memory || '—') + '<sup>mem</sup>';
+
     var actions = '';
     if (showActions !== false) {
       if (isRunning) {
-        actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Console</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, vm.name) + ')') + '>Capsule</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.pauseVM&&window.pauseVM(' + jsArgs(ns, vm.name) + ')') + '>Pause</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.openSnapModalFor?window.openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate("snapshots")') + '>Snapshot</button>';
+        actions = '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Console</button>';
       } else {
-        var isPaused = vm.status === 'Paused';
-        actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>' +
-          (isPaused ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.unpauseVM&&window.unpauseVM(' + jsArgs(ns, vm.name) + ')') + '>Unpause</button>' : '') +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.cloneVM&&window.cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
-          '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>Delete</button>';
+        actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>';
       }
     }
-    var spark = isRunning
-      ? '<div class="vmr-fleet-spark" aria-hidden="true"><span style="height:60%"></span><span style="height:45%"></span><span style="height:70%"></span><span style="height:55%"></span><span style="height:65%"></span></div>'
-      : '';
-    return '<div class="' + cardCls + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + kbdActivate('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
-      '<div class="vmr-fleet-card-head"><div><span style="font-size:1.2rem;margin-right:8px">' + icon + '</span>' +
-      '<span class="vmr-fleet-card-name">' + esc(vm.name) + '</span></div>' +
-      '<span class="vm-badge ' + (isRunning ? 'running' : 'stopped') + '">' + esc(vm.status) + '</span></div>' +
-      '<div class="vmr-fleet-card-meta">' + meta + '<br>' + stats + extras + spark + '</div>' +
-      '<div class="vmr-fleet-actions">' + actions + '</div></div>';
+
+    // A <div role="button"> row, not a real <button> — the action button
+    // inside .vmr-roster-actions is a real <button>, and HTML doesn't allow
+    // nesting interactive <button> elements (the outer one silently
+    // auto-closes right before the inner one, kicking it out to render as a
+    // separate sibling block below the row — caught live, not in review).
+    return '<div class="' + rowCls + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + kbdActivate('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
+      '<span class="vmr-roster-tick ' + tickCls + '" aria-hidden="true"></span>' +
+      '<span><span class="vmr-roster-name">' + esc(vm.name) + '</span>' +
+      '<span class="vmr-roster-state">' + esc((vm.status || '').toLowerCase()) + (vm.age ? ' · ' + esc(vm.age) : '') + '</span></span>' +
+      '<span class="vmr-roster-place">' + place + '</span>' +
+      '<span class="vmr-roster-spec">' + spec + '</span>' +
+      '<span class="vmr-roster-actions">' + actions + '</span></div>';
   };
+
+  // Fleet-wide deviation bar (#vmr-fleet-hero) + capacity headroom
+  // (#vmr-roster-headroom) — real data, no placeholder numbers.
+  window.renderVmrDeviationBar = function renderVmrDeviationBar() {
+    var hero = document.getElementById('vmr-fleet-hero');
+    if (!hero) return;
+    var vms = typeof vmData !== 'undefined' ? vmData : [];
+    var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
+    var stopped = vms.filter(function (v) { return v.status === 'Stopped'; }).length;
+    var deviating = vms.filter(function (v) { return v.status === 'Failed' || v.status === 'Error'; }).length;
+    var isDev = deviating > 0;
+    var segs = vms.map(function (v) {
+      var isIssue = v.status === 'Failed' || v.status === 'Error';
+      var isTransitional = /^(Starting|Stopping|Provisioning|Pending|Migrating)$/.test(v.status || '');
+      var cls = isIssue ? 'crit' : isTransitional ? 'warn' : (v.status === 'Running' ? '' : 'off');
+      return '<div class="vmr-devbar-seg ' + cls + '" title="' + esc(v.name) + ' · ' + esc(v.status || '') + '" ' + onStopHandler('selectVm(' + jsArgs(v.namespace || 'default', v.name) + ')') + '></div>';
+    }).join('');
+    hero.innerHTML =
+      '<div class="vmr-devbar-wrap">' +
+        '<div class="vmr-devbar-top">' +
+          '<div class="vmr-devbar-verdict' + (isDev ? ' dev' : '') + '">' + (isDev ? 'Deviating' : 'Nominal') + '</div>' +
+          '<div class="vmr-devbar-sub">' + running + ' running · ' + stopped + ' stopped' + (deviating ? ' · ' + deviating + ' deviating' : '') + '</div>' +
+        '</div>' +
+        '<div class="vmr-devbar" role="img" aria-label="Fleet deviation: ' + vms.length + ' VMs">' + segs + '</div>' +
+      '</div>';
+    loadVmrRosterHeadroom();
+  };
+
+  var _rosterHeadroomCache = null, _rosterHeadroomAt = 0;
+  window.loadVmrRosterHeadroom = function loadVmrRosterHeadroom() {
+    var el = document.getElementById('vmr-roster-headroom');
+    if (!el) return;
+    var now = Date.now ? Date.now() : new Date().getTime();
+    if (_rosterHeadroomCache && (now - _rosterHeadroomAt) < 20000) {
+      renderRosterHeadroomHtml(el, _rosterHeadroomCache);
+      return;
+    }
+    apiJson('/api/v1/capacity/headroom').then(function (h) {
+      _rosterHeadroomCache = h; _rosterHeadroomAt = now;
+      renderRosterHeadroomHtml(el, h);
+    }).catch(function () { el.innerHTML = ''; });
+  };
+  function renderRosterHeadroomHtml(el, h) {
+    if (!h || !h.cpu || !h.memory) { el.innerHTML = ''; return; }
+    var cpuFree = Math.round(h.cpu.headroom);
+    var cpuTotal = Math.round(h.cpu.total);
+    var memFree = h.memory.headroom.toFixed(1);
+    var slots = [];
+    var usedSlots = Math.min(8, Math.round(h.cpu.allocated));
+    for (var i = 0; i < 8; i++) slots.push('<div class="vmr-roster-slot' + (i < usedSlots ? ' used' : '') + '">' + (i < usedSlots ? '1 core' : 'free') + '</div>');
+    el.innerHTML =
+      '<div class="vmr-roster-headroom-h">Headroom · ' + h.nodes + ' node' + (h.nodes === 1 ? '' : 's') + '</div>' +
+      '<div class="vmr-roster-headroom-slots">' + slots.join('') + '</div>' +
+      '<p>' + cpuFree + ' of ' + cpuTotal + ' cores idle · <b>' + memFree + ' Gi</b> memory unclaimed. ' +
+      (h.additional_avg_vms > 0 ? 'Room for roughly <b>' + h.additional_avg_vms + ' more</b> instances at the current average shape.' : 'Fleet is at capacity for the current average VM shape.') + '</p>';
+  }
 
   window.renderVmrFleetTable = function renderVmrFleetTable(vms) {
     var rows = vms.map(function (vm) {
@@ -993,26 +1031,7 @@
   };
 
   window.renderFleetCommandVmr = function renderFleetCommandVmr() {
-    var hero = document.getElementById('vmr-fleet-hero');
-    if (!hero) return;
-    var vms = typeof vmData !== 'undefined' ? vmData : [];
-    var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
-    var stopped = vms.length - running;
-    renderVmrPageHero('vmr-fleet-hero', 'Veyron Fleet Command',
-      vms.length + ' virtual machines · ' + running + ' running · ' + stopped + ' stopped',
-      '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>',
-      'vms');
-    var issues = vms.filter(function (v) { return v.status === 'Failed' || v.status === 'Error'; }).length;
-    var cost = typeof lastCostSummary !== 'undefined' ? lastCostSummary : '—';
-    var drifted = vms.filter(function (v) { return v.drift_detected === true; }).length;
-    renderVmrMetricsStrip('vmr-fleet-metrics', [
-      { label: 'Total VMs', value: vms.length },
-      { label: 'Running', value: running, tone: 'ok' },
-      { label: 'Stopped', value: stopped },
-      { label: 'Issues', value: issues, tone: issues ? 'bad' : '' },
-      { label: 'Drift', value: drifted, tone: drifted ? 'warn' : '' },
-      { label: 'Est. Cost', value: cost }
-    ]);
+    renderVmrDeviationBar();
   };
 
   window.patchRenderVmFullList = function patchRenderVmFullList() {
@@ -1033,7 +1052,8 @@
       } else if (mode === 'topology') {
         el.innerHTML = renderVmrFleetTopology(vms);
       } else {
-        el.innerHTML = '<div class="vmr-card-grid">' + vms.map(function (v) { return vmrFleetCard(v, true); }).join('') + '</div>';
+        el.innerHTML = '<div class="vmr-roster-head"><span></span><span>Instance</span><span>Placement</span><span>Shape</span><span></span></div>' +
+          '<div class="vmr-roster-list">' + vms.map(function (v) { return vmrFleetCard(v, true); }).join('') + '</div>';
       }
       if (typeof syncVmSelectionUi === 'function') syncVmSelectionUi();
     };
@@ -2393,7 +2413,10 @@
       sec.style.display = '';
       var cards = list.map(function (v) {
         var vm = typeof v === 'object' ? v : { name: v, status: 'Running', namespace: 'default' };
-        return typeof vmrFleetCard === 'function' ? vmrFleetCard(vm, true) : (typeof pinnedVmCard === 'function' ? pinnedVmCard(vm) : '');
+        // pinnedVmCard() renders an actual compact card — vmrFleetCard() now
+        // renders a wide roster *row* (VMs page redesign) and doesn't fit
+        // this small card-grid slot; prefer the real card renderer here.
+        return typeof pinnedVmCard === 'function' ? pinnedVmCard(vm) : (typeof vmrFleetCard === 'function' ? vmrFleetCard(vm, true) : '');
       }).join('');
       el.innerHTML = '<div class="vmr-card-grid vmr-card-grid-pinned">' + cards + forgeCard + '</div>';
     };
@@ -3351,40 +3374,17 @@
     var origSelect = window.selectVm;
     var origClear = window.clearVmSelection;
 
+    // NOTE: this used to also inject a full name/status/action-buttons bar
+    // (#vmr-inspector-bar) directly above the tabbed accordion. renderVmRail()
+    // (dashboard.html) now owns the header + action buttons as part of the
+    // rail itself, so injecting a second, duplicate action bar here just
+    // pushed the real content further down the panel — that duplication was
+    // the actual cause of the "network/compute/security/backup buttons don't
+    // work" report (the real ones were buried ~1000px below the fold, not
+    // broken). Keep only the title-swap side effect.
     function injectInspectorBar(ns, name) {
-      var focusPane = document.getElementById('vm-focus-pane');
-      if (!focusPane) return;
       var existing = document.getElementById('vmr-inspector-bar');
       if (existing) existing.remove();
-      var isRunning = false;
-      if (typeof vmData !== 'undefined') {
-        var vm = (vmData || []).find(function (v) { return v.namespace === ns && v.name === name; });
-        if (vm) isRunning = vm.status === 'Running';
-      }
-      var bar = document.createElement('div');
-      bar.id = 'vmr-inspector-bar';
-      bar.className = 'vmr-inspector-bar';
-      bar.innerHTML =
-        '<div class="vmr-inspector-bar-name">' + esc(name) + '</div>' +
-        '<div class="vmr-inspector-bar-meta">' + esc(ns) + ' · ' +
-          (isRunning
-            ? '<span class="vmr-inspector-status running">Running</span>'
-            : '<span class="vmr-inspector-status stopped">Stopped</span>') +
-        '</div>' +
-        '<div class="vmr-inspector-bar-actions">' +
-          (isRunning
-            ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openConnectModal(' + jsArgs(ns, name) + ')') + '>Open Console</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Explain VM ' + name) + ')') + '>Ask Zeus</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>'
-            : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start VM</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsuleTab(' + jsArgs(ns, name) + ',7)') + '>Show YAML</button>') +
-        '</div>';
-      var header = document.getElementById('mac-inspector-header');
-      var ref = header && header.nextSibling ? header.nextSibling : document.getElementById('vm-focus-empty');
-      focusPane.insertBefore(bar, ref || focusPane.firstChild);
       var titleEl = document.getElementById('vm-inspector-title');
       if (titleEl) titleEl.textContent = 'VM INSPECTOR';
     }
