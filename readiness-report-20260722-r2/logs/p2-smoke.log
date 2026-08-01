@@ -1,0 +1,94 @@
+
+Veyron remote verify → https://HOST:30151
+
+  (unauthenticated)
+  ✔ GET /api/v1/health
+  ✔ GET /dashboard
+  ✔ GET /api/v1/auth/oidc/config
+  ✔ POST /api/v1/auth/oidc/token (HTTP 422 without valid body)
+  ✔ GET / → /dashboard
+  (X-API-Key)
+  ✔ GET /api/v1/templates
+  ✔ GET /api/v1/crds/templates
+  ✔ GET /api/v1/crds/profiles
+  ✔ GET /api/v1/crds/insights
+  ✔ GET /api/v1/catalog/status
+  ✔ GET /api/v1/images/catalog
+  ✔ GET /api/v1/namespaces
+  ✔ GET /api/v1/nodes
+  ✔ GET /api/v1/storage/classes
+  ✔ GET /api/v1/storage/pvcs?ns=all
+  ✔ GET /api/v1/custom-resources
+  ✔ GET /api/v1/gitops/status
+  ✔ GET /api/v1/pods?ns=all
+  ✔ GET /api/v1/events/recent
+  ✔ GET /api/v1/monitoring/status
+  ✔ GET /api/v1/security/posture
+  ✔ GET /api/v1/security/findings
+  ✔ GET /api/v1/costs/summary
+  ✔ GET /api/v1/vms?ns=veyron-system
+  ✔ GET /api/v1/vms?ns=all
+  ○ GET /api/v1/vms (drift fields) — skipped, no VMs currently exist
+  ✔ GET /api/v1/vms/:ns/:name/drift (HTTP 404)
+  (feature-gap routes)
+  ✔ GET /api/v1/compliance/status
+  ✔ GET /api/v1/heatmap/resources
+  ✔ GET /api/v1/dashboards
+  ✔ GET /api/v1/network-policies
+  ✔ GET /api/v1/integrations/status
+  ✔ GET /api/v1/soc/detections
+  ✔ GET /api/v1/soc/events
+  ✔ GET /api/v1/soc/export/status
+  ✔ GET /api/v1/soc/attack-surface
+  ✔ GET /api/v1/experience/home
+  ✔ POST /api/v1/experience/errors/translate
+  ✔ GET /api/v1/experience/fleet/health
+  ✔ GET /api/v1/experience/templates
+  ✔ GET /api/v1/experience/session
+  ✔ GET /api/v1/experience/locations
+  ✔ POST /api/v1/experience/copilot/ask
+  ✔ GET /api/v1/experience/copilot/backup
+  ✔ GET /api/v1/crds/blueprints
+  ✔ GET /api/v1/experience/copilot/cost
+  ✔ GET /api/v1/experience/copilot/performance
+  ✔ GET /api/v1/experience/copilot/gitops
+  ✔ GET /api/v1/experience/copilot/forecast
+  ✔ GET /api/v1/experience/copilot/integrations
+  ✔ GET /api/v1/experience/copilot/scheduling
+  ✔ GET /api/v1/experience/copilot/compliance
+  ✔ GET /api/v1/experience/copilot/observability
+  ✔ GET /api/v1/experience/copilot/cilium
+  ✔ GET /api/v1/experience/copilot/nodes
+  ✔ GET /api/v1/experience/copilot/drift
+  ✔ GET /api/v1/experience/copilot/alerts
+  ✔ GET /api/v1/experience/copilot/slo
+  ✔ GET /api/v1/experience/copilot/migrations
+  ✔ GET /api/v1/experience/copilot/quotas
+  ✔ GET /api/v1/experience/copilot/catalog
+  ✔ GET /api/v1/experience/copilot/velero-dr
+  ✔ GET /api/v1/experience/copilot/status
+  ✔ POST /api/v1/experience/copilot/chat
+  ✔ GET /api/v1/experience/copilot/guest/filesystem
+  ✔ POST /api/v1/experience/copilot/gitops/export
+  ✔ GET /api/v1/gitops/status
+  ✔ GET /api/v1/snapshots?ns=all
+  ✔ GET /api/v1/snapshot-schedules
+  ✔ GET /api/v1/backups
+  ✔ GET /api/v1/velero/status
+  ✔ GET /api/v1/dr/export (HTTP 404)
+  ✔ GET /dashboard (SOC page)
+  ✔ GET /dashboard (Tahoe toolbar)
+  ✔ GET /dashboard (SF typography)
+  (dashboard shell — Template Foundry, Cost Explorer, Network Intelligence)
+  ✔ GET /api/v1/experience/templates (store)
+  ✔ GET /api/v1/experience/templates (≥30 templates: 42)
+  ✔ GET /api/v1/costs (list)
+  ✔ GET /api/v1/costs/forecast
+  ○ GET /api/v1/packetwolf/status (not configured — set VEYRON_PACKETWOLF_URL to enable)
+  ✔ GET /api/v1/cilium/flows
+  ✔ GET /dashboard (Template Foundry page)
+  ✔ GET /dashboard (Cost Explorer page)
+  ✔ GET /dashboard (Network Intelligence loader)
+  ✔ GET /dashboard
+
+All checks passed.

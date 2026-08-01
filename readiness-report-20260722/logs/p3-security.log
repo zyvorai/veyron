@@ -1,0 +1,24 @@
+
+── P3 · Auth & TLS posture ──
+  ! Default API key 'CHANGE_ME' in use — rotate via VEYRON_API_KEY / veyron-api-key Secret before go-live
+  ✔ Unauthenticated GET /api/v1/vms rejected (HTTP 401)
+  ! Self-signed / dev TLS cert (issuer: CN=veyron, O=veyron) — install a trusted cert before go-live
+
+── P3 · RBAC enforcement matrix (auth_context.rs) ──
+  ○ RBAC read-only key denials
+      (no_ro_key:set VEYRON_RO_KEY)
+  ○ RBAC write key admin-gate denials
+      (no_write_key:set VEYRON_WRITE_KEY)
+  ! RBAC enforcement matrix not exercised — supply VEYRON_API_KEYS with readonly+write+admin roles for full coverage
+
+── P3 · Namespace scoping ──
+  ✔ created scoping probe VM veyron-readiness-scope-1784706858 in default
+  ✔ VM visible when querying its own namespace
+  ✔ namespace scoping holds — test VM not leaked into another namespace
+
+── P3 · Cross-namespace clone RBAC ──
+  ○ cross-ns clone denial
+      (inconclusive:{"status":500,"success":false,"data":null,"error":{"code":"CREATE_FAILED","message":"Namespace not found — create the )
+  ! could not apply cloner RoleBinding (manual step)
+
+P3 security: 4 passed, 0 failed, 4 warn, 3 skipped

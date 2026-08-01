@@ -1,0 +1,19 @@
+
+[0;33m▶ Preconditions[0m
+[0;32m✔[0m windows_golden_images capability present
+[0;32m✔[0m namespaces vm-images, customer-a
+[0;32m✔[0m cross-namespace clone RBAC (customer-a:default → vm-images)
+
+[0;33m▶ Import Windows ISO via POST /images/import[0m
+[0;32m✔[0m DataVolume win-iso created
+  win-iso: Pending N/A          win-iso: ImportInProgress N/A          win-iso: ImportInProgress 11.23%          win-iso: ImportInProgress 53.04%          win-iso: ImportInProgress 97.00%          win-iso: ImportInProgress 97.00%          win-iso: ImportInProgress 97.00%          win-iso: ImportInProgress 97.00%          win-iso: Succeeded 100.0%        
+[0;32m✔[0m ISO imported
+
+[0;33m▶ Unattended install + sysprep seal[0m
+[0;32m✔[0m sysprep Secret created (autounattend.xml)
+[0;32m✔[0m builder VM created — installing (this is the long part)
+  waiting for the builder to sysprep and power off
+[0;32m✔[0m builder sealed and powered off
+
+[0;33m▶ Publish golden image (Admin) via POST /images/publish[0m
+[0;31m✘ publish returned HTTP 400: {"error":"DataVolume 'win-builder-root' is 'ImportScheduled', not 'Succeeded' — publishing an incomplete image would give every cloned VM a corrupt disk (pass force=true to override)"}[0m
