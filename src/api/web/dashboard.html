@@ -188,294 +188,19 @@
 
 /* ── Carbon Black — professional void: pure charcoal, platinum hairlines, soft white accent.
    Signature Veyron dark look. Full surface reskin (others mostly swap wallpaper). */
-html[data-theme="carbon"]{
-  --void:#030303;
-  --hull:#070707;
-  --panel:#0e0e0e;
-  --panel-2:#141414;
-  --panel-hi:#1a1a1a;
-  --hairline:#222222;
-  --hairline-hi:#333333;
-  /* Platinum / soft accent — no teal, no ember red */
-  --plasma:#e8e8e8;
-  --plasma-deep:#a8a8a8;
-  --plasma-glow:rgba(232,232,232,.12);
-  --plasma-line:rgba(232,232,232,.28);
-  --deck-temp:#e8e8e8;
-  --deck-temp-glow:rgba(232,232,232,.12);
-  --ink:#f5f5f5;
-  --ink-2:#a3a3a3;
-  --ink-3:#6b6b6b;
-  --primary:#f0f0f0;
-  --primary-dim:rgba(240,240,240,.10);
-  --primary-glow:rgba(240,240,240,.18);
-  --bg-0:#070707;
-  --bg:#070707;
-  --bg-deep:#030303;
-  --bg-card:rgba(14,14,14,.92);
-  --bg-card-solid:#0e0e0e;
-  --bg-elevated:#141414;
-  --text:#f5f5f5;
-  --text-bright:#ffffff;
-  --text-muted:#a3a3a3;
-  --text-dim:#6b6b6b;
-  --border:rgba(255,255,255,.08);
-  --border-hot:rgba(255,255,255,.14);
-  --blue:#d4d4d4;
-  --cyan:#cfcfcf;
-  --primary-blue:#d4d4d4;
-  --primary-purple:#8a8a8a;
-  --accent:#e8e8e8;
-  --molten:#d4d4d4;
-  --ember:#a8a8a8;
-  --glass-bg:rgba(14,14,14,.72);
-  --glass-border:rgba(255,255,255,.08);
-  --glass-shadow:0 24px 64px rgba(0,0,0,.55);
-  --section-compute:#c8c8c8;
-  --section-observe:#b8b8b8;
-  --section-storage:#b0b0b0;
-  --section-network:#c0c0c0;
-  --section-security:#bcbcbc;
-  --section-platform:#b4b4b4;
-  --section-finops:#ababab;
-  --section-ops:#a8a8a8;
-}
-html[data-theme="carbon"] body.mac-desktop-root{
-  background:
-    radial-gradient(90% 60% at 50% -8%, rgba(255,255,255,.035), transparent 52%),
-    radial-gradient(70% 50% at 100% 100%, rgba(255,255,255,.02), transparent 48%),
-    linear-gradient(180deg, #050505 0%, #080808 48%, #050505 100%) !important;
-  color:var(--ink);
-}
-html[data-theme="carbon"] body.mac-desktop-root::before{ opacity:0 !important; }
-html[data-theme="carbon"] .mac-menubar.navbar,
-html[data-theme="carbon"] .mac-dock-inner{
-  background:rgba(8,8,8,.88) !important;
-  border-color:rgba(255,255,255,.08) !important;
-  box-shadow:0 12px 40px rgba(0,0,0,.55) !important;
-}
-html[data-theme="carbon"] .glass-btn-primary,
-html[data-theme="carbon"] .btn-create,
-html[data-theme="carbon"] .login-btn-primary{
-  background:linear-gradient(180deg,#f5f5f5,#d8d8d8) !important;
-  color:#0a0a0a !important;
-  border:1px solid rgba(255,255,255,.35) !important;
-  box-shadow:0 8px 28px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.55) !important;
-}
-html[data-theme="carbon"] .glass-btn-primary:hover,
-html[data-theme="carbon"] .btn-create:hover,
-html[data-theme="carbon"] .login-btn-primary:hover{
-  background:linear-gradient(180deg,#ffffff,#e8e8e8) !important;
-  color:#000 !important;
-}
 
 /* ── Forge (ZyForgeSim default) — navy void + orange #f0583a ── */
-html[data-theme="forge"]{
-  --void:#070a10;
-  --hull:#0b1220;
-  --panel:#121824;
-  --panel-2:#1c2432;
-  --panel-hi:#243044;
-  --hairline:rgba(148,168,200,.16);
-  --hairline-hi:rgba(148,168,200,.28);
-  --plasma:#f0583a;
-  --plasma-deep:#d94b32;
-  --plasma-glow:rgba(240,88,58,.22);
-  --plasma-line:rgba(240,88,58,.45);
-  --deck-temp:#f0583a;
-  --deck-temp-glow:rgba(240,88,58,.18);
-  --ink:#f4f7fc;
-  --ink-2:#c5cfdf;
-  --ink-3:#8e9bb0;
-  --primary:#f0583a;
-  --primary-dim:rgba(240,88,58,.14);
-  --primary-glow:rgba(240,88,58,.28);
-  --bg-0:#070a10;
-  --bg:#070a10;
-  --bg-deep:#05070c;
-  --bg-card:rgba(18,24,36,.88);
-  --bg-card-solid:#121824;
-  --bg-elevated:#1c2432;
-  --text:#f4f7fc;
-  --text-bright:#ffffff;
-  --text-muted:#c5cfdf;
-  --text-dim:#8e9bb0;
-  --border:rgba(148,168,200,.16);
-  --border-hot:rgba(240,88,58,.35);
-  --blue:#f0583a;
-  --cyan:#f97316;
-  --primary-blue:#f0583a;
-  --primary-purple:#fb923c;
-  --accent:#f0583a;
-  --molten:#f97316;
-  --ember:#f0583a;
-  --forge:#f0583a;
-  --spark:#fb923c;
-  --glass-bg:rgba(18,24,36,.78);
-  --glass-border:rgba(148,168,200,.18);
-  --glass-shadow:0 24px 64px rgba(0,0,0,.5);
-  --section-compute:#f47a60;
-  --section-observe:#f97316;
-  --section-storage:#fb923c;
-  --section-network:#f89e8a;
-  --section-security:#f0583a;
-  --section-platform:#d94b32;
-  --section-finops:#f4b183;
-  --section-ops:#f97316;
-}
-html[data-theme="forge"] body.mac-desktop-root{
-  background:
-    radial-gradient(90% 55% at 50% -10%, rgba(240,88,58,.18), transparent 55%),
-    radial-gradient(70% 50% at 100% 100%, rgba(249,115,22,.10), transparent 50%),
-    radial-gradient(50% 40% at 0% 80%, rgba(99,102,241,.07), transparent 45%),
-    linear-gradient(180deg, #0b1220 0%, #070a10 48%, #05070c 100%) !important;
-  color:var(--ink);
-}
-html[data-theme="forge"] body.mac-desktop-root::before{ opacity:0 !important; }
-html[data-theme="forge"] .mac-menubar.navbar,
-html[data-theme="forge"] .mac-dock-inner{
-  background:rgba(11,18,32,.90) !important;
-  border-color:rgba(148,168,200,.16) !important;
-  box-shadow:0 12px 40px rgba(0,0,0,.45) !important;
-}
-html[data-theme="forge"] .glass-btn-primary,
-html[data-theme="forge"] .btn-create,
-html[data-theme="forge"] .login-btn-primary{
-  background:linear-gradient(180deg,#f47a60,#f0583a) !important;
-  color:#fff !important;
-  border:1px solid rgba(240,88,58,.55) !important;
-  box-shadow:0 8px 28px rgba(240,88,58,.28), inset 0 1px 0 rgba(255,255,255,.22) !important;
-}
-html[data-theme="forge"] .glass-btn-primary:hover,
-html[data-theme="forge"] .btn-create:hover,
-html[data-theme="forge"] .login-btn-primary:hover{
-  background:linear-gradient(180deg,#f89e8a,#f0583a) !important;
-  color:#fff !important;
-}
 
 /* ── Synthwave: Outrun night — deep indigo, neon-magenta accent, sunset horizon + retro grid ── */
-html[data-theme="synthwave"]{
-  /* Deep indigo-violet night surfaces */
-  --void:#0a0612;
-  --hull:#120a24;
-  --panel:#1a1033;
-  --panel-2:#221542;
-  --panel-hi:#2e1d57;
-  --hairline:#3a2a63;
-  --hairline-hi:#574099;
-  /* Neon magenta accent (reskins the brand plasma) */
-  --plasma:#ff3d9a;
-  --plasma-deep:#b81e74;
-  --plasma-glow:rgba(255,61,154,.20);
-  --plasma-line:rgba(255,61,154,.48);
-  --deck-temp:#ff3d9a;
-  --deck-temp-glow:rgba(255,61,154,.20);
-  /* Lavender-white ink */
-  --ink:#f4ecff;
-  --ink-2:#bda9e6;
-  --ink-3:#7d6aa8;
-  /* Legacy + CloudOS bridges → neon magenta / cyan duo */
-  --primary:#ff3d9a;
-  --primary-dim:rgba(255,61,154,.16);
-  --primary-glow:rgba(255,61,154,.30);
-  --bg-0:#120a24;
-  --blue:#ff3d9a;
-  --cyan:#36e6ff;
-  --primary-blue:#36e6ff;
-  --primary-purple:#a06bff;
-  --accent:#ff3d9a;
-  --section-compute:#36e6ff;
-  --section-platform:#ff8ad1;
-}
 /* Sunset horizon glow + faint perspective grid over the night */
-html[data-theme="synthwave"] body.mac-desktop-root{
-  background:
-    repeating-linear-gradient(0deg,  rgba(255,61,154,.05) 0 1px, transparent 1px 46px),
-    repeating-linear-gradient(90deg, rgba(54,230,255,.04) 0 1px, transparent 1px 46px),
-    radial-gradient(120% 70% at 50% 118%, rgba(255,138,90,.16), transparent 60%),
-    radial-gradient(120% 80% at 50% 120%, rgba(255,61,154,.18), transparent 64%),
-    radial-gradient(90% 60% at 12% -10%, rgba(160,107,255,.14), transparent 55%),
-    var(--hull) !important;
-}
-html[data-theme="synthwave"] body.mac-desktop-root::before{ opacity:.08 !important; }
 
 /* ── Aurora: polar night with shifting green-teal-violet curtains ── */
-html[data-theme="aurora"]{
-  --void:#06090f; --hull:#0a1018; --panel:#101a24; --panel-2:#16242f; --panel-hi:#1f3340;
-  --hairline:#253b48; --hairline-hi:#3a5a68;
-  --plasma:#34e3b0; --plasma-deep:#16a884; --plasma-glow:rgba(52,227,176,.20); --plasma-line:rgba(52,227,176,.46);
-  --deck-temp:#34e3b0; --deck-temp-glow:rgba(52,227,176,.20);
-  --ink:#eaf4f0; --ink-2:#a9c6c0; --ink-3:#6f8a86;
-  --primary:#34e3b0; --primary-dim:rgba(52,227,176,.16); --primary-glow:rgba(52,227,176,.30);
-  --bg-0:#0a1018; --blue:#34e3b0; --cyan:#5ff0d0; --primary-blue:#5aa8ff; --primary-purple:#9a7bff; --accent:#34e3b0;
-  --section-compute:#7fe9d9; --section-platform:#b9a6ff;
-}
-html[data-theme="aurora"] body.mac-desktop-root{
-  background:
-    radial-gradient(120% 60% at 20% -10%, rgba(52,227,176,.16), transparent 55%),
-    radial-gradient(120% 55% at 80% -12%, rgba(122,160,255,.13), transparent 55%),
-    radial-gradient(140% 65% at 50% -8%, rgba(154,123,255,.10), transparent 60%),
-    var(--hull) !important;
-}
-html[data-theme="aurora"] body.mac-desktop-root::before{ opacity:.10 !important; }
 
 /* ── Nord: arctic polar-night slate with frost accent ── */
-html[data-theme="nord"]{
-  --void:#232831; --hull:#2e3440; --panel:#353c4a; --panel-2:#3b4252; --panel-hi:#434c5e;
-  --hairline:#4c566a; --hairline-hi:#5e6a82;
-  --plasma:#88c0d0; --plasma-deep:#5e81ac; --plasma-glow:rgba(136,192,208,.20); --plasma-line:rgba(136,192,208,.46);
-  --deck-temp:#88c0d0; --deck-temp-glow:rgba(136,192,208,.20);
-  --ink:#eceff4; --ink-2:#d8dee9; --ink-3:#9aa5b8;
-  --primary:#88c0d0; --primary-dim:rgba(136,192,208,.18); --primary-glow:rgba(136,192,208,.30);
-  --bg-0:#2e3440; --blue:#88c0d0; --cyan:#8fbcbb; --primary-blue:#5e81ac; --primary-purple:#b48ead; --accent:#88c0d0;
-  --section-compute:#81a1c1; --section-platform:#b48ead;
-}
-html[data-theme="nord"] body.mac-desktop-root{
-  background:
-    radial-gradient(120% 70% at 80% -10%, rgba(136,192,208,.10), transparent 55%),
-    radial-gradient(90% 60% at 0% 110%, rgba(94,129,172,.10), transparent 52%),
-    var(--hull) !important;
-}
-html[data-theme="nord"] body.mac-desktop-root::before{ opacity:.06 !important; }
 
 /* ── Royal Gold: obsidian black + luxe gold ── */
-html[data-theme="royal-gold"]{
-  --void:#050505; --hull:#0c0b08; --panel:#14110b; --panel-2:#1c1810; --panel-hi:#2a2415;
-  --hairline:#332b18; --hairline-hi:#5a4d2c;
-  --plasma:#e8b84b; --plasma-deep:#b8881f; --plasma-glow:rgba(232,184,75,.20); --plasma-line:rgba(232,184,75,.46);
-  --deck-temp:#e8b84b; --deck-temp-glow:rgba(232,184,75,.20);
-  --ink:#f5efe0; --ink-2:#cbbf9e; --ink-3:#8a7f62;
-  --primary:#e8b84b; --primary-dim:rgba(232,184,75,.16); --primary-glow:rgba(232,184,75,.30);
-  --bg-0:#0c0b08; --blue:#e8b84b; --cyan:#f0d27a; --primary-blue:#caa53a; --primary-purple:#c9a24a; --accent:#e8b84b;
-  --section-compute:#f0d27a; --section-platform:#d9b85a;
-}
-html[data-theme="royal-gold"] body.mac-desktop-root{
-  background:
-    radial-gradient(120% 80% at 50% -12%, rgba(232,184,75,.12), transparent 58%),
-    radial-gradient(90% 60% at 50% 120%, rgba(184,136,31,.10), transparent 60%),
-    var(--hull) !important;
-}
-html[data-theme="royal-gold"] body.mac-desktop-root::before{ opacity:.08 !important; }
 
 /* ── Matrix: phosphor green on black, faux glyph-rain streaks ── */
-html[data-theme="matrix"]{
-  --void:#000400; --hull:#020a05; --panel:#04140b; --panel-2:#071e10; --panel-hi:#0b2c18;
-  --hairline:#123a22; --hairline-hi:#1d5a36;
-  --plasma:#2bff77; --plasma-deep:#15b34d; --plasma-glow:rgba(43,255,119,.20); --plasma-line:rgba(43,255,119,.46);
-  --deck-temp:#2bff77; --deck-temp-glow:rgba(43,255,119,.20);
-  --ink:#d6ffe6; --ink-2:#6fd99a; --ink-3:#3f8a5e;
-  --primary:#2bff77; --primary-dim:rgba(43,255,119,.16); --primary-glow:rgba(43,255,119,.30);
-  --bg-0:#020a05; --blue:#2bff77; --cyan:#5fffae; --primary-blue:#19c95a; --primary-purple:#39d27a; --accent:#2bff77;
-  --section-compute:#5fffae; --section-platform:#39d27a;
-}
-html[data-theme="matrix"] body.mac-desktop-root{
-  background:
-    repeating-linear-gradient(90deg, rgba(43,255,119,.05) 0 1px, transparent 1px 22px),
-    linear-gradient(180deg, rgba(43,255,119,.07), transparent 30%),
-    radial-gradient(100% 60% at 50% -10%, rgba(43,255,119,.10), transparent 55%),
-    var(--hull) !important;
-}
-html[data-theme="matrix"] body.mac-desktop-root::before{ opacity:.05 !important; }
 
 /* ════════════════════════════════════════════════════════════════════════
    ◜ HOLOGRAPHIC OPS — the redesign
@@ -483,33 +208,6 @@ html[data-theme="matrix"] body.mac-desktop-root::before{ opacity:.05 !important;
    Defined once here; cascades across all 67 pages via shared surface classes
    (.card .glass-card .tile .panel .id-*). Higher specificity wins by design.
    ════════════════════════════════════════════════════════════════════════ */
-html[data-theme="holo"]{
-  --void:#04050e; --hull:#070a1a; --bg-deep:#04050e; --bg:#070a1a; --bg-secondary:#070a1a;
-  --bg-card:rgba(22,30,58,.52); --bg-card-solid:#101630; --bg-elevated:rgba(34,46,86,.58);
-  --bg-tertiary:rgba(40,54,96,.42);
-  --steel:rgba(26,36,68,.55); --steel-light:rgba(40,54,96,.60); --steel-bright:rgba(54,72,120,.66);
-  --panel:rgba(22,30,58,.52); --panel-2:rgba(32,44,82,.58); --panel-hi:rgba(46,62,108,.66);
-  --hairline:rgba(150,178,255,.16); --hairline-hi:rgba(160,188,255,.34);
-  --border:rgba(150,178,255,.16); --border-hot:rgba(160,188,255,.34); --border-cold:rgba(150,178,255,.14);
-  --plasma:#5b8cff; --plasma-deep:#3a5bd9; --plasma-glow:rgba(91,140,255,.30); --plasma-line:rgba(124,162,255,.52);
-  --primary:#5b8cff; --primary-blue:#5b8cff; --primary-purple:#a78bfa;
-  --primary-dim:rgba(91,140,255,.16); --primary-glow:rgba(91,140,255,.34);
-  --accent:#5b8cff; --molten:#7ca2ff; --spark:#bcd0ff; --plasma:#5b8cff;
-  --ink:#eaf0ff; --ink-2:#aebbe0; --ink-3:#7585b0;
-  --text:#eaf0ff; --text-bright:#ffffff; --text-muted:#aebbe0; --text-dim:#7585b0;
-  --glass-bg:rgba(20,28,56,.46); --glass-bg-elevated:rgba(34,46,86,.58);
-  --glass-border:rgba(160,188,255,.16); --glass-border-strong:rgba(170,196,255,.30);
-  --glass-blur:blur(26px) saturate(1.6); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(2,4,16,.62),0 6px 18px rgba(2,4,16,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  /* aurora-1 is reactive: it borrows the live deck temperature (applyDeckTemp
-     drives --deck-temp blue→amber→red by fleet health), so the whole field
-     warms as the fleet degrades. The others stay for chromatic richness. */
-  --aurora-1:color-mix(in srgb, var(--deck-temp, #3b82f6) 40%, transparent);
-  --aurora-2:rgba(167,139,250,.26);
-  --aurora-3:rgba(56,212,255,.22); --aurora-4:rgba(99,102,241,.20);
-  color-scheme:dark;
-}
 
 /* ════════════════════════════════════════════════════════════════════════
    ◈ NEBULA — cosmic deep-space theme (glass-deck family)
@@ -517,761 +215,54 @@ html[data-theme="holo"]{
    Shares the full holo engine (glass shape, parallax, fleet orb, cursor
    spotlight, reactive deck) via .glass-deck; only the colour skin differs.
    ════════════════════════════════════════════════════════════════════════ */
-html[data-theme="nebula"]{
-  --void:#060414; --hull:#0b0820; --bg-deep:#060414; --bg:#0b0820; --bg-secondary:#0b0820;
-  --bg-card:rgba(40,26,74,.52); --bg-card-solid:#160f30; --bg-elevated:rgba(54,36,96,.58);
-  --bg-tertiary:rgba(60,40,104,.42);
-  --steel:rgba(44,28,78,.55); --steel-light:rgba(60,40,104,.60); --steel-bright:rgba(80,54,132,.66);
-  --panel:rgba(40,26,74,.52); --panel-2:rgba(52,34,94,.58); --panel-hi:rgba(70,46,120,.66);
-  --hairline:rgba(206,150,255,.18); --hairline-hi:rgba(220,170,255,.36);
-  --border:rgba(206,150,255,.18); --border-hot:rgba(220,170,255,.36); --border-cold:rgba(206,150,255,.14);
-  --plasma:#c264ff; --plasma-deep:#8e3ce0; --plasma-glow:rgba(194,100,255,.32); --plasma-line:rgba(210,130,255,.55);
-  --primary:#c264ff; --primary-blue:#c264ff; --primary-purple:#e85cff;
-  --primary-dim:rgba(194,100,255,.16); --primary-glow:rgba(194,100,255,.36);
-  --accent:#c264ff; --molten:#d98bff; --spark:#f0c6ff;
-  --ink:#f3eaff; --ink-2:#c9b8e6; --ink-3:#8b7bb0;
-  --text:#f3eaff; --text-bright:#ffffff; --text-muted:#c9b8e6; --text-dim:#8b7bb0;
-  --glass-bg:rgba(36,24,68,.46); --glass-bg-elevated:rgba(54,36,96,.58);
-  --glass-border:rgba(206,150,255,.18); --glass-border-strong:rgba(220,170,255,.32);
-  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(6,2,20,.62),0 6px 18px rgba(6,2,20,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  /* nebula clouds: magenta core, violet + cyan veils */
-  --aurora-1:rgba(236,72,180,.32); --aurora-2:rgba(120,80,255,.28);
-  --aurora-3:rgba(56,212,255,.22); --aurora-4:rgba(180,60,220,.22);
-  --deck-temp:#c264ff; --deck-temp-glow:rgba(194,100,255,.18);
-  color-scheme:dark;
-}
 /* Nebula colour skin over the shared glass engine */
-html[data-theme="nebula"].glass-deck .card,
-html[data-theme="nebula"].glass-deck .glass-card,
-html[data-theme="nebula"].glass-deck .id-tile,
-html[data-theme="nebula"].glass-deck .id-vmcard,
-html[data-theme="nebula"].glass-deck .id-tpl,
-html[data-theme="nebula"].glass-deck .tile,
-html[data-theme="nebula"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(70,40,120,.46), rgba(26,14,52,.46)) !important;
-  border-color:rgba(206,150,255,.18) !important;
-  box-shadow:0 22px 58px rgba(6,2,20,.58),0 5px 16px rgba(6,2,20,.42),
-    inset 0 1px 0 rgba(230,200,255,.20),inset 0 0 0 1px rgba(180,110,255,.05) !important;
-}
-html[data-theme="nebula"].glass-deck .mac-page-window{
-  background:linear-gradient(160deg, rgba(52,32,96,.40), rgba(20,12,44,.44)) !important;
-  border-color:rgba(206,150,255,.16) !important;
-}
-html[data-theme="nebula"].glass-deck .card:hover,
-html[data-theme="nebula"].glass-deck .glass-card:hover,
-html[data-theme="nebula"].glass-deck .id-tile:hover,
-html[data-theme="nebula"].glass-deck .id-vmcard:hover,
-html[data-theme="nebula"].glass-deck .id-tpl:hover,
-html[data-theme="nebula"].glass-deck .vm-card:hover{
-  border-color:rgba(210,130,255,.5) !important;
-  box-shadow:0 34px 82px rgba(6,2,20,.64),0 0 0 1px rgba(210,130,255,.42),
-    0 0 44px rgba(194,100,255,.34),inset 0 1px 0 rgba(235,210,255,.26) !important;
-}
-html[data-theme="nebula"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(64,38,112,.42), rgba(22,12,46,.46))}
-html[data-theme="nebula"].glass-deck .vmr-panel:hover{border-color:rgba(210,130,255,.42);box-shadow:0 30px 72px rgba(6,2,20,.58),0 0 36px rgba(194,100,255,.26),inset 0 1px 0 rgba(235,210,255,.22)}
-html[data-theme="nebula"].glass-deck .mission-control-header-row{
-  background:linear-gradient(120deg, rgba(194,100,255,.22), rgba(236,72,180,.14) 46%, rgba(18,10,40,.5));
-  border-color:rgba(210,150,255,.22)}
-html[data-theme="nebula"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(194,100,255,.42), transparent 66%)}
-html[data-theme="nebula"].glass-deck .mission-control-header-row h1,
-html[data-theme="nebula"].glass-deck .id-tile .id-big,
-html[data-theme="nebula"].glass-deck .id-metric,
-html[data-theme="nebula"].glass-deck .id-gauge .id-v,
-html[data-theme="nebula"].glass-deck .holo-orb-pct{
-  background:linear-gradient(180deg,#ffffff,#e7c0ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="nebula"].glass-deck .glass-btn-primary,
-html[data-theme="nebula"].glass-deck .btn-create{
-  background:linear-gradient(135deg,#c264ff 0%,#8e3ce0 100%) !important;border:1px solid rgba(220,170,255,.5) !important;
-  box-shadow:0 6px 26px rgba(194,100,255,.42),inset 0 1px 0 rgba(255,255,255,.28) !important}
-html[data-theme="nebula"].glass-deck .form-input:focus,
-html[data-theme="nebula"].glass-deck .form-select:focus,
-html[data-theme="nebula"].glass-deck .zeus-ai-input:focus{
-  border-color:rgba(210,130,255,.6) !important;box-shadow:0 0 0 3px rgba(194,100,255,.22),0 0 18px rgba(194,100,255,.16) !important}
-html[data-theme="nebula"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(194,100,255,.10), transparent);border-bottom-color:rgba(206,150,255,.18)}
-html[data-theme="nebula"].glass-deck .table tbody tr:hover td{background:rgba(194,100,255,.08);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="nebula"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#c264ff,#4f8cff)}
-html[data-theme="nebula"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(48,26,84,.5), rgba(14,8,28,.32) 70%, transparent);border-color:rgba(206,150,255,.12)}
 
 /* ◈ SOLARIS — golden-hour warm glass (glass-deck family) */
-html[data-theme="solaris"]{
-  --void:#130b04; --hull:#1c1108; --bg-deep:#130b04; --bg:#1c1108; --bg-secondary:#1c1108;
-  --bg-card:rgba(72,46,20,.52); --bg-card-solid:#2a1a0c; --bg-elevated:rgba(90,60,30,.58);
-  --bg-tertiary:rgba(104,70,36,.42);
-  --steel:rgba(70,44,20,.55); --steel-light:rgba(96,64,32,.60); --steel-bright:rgba(120,82,44,.66);
-  --panel:rgba(72,46,20,.52); --panel-2:rgba(88,58,28,.58); --panel-hi:rgba(108,74,40,.66);
-  --hairline:rgba(255,200,140,.18); --hairline-hi:rgba(255,190,110,.5);
-  --border:rgba(255,200,140,.18); --border-hot:rgba(255,190,110,.5); --border-cold:rgba(255,200,140,.14);
-  --plasma:#ffab38; --plasma-deep:#d97a1e; --plasma-glow:rgba(255,171,56,.30); --plasma-line:rgba(255,196,110,.52);
-  --primary:#ffab38; --primary-blue:#ffab38; --primary-purple:#ff8a5c;
-  --primary-dim:rgba(255,171,56,.16); --primary-glow:rgba(255,171,56,.36);
-  --accent:#ffab38; --molten:#ff8a5c; --spark:#ffe0b0;
-  --ink:#fff3e2; --ink-2:#e2cdac; --ink-3:#b39a76;
-  --text:#fff3e2; --text-bright:#ffffff; --text-muted:#e2cdac; --text-dim:#b39a76;
-  --glass-bg:rgba(64,40,18,.46); --glass-bg-elevated:rgba(90,60,30,.58);
-  --glass-border:rgba(255,200,140,.18); --glass-border-strong:rgba(255,210,160,.32);
-  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(20,8,2,.62),0 6px 18px rgba(20,8,2,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  --aurora-1:rgba(255,150,40,.30); --aurora-2:rgba(255,100,70,.26); --aurora-3:rgba(255,200,90,.22); --aurora-4:rgba(220,120,40,.22);
-  --deck-temp:#ffab38; --deck-temp-glow:rgba(255,171,56,.18);
-  color-scheme:dark;
-}
 /* Solaris colour skin */
-html[data-theme="solaris"].glass-deck .card,
-html[data-theme="solaris"].glass-deck .glass-card,
-html[data-theme="solaris"].glass-deck .id-tile,
-html[data-theme="solaris"].glass-deck .id-vmcard,
-html[data-theme="solaris"].glass-deck .id-tpl,
-html[data-theme="solaris"].glass-deck .tile,
-html[data-theme="solaris"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(86,54,24,.48), rgba(34,20,8,.46)) !important;
-  border-color:rgba(255,200,140,.18) !important;
-  box-shadow:0 22px 58px rgba(20,8,2,.58),0 5px 16px rgba(20,8,2,.42),inset 0 1px 0 rgba(255,230,200,.20),inset 0 0 0 1px rgba(255,180,90,.05) !important;
-}
-html[data-theme="solaris"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(70,44,22,.40), rgba(26,14,6,.44)) !important;border-color:rgba(255,200,140,.18) !important}
-html[data-theme="solaris"].glass-deck .card:hover,
-html[data-theme="solaris"].glass-deck .glass-card:hover,
-html[data-theme="solaris"].glass-deck .id-tile:hover,
-html[data-theme="solaris"].glass-deck .id-vmcard:hover,
-html[data-theme="solaris"].glass-deck .id-tpl:hover,
-html[data-theme="solaris"].glass-deck .vm-card:hover{
-  border-color:rgba(255,190,110,.5) !important;
-  box-shadow:0 34px 82px rgba(20,8,2,.64),0 0 0 1px rgba(255,190,110,.5),0 0 44px rgba(255,171,56,.34),inset 0 1px 0 rgba(255,235,210,.26) !important;
-}
-html[data-theme="solaris"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(80,50,24,.42), rgba(28,16,6,.46))}
-html[data-theme="solaris"].glass-deck .vmr-panel:hover{border-color:rgba(255,190,110,.5);box-shadow:0 30px 72px rgba(20,8,2,.58),0 0 36px rgba(255,171,56,.34),inset 0 1px 0 rgba(255,235,210,.26)}
-html[data-theme="solaris"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(255,171,56,.22), rgba(255,110,70,.14) 46%, rgba(28,16,6,.5));border-color:rgba(255,200,130,.22)}
-html[data-theme="solaris"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(255,171,56,.42), transparent 66%)}
-html[data-theme="solaris"].glass-deck .mission-control-header-row h1,
-html[data-theme="solaris"].glass-deck .id-tile .id-big,
-html[data-theme="solaris"].glass-deck .id-metric,
-html[data-theme="solaris"].glass-deck .id-gauge .id-v,
-html[data-theme="solaris"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#ffd9a0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="solaris"].glass-deck .glass-btn-primary,
-html[data-theme="solaris"].glass-deck .btn-create{background:linear-gradient(135deg,#ffab38 0%,#d97a1e 100%) !important;border:1px solid rgba(255,210,160,.32) !important;box-shadow:0 6px 26px rgba(255,171,56,.36),inset 0 1px 0 rgba(255,255,255,.28) !important}
-html[data-theme="solaris"].glass-deck .form-input:focus,
-html[data-theme="solaris"].glass-deck .form-select:focus,
-html[data-theme="solaris"].glass-deck .zeus-ai-input:focus{border-color:rgba(255,190,110,.5) !important;box-shadow:0 0 0 3px rgba(255,171,56,.30),0 0 18px rgba(255,171,56,.18) !important}
-html[data-theme="solaris"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(255,171,56,.10), transparent);border-bottom-color:rgba(255,200,140,.18)}
-html[data-theme="solaris"].glass-deck .table tbody tr:hover td{background:rgba(255,171,56,.10);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="solaris"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#ffab38,#ff8a5c)}
-html[data-theme="solaris"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(64,40,18,.5), rgba(20,10,4,.32) 70%, transparent);border-color:rgba(255,200,140,.14)}
 /* ◈ BIOLUME — deep-ocean bioluminescence (glass-deck family) */
-html[data-theme="biolume"]{
-  --void:#02090c; --hull:#041420; --bg-deep:#02090c; --bg:#041420; --bg-secondary:#041420;
-  --bg-card:rgba(14,48,56,.52); --bg-card-solid:#0a2228; --bg-elevated:rgba(22,68,76,.58);
-  --bg-tertiary:rgba(26,76,84,.42);
-  --steel:rgba(14,46,54,.55); --steel-light:rgba(22,66,74,.60); --steel-bright:rgba(32,90,98,.66);
-  --panel:rgba(14,48,56,.52); --panel-2:rgba(20,64,72,.58); --panel-hi:rgba(28,84,92,.66);
-  --hairline:rgba(120,230,220,.18); --hairline-hi:rgba(90,240,214,.5);
-  --border:rgba(120,230,220,.18); --border-hot:rgba(90,240,214,.5); --border-cold:rgba(120,230,220,.14);
-  --plasma:#19e3c4; --plasma-deep:#0e9e8a; --plasma-glow:rgba(25,227,196,.30); --plasma-line:rgba(80,240,214,.5);
-  --primary:#19e3c4; --primary-blue:#19e3c4; --primary-purple:#38c8ff;
-  --primary-dim:rgba(25,227,196,.16); --primary-glow:rgba(25,227,196,.36);
-  --accent:#19e3c4; --molten:#38c8ff; --spark:#aefff2;
-  --ink:#e6fffb; --ink-2:#aee0d8; --ink-3:#6ca89f;
-  --text:#e6fffb; --text-bright:#ffffff; --text-muted:#aee0d8; --text-dim:#6ca89f;
-  --glass-bg:rgba(12,44,52,.46); --glass-bg-elevated:rgba(22,68,76,.58);
-  --glass-border:rgba(120,230,220,.18); --glass-border-strong:rgba(150,245,230,.32);
-  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(2,12,16,.62),0 6px 18px rgba(2,12,16,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  --aurora-1:rgba(25,227,196,.30); --aurora-2:rgba(56,200,255,.26); --aurora-3:rgba(40,220,150,.22); --aurora-4:rgba(20,120,150,.22);
-  --deck-temp:#19e3c4; --deck-temp-glow:rgba(25,227,196,.18);
-  color-scheme:dark;
-}
 /* Biolume colour skin */
-html[data-theme="biolume"].glass-deck .card,
-html[data-theme="biolume"].glass-deck .glass-card,
-html[data-theme="biolume"].glass-deck .id-tile,
-html[data-theme="biolume"].glass-deck .id-vmcard,
-html[data-theme="biolume"].glass-deck .id-tpl,
-html[data-theme="biolume"].glass-deck .tile,
-html[data-theme="biolume"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(18,60,68,.48), rgba(6,22,28,.46)) !important;
-  border-color:rgba(120,230,220,.18) !important;
-  box-shadow:0 22px 58px rgba(2,12,16,.58),0 5px 16px rgba(2,12,16,.42),inset 0 1px 0 rgba(200,255,248,.20),inset 0 0 0 1px rgba(80,240,210,.05) !important;
-}
-html[data-theme="biolume"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(14,52,60,.40), rgba(4,16,22,.44)) !important;border-color:rgba(120,230,220,.18) !important}
-html[data-theme="biolume"].glass-deck .card:hover,
-html[data-theme="biolume"].glass-deck .glass-card:hover,
-html[data-theme="biolume"].glass-deck .id-tile:hover,
-html[data-theme="biolume"].glass-deck .id-vmcard:hover,
-html[data-theme="biolume"].glass-deck .id-tpl:hover,
-html[data-theme="biolume"].glass-deck .vm-card:hover{
-  border-color:rgba(90,240,214,.5) !important;
-  box-shadow:0 34px 82px rgba(2,12,16,.64),0 0 0 1px rgba(90,240,214,.5),0 0 44px rgba(25,227,196,.34),inset 0 1px 0 rgba(210,255,250,.26) !important;
-}
-html[data-theme="biolume"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(18,60,68,.42), rgba(6,20,26,.46))}
-html[data-theme="biolume"].glass-deck .vmr-panel:hover{border-color:rgba(90,240,214,.5);box-shadow:0 30px 72px rgba(2,12,16,.58),0 0 36px rgba(25,227,196,.34),inset 0 1px 0 rgba(210,255,250,.26)}
-html[data-theme="biolume"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(25,227,196,.22), rgba(56,200,255,.14) 46%, rgba(4,16,24,.5));border-color:rgba(120,240,220,.22)}
-html[data-theme="biolume"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(25,227,196,.42), transparent 66%)}
-html[data-theme="biolume"].glass-deck .mission-control-header-row h1,
-html[data-theme="biolume"].glass-deck .id-tile .id-big,
-html[data-theme="biolume"].glass-deck .id-metric,
-html[data-theme="biolume"].glass-deck .id-gauge .id-v,
-html[data-theme="biolume"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#bafff2);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="biolume"].glass-deck .glass-btn-primary,
-html[data-theme="biolume"].glass-deck .btn-create{background:linear-gradient(135deg,#19e3c4 0%,#0e9e8a 100%) !important;border:1px solid rgba(150,245,230,.32) !important;box-shadow:0 6px 26px rgba(25,227,196,.36),inset 0 1px 0 rgba(255,255,255,.28) !important}
-html[data-theme="biolume"].glass-deck .form-input:focus,
-html[data-theme="biolume"].glass-deck .form-select:focus,
-html[data-theme="biolume"].glass-deck .zeus-ai-input:focus{border-color:rgba(90,240,214,.5) !important;box-shadow:0 0 0 3px rgba(25,227,196,.30),0 0 18px rgba(25,227,196,.18) !important}
-html[data-theme="biolume"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(25,227,196,.10), transparent);border-bottom-color:rgba(120,230,220,.18)}
-html[data-theme="biolume"].glass-deck .table tbody tr:hover td{background:rgba(25,227,196,.10);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="biolume"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#19e3c4,#38c8ff)}
-html[data-theme="biolume"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(12,44,52,.5), rgba(4,14,20,.32) 70%, transparent);border-color:rgba(120,230,220,.14)}
 
 /* ◈ SAKURA — rose champagne glass (glass-deck family) */
-html[data-theme="sakura"]{
-  --void:#150a0f; --hull:#1f0e16; --bg-deep:#150a0f; --bg:#1f0e16; --bg-secondary:#1f0e16;
-  --bg-card:rgba(70,30,46,.52); --bg-card-solid:#2a141c; --bg-elevated:rgba(90,44,62,.58);
-  --bg-tertiary:rgba(104,52,72,.42);
-  --steel:rgba(68,30,44,.55); --steel-light:rgba(94,44,62,.60); --steel-bright:rgba(118,58,80,.66);
-  --panel:rgba(70,30,46,.52); --panel-2:rgba(86,40,58,.58); --panel-hi:rgba(108,54,76,.66);
-  --hairline:rgba(255,180,205,.18); --hairline-hi:rgba(255,160,190,.5);
-  --border:rgba(255,180,205,.18); --border-hot:rgba(255,160,190,.5); --border-cold:rgba(255,180,205,.14);
-  --plasma:#ff8fb3; --plasma-deep:#d96a92; --plasma-glow:rgba(255,143,179,.30); --plasma-line:rgba(255,180,205,.52);
-  --primary:#ff8fb3; --primary-blue:#ff8fb3; --primary-purple:#ffc4d6;
-  --primary-dim:rgba(255,143,179,.16); --primary-glow:rgba(255,143,179,.36);
-  --accent:#ff8fb3; --molten:#ffc4d6; --spark:#ffd9e6;
-  --ink:#fff0f4; --ink-2:#e6c6d2; --ink-3:#b58c9c;
-  --text:#fff0f4; --text-bright:#ffffff; --text-muted:#e6c6d2; --text-dim:#b58c9c;
-  --glass-bg:rgba(60,26,40,.46); --glass-bg-elevated:rgba(90,44,62,.58);
-  --glass-border:rgba(255,180,205,.18); --glass-border-strong:rgba(255,200,218,.32);
-  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(20,6,12,.62),0 6px 18px rgba(20,6,12,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  --aurora-1:rgba(255,120,160,.30); --aurora-2:rgba(255,160,120,.24); --aurora-3:rgba(220,130,255,.22); --aurora-4:rgba(255,90,140,.20);
-  --deck-temp:#ff8fb3; --deck-temp-glow:rgba(255,143,179,.18);
-  color-scheme:dark;
-}
 /* Sakura colour skin */
-html[data-theme="sakura"].glass-deck .card,
-html[data-theme="sakura"].glass-deck .glass-card,
-html[data-theme="sakura"].glass-deck .id-tile,
-html[data-theme="sakura"].glass-deck .id-vmcard,
-html[data-theme="sakura"].glass-deck .id-tpl,
-html[data-theme="sakura"].glass-deck .tile,
-html[data-theme="sakura"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(82,36,52,.48), rgba(32,14,22,.46)) !important;
-  border-color:rgba(255,180,205,.18) !important;
-  box-shadow:0 22px 58px rgba(20,6,12,.58),0 5px 16px rgba(20,6,12,.42),inset 0 1px 0 rgba(255,225,235,.20),inset 0 0 0 1px rgba(255,150,185,.05) !important;
-}
-html[data-theme="sakura"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(68,30,44,.40), rgba(24,10,16,.44)) !important;border-color:rgba(255,180,205,.18) !important}
-html[data-theme="sakura"].glass-deck .card:hover,
-html[data-theme="sakura"].glass-deck .glass-card:hover,
-html[data-theme="sakura"].glass-deck .id-tile:hover,
-html[data-theme="sakura"].glass-deck .id-vmcard:hover,
-html[data-theme="sakura"].glass-deck .id-tpl:hover,
-html[data-theme="sakura"].glass-deck .vm-card:hover{
-  border-color:rgba(255,160,190,.5) !important;
-  box-shadow:0 34px 82px rgba(20,6,12,.64),0 0 0 1px rgba(255,160,190,.5),0 0 44px rgba(255,143,179,.34),inset 0 1px 0 rgba(255,230,240,.26) !important;
-}
-html[data-theme="sakura"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(78,34,50,.42), rgba(26,12,18,.46))}
-html[data-theme="sakura"].glass-deck .vmr-panel:hover{border-color:rgba(255,160,190,.5);box-shadow:0 30px 72px rgba(20,6,12,.58),0 0 36px rgba(255,143,179,.34),inset 0 1px 0 rgba(255,230,240,.26)}
-html[data-theme="sakura"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(255,143,179,.22), rgba(255,160,120,.14) 46%, rgba(26,12,18,.5));border-color:rgba(255,185,205,.22)}
-html[data-theme="sakura"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(255,143,179,.42), transparent 66%)}
-html[data-theme="sakura"].glass-deck .mission-control-header-row h1,
-html[data-theme="sakura"].glass-deck .id-tile .id-big,
-html[data-theme="sakura"].glass-deck .id-metric,
-html[data-theme="sakura"].glass-deck .id-gauge .id-v,
-html[data-theme="sakura"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#ffd0e0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="sakura"].glass-deck .glass-btn-primary,
-html[data-theme="sakura"].glass-deck .btn-create{background:linear-gradient(135deg,#ff8fb3 0%,#d96a92 100%) !important;border:1px solid rgba(255,200,218,.32) !important;box-shadow:0 6px 26px rgba(255,143,179,.36),inset 0 1px 0 rgba(255,255,255,.28) !important}
-html[data-theme="sakura"].glass-deck .form-input:focus,
-html[data-theme="sakura"].glass-deck .form-select:focus,
-html[data-theme="sakura"].glass-deck .zeus-ai-input:focus{border-color:rgba(255,160,190,.5) !important;box-shadow:0 0 0 3px rgba(255,143,179,.30),0 0 18px rgba(255,143,179,.18) !important}
-html[data-theme="sakura"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(255,143,179,.10), transparent);border-bottom-color:rgba(255,180,205,.18)}
-html[data-theme="sakura"].glass-deck .table tbody tr:hover td{background:rgba(255,143,179,.10);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="sakura"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#ff8fb3,#ffc4d6)}
-html[data-theme="sakura"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(60,26,40,.5), rgba(20,8,14,.32) 70%, transparent);border-color:rgba(255,180,205,.14)}
 /* ◈ MONO — platinum monochrome glass (glass-deck family) */
-html[data-theme="mono"]{
-  --void:#0a0c10; --hull:#12151c; --bg-deep:#0a0c10; --bg:#12151c; --bg-secondary:#12151c;
-  --bg-card:rgba(40,46,58,.52); --bg-card-solid:#1a1e26; --bg-elevated:rgba(54,62,78,.58);
-  --bg-tertiary:rgba(64,72,88,.42);
-  --steel:rgba(38,44,56,.55); --steel-light:rgba(56,64,80,.60); --steel-bright:rgba(74,84,104,.66);
-  --panel:rgba(40,46,58,.52); --panel-2:rgba(52,60,74,.58); --panel-hi:rgba(68,78,96,.66);
-  --hairline:rgba(190,200,220,.16); --hairline-hi:rgba(200,210,230,.42);
-  --border:rgba(190,200,220,.16); --border-hot:rgba(200,210,230,.42); --border-cold:rgba(190,200,220,.12);
-  --plasma:#9aa6bd; --plasma-deep:#5f6a7e; --plasma-glow:rgba(154,166,189,.26); --plasma-line:rgba(190,202,224,.5);
-  --primary:#9aa6bd; --primary-blue:#9aa6bd; --primary-purple:#cdd6e6;
-  --primary-dim:rgba(154,166,189,.14); --primary-glow:rgba(154,166,189,.32);
-  --accent:#9aa6bd; --molten:#cdd6e6; --spark:#e8edf5;
-  --ink:#eef1f6; --ink-2:#c2cad6; --ink-3:#828c9c;
-  --text:#eef1f6; --text-bright:#ffffff; --text-muted:#c2cad6; --text-dim:#828c9c;
-  --glass-bg:rgba(34,40,52,.46); --glass-bg-elevated:rgba(54,62,78,.58);
-  --glass-border:rgba(190,200,220,.16); --glass-border-strong:rgba(210,220,238,.30);
-  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(4,6,10,.62),0 6px 18px rgba(4,6,10,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  --aurora-1:rgba(150,165,195,.22); --aurora-2:rgba(120,140,180,.18); --aurora-3:rgba(180,190,210,.16); --aurora-4:rgba(100,115,150,.16);
-  --deck-temp:#9aa6bd; --deck-temp-glow:rgba(154,166,189,.16);
-  color-scheme:dark;
-}
 /* Mono colour skin */
-html[data-theme="mono"].glass-deck .card,
-html[data-theme="mono"].glass-deck .glass-card,
-html[data-theme="mono"].glass-deck .id-tile,
-html[data-theme="mono"].glass-deck .id-vmcard,
-html[data-theme="mono"].glass-deck .id-tpl,
-html[data-theme="mono"].glass-deck .tile,
-html[data-theme="mono"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(48,56,70,.46), rgba(18,22,30,.46)) !important;
-  border-color:rgba(190,200,220,.16) !important;
-  box-shadow:0 22px 58px rgba(4,6,10,.58),0 5px 16px rgba(4,6,10,.42),inset 0 1px 0 rgba(230,236,245,.18),inset 0 0 0 1px rgba(180,195,225,.05) !important;
-}
-html[data-theme="mono"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(40,48,62,.40), rgba(14,17,24,.44)) !important;border-color:rgba(190,200,220,.16) !important}
-html[data-theme="mono"].glass-deck .card:hover,
-html[data-theme="mono"].glass-deck .glass-card:hover,
-html[data-theme="mono"].glass-deck .id-tile:hover,
-html[data-theme="mono"].glass-deck .id-vmcard:hover,
-html[data-theme="mono"].glass-deck .id-tpl:hover,
-html[data-theme="mono"].glass-deck .vm-card:hover{
-  border-color:rgba(200,210,230,.42) !important;
-  box-shadow:0 34px 82px rgba(4,6,10,.64),0 0 0 1px rgba(200,210,230,.42),0 0 44px rgba(154,166,189,.28),inset 0 1px 0 rgba(235,240,248,.24) !important;
-}
-html[data-theme="mono"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(46,54,68,.42), rgba(16,20,28,.46))}
-html[data-theme="mono"].glass-deck .vmr-panel:hover{border-color:rgba(200,210,230,.42);box-shadow:0 30px 72px rgba(4,6,10,.58),0 0 36px rgba(154,166,189,.28),inset 0 1px 0 rgba(235,240,248,.24)}
-html[data-theme="mono"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(150,166,195,.18), rgba(120,140,175,.10) 46%, rgba(16,20,28,.5));border-color:rgba(190,202,224,.20)}
-html[data-theme="mono"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(160,175,200,.34), transparent 66%)}
-html[data-theme="mono"].glass-deck .mission-control-header-row h1,
-html[data-theme="mono"].glass-deck .id-tile .id-big,
-html[data-theme="mono"].glass-deck .id-metric,
-html[data-theme="mono"].glass-deck .id-gauge .id-v,
-html[data-theme="mono"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#cdd6e6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="mono"].glass-deck .glass-btn-primary,
-html[data-theme="mono"].glass-deck .btn-create{background:linear-gradient(135deg,#9aa6bd 0%,#5f6a7e 100%) !important;border:1px solid rgba(210,220,238,.30) !important;box-shadow:0 6px 26px rgba(154,166,189,.32),inset 0 1px 0 rgba(255,255,255,.28) !important}
-html[data-theme="mono"].glass-deck .form-input:focus,
-html[data-theme="mono"].glass-deck .form-select:focus,
-html[data-theme="mono"].glass-deck .zeus-ai-input:focus{border-color:rgba(200,210,230,.42) !important;box-shadow:0 0 0 3px rgba(154,166,189,.26),0 0 18px rgba(154,166,189,.16) !important}
-html[data-theme="mono"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(154,166,189,.08), transparent);border-bottom-color:rgba(190,200,220,.16)}
-html[data-theme="mono"].glass-deck .table tbody tr:hover td{background:rgba(154,166,189,.08);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="mono"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#9aa6bd,#cdd6e6)}
-html[data-theme="mono"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(34,40,52,.5), rgba(12,15,20,.32) 70%, transparent);border-color:rgba(190,200,220,.12)}
 /* ◈ INFERNO — ember reactor glass (glass-deck family) */
-html[data-theme="inferno"]{
-  --void:#120604; --hull:#1d0a06; --bg-deep:#120604; --bg:#1d0a06; --bg-secondary:#1d0a06;
-  --bg-card:rgba(72,30,18,.52); --bg-card-solid:#2a1008; --bg-elevated:rgba(94,42,24,.58);
-  --bg-tertiary:rgba(108,48,28,.42);
-  --steel:rgba(70,28,16,.55); --steel-light:rgba(96,42,24,.60); --steel-bright:rgba(120,56,32,.66);
-  --panel:rgba(72,30,18,.52); --panel-2:rgba(90,40,22,.58); --panel-hi:rgba(112,52,28,.66);
-  --hairline:rgba(255,160,120,.18); --hairline-hi:rgba(255,140,90,.5);
-  --border:rgba(255,160,120,.18); --border-hot:rgba(255,140,90,.5); --border-cold:rgba(255,160,120,.14);
-  --plasma:#ff6b3d; --plasma-deep:#d1361a; --plasma-glow:rgba(255,107,61,.30); --plasma-line:rgba(255,150,100,.52);
-  --primary:#ff6b3d; --primary-blue:#ff6b3d; --primary-purple:#ffb03a;
-  --primary-dim:rgba(255,107,61,.16); --primary-glow:rgba(255,107,61,.36);
-  --accent:#ff6b3d; --molten:#ffb03a; --spark:#ffd0a0;
-  --ink:#fff0e8; --ink-2:#e6c4b0; --ink-3:#b58c78;
-  --text:#fff0e8; --text-bright:#ffffff; --text-muted:#e6c4b0; --text-dim:#b58c78;
-  --glass-bg:rgba(62,26,14,.46); --glass-bg-elevated:rgba(94,42,24,.58);
-  --glass-border:rgba(255,160,120,.18); --glass-border-strong:rgba(255,180,140,.32);
-  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(18,5,2,.62),0 6px 18px rgba(18,5,2,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  --aurora-1:rgba(255,90,40,.30); --aurora-2:rgba(255,150,40,.26); --aurora-3:rgba(255,60,60,.22); --aurora-4:rgba(200,50,20,.22);
-  --deck-temp:#ff6b3d; --deck-temp-glow:rgba(255,107,61,.18);
-  color-scheme:dark;
-}
 /* Inferno colour skin */
-html[data-theme="inferno"].glass-deck .card,
-html[data-theme="inferno"].glass-deck .glass-card,
-html[data-theme="inferno"].glass-deck .id-tile,
-html[data-theme="inferno"].glass-deck .id-vmcard,
-html[data-theme="inferno"].glass-deck .id-tpl,
-html[data-theme="inferno"].glass-deck .tile,
-html[data-theme="inferno"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(84,36,20,.48), rgba(34,14,8,.46)) !important;
-  border-color:rgba(255,160,120,.18) !important;
-  box-shadow:0 22px 58px rgba(18,5,2,.58),0 5px 16px rgba(18,5,2,.42),inset 0 1px 0 rgba(255,225,205,.20),inset 0 0 0 1px rgba(255,150,100,.05) !important;
-}
-html[data-theme="inferno"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(70,30,18,.40), rgba(24,10,6,.44)) !important;border-color:rgba(255,160,120,.18) !important}
-html[data-theme="inferno"].glass-deck .card:hover,
-html[data-theme="inferno"].glass-deck .glass-card:hover,
-html[data-theme="inferno"].glass-deck .id-tile:hover,
-html[data-theme="inferno"].glass-deck .id-vmcard:hover,
-html[data-theme="inferno"].glass-deck .id-tpl:hover,
-html[data-theme="inferno"].glass-deck .vm-card:hover{
-  border-color:rgba(255,140,90,.5) !important;
-  box-shadow:0 34px 82px rgba(18,5,2,.64),0 0 0 1px rgba(255,140,90,.5),0 0 44px rgba(255,107,61,.34),inset 0 1px 0 rgba(255,230,212,.26) !important;
-}
-html[data-theme="inferno"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(80,34,20,.42), rgba(26,12,6,.46))}
-html[data-theme="inferno"].glass-deck .vmr-panel:hover{border-color:rgba(255,140,90,.5);box-shadow:0 30px 72px rgba(18,5,2,.58),0 0 36px rgba(255,107,61,.34),inset 0 1px 0 rgba(255,230,212,.26)}
-html[data-theme="inferno"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(255,107,61,.22), rgba(255,150,40,.14) 46%, rgba(24,10,6,.5));border-color:rgba(255,165,120,.22)}
-html[data-theme="inferno"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(255,107,61,.42), transparent 66%)}
-html[data-theme="inferno"].glass-deck .mission-control-header-row h1,
-html[data-theme="inferno"].glass-deck .id-tile .id-big,
-html[data-theme="inferno"].glass-deck .id-metric,
-html[data-theme="inferno"].glass-deck .id-gauge .id-v,
-html[data-theme="inferno"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#ffcaa0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="inferno"].glass-deck .glass-btn-primary,
-html[data-theme="inferno"].glass-deck .btn-create{background:linear-gradient(135deg,#ff6b3d 0%,#d1361a 100%) !important;border:1px solid rgba(255,180,140,.32) !important;box-shadow:0 6px 26px rgba(255,107,61,.36),inset 0 1px 0 rgba(255,255,255,.28) !important}
-html[data-theme="inferno"].glass-deck .form-input:focus,
-html[data-theme="inferno"].glass-deck .form-select:focus,
-html[data-theme="inferno"].glass-deck .zeus-ai-input:focus{border-color:rgba(255,140,90,.5) !important;box-shadow:0 0 0 3px rgba(255,107,61,.30),0 0 18px rgba(255,107,61,.18) !important}
-html[data-theme="inferno"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(255,107,61,.10), transparent);border-bottom-color:rgba(255,160,120,.18)}
-html[data-theme="inferno"].glass-deck .table tbody tr:hover td{background:rgba(255,107,61,.10);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="inferno"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#ff6b3d,#ffb03a)}
-html[data-theme="inferno"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(62,26,14,.5), rgba(20,8,4,.32) 70%, transparent);border-color:rgba(255,160,120,.14)}
 
 /* ◈ VOLTAGE — electric lime cyberglass (glass-deck family) */
-html[data-theme="voltage"]{
-  --void:#0a0f04; --hull:#0e1508; --bg-deep:#0a0f04; --bg:#0e1508; --bg-secondary:#0e1508;
-  --bg-card:rgba(36,52,18,.52); --bg-card-solid:#141c0a; --bg-elevated:rgba(48,68,26,.58);
-  --bg-tertiary:rgba(56,78,30,.42);
-  --steel:rgba(34,50,16,.55); --steel-light:rgba(50,70,26,.60); --steel-bright:rgba(66,92,34,.66);
-  --panel:rgba(36,52,18,.52); --panel-2:rgba(46,66,24,.58); --panel-hi:rgba(60,84,32,.66);
-  --hairline:rgba(184,240,30,.16); --hairline-hi:rgba(198,255,80,.46);
-  --border:rgba(184,240,30,.16); --border-hot:rgba(198,255,80,.46); --border-cold:rgba(184,240,30,.13);
-  --plasma:#b8f01e; --plasma-deep:#5a7a00; --plasma-glow:rgba(184,240,30,.28); --plasma-line:rgba(198,255,90,.5);
-  --primary:#b8f01e; --primary-blue:#b8f01e; --primary-purple:#2de0ff;
-  --primary-dim:rgba(184,240,30,.16); --primary-glow:rgba(184,240,30,.34);
-  --accent:#b8f01e; --molten:#2de0ff; --spark:#e4ffa0;
-  --ink:#eefce0; --ink-2:#c4d6ac; --ink-3:#8ca878;
-  --text:#eefce0; --text-bright:#ffffff; --text-muted:#c4d6ac; --text-dim:#8ca878;
-  --glass-bg:rgba(30,44,14,.46); --glass-bg-elevated:rgba(48,68,26,.58);
-  --glass-border:rgba(184,240,30,.16); --glass-border-strong:rgba(206,255,110,.30);
-  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(4,8,1,.62),0 6px 18px rgba(4,8,1,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  --aurora-1:rgba(184,240,30,.28); --aurora-2:rgba(45,224,255,.24); --aurora-3:rgba(120,220,40,.22); --aurora-4:rgba(60,180,30,.20);
-  --deck-temp:#b8f01e; --deck-temp-glow:rgba(184,240,30,.18);
-  color-scheme:dark;
-}
 /* Voltage colour skin */
-html[data-theme="voltage"].glass-deck .card,
-html[data-theme="voltage"].glass-deck .glass-card,
-html[data-theme="voltage"].glass-deck .id-tile,
-html[data-theme="voltage"].glass-deck .id-vmcard,
-html[data-theme="voltage"].glass-deck .id-tpl,
-html[data-theme="voltage"].glass-deck .tile,
-html[data-theme="voltage"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(44,62,22,.48), rgba(14,22,6,.46)) !important;
-  border-color:rgba(184,240,30,.16) !important;
-  box-shadow:0 22px 58px rgba(4,8,1,.58),0 5px 16px rgba(4,8,1,.42),inset 0 1px 0 rgba(230,255,200,.20),inset 0 0 0 1px rgba(184,240,30,.05) !important;
-}
-html[data-theme="voltage"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(36,52,18,.40), rgba(10,16,4,.44)) !important;border-color:rgba(184,240,30,.16) !important}
-html[data-theme="voltage"].glass-deck .card:hover,
-html[data-theme="voltage"].glass-deck .glass-card:hover,
-html[data-theme="voltage"].glass-deck .id-tile:hover,
-html[data-theme="voltage"].glass-deck .id-vmcard:hover,
-html[data-theme="voltage"].glass-deck .id-tpl:hover,
-html[data-theme="voltage"].glass-deck .vm-card:hover{
-  border-color:rgba(198,255,80,.46) !important;
-  box-shadow:0 34px 82px rgba(4,8,1,.64),0 0 0 1px rgba(198,255,80,.46),0 0 44px rgba(184,240,30,.32),inset 0 1px 0 rgba(235,255,210,.26) !important;
-}
-html[data-theme="voltage"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(42,60,22,.42), rgba(12,18,5,.46))}
-html[data-theme="voltage"].glass-deck .vmr-panel:hover{border-color:rgba(198,255,80,.46);box-shadow:0 30px 72px rgba(4,8,1,.58),0 0 36px rgba(184,240,30,.32),inset 0 1px 0 rgba(235,255,210,.26)}
-html[data-theme="voltage"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(184,240,30,.22), rgba(45,224,255,.12) 46%, rgba(12,18,5,.5));border-color:rgba(198,255,90,.22)}
-html[data-theme="voltage"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(184,240,30,.42), transparent 66%)}
-html[data-theme="voltage"].glass-deck .mission-control-header-row h1,
-html[data-theme="voltage"].glass-deck .id-tile .id-big,
-html[data-theme="voltage"].glass-deck .id-metric,
-html[data-theme="voltage"].glass-deck .id-gauge .id-v,
-html[data-theme="voltage"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#e0ffa0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="voltage"].glass-deck .glass-btn-primary,
-html[data-theme="voltage"].glass-deck .btn-create{background:linear-gradient(135deg,#b8f01e 0%,#5a7a00 100%) !important;border:1px solid rgba(206,255,110,.30) !important;box-shadow:0 6px 26px rgba(184,240,30,.34),inset 0 1px 0 rgba(255,255,255,.28) !important}
-html[data-theme="voltage"].glass-deck .form-input:focus,
-html[data-theme="voltage"].glass-deck .form-select:focus,
-html[data-theme="voltage"].glass-deck .zeus-ai-input:focus{border-color:rgba(198,255,80,.46) !important;box-shadow:0 0 0 3px rgba(184,240,30,.28),0 0 18px rgba(184,240,30,.18) !important}
-html[data-theme="voltage"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(184,240,30,.10), transparent);border-bottom-color:rgba(184,240,30,.16)}
-html[data-theme="voltage"].glass-deck .table tbody tr:hover td{background:rgba(184,240,30,.10);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="voltage"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#b8f01e,#2de0ff)}
-html[data-theme="voltage"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(30,44,14,.5), rgba(8,12,3,.32) 70%, transparent);border-color:rgba(184,240,30,.13)}
 
 /* Daylight colour skin (light) */
-html[data-theme="daylight"].glass-deck .card,
-html[data-theme="daylight"].glass-deck .glass-card,
-html[data-theme="daylight"].glass-deck .id-tile,
-html[data-theme="daylight"].glass-deck .id-vmcard,
-html[data-theme="daylight"].glass-deck .id-tpl,
-html[data-theme="daylight"].glass-deck .tile,
-html[data-theme="daylight"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(255,255,255,.74), rgba(240,245,252,.66)) !important;
-  border-color:rgba(20,45,95,.12) !important;
-  box-shadow:0 18px 44px rgba(40,60,110,.14),0 4px 12px rgba(40,60,110,.10),inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(255,255,255,.5) !important;
-}
-html[data-theme="daylight"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(255,255,255,.70), rgba(238,243,250,.66)) !important;border-color:rgba(20,45,95,.12) !important}
-html[data-theme="daylight"].glass-deck .card:hover,
-html[data-theme="daylight"].glass-deck .glass-card:hover,
-html[data-theme="daylight"].glass-deck .id-tile:hover,
-html[data-theme="daylight"].glass-deck .id-vmcard:hover,
-html[data-theme="daylight"].glass-deck .id-tpl:hover,
-html[data-theme="daylight"].glass-deck .vm-card:hover{
-  border-color:rgba(10,132,255,.45) !important;
-  box-shadow:0 28px 64px rgba(40,60,110,.18),0 0 0 1px rgba(10,132,255,.45),0 0 38px rgba(10,132,255,.20),inset 0 1px 0 rgba(255,255,255,.95) !important;
-}
-html[data-theme="daylight"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(255,255,255,.70), rgba(240,245,252,.64))}
-html[data-theme="daylight"].glass-deck .vmr-panel:hover{border-color:rgba(10,132,255,.45);box-shadow:0 26px 60px rgba(40,60,110,.14),0 0 32px rgba(10,132,255,.20),inset 0 1px 0 rgba(255,255,255,.95)}
-html[data-theme="daylight"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(10,132,255,.16), rgba(120,90,255,.10) 46%, rgba(255,255,255,.55));border-color:rgba(10,132,255,.22)}
-html[data-theme="daylight"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(10,132,255,.26), transparent 66%)}
-html[data-theme="daylight"].glass-deck .mission-control-header-row h1,
-html[data-theme="daylight"].glass-deck .id-tile .id-big,
-html[data-theme="daylight"].glass-deck .id-metric,
-html[data-theme="daylight"].glass-deck .id-gauge .id-v,
-html[data-theme="daylight"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#1f2c48,#3a5fa6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="daylight"].glass-deck .glass-btn-primary,
-html[data-theme="daylight"].glass-deck .btn-create{background:linear-gradient(135deg,#0a84ff 0%,#0060d0 100%) !important;border:1px solid rgba(10,132,255,.30) !important;color:#fff !important;box-shadow:0 6px 22px rgba(10,132,255,.28),inset 0 1px 0 rgba(255,255,255,.4) !important}
-html[data-theme="daylight"].glass-deck .form-input:focus,
-html[data-theme="daylight"].glass-deck .form-select:focus,
-html[data-theme="daylight"].glass-deck .zeus-ai-input:focus{border-color:rgba(10,132,255,.45) !important;box-shadow:0 0 0 3px rgba(10,132,255,.20),0 0 14px rgba(10,132,255,.16) !important}
-html[data-theme="daylight"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(10,132,255,.08), transparent);border-bottom-color:rgba(20,45,95,.12)}
-html[data-theme="daylight"].glass-deck .table tbody tr:hover td{background:rgba(10,132,255,.08);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="daylight"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#0a84ff,#34c0ff)}
-html[data-theme="daylight"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(255,255,255,.5), rgba(232,240,250,.3) 70%, transparent);border-color:rgba(20,45,95,.10)}
 
 /* ◈ PRISM — iridescent magenta→cyan oil-slick hologlass (glass-deck family) */
-html[data-theme="prism"]{
-  --void:#0a0410; --hull:#0f0618; --bg-deep:#0a0410; --bg:#0f0618; --bg-secondary:#0f0618;
-  --bg-card:rgba(48,20,64,.52); --bg-card-solid:#170a22; --bg-elevated:rgba(64,28,84,.58);
-  --bg-tertiary:rgba(72,32,96,.42);
-  --steel:rgba(46,18,62,.55); --steel-light:rgba(64,26,84,.60); --steel-bright:rgba(84,34,108,.66);
-  --panel:rgba(48,20,64,.52); --panel-2:rgba(62,26,82,.58); --panel-hi:rgba(84,34,108,.66);
-  --hairline:rgba(230,75,255,.16); --hairline-hi:rgba(240,120,255,.46);
-  --border:rgba(230,75,255,.16); --border-hot:rgba(240,120,255,.46); --border-cold:rgba(230,75,255,.13);
-  --plasma:#e64bff; --plasma-deep:#7a1a9e; --plasma-glow:rgba(230,75,255,.30); --plasma-line:rgba(240,140,255,.5);
-  --primary:#e64bff; --primary-blue:#e64bff; --primary-purple:#45e0ff;
-  --primary-dim:rgba(230,75,255,.16); --primary-glow:rgba(230,75,255,.34);
-  --accent:#e64bff; --molten:#45e0ff; --spark:#ffb3f5;
-  --ink:#fbe8ff; --ink-2:#d8b8e6; --ink-3:#a888bc;
-  --text:#fbe8ff; --text-bright:#ffffff; --text-muted:#d8b8e6; --text-dim:#a888bc;
-  --glass-bg:rgba(40,16,56,.46); --glass-bg-elevated:rgba(64,28,84,.58);
-  --glass-border:rgba(230,75,255,.16); --glass-border-strong:rgba(244,150,255,.30);
-  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(8,2,14,.62),0 6px 18px rgba(8,2,14,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  --aurora-1:rgba(230,75,255,.28); --aurora-2:rgba(69,224,255,.24); --aurora-3:rgba(180,90,255,.22); --aurora-4:rgba(255,120,220,.20);
-  --deck-temp:#e64bff; --deck-temp-glow:rgba(230,75,255,.18);
-  color-scheme:dark;
-}
 /* Prism colour skin */
-html[data-theme="prism"].glass-deck .card,
-html[data-theme="prism"].glass-deck .glass-card,
-html[data-theme="prism"].glass-deck .id-tile,
-html[data-theme="prism"].glass-deck .id-vmcard,
-html[data-theme="prism"].glass-deck .id-tpl,
-html[data-theme="prism"].glass-deck .tile,
-html[data-theme="prism"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(56,24,76,.48), rgba(18,8,26,.46)) !important;
-  border-color:rgba(230,75,255,.16) !important;
-  box-shadow:0 22px 58px rgba(8,2,14,.58),0 5px 16px rgba(8,2,14,.42),inset 0 1px 0 rgba(250,220,255,.20),inset 0 0 0 1px rgba(230,75,255,.05) !important;
-}
-html[data-theme="prism"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(48,20,64,.40), rgba(14,6,20,.44)) !important;border-color:rgba(230,75,255,.16) !important}
-html[data-theme="prism"].glass-deck .card:hover,
-html[data-theme="prism"].glass-deck .glass-card:hover,
-html[data-theme="prism"].glass-deck .id-tile:hover,
-html[data-theme="prism"].glass-deck .id-vmcard:hover,
-html[data-theme="prism"].glass-deck .id-tpl:hover,
-html[data-theme="prism"].glass-deck .vm-card:hover{
-  border-color:rgba(240,120,255,.46) !important;
-  box-shadow:0 34px 82px rgba(8,2,14,.64),0 0 0 1px rgba(240,120,255,.46),0 0 44px rgba(230,75,255,.32),inset 0 1px 0 rgba(250,225,255,.26) !important;
-}
-html[data-theme="prism"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(54,22,72,.42), rgba(16,7,24,.46))}
-html[data-theme="prism"].glass-deck .vmr-panel:hover{border-color:rgba(240,120,255,.46);box-shadow:0 30px 72px rgba(8,2,14,.58),0 0 36px rgba(230,75,255,.32),inset 0 1px 0 rgba(250,225,255,.26)}
-html[data-theme="prism"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(230,75,255,.22), rgba(69,224,255,.14) 46%, rgba(16,7,24,.5));border-color:rgba(244,130,255,.22)}
-html[data-theme="prism"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(230,75,255,.42), transparent 66%)}
-html[data-theme="prism"].glass-deck .mission-control-header-row h1,
-html[data-theme="prism"].glass-deck .id-tile .id-big,
-html[data-theme="prism"].glass-deck .id-metric,
-html[data-theme="prism"].glass-deck .id-gauge .id-v,
-html[data-theme="prism"].glass-deck .holo-orb-pct{background:linear-gradient(110deg,#ffffff,#ffc8f6 46%,#8fe8ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="prism"].glass-deck .glass-btn-primary,
-html[data-theme="prism"].glass-deck .btn-create{background:linear-gradient(135deg,#e64bff 0%,#45e0ff 100%) !important;border:1px solid rgba(244,150,255,.30) !important;box-shadow:0 6px 26px rgba(230,75,255,.34),inset 0 1px 0 rgba(255,255,255,.28) !important}
-html[data-theme="prism"].glass-deck .form-input:focus,
-html[data-theme="prism"].glass-deck .form-select:focus,
-html[data-theme="prism"].glass-deck .zeus-ai-input:focus{border-color:rgba(240,120,255,.46) !important;box-shadow:0 0 0 3px rgba(230,75,255,.28),0 0 18px rgba(230,75,255,.18) !important}
-html[data-theme="prism"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(230,75,255,.10), transparent);border-bottom-color:rgba(230,75,255,.16)}
-html[data-theme="prism"].glass-deck .table tbody tr:hover td{background:rgba(230,75,255,.10);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="prism"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#e64bff,#45e0ff)}
-html[data-theme="prism"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(40,16,56,.5), rgba(12,4,18,.32) 70%, transparent);border-color:rgba(230,75,255,.13)}
 
 /* ◈ BOREALIS — emerald-jade → violet aurora hologlass (glass-deck family, default deck)
    Northern lights over a deep polar sky: minty jade accent, violet secondary,
    green/cyan/violet aurora shimmer. Green is deliberately distinct from the muted
    status-nominal green so a running orb never blurs into the accent. */
-html[data-theme="borealis"]{
-  --void:#03110c; --hull:#051810; --bg-deep:#03110c; --bg:#051810; --bg-secondary:#051810;
-  --bg-card:rgba(16,52,42,.52); --bg-card-solid:#0a2018; --bg-elevated:rgba(24,72,58,.58);
-  --bg-tertiary:rgba(28,82,66,.42);
-  --steel:rgba(16,50,40,.55); --steel-light:rgba(26,72,58,.60); --steel-bright:rgba(36,98,78,.66);
-  --panel:rgba(16,52,42,.52); --panel-2:rgba(24,70,56,.58); --panel-hi:rgba(36,98,78,.66);
-  --hairline:rgba(45,232,172,.16); --hairline-hi:rgba(96,246,196,.44);
-  --border:rgba(45,232,172,.16); --border-hot:rgba(96,246,196,.44); --border-cold:rgba(45,232,172,.13);
-  --plasma:#22e6ac; --plasma-deep:#12946d; --plasma-glow:rgba(34,230,172,.30); --plasma-line:rgba(122,246,206,.5);
-  --primary:#22e6ac; --primary-blue:#22e6ac; --primary-purple:#8b7bff;
-  --primary-dim:rgba(34,230,172,.16); --primary-glow:rgba(34,230,172,.34);
-  --accent:#22e6ac; --molten:#5cf0d0; --spark:#b3ffe8;
-  --ink:#e9fff6; --ink-2:#aee2cf; --ink-3:#7db09b;
-  --text:#e9fff6; --text-bright:#ffffff; --text-muted:#aee2cf; --text-dim:#7db09b;
-  --glass-bg:rgba(12,46,36,.46); --glass-bg-elevated:rgba(24,72,58,.58);
-  --glass-border:rgba(45,232,172,.16); --glass-border-strong:rgba(140,250,212,.30);
-  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
-  --glass-shadow:0 24px 64px rgba(1,12,8,.62),0 6px 18px rgba(1,12,8,.42);
-  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  --aurora-1:rgba(34,230,172,.28); --aurora-2:rgba(139,123,255,.24); --aurora-3:rgba(69,224,255,.22); --aurora-4:rgba(120,255,192,.20);
-  --deck-temp:#22e6ac; --deck-temp-glow:rgba(34,230,172,.18);
-  color-scheme:dark;
-}
 /* Borealis colour skin */
-html[data-theme="borealis"].glass-deck .card,
-html[data-theme="borealis"].glass-deck .glass-card,
-html[data-theme="borealis"].glass-deck .id-tile,
-html[data-theme="borealis"].glass-deck .id-vmcard,
-html[data-theme="borealis"].glass-deck .id-tpl,
-html[data-theme="borealis"].glass-deck .tile,
-html[data-theme="borealis"].glass-deck .panel{
-  background:linear-gradient(152deg, rgba(20,60,48,.48), rgba(6,20,15,.46)) !important;
-  border-color:rgba(45,232,172,.16) !important;
-  box-shadow:0 22px 58px rgba(1,12,8,.58),0 5px 16px rgba(1,12,8,.42),inset 0 1px 0 rgba(210,255,238,.20),inset 0 0 0 1px rgba(45,232,172,.05) !important;
-}
-html[data-theme="borealis"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(16,52,42,.40), rgba(5,18,13,.44)) !important;border-color:rgba(45,232,172,.16) !important}
-html[data-theme="borealis"].glass-deck .card:hover,
-html[data-theme="borealis"].glass-deck .glass-card:hover,
-html[data-theme="borealis"].glass-deck .id-tile:hover,
-html[data-theme="borealis"].glass-deck .id-vmcard:hover,
-html[data-theme="borealis"].glass-deck .id-tpl:hover,
-html[data-theme="borealis"].glass-deck .vm-card:hover{
-  border-color:rgba(96,246,196,.44) !important;
-  box-shadow:0 34px 82px rgba(1,12,8,.64),0 0 0 1px rgba(96,246,196,.44),0 0 44px rgba(34,230,172,.32),inset 0 1px 0 rgba(215,255,240,.26) !important;
-}
-html[data-theme="borealis"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(18,56,45,.42), rgba(6,18,13,.46))}
-html[data-theme="borealis"].glass-deck .vmr-panel:hover{border-color:rgba(96,246,196,.44);box-shadow:0 30px 72px rgba(1,12,8,.58),0 0 36px rgba(34,230,172,.32),inset 0 1px 0 rgba(215,255,240,.26)}
-html[data-theme="borealis"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(34,230,172,.22), rgba(139,123,255,.14) 46%, rgba(6,18,13,.5));border-color:rgba(120,246,200,.22)}
-html[data-theme="borealis"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(34,230,172,.42), transparent 66%)}
-html[data-theme="borealis"].glass-deck .mission-control-header-row h1,
-html[data-theme="borealis"].glass-deck .id-tile .id-big,
-html[data-theme="borealis"].glass-deck .id-metric,
-html[data-theme="borealis"].glass-deck .id-gauge .id-v,
-html[data-theme="borealis"].glass-deck .holo-orb-pct{background:linear-gradient(110deg,#ffffff,#a9ffe0 46%,#b6a5ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-html[data-theme="borealis"].glass-deck .glass-btn-primary,
-html[data-theme="borealis"].glass-deck .btn-create{background:linear-gradient(135deg,#22e6ac 0%,#8b7bff 100%) !important;border:1px solid rgba(140,250,212,.30) !important;box-shadow:0 6px 26px rgba(34,230,172,.34),inset 0 1px 0 rgba(255,255,255,.28) !important}
-html[data-theme="borealis"].glass-deck .form-input:focus,
-html[data-theme="borealis"].glass-deck .form-select:focus,
-html[data-theme="borealis"].glass-deck .zeus-ai-input:focus{border-color:rgba(96,246,196,.44) !important;box-shadow:0 0 0 3px rgba(34,230,172,.28),0 0 18px rgba(34,230,172,.18) !important}
-html[data-theme="borealis"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(34,230,172,.10), transparent);border-bottom-color:rgba(45,232,172,.16)}
-html[data-theme="borealis"].glass-deck .table tbody tr:hover td{background:rgba(34,230,172,.10);box-shadow:inset 2px 0 0 var(--plasma)}
-html[data-theme="borealis"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#22e6ac,#8b7bff)}
-html[data-theme="borealis"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(16,52,42,.5), rgba(4,14,10,.32) 70%, transparent);border-color:rgba(45,232,172,.13)}
 
 /* Deep-space hull */
-html.glass-deck body,
-html.glass-deck body.mac-desktop-root{
-  /* Per-deck base: each deck's own --hull/--void, lightly tinted by its accent,
-     so Solaris reads warm, Biolume teal, Nebula violet — not all the same navy. */
-  background:radial-gradient(125% 95% at 50% -12%,
-    color-mix(in srgb, var(--hull, #070a1a) 84%, var(--plasma, #3b82f6) 12%) 0%,
-    var(--hull, #070a1a) 42%,
-    var(--void, #04050e) 100%) !important;
-}
 /* Living aurora field — multi-hue, drifting, parallax-reactive (--holo-px/py set by JS) */
-html.glass-deck body::before,
-html.glass-deck body.mac-desktop-root::before{
-  content:'';position:fixed;inset:-25%;z-index:0;pointer-events:none;opacity:1 !important;
-  background:
-    radial-gradient(38% 34% at calc(22% + var(--holo-px,0px)) calc(14% + var(--holo-py,0px)), var(--aurora-1), transparent 60%),
-    radial-gradient(34% 30% at calc(82% - var(--holo-px,0px)) calc(20% + var(--holo-py,0px)), var(--aurora-2), transparent 58%),
-    radial-gradient(46% 42% at calc(72% + var(--holo-px,0px)) calc(86% - var(--holo-py,0px)), var(--aurora-3), transparent 60%),
-    radial-gradient(30% 28% at calc(12% - var(--holo-px,0px)) calc(72% - var(--holo-py,0px)), var(--aurora-4), transparent 56%) !important;
-  filter:blur(32px) !important;
-  animation:holo-drift 28s ease-in-out infinite alternate !important;
-  will-change:transform,filter;
-}
 @keyframes holo-drift{
   0%{transform:translate3d(0,0,0) scale(1)}
   50%{transform:translate3d(2.4%,-1.6%,0) scale(1.07)}
   100%{transform:translate3d(-2.4%,1.6%,0) scale(1.04)}
 }
 /* Holographic grid veil */
-html.glass-deck body::after,
-html.glass-deck body.mac-desktop-root::after{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55 !important;
-  background:
-    linear-gradient(rgba(120,150,255,.05) 1px,transparent 1px) 0 0/100% 3px,
-    linear-gradient(90deg, rgba(120,150,255,.022) 1px,transparent 1px) 0 0/66px 100% !important;
-  -webkit-mask-image:radial-gradient(120% 90% at 50% 28%, #000 28%, transparent 82%);
-  mask-image:radial-gradient(120% 90% at 50% 28%, #000 28%, transparent 82%);
-}
 /* ── Floating glass surfaces — inherited by every page ── */
-html.glass-deck .card,
-html.glass-deck .glass-card,
-html.glass-deck .id-tile,
-html.glass-deck .id-vmcard,
-html.glass-deck .id-tpl,
-html.glass-deck .tile,
-html.glass-deck .panel{
-  background:linear-gradient(152deg, rgba(40,54,98,.46), rgba(13,19,42,.44)) !important;
-  -webkit-backdrop-filter:blur(26px) saturate(1.6); backdrop-filter:blur(26px) saturate(1.6);
-  border:1px solid rgba(160,188,255,.16) !important; border-radius:20px;
-  box-shadow:0 22px 58px rgba(2,4,16,.58),0 5px 16px rgba(2,4,16,.4),
-    inset 0 1px 0 rgba(190,212,255,.20),inset 0 0 0 1px rgba(120,150,255,.04) !important;
-  transition:transform .26s cubic-bezier(.22,1,.36,1),box-shadow .26s,border-color .26s;
-}
-html.glass-deck .mac-page-window{
-  background:linear-gradient(160deg, rgba(28,38,72,.40), rgba(11,16,36,.42)) !important;
-  -webkit-backdrop-filter:blur(28px) saturate(1.55); backdrop-filter:blur(28px) saturate(1.55);
-  border:1px solid rgba(160,188,255,.14) !important; border-radius:22px;
-  box-shadow:0 30px 70px rgba(2,4,16,.5),inset 0 1px 0 rgba(190,212,255,.16) !important;
-}
 /* Top-edge specular sheen */
-html.glass-deck .id-tile::before,
-html.glass-deck .id-vmcard::before,
-html.glass-deck .id-tpl::before{
-  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
-  background:linear-gradient(158deg, rgba(255,255,255,.12), transparent 34%);
-  mix-blend-mode:screen;opacity:.8;
-}
-html.glass-deck .id-tile > *,
-html.glass-deck .id-vmcard > *,
-html.glass-deck .id-tpl > *{position:relative;z-index:1}
 /* The holographic float — lift + plasma bloom on hover */
-html.glass-deck .card:hover,
-html.glass-deck .glass-card:hover,
-html.glass-deck .id-tile:hover,
-html.glass-deck .id-vmcard:hover,
-html.glass-deck .id-tpl:hover{
-  transform:translateY(-4px) !important;
-  border-color:rgba(124,162,255,.5) !important;
-  box-shadow:0 34px 82px rgba(2,4,16,.64),0 0 0 1px rgba(124,162,255,.42),
-    0 0 44px rgba(91,140,255,.30),inset 0 1px 0 rgba(200,220,255,.26) !important;
-}
 /* Luminous signal orbs */
-html.glass-deck .id-pulse{width:7px;height:7px;box-shadow:0 0 10px currentColor,0 0 22px currentColor !important}
-html.glass-deck .id-sig{-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 /* Aurora-lit KPI numerals */
-html.glass-deck .id-tile .id-big,
-html.glass-deck .id-metric,
-html.glass-deck .id-gauge .id-v{
-  background:linear-gradient(180deg,#ffffff,#b9cdff);
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-}
 /* Plasma action buttons → glowing glass pills */
-html.glass-deck .id-btn-plasma,
-html.glass-deck .btn-primary{
-  background:linear-gradient(180deg, rgba(91,140,255,.96), rgba(58,91,217,.96)) !important;
-  border:1px solid rgba(170,196,255,.5) !important;color:#fff !important;
-  box-shadow:0 8px 24px rgba(58,91,217,.5),inset 0 1px 0 rgba(255,255,255,.4) !important;
-}
 /* Frosted floating chrome */
-html.glass-deck .mac-menubar.navbar{
-  background:rgba(9,13,30,.55) !important;-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);
-  border-bottom:1px solid rgba(160,188,255,.14) !important;
-}
-html.glass-deck .mac-dock-inner{
-  background:rgba(15,21,44,.5) !important;-webkit-backdrop-filter:blur(34px) saturate(1.7);backdrop-filter:blur(34px) saturate(1.7);
-  border:1px solid rgba(170,196,255,.16) !important;
-  box-shadow:0 22px 54px rgba(2,4,16,.6),inset 0 1px 0 rgba(200,220,255,.2) !important;
-}
-html.glass-deck .id-sec-h .id-line{background:linear-gradient(90deg, rgba(124,162,255,.5), transparent) !important}
-html.glass-deck .id-zeus .id-orb{box-shadow:0 0 24px rgba(91,140,255,.6),0 0 48px rgba(167,139,250,.3) !important}
 /* Holographic cursor spotlight — only visible under holo */
 #holo-cursor-glow{position:fixed;left:0;top:0;width:560px;height:560px;border-radius:50%;
   transform:translate(-50%,-50%);pointer-events:none;z-index:0;opacity:0;transition:opacity .5s ease;
   background:radial-gradient(circle, color-mix(in srgb, var(--deck-temp,#5b8cff) 60%, transparent) 0%, transparent 62%);
   mix-blend-mode:screen;will-change:left,top}
-html.glass-deck #holo-cursor-glow.on{opacity:.14}
-html:not(.glass-deck) #holo-cursor-glow{display:none}
 /* Twinkling starfield — ambient cosmic depth on the glass decks */
 #holo-starfield{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;
   background-image:
@@ -1284,135 +275,26 @@ html:not(.glass-deck) #holo-cursor-glow{display:none}
   background-size:300px 300px,340px 340px,380px 380px,300px 300px,360px 360px,320px 320px;
   animation:holo-twinkle 4.5s ease-in-out infinite alternate}
 @keyframes holo-twinkle{0%{opacity:var(--star-lo,.35)}100%{opacity:var(--star-hi,.7)}}
-html.glass-deck #holo-starfield.on{--star-lo:.30;--star-hi:.62}
-html[data-theme="nebula"] #holo-starfield.on{--star-lo:.5;--star-hi:.95}
-html:not(.glass-deck) #holo-starfield{display:none}
 @media (prefers-reduced-motion: reduce){ #holo-starfield{animation:none;opacity:.5} }
 
 /* ── Holographic hero: Mission Control header + dashboard panels ──
    .vmr-panel ships with NO base CSS — holo gives those 44 dashboard
    panels real floating-glass chrome. Restructures the hero layout. */
-html.glass-deck .vmr-panel{
-  background:linear-gradient(152deg, rgba(38,52,96,.42), rgba(12,18,40,.44));
-  -webkit-backdrop-filter:blur(24px) saturate(1.55); backdrop-filter:blur(24px) saturate(1.55);
-  border:1px solid rgba(160,188,255,.15); border-radius:20px; padding:18px 20px;
-  box-shadow:0 20px 52px rgba(2,4,16,.5),inset 0 1px 0 rgba(190,212,255,.16);
-  position:relative; overflow:hidden;
-  transition:transform .26s cubic-bezier(.22,1,.36,1),box-shadow .26s,border-color .26s;
-}
-html.glass-deck .vmr-panel:hover{
-  transform:translateY(-3px); border-color:rgba(124,162,255,.42);
-  box-shadow:0 30px 72px rgba(2,4,16,.58),0 0 36px rgba(91,140,255,.22),inset 0 1px 0 rgba(200,220,255,.22);
-}
-html.glass-deck .vmr-panel-title{
-  font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10.5px; font-weight:600; letter-spacing:2px;
-  text-transform:uppercase; color:#8ea0cc; margin-bottom:12px;
-}
 /* Mission Control header → luminous command banner */
-html.glass-deck .mission-control-header-row{
-  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
-  position:relative; padding:22px 26px; margin-bottom:8px; border-radius:24px; overflow:hidden;
-  background:linear-gradient(120deg, rgba(91,140,255,.20), rgba(167,139,250,.12) 46%, rgba(12,18,42,.5));
-  border:1px solid rgba(160,188,255,.20);
-  box-shadow:0 24px 60px rgba(2,4,16,.5),inset 0 1px 0 rgba(200,220,255,.22);
-}
-html.glass-deck .mission-control-header-row::after{
-  content:''; position:absolute; top:-60%; right:-8%; width:340px; height:340px; border-radius:50%;
-  background:radial-gradient(circle, rgba(91,140,255,.42), transparent 66%); filter:blur(22px); pointer-events:none;
-}
-html.glass-deck .mission-control-header-row h1{
-  margin:0; font-size:1.7rem; font-weight:800; letter-spacing:-.6px; position:relative; z-index:1;
-  background:linear-gradient(180deg,#ffffff,#bcd0ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-}
-html.glass-deck .mission-control-header-meta{position:relative; z-index:1; display:flex; align-items:center; gap:12px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; color:#aebbe0}
-html.glass-deck .mission-live-badge{
-  background:rgba(29,158,117,.16); border:1px solid rgba(29,158,117,.4); color:#36d39a;
-  padding:3px 11px; border-radius:99px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10.5px;
-  letter-spacing:1px; text-transform:uppercase; box-shadow:0 0 16px rgba(29,158,117,.3);
-}
 /* Floating VM cards consistent with the deck */
-html.glass-deck .vm-card:hover{
-  border-color:rgba(124,162,255,.5) !important; transform:translateY(-4px) !important;
-  box-shadow:0 30px 72px rgba(2,4,16,.6),0 0 40px rgba(91,140,255,.26),inset 0 1px 0 rgba(200,220,255,.22) !important;
-}
 /* Animated shimmer bar already on chart-card picks up aurora hues via tokens */
 
 /* ── Holographic Ops — primitives polish (buttons, fields, tables, modals) ──
    Keeps the glass illusion intact on the controls that live on every page. */
 /* Primary action → luminous plasma pill */
-html.glass-deck .glass-btn-primary,
-html.glass-deck .btn-create{
-  background:linear-gradient(135deg,#5b8cff 0%,#3a5bd9 100%);
-  border:1px solid rgba(170,196,255,.5);
-  box-shadow:0 6px 26px rgba(91,140,255,.42),inset 0 1px 0 rgba(255,255,255,.28);
-}
-html.glass-deck .glass-btn-primary:hover,
-html.glass-deck .btn-create:hover{
-  transform:translateY(-2px);
-  box-shadow:0 12px 38px rgba(91,140,255,.5),0 0 28px rgba(91,140,255,.3),inset 0 1px 0 rgba(255,255,255,.34);
-}
 /* Secondary / ghost buttons → frosted glass with plasma hover */
-html.glass-deck .glass-btn-secondary,
-html.glass-deck .btn{
-  background:linear-gradient(180deg, rgba(46,62,108,.42), rgba(20,28,56,.40));
-  border:1px solid rgba(160,188,255,.16);
-  -webkit-backdrop-filter:blur(10px) saturate(1.4); backdrop-filter:blur(10px) saturate(1.4);
-  transition:transform .18s,background .2s,border-color .2s,box-shadow .2s;
-}
-html.glass-deck .glass-btn-secondary:hover,
-html.glass-deck .btn:hover{
-  transform:translateY(-1px);
-  border-color:rgba(124,162,255,.5);
-  background:linear-gradient(180deg, rgba(58,78,132,.5), rgba(26,36,72,.46));
-  box-shadow:0 8px 22px rgba(2,4,16,.4),0 0 20px rgba(91,140,255,.18);
-}
 /* Form fields → translucent glass with plasma focus ring */
-html.glass-deck .form-input,
-html.glass-deck .form-select,
-html.glass-deck textarea.form-input,
-html.glass-deck .zeus-ai-input{
-  background:rgba(18,26,52,.55) !important;
-  border:1px solid rgba(160,188,255,.16) !important;
-  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
-  color:#eaf0ff;
-}
-html.glass-deck .form-input:focus,
-html.glass-deck .form-select:focus,
-html.glass-deck .zeus-ai-input:focus{
-  border-color:rgba(124,162,255,.6) !important;
-  box-shadow:0 0 0 3px rgba(91,140,255,.22),0 0 18px rgba(91,140,255,.16) !important;
-}
-html.glass-deck .form-select option{background:#101630;color:#eaf0ff}
 /* Tables → glassy header, plasma row highlight */
-html.glass-deck .table thead th{
-  background:linear-gradient(180deg, rgba(91,140,255,.10), transparent);
-  color:#8ea0cc; border-bottom-color:rgba(160,188,255,.18);
-}
-html.glass-deck .table tbody tr:hover td{
-  background:rgba(91,140,255,.08);
-  box-shadow:inset 2px 0 0 var(--plasma);
-}
 /* Non-glass modals → match the deck */
-html.glass-deck .modal{
-  background:linear-gradient(160deg, rgba(28,38,72,.78), rgba(11,16,36,.82)) !important;
-  border:1px solid rgba(160,188,255,.2) !important;
-  -webkit-backdrop-filter:blur(40px) saturate(1.6); backdrop-filter:blur(40px) saturate(1.6);
-  box-shadow:0 40px 100px rgba(2,4,16,.7),0 0 60px rgba(91,140,255,.14),inset 0 1px 0 rgba(200,220,255,.18) !important;
-}
 /* Plasma scrollbar */
-html.glass-deck ::-webkit-scrollbar-thumb{
-  background:linear-gradient(180deg,#5b8cff,#7c5cff); border-radius:3px;
-}
-html.glass-deck ::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#6e9bff,#8b6cff)}
 /* Boot-up reveal — hero panels rise into place */
-html.glass-deck .vmr-mission-grid > .vmr-panel{animation:holo-rise .5s cubic-bezier(.22,1,.36,1) both}
-html.glass-deck .vmr-mission-grid > .vmr-panel:nth-child(2){animation-delay:.06s}
-html.glass-deck .vmr-mission-grid > .vmr-panel:nth-child(3){animation-delay:.12s}
-html.glass-deck .vmr-mission-grid > .vmr-panel:nth-child(4){animation-delay:.18s}
 @keyframes holo-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){
-  html.glass-deck .vmr-mission-grid > .vmr-panel{animation:none}
-  html.glass-deck body::before,html.glass-deck body.mac-desktop-root::before{animation:none !important}
 }
 
 /* ── Fleet Orb — the holographic centerpiece (dashboard hero) ──
@@ -1607,10 +489,8 @@ body[data-shell="orbit"] #orbit-stage-wrap canvas{width:100%;height:100%}
    NOTE: the Finder + browse-rail are targeted by ID (not class) on purpose — a
    desktop-tier rule (body.mac-desktop-root[data-desktop-tier="power"]:not(.finder-collapsed)
    .cloudos-finder) force-shows them with !important at specificity (0,4,1); an id
-   selector's (1,x,x) trumps it since orbit keeps the underlying tier. */
-body[data-shell="orbit"] .mac-menubar,
+   selector's (1,x,x) trumps it since orbit keeps the underlying tier. */body[data-shell="orbit"] .mac-menubar,
 body[data-shell="orbit"] #cloudos-dock,
-body[data-shell="orbit"] #cloudos-finder,
 body[data-shell="orbit"] #cloudos-browse-rail,
 body[data-shell="orbit"] #mac-desktop-tabs,
 body[data-shell="orbit"] .vmr-primary-tabs,
@@ -1738,26 +618,11 @@ body[data-shell="orbit"] #orbit-hud-bar{animation:orbit-hud-in .5s cubic-bezier(
 /* ── Depth tiers — spatial layering on the dashboard ──
    Foreground (orb) tilts toward the cursor and floats above; the primary
    KPI grid sits mid; secondary panels recede until hovered. */
-html.glass-deck #page-dashboard .space-y{perspective:1500px;perspective-origin:50% 30%}
-html.glass-deck #holo-fleet-orb{
-  transform:rotateX(var(--holo-tilt-y,0deg)) rotateY(var(--holo-tilt-x,0deg));
-  transform-style:preserve-3d;transition:transform .25s ease-out;will-change:transform;z-index:3}
-html.glass-deck .vmr-mission-grid{position:relative;z-index:2}
 /* Secondary tier recedes slightly, then comes forward on hover */
-html.glass-deck #vmr-mission-bottom,
-html.glass-deck #operator-details,
-html.glass-deck .dc-pinned-section{filter:saturate(.92) brightness(.97);transition:filter .3s}
-html.glass-deck #vmr-mission-bottom:hover,
-html.glass-deck #operator-details:hover,
-html.glass-deck .dc-pinned-section:hover{filter:none}
 @media (prefers-reduced-motion: reduce){
-  html.glass-deck #holo-fleet-orb{transform:none !important}
 }
 
-/* ── Light mode: tahoe-light / light themes ──────────────────── */
-html[data-theme="tahoe-light"],
-html[data-theme="light"],
-html[data-theme="daylight"] {
+/* ── Light mode: tahoe-light / light themes ──────────────────── */html[data-theme="light"]{
   /* Depth tokens flip to slate-white */
   --void:       #EEF0F5;
   --hull:       #F7F8FC;
@@ -1788,51 +653,20 @@ html[data-theme="daylight"] {
   --bg-card:    var(--panel);
   /* Signal + plasma tokens intentionally unchanged */
   /* --deck-temp starts at plasma; applyDeckTemp() overwrites on data load */
-}
-html[data-theme="tahoe-light"] .id-spine,
-html[data-theme="light"] .id-spine {
+}html[data-theme="light"] .id-spine{
   background: var(--hull);
   border-bottom-color: var(--hairline);
 }
 /* ◈ DAYLIGHT — light glass deck: accent + structural light overrides */
-html[data-theme="daylight"]{
-  color-scheme:light;
-  --plasma:#0a84ff; --plasma-deep:#0060d0; --plasma-line:rgba(10,132,255,.40); --plasma-glow:rgba(10,132,255,.22);
-  --primary:#0a84ff; --accent:#0a84ff; --molten:#34c0ff; --spark:#0a84ff; --deck-temp:#0a84ff; --deck-temp-glow:rgba(10,132,255,.16);
-  --glass-bg:rgba(255,255,255,.6); --glass-border:rgba(20,45,95,.12);
-  --aurora-1:rgba(10,132,255,.10); --aurora-2:rgba(120,90,255,.08); --aurora-3:rgba(56,200,255,.08); --aurora-4:rgba(180,140,255,.07);
-}
-html[data-theme="daylight"].glass-deck body,
-html[data-theme="daylight"].glass-deck body.mac-desktop-root{
-  background:radial-gradient(125% 95% at 50% -10%, #ffffff 0%, #eef3fb 46%, #e2eaf6 100%) !important;
-}
-html[data-theme="daylight"].glass-deck .mac-menubar.navbar{
-  background:rgba(255,255,255,.72) !important; border-bottom:1px solid rgba(20,45,95,.10) !important;
-}
-html[data-theme="daylight"].glass-deck .mac-dock-inner{
-  background:rgba(255,255,255,.6) !important; border:1px solid rgba(20,45,95,.12) !important;
-  box-shadow:0 22px 50px rgba(40,60,110,.18),inset 0 1px 0 rgba(255,255,255,.9) !important;
-}
-html[data-theme="daylight"].glass-deck .id-sec-h .id-line{background:linear-gradient(90deg, rgba(10,132,255,.40), transparent) !important}
-html[data-theme="daylight"] #holo-starfield{display:none !important}
-html[data-theme="daylight"] #holo-cursor-glow.on{opacity:.12; mix-blend-mode:normal; background:radial-gradient(circle, rgba(10,132,255,.16) 0%, transparent 62%)}
-/* Light-theme menubar pill polish — fixes the dark ⌘K/⌘N spotlight pills */
-html[data-theme="tahoe-light"] .btn-spotlight,
-html[data-theme="light"] .btn-spotlight,
-html[data-theme="daylight"] .btn-spotlight{
+/* Light-theme menubar pill polish — fixes the dark ⌘K/⌘N spotlight pills */html[data-theme="light"] .btn-spotlight{
   background:rgba(10,30,70,.05) !important; color:var(--ink-2) !important; border-color:var(--hairline) !important;
-}
-html[data-theme="tahoe-light"] .btn-spotlight:hover,
-html[data-theme="light"] .btn-spotlight:hover,
-html[data-theme="daylight"] .btn-spotlight:hover{ background:rgba(10,132,255,.10) !important; color:var(--ink) !important; }
+}html[data-theme="light"] .btn-spotlight:hover{ background:rgba(10,132,255,.10) !important; color:var(--ink) !important; }
 /* ── Deck-switch transition: a quick accent ripple on theme change ── */
 #deck-flash{position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:0;
   background:radial-gradient(circle at 50% 42%, var(--deck-flash-color,rgba(91,140,255,.5)) 0%, transparent 55%)}
 #deck-flash.go{animation:deck-flash-anim .55s cubic-bezier(.22,1,.36,1)}
 @keyframes deck-flash-anim{0%{opacity:0;transform:scale(.6)}30%{opacity:.5}100%{opacity:0;transform:scale(1.25)}}
-@media (prefers-reduced-motion: reduce){ #deck-flash.go{animation:none} }
-html[data-theme="tahoe-light"] .mac-menubar.navbar,
-html[data-theme="light"] .mac-menubar.navbar {
+@media (prefers-reduced-motion: reduce){ #deck-flash.go{animation:none} }html[data-theme="light"] .mac-menubar.navbar{
   background: rgba(247,248,252,0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -2536,7 +1370,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   width:8px;height:8px;border-radius:50%;margin-top:7px;flex-shrink:0;
 }
 .event-dot.warn{background:var(--warning);box-shadow:0 0 6px rgba(255,170,0,.3)}
-.event-dot.info{background:var(--spark);box-shadow:0 0 6px rgba(0,180,255,.3)}
+.event-dot.info{background:var(--plasma);box-shadow:0 0 6px var(--plasma-glow)}
 .event-dot.error{background:var(--error);box-shadow:0 0 6px rgba(226,75,74,.3)}
 .event-body{flex:1;min-width:0}
 .event-msg{font-size:.95rem;font-weight:500;color:var(--text)}
@@ -2547,7 +1381,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   flex-shrink:0;letter-spacing:.06em;text-transform:uppercase;
 }
 .event-badge.warn{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)}
-.event-badge.info{background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15)}
+.event-badge.info{background:var(--plasma-glow);color:var(--plasma);border:1px solid rgba(91,140,255,.15)}
 .event-time{font-size:.8rem;color:var(--text-dim);white-space:nowrap;flex-shrink:0;font-family:var(--font-mono)}
 
 /* ═══════════════════════════════════════════════════
@@ -2718,7 +1552,6 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 :focus-visible{outline:2px solid rgba(59,130,246,.65);outline-offset:2px}
 .form-input:focus-visible,.form-select:focus-visible,.zeus-ai-input:focus-visible,.spotlight-input:focus-visible,.serial-input:focus-visible,.launchpad-search:focus-visible,.copilot-input:focus-visible,.veyron-copilot-input:focus-visible{outline:none}
 .mac-dock-item:focus-visible{outline:2px solid rgba(59,130,246,.6);outline-offset:3px}
-.cloudos-finder-item:focus-visible{outline:2px solid rgba(59,130,246,.5);outline-offset:-2px}
 
 /* ═══════════════════════════════════════════════════
    FOOTER SCANLINE
@@ -3143,7 +1976,6 @@ body.mac-desktop-root .classic-nav-backdrop{top:92px}
   box-shadow:4px 0 20px rgba(0,0,0,.25);
 }
 .cloudos-browse-rail:hover,.cloudos-browse-rail.active{color:var(--primary);border-color:rgba(59,130,246,.35);background:rgba(59,130,246,.08)}
-body.finder-collapsed:not([data-desktop-tier="advanced"]) .cloudos-browse-rail{display:none!important}
 body.classic-nav-open .cloudos-browse-rail{display:none!important}
 @media(max-width:960px){.cloudos-browse-rail{display:none!important}}
 @media(min-width:769px) and (max-width:960px){
@@ -4087,147 +2919,23 @@ body.vmr-ticker-on .mac-dock{margin-bottom:28px}
   transition:border-color .15s,color .15s,background .15s;
 }
 .btn-spotlight:hover{border-color:rgba(59,130,246,.35);color:var(--primary);background:rgba(30,41,59,.75)}
-.btn-spotlight.finder-toggle{font-size:.9rem;padding:6px 11px}
 .cloudos-body-row{display:flex;align-items:stretch;min-height:calc(100vh - 56px)}
-.cloudos-finder{
-  width:220px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-secondary);
-  padding:14px 10px;display:flex;flex-direction:column;gap:6px;
-  transition:width .2s,padding .2s;
-}
-body.mac-desktop-root .cloudos-finder{
-  background:rgba(12,18,32,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border-right:1px solid var(--glass-border);
-}
-body.finder-collapsed .cloudos-finder{width:0;padding:0;overflow:hidden;border-right:none;opacity:0;pointer-events:none;margin:0}
-body.finder-collapsed .cloudos-finder *{pointer-events:none}
-body.finder-narrow .cloudos-finder{width:64px;padding:8px 6px}
 /* Top icon rail — frees the left column; labels appear on hover */
-body.finder-top .cloudos-body-row{
-  flex-direction:column;align-items:stretch;
-}
-body.finder-top .cloudos-finder{
-  width:100%!important;max-width:none!important;height:52px;min-height:52px;
-  flex-direction:row;align-items:center;gap:4px;
-  padding:6px 14px!important;margin:0;border-right:none!important;
-  border-bottom:1px solid var(--hairline, var(--border));
-  overflow-x:auto;overflow-y:hidden;opacity:1!important;pointer-events:auto!important;
-  background:rgba(8,8,8,.92)!important;
-}
-body.finder-top .finder-toolbar{display:none}
-body.finder-top .finder-search-wrap{display:none!important}
-body.finder-top .finder-nav-scroll{
-  display:flex;flex-direction:row;align-items:center;gap:2px;
-  flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;padding:0;
-  scrollbar-width:thin;
-}
-body.finder-top .finder-section{
-  display:flex;flex-direction:row;align-items:center;gap:2px;margin:0;flex-shrink:0;
-}
-body.finder-top .finder-section.collapsed{display:flex!important}
-body.finder-top .finder-section-label,
-body.finder-top .finder-section-toggle,
-body.finder-top .finder-footer,
-body.finder-top .finder-location-cluster{display:none!important}
-body.finder-top .finder-section-body{
-  display:flex!important;flex-direction:row;align-items:center;gap:2px;
-}
-body.finder-top .cloudos-finder-item{
-  position:relative;width:40px;height:40px;min-width:40px;padding:0!important;
-  justify-content:center;border-radius:10px;border-left:none!important;
-  font-size:0;line-height:0;gap:0;overflow:visible;
-}
-body.finder-top .cloudos-finder-item .fi-icon{
-  width:20px;height:20px;font-size:16px;color:var(--ink-3, var(--text-muted));
-}
-body.finder-top .cloudos-finder-item .fi-icon svg{width:18px;height:18px}
-body.finder-top .cloudos-finder-item .fi-label,
-body.finder-top .cloudos-finder-item .fi-meta{display:none!important}
-body.finder-top .cloudos-finder-item.active{
-  background:rgba(255,255,255,.08)!important;color:var(--ink, #f5f5f5);
-  padding-left:0!important;
-}
-body.finder-top .cloudos-finder-item.active::before{display:none!important}
-body.finder-top .cloudos-finder-item.active .fi-icon{color:var(--plasma, #e8e8e8)}
-body.finder-top .cloudos-finder-item:hover{background:rgba(255,255,255,.06)}
-body.finder-top .finder-item-tooltip{
-  display:none;position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);
-  z-index:80;padding:5px 9px;border-radius:6px;white-space:nowrap;
-  font-size:.72rem;font-weight:600;letter-spacing:.02em;line-height:1.2;
-  color:#0a0a0a;background:#f0f0f0;box-shadow:0 8px 24px rgba(0,0,0,.45);
-  pointer-events:none;
-}
-body.finder-top .cloudos-finder-item:hover .finder-item-tooltip,
-body.finder-top .cloudos-finder-item:focus-visible .finder-item-tooltip{display:block}
-body.finder-top .finder-item-tooltip::before{
-  content:'';position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
-  border:5px solid transparent;border-bottom-color:#f0f0f0;
-}
-body.finder-narrow .cloudos-finder-item{
-  position:relative;justify-content:center;padding:10px 0;font-size:0;gap:0;
-}
-body.finder-narrow .cloudos-finder-item .fi-icon{font-size:16px;width:20px}
-body.finder-narrow .cloudos-finder-item .fi-label,
-body.finder-narrow .cloudos-finder-item .fi-meta{display:none}
-body.finder-narrow .finder-item-tooltip{
-  display:none;position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);
-  z-index:80;padding:5px 9px;border-radius:6px;white-space:nowrap;
-  font-size:.72rem;font-weight:600;color:#0a0a0a;background:#f0f0f0;
-  box-shadow:0 8px 24px rgba(0,0,0,.45);pointer-events:none;
-}
-body.finder-narrow .cloudos-finder-item:hover .finder-item-tooltip{display:block}
-body.finder-top.finder-collapsed .cloudos-finder{display:none!important;height:0;min-height:0;padding:0!important;border:none}
-.finder-filter-hidden{display:none!important}
-.finder-section.finder-filter-empty{display:none!important}
-.finder-toolbar{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;
-  padding:2px 4px 8px;margin-bottom:2px;border-bottom:1px solid var(--border);
-}
-.finder-toolbar-title{font-size:.72rem;font-weight:600;color:var(--text-dim);letter-spacing:.04em;text-transform:uppercase}
-.finder-collapse-btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:28px;border-radius:8px;border:1px solid var(--border);
-  background:var(--bg-elevated);color:var(--text-muted);cursor:pointer;font-size:1rem;line-height:1;
-}
-.finder-collapse-btn:hover{border-color:rgba(59,130,246,.35);color:var(--primary)}
-.finder-toggle[aria-expanded="false"]{border-color:rgba(59,130,246,.35);color:var(--primary)}
-.cloudos-finder-title{font-size:.74rem;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--text-dim);padding:8px 10px 4px}
-.finder-section{margin-bottom:4px}
-.finder-section-toggle{
-  display:flex;align-items:center;justify-content:space-between;width:100%;
-  padding:6px 10px;border:none;background:transparent;color:var(--text-dim);
-  font-size:.74rem;font-weight:600;cursor:pointer;text-align:left;border-radius:8px;
-  transition:background .15s,color .15s;
-}
-.finder-section-toggle:hover{color:var(--text-muted);background:rgba(255,255,255,.04)}
-.finder-chevron{font-size:.65rem;opacity:.7;transition:transform .15s}
-.finder-section.collapsed .finder-chevron{transform:rotate(-90deg)}
-.finder-section.collapsed .finder-section-body{display:none}
-.finder-section-body{display:flex;flex-direction:column;gap:2px}
-.finder-footer{margin-top:auto;padding-top:10px;border-top:1px solid var(--border)}
-.finder-count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:8px;font-size:.6rem;font-weight:700;background:rgba(59,130,246,.18);color:rgba(251,191,36,.9);padding:0 4px;margin-right:4px}
-.finder-count-badge:empty{display:none}
 @keyframes refresh-pulse{0%{color:var(--success)}100%{color:var(--text-muted)}}
 .refresh-pulse{animation:refresh-pulse 2.5s ease-out forwards}
-.finder-location-cluster{font-size:.72rem;color:var(--text-dim);padding:2px 12px 8px;line-height:1.4}
-.cloudos-finder-item.active{
-  border-left:2px solid var(--primary);padding-left:10px;
-  background:linear-gradient(90deg,var(--primary-dim),rgba(59,130,246,.04));
-  color:var(--text-bright);font-weight:600;
-}
-.cloudos-finder-item{
-  display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;border:none;
-  background:transparent;color:var(--text-muted);font-size:.84rem;text-align:left;cursor:pointer;
-}
-.cloudos-finder-item:hover{background:rgba(59,130,246,.08);color:var(--text)}
-.cloudos-finder-item.active{background:linear-gradient(90deg,var(--primary-dim),rgba(59,130,246,.04));color:var(--text-bright)}
-.cloudos-finder-item .fi-meta{margin-left:auto;font-size:.7rem;color:var(--text-dim);font-weight:500}
 .vm-workspace.mac-inspector-open .vm-list-pane{opacity:.92}
-.copilot-module-badge{display:inline-block;font-size:.72rem;padding:2px 8px;border-radius:999px;background:rgba(59,130,246,.12);color:var(--primary);margin-bottom:6px}
-.copilot-context-banner{font-size:.78rem;color:var(--text-dim);padding:6px 10px;border-radius:8px;background:rgba(59,130,246,.06);margin-bottom:10px;display:none}
+.copilot-module-badge{display:inline-block;font-size:.72rem;padding:2px 8px;border-radius:999px;background:var(--plasma-glow);color:var(--plasma);margin-bottom:6px}
+.copilot-context-banner{font-size:.78rem;color:var(--text-dim);padding:6px 10px;border-radius:8px;background:var(--plasma-glow);margin-bottom:10px;display:none}
 .copilot-thread{max-height:280px;overflow-y:auto;margin-bottom:12px;padding-right:4px}
-.copilot-msg-user{text-align:right;margin-bottom:10px}
-.copilot-msg-user span{display:inline-block;max-width:92%;padding:8px 12px;border-radius:12px 12px 4px 12px;background:rgba(59,130,246,.15);font-size:.86rem}
-.copilot-msg-assistant{margin-bottom:12px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+@keyframes copilot-msg-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.copilot-msg-user{text-align:right;margin-bottom:10px;animation:copilot-msg-in .22s cubic-bezier(.16,1,.3,1)}
+.copilot-msg-user span{display:inline-block;max-width:92%;padding:8px 12px;border-radius:12px 12px 4px 12px;background:var(--plasma-glow);color:var(--ink);font-size:.86rem}
+.copilot-msg-assistant{margin-bottom:12px;padding:10px 12px 10px 13px;border-radius:10px;background:var(--panel);border:1px solid var(--hairline);border-left:2px solid var(--plasma);animation:copilot-msg-in .26s cubic-bezier(.16,1,.3,1)}
+.copilot-thinking{display:flex;align-items:center;gap:8px;color:var(--text-dim);padding:8px}
+.copilot-thinking .copilot-thinking-dot{width:6px;height:6px;border-radius:50%;background:var(--plasma);box-shadow:0 0 8px var(--plasma);animation:copilot-thinking-pulse 1s ease-in-out infinite}
+.copilot-thinking .copilot-thinking-dot:nth-child(2){animation-delay:.15s}
+.copilot-thinking .copilot-thinking-dot:nth-child(3){animation-delay:.3s}
+@keyframes copilot-thinking-pulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 .copilot-chip-group{margin-bottom:8px}
 .copilot-chip-label{font-size:.68rem;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
 .copilot-chip-btn:focus-visible{outline:2px solid var(--spark);outline-offset:2px}
@@ -4252,10 +2960,6 @@ body.finder-top.finder-collapsed .cloudos-finder{display:none!important;height:0
 .copilot-tool-args{color:var(--text-dim);font-size:.68rem}
 .cloudos-main{flex:1;min-width:0;display:flex;flex-direction:column}
 body.mac-desktop-root .cloudos-main{padding-bottom:120px}
-.finder-toggle{
-  display:inline-flex;align-items:center;justify-content:center;
-  min-width:36px;height:36px;padding:0;border-radius:9px;flex-shrink:0;
-}
 .app-store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:12px}
 .app-store-card{
   border-radius:14px;border:1px solid var(--border);
@@ -4326,7 +3030,6 @@ body.mac-desktop-root[data-wallpaper="tahoe"]::before{
 body.mac-desktop-root{padding-bottom:calc(4.5rem + env(safe-area-inset-bottom,0px))}
 body.mac-desktop-root .container{padding:16px 14px}
 body.mac-desktop-root .cloudos-body-row{min-height:calc(100dvh - var(--cloudos-menubar-h, 40px))}
-body.mac-desktop-root .cloudos-finder{top:var(--cloudos-menubar-h, 40px)}
 @media(max-width:960px){
   body.mac-desktop-root .cloudos-finder{top:var(--cloudos-menubar-h, 40px)}
 }
@@ -4375,15 +3078,11 @@ body[data-desktop-tier="normal"] .menubar-tier-collapsible,
 body[data-desktop-tier="power"] .menubar-tier-collapsible{display:none!important}
 body[data-desktop-tier="normal"] .nav-status,
 body[data-desktop-tier="power"] .nav-status{display:none!important}
-/* Power: PacketWolf-style — sidebar + dock only; slim menubar */
-body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-title,
-body.mac-desktop-root[data-desktop-tier="power"] .finder-toggle,
+/* Power: PacketWolf-style — sidebar + dock only; slim menubar */body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-title,
 body.mac-desktop-root[data-desktop-tier="power"] .vmr-header-search,
 body.mac-desktop-root[data-desktop-tier="power"] .mac-quick-nav,
 body.mac-desktop-root[data-desktop-tier="power"] .btn-nav-browse,
 body.mac-desktop-root[data-desktop-tier="power"] .mac-page-toolbar-wrap{display:none!important}
-body.mac-desktop-root[data-desktop-tier="power"]:not(.finder-collapsed) #mac-menubar-sidebar-btn{display:none!important}
-body.mac-desktop-root.finder-collapsed[data-desktop-tier="power"] #mac-menubar-sidebar-btn{display:none!important}
 body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-center{flex:1;justify-content:center;min-width:0;padding:0 6px}
 body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-center-inner{max-width:min(320px,42vw)}
 body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-left{max-width:min(240px,28vw)}
@@ -4582,10 +3281,6 @@ body.vm-focus-active .mac-inspector-header{display:flex}
 .mac-vm-chip-ask:hover{background:rgba(251,191,36,.16)}
 .mac-desktop-tab-wrap.dragging{opacity:.55}
 .mac-desktop-tab-wrap.drag-over .mac-desktop-tab{border-color:var(--spark)}
-.finder-current-window{
-  font-size:.72rem;font-weight:600;color:var(--spark);padding:4px 12px 6px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
 .launchpad-search-wrap{max-width:720px;margin:0 auto 16px}
 .launchpad-search{
   width:100%;padding:12px 16px;border-radius:12px;border:1px solid var(--glass-border);
@@ -4707,10 +3402,6 @@ body.vm-focus-active .mac-inspector-header{display:flex}
   body[data-wallpaper]{transition:none}
 }
 body[data-wallpaper]{transition:background .5s ease}
-.mac-finder-sidebar .cloudos-finder{
-  background:rgba(12,18,32,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border-right:1px solid var(--glass-border);
-}
 
 /* Tahoe density — compact stats, cards, tables (mac shell) */
 body.mac-desktop-root .grid-4,
@@ -5453,43 +4144,6 @@ body.mac-desktop-root[data-wallpaper="tahoe"]::before{
 }
 
 /* A2: Sidebar → Rail */
-body.mac-desktop-root .cloudos-finder{
-  background:linear-gradient(180deg,var(--void),var(--hull));
-  backdrop-filter:none;-webkit-backdrop-filter:none;
-  border-right:1px solid var(--hairline);
-  width:230px;padding:18px 14px;
-}
-.finder-toolbar{border-bottom:none;padding:6px 8px 18px}
-.finder-toolbar-title{display:none}
-.finder-section-label,.cloudos-finder-title{
-  font-family:'IBM Plex Mono',ui-monospace,monospace;
-  font-size:9.5px;letter-spacing:2px;text-transform:uppercase;
-  color:var(--ink-3);padding:0 8px 8px;font-weight:500;margin-top:14px;
-  background:none;border:none;display:block;width:100%;text-align:left;
-}
-.finder-section-toggle{display:none}
-.finder-section.collapsed .finder-section-body{display:flex}
-.cloudos-finder-item{
-  display:flex;align-items:center;gap:11px;padding:8px 10px;
-  border-radius:8px;color:var(--ink-2);font-size:13.5px;font-weight:500;
-  transition:.16s;position:relative;border:1px solid transparent;
-  background:none;width:100%;text-align:left;cursor:pointer;
-}
-.cloudos-finder-item:hover{background:var(--panel);color:var(--ink)}
-.cloudos-finder-item.active{
-  background:linear-gradient(90deg,var(--plasma-glow),transparent);
-  color:var(--ink);border-color:var(--plasma-line);font-weight:500;
-  border-left:none;padding-left:10px;
-}
-.cloudos-finder-item.active::before{
-  content:'';position:absolute;left:-14px;top:8px;bottom:8px;
-  width:3px;background:var(--plasma);border-radius:0 3px 3px 0;
-  box-shadow:0 0 12px var(--plasma);
-}
-.cloudos-finder-item .fi-icon{color:var(--ink-3);font-size:14px;width:18px;text-align:center}
-.cloudos-finder-item.active .fi-icon{color:var(--plasma)}
-.finder-search-wrap{display:none}
-.finder-count-badge{display:none!important}
 
 /* A3: Top bar → Topbar */
 .mac-menubar.navbar{
@@ -5550,175 +4204,34 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* 1 — flatten every content surface (strip box paint) */
-html.glass-deck .card,
-html.glass-deck .glass-card,
-html.glass-deck .chart-card,
-html.glass-deck .vm-card,
-html.glass-deck .vmr-panel,
-html.glass-deck .vmr-surface-card,
-html.glass-deck .vmr-fleet-card,
-html.glass-deck .vmr-fleet-toolbar,
-html.glass-deck .vmr-copy-tile,
-html.glass-deck .vmr-heat-tile,
-html.glass-deck .vmr-alog-panel,
-html.glass-deck .vmr-ns-card,
-html.glass-deck .vmr-incident-card,
-html.glass-deck .vmr-table-wrap,
-html.glass-deck .zeus-glass,
-html.glass-deck .vm-inspector-panel,
-html.glass-deck .vm-hero,
-html.glass-deck .vm-hero-metric,
-html.glass-deck .mission-tile,
-html.glass-deck .security-finding-card,
-html.glass-deck .vd-kv,
-html.glass-deck .glass-details,
-html.glass-deck .operator-details,
-html.glass-deck .tile,
-html.glass-deck .panel,
-html.glass-deck .id-tile,
-html.glass-deck .id-vmcard,
-html.glass-deck .id-tpl,
-html.glass-deck .mac-page-window{
-  background:transparent!important;
-  backdrop-filter:none!important;
-  -webkit-backdrop-filter:none!important;
-  border:none!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-}
 
 /* 1a — notice banners: flatten the box but keep a left accent so callouts read */
-html.glass-deck .glass-banner,
-html.glass-deck .veyron-cap-banner{
-  background:transparent!important;
-  backdrop-filter:none!important;
-  -webkit-backdrop-filter:none!important;
-  box-shadow:none!important;
-  border:none!important;
-  border-left:2px solid var(--hairline-hi,var(--hairline))!important;
-  border-radius:0!important;
-}
 
 /* 1b — inline-styled inner stat tiles (inspector / capsule / fleet cards).
         !important is the one case that beats an inline style= border. */
-html.glass-deck .vm-inspector-panel div[style*="border"],
-html.glass-deck .vmr-fleet-card div[style*="border"],
-html.glass-deck .vmr-capsule-pane div[style*="border"],
-html.glass-deck .vmr-capsule-hero div[style*="border"]{
-  background:transparent!important;
-  border-color:transparent!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-}
 
 /* 2 — no hover-float on flattened sections */
-html.glass-deck .card:hover,
-html.glass-deck .glass-card:hover,
-html.glass-deck .chart-card:hover,
-html.glass-deck .vmr-panel:hover,
-html.glass-deck .tile:hover,
-html.glass-deck .panel:hover,
-html.glass-deck .id-tile:hover,
-html.glass-deck .mac-page-window:hover{
-  transform:none!important;
-  box-shadow:none!important;
-  border-color:transparent!important;
-}
 /* keep a faint tint on genuinely clickable items */
-html.glass-deck .vm-card:hover,
-html.glass-deck .id-vmcard:hover,
-html.glass-deck .id-tpl:hover,
-html.glass-deck .vmr-fleet-card:hover,
-html.glass-deck .vmr-incident-card:hover,
-html.glass-deck .mission-tile:hover,
-html.glass-deck .vmr-ns-card:hover{
-  transform:none!important;
-  box-shadow:none!important;
-  border-color:transparent!important;
-  background:rgba(140,170,255,.06)!important;
-}
 
 /* 3 — drop box-edge adornments (accent bar / shimmer top-rule / tile bloom) */
-html.glass-deck .card::before,
-html.glass-deck .chart-card::before,
-html.glass-deck .vmr-panel::before,
-html.glass-deck .id-tile::after{ display:none!important; }
 
 /* 4 — section separation: top-level groups become web sections
         (top hairline + gutter-aligned); the first child stays flush */
-html.glass-deck .space-y>.card,
-html.glass-deck .space-y>.glass-card,
-html.glass-deck .space-y>.chart-card,
-html.glass-deck .space-y>.vmr-panel{
-  border-top:1px solid var(--hairline)!important;
-  border-radius:0!important;
-  padding:22px 0 4px!important;
-}
-html.glass-deck .space-y>:first-child{
-  border-top:none!important;
-  padding-top:0!important;
-}
 
 /* 5 — card headers become flat section headings (underline, no fill) */
-html.glass-deck .card-header,
-html.glass-deck .id-card-h{
-  background:transparent!important;
-  border-bottom:1px solid var(--hairline)!important;
-  padding-left:0!important;
-  padding-right:0!important;
-}
 
 /* 6 — remove the fake macOS window title bar (traffic lights + frame) */
 .mac-page-toolbar-traffic{ display:none!important; }
-html.glass-deck .mac-page-toolbar{
-  background:transparent!important;
-  backdrop-filter:none!important;
-  -webkit-backdrop-filter:none!important;
-  border:none!important;
-  border-radius:0!important;
-  box-shadow:none!important;
-}
 .mac-page-toolbar-wrap::before{ display:none!important; }
 
 /* 7 — magazine/web page headers (not a card toolbar) */
-html.glass-deck .page-header{
-  align-items:flex-end;
-  gap:18px;
-  padding:8px 0 18px!important;
-  margin:0 0 8px;
-  border-bottom:1px solid var(--hairline, rgba(160,188,255,.14));
-  background:transparent!important;
-}
-html.glass-deck .page-header h1{
-  font-family:var(--font-display), 'Sora', 'Space Grotesk', system-ui, sans-serif;
-  font-size:clamp(1.65rem, 2.2vw, 2.05rem);
-  font-weight:700;
-  letter-spacing:-.035em;
-  line-height:1.15;
-}
-html.glass-deck .page-header p{
-  font-size:.92rem;
-  max-width:62ch;
-  margin-top:8px;
-  color:var(--text-muted);
-}
-html.glass-deck .page-header-right{
-  margin-left:auto;
-  padding:0;
-  border:none;
-  background:transparent;
-}
 
-/* 8 — full-bleed page shell gutters (no floating window frame) */
-html.glass-deck .page.section-shell,
-body.mac-desktop-root .page.section-shell{
+/* 8 — full-bleed page shell gutters (no floating window frame) */body.mac-desktop-root .page.section-shell{
   max-width:var(--vmr-canvas-max,1680px);
   width:100%;
   margin:0 auto;
   padding:0 24px 48px;
-}
-html.glass-deck body.mac-desktop-root .page.section-shell > .space-y.mac-page-window,
-body.mac-desktop-root .page.section-shell > .space-y.mac-page-window{
+}body.mac-desktop-root .page.section-shell > .space-y.mac-page-window{
   background:transparent!important;
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
@@ -5730,53 +4243,10 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window{
   padding:12px 0 24px!important;
   overflow:visible!important;
 }
-html.glass-deck body.mac-desktop-root .page.section-shell > .space-y.mac-page-window::before{display:none!important}
-html.glass-deck .table-wrap,
-html.glass-deck .vmr-table-wrap,
-html.glass-deck .table{
-  background:transparent!important;
-  border:none!important;
-  box-shadow:none!important;
-}
-html.glass-deck .table thead th{
-  background:transparent!important;
-  border-bottom:1px solid var(--hairline, rgba(160,188,255,.14))!important;
-}
 
 /* 9 — restore containment for real interactive surfaces */
-html.glass-deck .modal-overlay .modal,
-html.glass-deck .modal-overlay .zeus-glass,
-html.glass-deck .mac-connect-sheet,
-html.glass-deck .glass-modal,
-html.glass-deck #spotlight-modal .spotlight-panel,
-html.glass-deck #spotlight-modal .modal,
-html.glass-deck .glass-confirm-panel,
-html.glass-deck .glass-prompt-panel,
-html.glass-deck .create-modal .modal,
-html.glass-deck .ssh-popover,
-html.glass-deck .mac-menu-panel,
-html.glass-deck .launchpad-panel,
-html.glass-deck .ask-zeus-drawer,
-html.glass-deck .zeus-drawer{
-  background:linear-gradient(152deg, rgba(40,54,98,.92), rgba(13,19,42,.94))!important;
-  -webkit-backdrop-filter:blur(26px) saturate(1.6)!important;
-  backdrop-filter:blur(26px) saturate(1.6)!important;
-  border:1px solid rgba(160,188,255,.18)!important;
-  border-radius:16px!important;
-  box-shadow:0 28px 70px rgba(2,4,16,.62), inset 0 1px 0 rgba(190,212,255,.16)!important;
-}
 
 /* 10 — forms that own a control surface keep a subtle wash + hairline */
-html.glass-deck .modal .card,
-html.glass-deck .mac-connect-sheet .card,
-html.glass-deck form.card,
-html.glass-deck .form-panel.card{
-  background:rgba(140,170,255,.05)!important;
-  border:1px solid rgba(160,188,255,.14)!important;
-  border-radius:12px!important;
-  box-shadow:none!important;
-  padding:14px!important;
-}
 </style>
 </head>
 <body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto" data-shell="desktop">
@@ -7097,19 +5567,19 @@ html.glass-deck .form-panel.card{
     <div class="vmr-panel-title">Optimization Recommendations</div>
     <div id="cost-optimization-body" style="margin-top:8px">
       <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(239,159,39,.06);border:1px solid rgba(239,159,39,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--caution-bg);border:1px solid rgba(239,159,39,.2)">
           <div><strong style="font-size:.84rem">Downsize idle VMs</strong><div style="font-size:.78rem;color:var(--muted)">VMs with sustained low CPU may be over-provisioned</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find idle VMs to downsize')">Analyze</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(239,159,39,.06);border:1px solid rgba(239,159,39,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--caution-bg);border:1px solid rgba(239,159,39,.2)">
           <div><strong style="font-size:.84rem">Delete orphaned PVCs</strong><div style="font-size:.78rem;color:var(--muted)">Unbound PersistentVolumeClaims accumulate storage costs</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find orphaned PVCs')">Find PVCs</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(239,159,39,.06);border:1px solid rgba(239,159,39,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--caution-bg);border:1px solid rgba(239,159,39,.2)">
           <div><strong style="font-size:.84rem">Schedule-based shutdown</strong><div style="font-size:.78rem;color:var(--muted)">Stop dev/test VMs outside business hours</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Create shutdown schedule for dev VMs')">Configure</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(239,159,39,.06);border:1px solid rgba(239,159,39,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--caution-bg);border:1px solid rgba(239,159,39,.2)">
           <div><strong style="font-size:.84rem">Move to cheaper storage class</strong><div style="font-size:.78rem;color:var(--muted)">Cold workloads can use HDD or object storage tiers</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Suggest cheaper storage classes for VMs')">Suggest</button>
         </div>
@@ -7204,7 +5674,7 @@ html.glass-deck .form-panel.card{
   <div class="monitor-capabilities">
     <div class="monitor-cap glass-card"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code class="inline-scope-code">monitoring</code>, <code class="inline-scope-code">prometheus</code>, <code class="inline-scope-code">observability</code>, and the active namespace.</p></div></div>
     <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(239,159,39,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
-    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:rgba(226,75,74,.08);border-color:rgba(226,75,74,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
+    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--critical-bg);border-color:rgba(226,75,74,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
     <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--nominal-bg);border-color:rgba(29,158,117,.2);color:var(--nominal)">&#8866;</div><div><h3>Also in Veyron</h3><p>Per-VM live charts on the VM detail view, Alerts and Notifications pages, SLO / cost signals — use the nav to explore the full forge.</p></div></div>
   </div>
   <div id="monitoring-status" class="monitor-overview"></div>
@@ -8012,7 +6482,7 @@ html.glass-deck .form-panel.card{
       <span style="font-size:.72rem;color:var(--text-dim);margin-left:8px">tile size = VM count · color = heat score</span>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
         <span style="font-size:.72rem;color:var(--text-dim)">Cool</span>
-        <div style="width:80px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(29,158,117,.8),rgba(239,159,39,.8),rgba(226,75,74,.8))"></div>
+        <div style="width:80px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--nominal),var(--caution),var(--critical))"></div>
         <span style="font-size:.72rem;color:var(--text-dim)">Hot</span>
       </div>
     </div>
@@ -8158,8 +6628,8 @@ html.glass-deck .form-panel.card{
         <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVMs()">&#8635; Refresh</button>
       </div>
     </div>
-    <div id="reactor-wrap" style="position:relative;border:.5px solid var(--border);border-radius:18px;overflow:hidden;background:radial-gradient(120% 100% at 50% 30%,var(--plasma-glow),var(--void))">
-      <canvas id="reactor-canvas" style="display:block;width:100%" role="img" aria-label="Reactor core fleet visualization"></canvas>
+    <div id="reactor-wrap" style="position:relative;border:.5px solid var(--border);border-radius:18px;overflow:hidden;background:radial-gradient(120% 100% at 50% 30%,var(--plasma-glow),var(--void));aspect-ratio:680/460">
+      <canvas id="reactor-canvas" style="display:block;width:100%;height:100%" role="img" aria-label="Reactor core fleet visualization"></canvas>
     </div>
   </div>
 </div>
@@ -8188,8 +6658,8 @@ html.glass-deck .form-panel.card{
       </div>
     </div>
 
-    <div style="position:relative;border:.5px solid var(--border);border-radius:14px;overflow:hidden;background:radial-gradient(120% 90% at 50% 18%,rgba(37,99,235,.10),transparent 60%)">
-      <svg id="fc-stage" viewBox="0 0 680 420" width="100%" style="display:block;cursor:grab;touch-action:none" role="img" aria-label="3D fleet of virtual machines grouped by cluster node"></svg>
+    <div id="fc-wrap" style="position:relative;border:.5px solid var(--border);border-radius:14px;overflow:hidden;background:radial-gradient(120% 90% at 50% 18%,rgba(37,99,235,.10),transparent 60%);aspect-ratio:680/420">
+      <canvas id="fc-stage" style="display:block;width:100%;height:100%;cursor:grab;touch-action:none" role="img" aria-label="3D fleet of virtual machines grouped by cluster node"></canvas>
 
       <div style="position:absolute;left:12px;bottom:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none">
         <div style="background:var(--bg-card);border:.5px solid var(--border);border-radius:9px;padding:7px 11px">
@@ -10733,21 +9203,11 @@ function loadPageData(page, opts) {
   };
 })();
 
-// ── Fleet Constellation ──────────────────────────────────────
+// ── Fleet Constellation (real WebGL — see dashboard-veyron-3d.js) ──
 (function(){
-  const SVGNS = 'http://www.w3.org/2000/svg';
-  const W = 680, H = 420, FOV = 520;
-  const STATUS = {
-    healthy:  { c: VMR_SIG.ok },
-    warning:  { c: VMR_SIG.warn },
-    critical: { c: VMR_SIG.crit },
-    stopped:  { c: VMR_SIG.off }
-  };
-
   let _nodes = [], _vms = [], _metric = 'load';
-  let _yaw = -0.5, _pitch = 0.5, _autoOrbit = false;
-  let _dragging = false, _px = 0, _py = 0;
   let _inited = false;
+  let _fcInitToken = 0;
 
   // Preserve orbit positions across data refreshes (keyed by ns/name)
   const _orbits = {};
@@ -10802,17 +9262,24 @@ function loadPageData(page, opts) {
     }).catch(()=>{});
   };
 
-  window.initFleetConstellation = function() {
+  function _val(vm) { return _metric==='mem' ? vm.mem : _metric==='net' ? vm.net : vm.load; }
+
+  function _renderStats() {
+    const run = _vms.filter(v => v.status !== 'stopped');
+    const el  = id => document.getElementById(id);
+    if (el('fc-stat-run'))   el('fc-stat-run').textContent   = run.length;
+    if (el('fc-stat-load'))  el('fc-stat-load').textContent  = Math.round(run.reduce((s,v)=>s+v.load,0)/(run.length||1)*100) + '%';
+    if (el('fc-stat-alert')) el('fc-stat-alert').textContent = _vms.filter(v=>v.status==='warning'||v.status==='critical').length;
+  }
+
+  const WORLD_SCALE = 1 / 40; // legacy SVG px → three.js world units
+
+  window.initFleetConstellation = async function() {
     if (_inited) { fetchFleetConstellation(); return; }
     _inited = true;
 
-    const svg = document.getElementById('fc-stage');
-    if (!svg) return;
-
-    svg.addEventListener('pointerdown', e => { _dragging=true; _px=e.clientX; _py=e.clientY; svg.style.cursor='grabbing'; svg.setPointerCapture(e.pointerId); });
-    svg.addEventListener('pointermove', e => { if(!_dragging) return; _yaw+=(e.clientX-_px)*0.008; _pitch=Math.max(0.15,Math.min(1.0,_pitch+(e.clientY-_py)*0.004)); _px=e.clientX; _py=e.clientY; });
-    svg.addEventListener('pointerup',   () => { _dragging=false; svg.style.cursor='grab'; });
-    svg.addEventListener('pointerleave',() => { _dragging=false; svg.style.cursor='grab'; });
+    const canvas = document.getElementById('fc-stage'), wrap = document.getElementById('fc-wrap');
+    if (!canvas || !wrap) return;
 
     function setMode(m) {
       _metric = m;
@@ -10833,19 +9300,6 @@ function loadPageData(page, opts) {
     if (mn) mn.onclick = () => setMode('net');
     setMode('load');
 
-    const spin = document.getElementById('fc-spin-btn');
-    if (spin) spin.onclick = () => {
-      _autoOrbit = !_autoOrbit;
-      spin.style.background = _autoOrbit ? 'var(--bg-card)' : 'transparent';
-      spin.style.color      = _autoOrbit ? 'var(--text)'    : 'var(--text-muted)';
-    };
-
-    function loop() {
-      if (_autoOrbit && !_dragging) _yaw += 0.0035;
-      if (document.body.dataset.page === 'fleet-constellation') _render(svg);
-      requestAnimationFrame(loop);
-    }
-
     let _fcJitterTimer = setInterval(() => {
       _vms.forEach(vm => {
         if (vm.status === 'stopped') return;
@@ -10859,102 +9313,225 @@ function loadPageData(page, opts) {
       if (dot) dot.style.opacity = dot.style.opacity === '0.3' ? '1' : '0.3';
     }, 1400);
     let _fcFetchTimer = setInterval(fetchFleetConstellation, 15000);
+
+    const myToken = ++_fcInitToken;
+    let mod;
+    try { mod = await import('/assets/dashboard-veyron-3d.js'); }
+    catch (e) { console.error('Fleet Constellation: failed to load 3D module', e); return; }
+    if (myToken !== _fcInitToken) return; // superseded by a newer init while the module was loading
+    if (document.getElementById('fc-stage') !== canvas || !document.body.contains(canvas)) return;
+
+    const { THREE, createScene, attachOrbitDrag } = mod;
+    const handle = createScene(canvas, { fov: 45, cameraDistance: 9 });
+    const { scene, camera, renderer, colors } = handle;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+    sun.position.set(3, 6, 4);
+    scene.add(sun);
+
+    const STATUS_HEX = { healthy: colors.nominal, warning: colors.caution, critical: colors.critical, stopped: colors.inert };
+    const platformGeo = new THREE.CircleGeometry(1.55, 32);
+    const platformMat = new THREE.MeshBasicMaterial({ color: colors.plasma, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
+    const platformRingMat = new THREE.LineBasicMaterial({ color: colors.plasma, transparent: true, opacity: 0.4 });
+    const barGeo = new THREE.CylinderGeometry(0.05, 0.07, 1, 10);
+    barGeo.translate(0, 0.5, 0); // pivot at base so scale.y stretches upward from the platform
+    const sphereGeo = new THREE.SphereGeometry(1, 18, 14);
+    const matCache = {};
+    function matFor(status) {
+      if (!matCache[status]) {
+        const c = new THREE.Color(STATUS_HEX[status] || colors.inert);
+        matCache[status] = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.45, roughness: 0.4, metalness: 0.1 });
+      }
+      return matCache[status];
+    }
+    const barMatCache = {};
+    function barMatFor(status) {
+      if (!barMatCache[status]) {
+        barMatCache[status] = new THREE.MeshBasicMaterial({ color: new THREE.Color(STATUS_HEX[status] || colors.inert), transparent: true, opacity: status === 'stopped' ? 0.35 : 0.75 });
+      }
+      return barMatCache[status];
+    }
+
+    const group = new THREE.Group();
+    scene.add(group);
+    const nodeMeshes = [];
+    const overlay = document.createElement('div');
+    overlay.className = 'fc-3d-overlay';
+    overlay.style.cssText = 'position:absolute;inset:0;pointer-events:none;font-family:var(--font-sans)';
+    if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+    wrap.appendChild(overlay);
+    const nodeLabelEls = new Map();
+
+    function project(vec3) {
+      const v = vec3.clone().project(camera);
+      const w = renderer.domElement.clientWidth || 1, h = renderer.domElement.clientHeight || 1;
+      return { x: (v.x * 0.5 + 0.5) * w, y: (-v.y * 0.5 + 0.5) * h, visible: v.z < 1 };
+    }
+
+    let _nodesSig = '';
+    function rebuildNodes() {
+      const sig = _nodes.map(n => n.id).join(',');
+      if (sig === _nodesSig && nodeMeshes.length) return; // node topology unchanged — skip the rebuild
+      _nodesSig = sig;
+      nodeMeshes.forEach(m => { group.remove(m.platform); group.remove(m.ring); });
+      nodeMeshes.length = 0;
+      // Node topology changed — the old label divs are keyed by node id and
+      // would otherwise freeze in place forever (verified: this is exactly
+      // the stale-DOM class of bug found and fixed in Reactor Core).
+      nodeLabelEls.forEach(el => { if (el.parentNode) el.parentNode.removeChild(el); });
+      nodeLabelEls.clear();
+      _nodes.forEach(n => {
+        const platform = new THREE.Mesh(platformGeo, platformMat);
+        platform.rotation.x = -Math.PI / 2;
+        platform.position.set(n.x * WORLD_SCALE, 0, 0);
+        group.add(platform);
+        const pts = []; for (let a = 0; a <= 48; a++) { const t = (a/48)*Math.PI*2; pts.push(new THREE.Vector3(Math.cos(t)*1.55, 0, Math.sin(t)*1.55)); }
+        const ring = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), platformRingMat);
+        ring.position.copy(platform.position);
+        group.add(ring);
+        nodeMeshes.push({ platform, ring, node: n });
+      });
+    }
+
+    const vmMeshes = new Map(); // key -> { bar, sphere }
+    function syncVmMeshes() {
+      const seen = new Set();
+      _vms.forEach(vm => {
+        const key = vm.namespace + '/' + vm.name;
+        seen.add(key);
+        let m = vmMeshes.get(key);
+        if (!m) {
+          const bar = new THREE.Mesh(barGeo, barMatFor(vm.status));
+          const sphere = new THREE.Mesh(sphereGeo, matFor(vm.status));
+          group.add(bar); group.add(sphere);
+          m = { bar, sphere };
+          vmMeshes.set(key, m);
+        } else {
+          m.bar.material = barMatFor(vm.status);
+          m.sphere.material = matFor(vm.status);
+        }
+        m.vm = vm;
+        m.bar.userData.vm = vm;
+        m.sphere.userData.vm = vm;
+      });
+      vmMeshes.forEach((m, key) => { if (!seen.has(key)) { group.remove(m.bar); group.remove(m.sphere); vmMeshes.delete(key); } });
+    }
+
+    rebuildNodes();
+    syncVmMeshes();
+
+    const orbit = attachOrbitDrag(camera, new THREE.Vector3(0, 0.4, 0), canvas, {
+      radius: 9, theta: -0.5, phi: 1.0, minPhi: 0.25, maxPhi: 1.45, autoRotateSpeed: 0,
+    });
+    let _autoOrbitOn = false;
+    const spin = document.getElementById('fc-spin-btn');
+    if (spin) spin.onclick = () => {
+      _autoOrbitOn = !_autoOrbitOn;
+      orbit.setAutoRotate(_autoOrbitOn && !handle.reduceMotion ? 0.12 : 0);
+      spin.style.background = _autoOrbitOn ? 'var(--bg-card)' : 'transparent';
+      spin.style.color      = _autoOrbitOn ? 'var(--text)'    : 'var(--text-muted)';
+    };
+
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    let hovered = null;
+    function pickAt(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(ndc, camera);
+      const spheres = Array.from(vmMeshes.values()).map(m => m.sphere);
+      const hits = raycaster.intersectObjects(spheres);
+      return hits.length ? hits[0].object : null;
+    }
+    function showTip(vm, clientX, clientY) {
+      const tip = document.getElementById('fc-tip');
+      if (!tip) return;
+      const n = _nodes[vm.node];
+      tip.innerHTML = '<div style="font-size:13px;font-weight:500;margin-bottom:5px">' + esc(vm.name) + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);line-height:1.7">' +
+        '<span style="color:' + (STATUS_HEX[vm.status]||colors.inert) + '">●</span> ' + esc(vm.status) + ' · ' + esc(vm.namespace||'default') + '<br>' +
+        (n ? esc(n.label) : '') + '<br>' +
+        'load ' + Math.round(vm.load*100) + '% · mem ' + Math.round(vm.mem*100) + '%<br>' +
+        'net ' + Math.round(vm.net*120) + ' Mb/s</div>';
+      const r = canvas.getBoundingClientRect();
+      tip.style.left    = Math.min(Math.max(clientX - r.left - 75, 6), r.width - 160) + 'px';
+      tip.style.top     = Math.max(clientY - r.top - 100, 6) + 'px';
+      tip.style.opacity = 1;
+    }
+    function hideTip() { const t = document.getElementById('fc-tip'); if (t) t.style.opacity = 0; }
+    function onMove(e) {
+      const hit = pickAt(e.clientX, e.clientY);
+      if (hit !== hovered) {
+        hovered = hit;
+        canvas.style.cursor = hit ? 'pointer' : 'grab';
+        if (hit && hit.userData.vm) showTip(hit.userData.vm, e.clientX, e.clientY); else hideTip();
+      } else if (hit) {
+        showTip(hit.userData.vm, e.clientX, e.clientY);
+      }
+    }
+    function onClick(e) {
+      if (orbit.wasDragged()) return;
+      const hit = pickAt(e.clientX, e.clientY);
+      if (hit && hit.userData.vm && typeof openCopilotWithVm === 'function') {
+        const vm = hit.userData.vm;
+        openCopilotWithVm('Show health detail for VM ' + vm.name, vm.namespace, vm.name);
+      }
+    }
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerleave', hideTip);
+    canvas.addEventListener('click', onClick);
+
+    let t = 0;
+    handle.onFrame(function (dt, reduceMotion) {
+      t += dt;
+      rebuildNodes();
+      syncVmMeshes();
+      vmMeshes.forEach(m => {
+        const vm = m.vm, n = _nodes[vm.node];
+        if (!n) return;
+        const v = _val(vm);
+        const height = Math.max((vm.status === 'stopped' ? 0.1 : 0.25 + v * 2.4), 0.06);
+        const bx = (n.x + Math.cos(vm.ang) * vm.rad) * WORLD_SCALE;
+        const bz = Math.sin(vm.ang) * vm.rad * WORLD_SCALE;
+        const lift = vm.status === 'stopped' ? 0 : Math.sin(t * 1.4 + vm.ph) * 0.04;
+        m.bar.position.set(bx, 0, bz);
+        m.bar.scale.y = height;
+        m.sphere.position.set(bx, height + lift, bz);
+        m.sphere.scale.setScalar(hovered === m.sphere ? (vm.status === 'stopped' ? 0.09 : 0.14) * 1.5 : (vm.status === 'stopped' ? 0.09 : 0.14));
+      });
+      orbit.tick(dt, reduceMotion);
+      nodeMeshes.forEach(nm => {
+        let el = nodeLabelEls.get(nm.node.id);
+        if (!el) {
+          el = document.createElement('div');
+          el.style.cssText = 'position:absolute;transform:translate(-50%,0);font-size:11px;color:var(--text-dim);white-space:nowrap';
+          overlay.appendChild(el);
+          nodeLabelEls.set(nm.node.id, el);
+        }
+        const worldPt = nm.platform.position.clone().applyMatrix4(group.matrixWorld);
+        const p2 = project(worldPt);
+        el.style.left = p2.x + 'px'; el.style.top = (p2.y + 14) + 'px';
+        el.style.display = p2.visible ? '' : 'none';
+        el.textContent = nm.node.label;
+      });
+    });
+
     window.destroyFleetConstellation = function() {
       clearInterval(_fcJitterTimer); clearInterval(_fcFetchTimer);
       _fcJitterTimer = null; _fcFetchTimer = null; _inited = false;
+      canvas.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerleave', hideTip);
+      canvas.removeEventListener('click', onClick);
+      if (orbit && orbit.dispose) orbit.dispose();
+      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      hideTip();
+      if (handle && handle.dispose) handle.dispose();
     };
 
     fetchFleetConstellation();
-    requestAnimationFrame(loop);
   };
-
-  function _val(vm) { return _metric==='mem' ? vm.mem : _metric==='net' ? vm.net : vm.load; }
-
-  function _el(tag, attrs) {
-    const e = document.createElementNS(SVGNS, tag);
-    for (const k in attrs) e.setAttribute(k, attrs[k]);
-    return e;
-  }
-
-  function _proj(x, y, z) {
-    const cy=Math.cos(_yaw), sy=Math.sin(_yaw);
-    let rx=x*cy-z*sy, rz=x*sy+z*cy;
-    const cp=Math.cos(_pitch), sp=Math.sin(_pitch);
-    let ry=y*cp-rz*sp; rz=y*sp+rz*cp;
-    const s=FOV/(FOV+rz+260);
-    return { sx: W/2+rx*s, sy: H/2+ry*s-30, s, depth: rz };
-  }
-
-  function _render(svg) {
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-    const items = [];
-
-    _nodes.forEach(n => {
-      const p = _proj(n.x, 75, 0);
-      items.push({ z: p.depth-1000, draw: () => {
-        svg.appendChild(_el('ellipse', { cx:p.sx, cy:p.sy, rx:62*p.s, ry:20*p.s, fill:'rgba(59,130,246,.08)', stroke:'rgba(59,130,246,.35)', 'stroke-width':1 }));
-        const lbl = _el('text', { x:p.sx, y:p.sy+30*p.s, 'text-anchor':'middle', 'font-size':11*Math.max(p.s,.7), fill:'var(--text-dim)', 'font-family':'var(--font-sans)' });
-        lbl.textContent = n.label;
-        svg.appendChild(lbl);
-      }});
-    });
-
-    _vms.forEach(vm => {
-      if (!_nodes[vm.node]) return;
-      const n = _nodes[vm.node];
-      const v = _val(vm);
-      const height = vm.status==='stopped' ? 4 : 10+v*95;
-      const bx = n.x + Math.cos(vm.ang)*vm.rad;
-      const bz = Math.sin(vm.ang)*vm.rad;
-      const base = _proj(bx, 75, bz);
-      const top  = _proj(bx, 75-height, bz);
-      const st   = STATUS[vm.status];
-      const lift = Math.sin(Date.now()/700 + vm.ph)*1.5;
-
-      items.push({ z: base.depth, draw: () => {
-        svg.appendChild(_el('line', { x1:base.sx, y1:base.sy, x2:top.sx, y2:top.sy-lift, stroke:st.c, 'stroke-width':Math.max(2.5*base.s,1.4), 'stroke-linecap':'round', 'stroke-opacity':vm.status==='stopped'?.4:.85 }));
-        svg.appendChild(_el('ellipse', { cx:base.sx, cy:base.sy, rx:6*base.s, ry:2.4*base.s, fill:st.c, 'fill-opacity':.18 }));
-        const r = Math.max((vm.status==='stopped'?3.5:5.5)*base.s, 2.2);
-        if (vm.status !== 'stopped') {
-          svg.appendChild(_el('circle', { cx:top.sx, cy:top.sy-lift, r:r+3+Math.sin(Date.now()/500+vm.ph)*2, fill:st.c, 'fill-opacity':.12 }));
-        }
-        const dot = _el('circle', { cx:top.sx, cy:top.sy-lift, r, fill:st.c, stroke:'var(--bg)', 'stroke-width':1.2, style:'cursor:pointer' });
-        dot.addEventListener('mouseenter', () => _showTip(vm, top.sx, top.sy-lift, svg));
-        dot.addEventListener('mouseleave', () => { const t=document.getElementById('fc-tip'); if(t) t.style.opacity=0; });
-        dot.addEventListener('click', () => {
-          if (typeof openCopilotWithVm === 'function')
-            openCopilotWithVm('Show health detail for VM ' + vm.name, vm.namespace, vm.name);
-        });
-        svg.appendChild(dot);
-      }});
-    });
-
-    items.sort((a, b) => a.z - b.z).forEach(it => it.draw());
-  }
-
-  function _showTip(vm, x, y, svg) {
-    const tip = document.getElementById('fc-tip');
-    if (!tip) return;
-    const st = STATUS[vm.status];
-    tip.innerHTML = '<div style="font-size:13px;font-weight:500;margin-bottom:5px">' + vm.name + '</div>' +
-      '<div style="font-size:11px;color:var(--text-muted);line-height:1.7">' +
-      '<span style="color:' + st.c + '">●</span> ' + vm.status + ' · ' + (vm.namespace||'default') + '<br>' +
-      (_nodes[vm.node] ? _nodes[vm.node].label : '') + '<br>' +
-      'load ' + Math.round(vm.load*100) + '% · mem ' + Math.round(vm.mem*100) + '%<br>' +
-      'net ' + Math.round(vm.net*120) + ' Mb/s</div>';
-    const r = svg.getBoundingClientRect();
-    tip.style.left    = Math.min(Math.max(x/W*r.width-75, 6), r.width-160) + 'px';
-    tip.style.top     = Math.max(y/H*r.height-90, 6) + 'px';
-    tip.style.opacity = 1;
-  }
-
-  function _renderStats() {
-    const run = _vms.filter(v => v.status !== 'stopped');
-    const el  = id => document.getElementById(id);
-    if (el('fc-stat-run'))   el('fc-stat-run').textContent   = run.length;
-    if (el('fc-stat-load'))  el('fc-stat-load').textContent  = Math.round(run.reduce((s,v)=>s+v.load,0)/(run.length||1)*100) + '%';
-    if (el('fc-stat-alert')) el('fc-stat-alert').textContent = _vms.filter(v=>v.status==='warning'||v.status==='critical').length;
-  }
 })();
 
 // ── Gallery Wall ─────────────────────────────────────────────
@@ -13492,7 +12069,7 @@ function _showVmCompareModal(a, b) {
   overlay.innerHTML = '<div class="vmr-cmp-modal">' +
     '<div class="vmr-cmp-header">' +
       '<div class="vmr-cmp-title">VM Comparison</div>' +
-      (diffCount ? '<span style="font-size:.72rem;color:var(--warn);margin-left:8px">' + diffCount + ' differences highlighted</span>' : '<span style="font-size:.72rem;color:'+VMR_SIG.ok+';margin-left:8px">✓ Identical spec</span>') +
+      (diffCount ? '<span style="font-size:.72rem;color:var(--warning);margin-left:8px">' + diffCount + ' differences highlighted</span>' : '<span style="font-size:.72rem;color:'+VMR_SIG.ok+';margin-left:8px">✓ Identical spec</span>') +
       '<button type="button" class="vmr-cmp-close" onclick="closeVmCompareOverlay()">×</button>' +
     '</div>' +
     '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
@@ -14909,9 +13486,9 @@ function renderSettingsVmr() {
   // Hero
   const hero = document.getElementById('vmr-settings-hero');
   if (hero) {
-    hero.innerHTML = '<div class=”vmr-section-hero”><div class=”vmr-hero-icon”>⚙</div>' +
-      '<div class=”vmr-hero-text”><h1 class=”vmr-hero-title”>Settings</h1>' +
-      '<p class=”vmr-hero-sub”>Refresh, themes, defaults, and shortcuts</p></div></div>';
+    hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⚙</div>' +
+      '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Settings</h1>' +
+      '<p class="vmr-hero-sub">Refresh, themes, defaults, and shortcuts</p></div></div>';
   }
 
   const body = document.getElementById('vmr-settings-body');
@@ -14931,18 +13508,18 @@ function renderSettingsVmr() {
   ];
   const intervalBtns = intervalOptions.map(function(o) {
     const active = String(curInterval) === o.val;
-    return '<button type=”button” class=”glass-btn-secondary glass-btn-sm' + (active ? ' active' : '') + '” ' +
-      'onclick=”setRefreshInterval(' + JSON.stringify(o.val) + ');renderSettingsVmr()” style=”min-width:52px”>' +
+    return '<button type="button" class="glass-btn-secondary glass-btn-sm' + (active ? ' active' : '') + '" ' +
+      'onclick="setRefreshInterval(' + JSON.stringify(o.val) + ');renderSettingsVmr()" style="min-width:52px">' +
       esc(o.label) + '</button>';
   }).join(' ');
 
   const themePicker = THEME_PRESETS.map(function(p) {
     const active = curTheme === p.id;
-    return '<button type=”button” class=”vmr-theme-swatch' + (active ? ' active' : '') + '” ' +
-      'onclick=”applyTheme(' + JSON.stringify(p.id) + ',true);renderSettingsVmr()” ' +
-      'title=”' + esc(p.label) + '” ' +
-      'style=”background:' + p.previewGradient + ';width:40px;height:28px;border-radius:6px;border:2px solid ' +
-      (active ? 'var(--accent-primary)' : 'var(--glass-border)') + ';cursor:pointer;flex-shrink:0”></button>';
+    return '<button type="button" class="vmr-theme-swatch' + (active ? ' active' : '') + '" ' +
+      'onclick="applyTheme(' + JSON.stringify(p.id) + ',true);renderSettingsVmr()" ' +
+      'title="' + esc(p.label) + '" ' +
+      'style="background:' + p.previewGradient + ';width:40px;height:28px;border-radius:6px;border:2px solid ' +
+      (active ? 'var(--accent-primary)' : 'var(--glass-border)') + ';cursor:pointer;flex-shrink:0"></button>';
   }).join('');
 
   // Section C: Shortcuts table rows
@@ -14972,43 +13549,43 @@ function renderSettingsVmr() {
     ['Esc',  'Dismiss modal, drawer, or command bar'],
   ];
   const shortcutRows = shortcuts.map(function(r) {
-    return '<tr><td style=”padding:5px 12px 5px 0;white-space:nowrap”>' +
-      '<kbd style=”background:var(--glass-bg-elevated);border:1px solid var(--glass-border);border-radius:4px;' +
-      'padding:2px 7px;font-size:.75rem;font-family:inherit”>' + esc(r[0]) + '</kbd></td>' +
-      '<td style=”padding:5px 0;color:var(--pw-text-secondary);font-size:.85rem”>' + esc(r[1]) + '</td></tr>';
+    return '<tr><td style="padding:5px 12px 5px 0;white-space:nowrap">' +
+      '<kbd style="background:var(--glass-bg-elevated);border:1px solid var(--glass-border);border-radius:4px;' +
+      'padding:2px 7px;font-size:.75rem;font-family:inherit">' + esc(r[0]) + '</kbd></td>' +
+      '<td style="padding:5px 0;color:var(--pw-text-secondary);font-size:.85rem">' + esc(r[1]) + '</td></tr>';
   }).join('');
 
   body.innerHTML =
     // — Section A: Display & Refresh —
-    '<div class=”glass-card” style=”margin-bottom:16px;padding:20px 24px”>' +
-    '<h3 style=”margin:0 0 16px;font-size:.95rem;font-weight:600;color:var(--pw-text-primary)”>Display &amp; Refresh</h3>' +
+    '<div class="glass-card" style="margin-bottom:16px;padding:20px 24px">' +
+    '<h3 style="margin:0 0 16px;font-size:.95rem;font-weight:600;color:var(--pw-text-primary)">Display &amp; Refresh</h3>' +
 
-    '<div style=”display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap”>' +
-    '<span style=”font-size:.8rem;color:var(--pw-text-secondary);min-width:120px”>Auto-refresh interval</span>' +
-    '<div style=”display:flex;gap:6px”>' + intervalBtns + '</div>' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">' +
+    '<span style="font-size:.8rem;color:var(--pw-text-secondary);min-width:120px">Auto-refresh interval</span>' +
+    '<div style="display:flex;gap:6px">' + intervalBtns + '</div>' +
     '</div>' +
 
-    '<div style=”display:flex;align-items:center;gap:12px;flex-wrap:wrap”>' +
-    '<span style=”font-size:.8rem;color:var(--pw-text-secondary);min-width:120px”>Theme</span>' +
-    '<div style=”display:flex;gap:6px;flex-wrap:wrap”>' + themePicker + '</div>' +
+    '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+    '<span style="font-size:.8rem;color:var(--pw-text-secondary);min-width:120px">Theme</span>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' + themePicker + '</div>' +
     '</div>' +
     '</div>' +
 
     // — Section B: Defaults —
-    '<div class=”glass-card” style=”margin-bottom:16px;padding:20px 24px”>' +
-    '<h3 style=”margin:0 0 16px;font-size:.95rem;font-weight:600;color:var(--pw-text-primary)”>Defaults</h3>' +
-    '<div style=”display:flex;align-items:center;gap:12px;flex-wrap:wrap”>' +
-    '<label style=”font-size:.8rem;color:var(--pw-text-secondary);min-width:120px” for=”settings-default-ns”>Default namespace</label>' +
-    '<input id=”settings-default-ns” type=”text” class=”form-input” placeholder=”e.g. default” ' +
-    'value=”' + esc(curNs) + '” style=”width:200px” ' +
-    'oninput=”localStorage.setItem(\'veyron_default_ns\',this.value)”>' +
+    '<div class="glass-card" style="margin-bottom:16px;padding:20px 24px">' +
+    '<h3 style="margin:0 0 16px;font-size:.95rem;font-weight:600;color:var(--pw-text-primary)">Defaults</h3>' +
+    '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+    '<label style="font-size:.8rem;color:var(--pw-text-secondary);min-width:120px" for="settings-default-ns">Default namespace</label>' +
+    '<input id="settings-default-ns" type="text" class="form-input" placeholder="e.g. default" ' +
+    'value="' + esc(curNs) + '" style="width:200px" ' +
+    'oninput="localStorage.setItem(\'veyron_default_ns\',this.value)">' +
     '</div>' +
     '</div>' +
 
     // — Section C: Keyboard Shortcuts —
-    '<div class=”glass-card” style=”padding:20px 24px”>' +
-    '<h3 style=”margin:0 0 16px;font-size:.95rem;font-weight:600;color:var(--pw-text-primary)”>Keyboard Shortcuts</h3>' +
-    '<table style=”border-collapse:collapse;width:100%;max-width:480px”><tbody>' +
+    '<div class="glass-card" style="padding:20px 24px">' +
+    '<h3 style="margin:0 0 16px;font-size:.95rem;font-weight:600;color:var(--pw-text-primary)">Keyboard Shortcuts</h3>' +
+    '<table style="border-collapse:collapse;width:100%;max-width:480px"><tbody>' +
     shortcutRows +
     '</tbody></table>' +
     '</div>';
@@ -15083,7 +13660,8 @@ async function fetchStackHealth() {
     return sl === 'healthy' || sl === 'running' ? ok : sl === 'degraded' || sl === 'warning' ? warn : sl === 'error' || sl === 'failed' ? bad : stopped;
   }
   function tile(title, sub, cls, badge) {
-    return '<div class="glass-stat-pill ' + cls + '" style="flex-direction:column;align-items:flex-start;gap:6px;min-height:72px;padding:14px 16px">' +
+    const pillCls = cls === ok ? 'ok' : cls === warn ? 'warn' : cls === bad ? 'bad' : '';
+    return '<div class="glass-stat-pill ' + pillCls + '" style="flex-direction:column;align-items:flex-start;gap:6px;min-height:72px;padding:14px 16px">' +
       '<div style="display:flex;align-items:center;gap:8px;width:100%"><div class="gsl" style="font-size:.78rem;font-weight:600;color:var(--text-muted)">' + esc(title) + '</div>' +
       idSig(badge === ok ? 'running' : badge === warn ? 'warning' : badge === bad ? 'error' : 'stopped', badge === ok ? 'Healthy' : badge === warn ? 'Warning' : badge === bad ? 'Error' : 'Unknown') + '</div>' +
       '<div class="gsv" style="font-size:.9rem;font-weight:500;line-height:1.3">' + esc(sub) + '</div></div>';
@@ -17532,7 +16110,7 @@ function openCopilotDoctor(ns, name) {
 
 async function runCopilotAskScoped(ns, name, query) {
   const el = document.getElementById('copilot-result');
-  if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Thinking…</div>';
+  if (el) el.innerHTML = '<div class="copilot-thinking"><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span>Zeus is thinking…</div>';
   try {
     const data = await apiJson('/api/v1/experience/copilot/ask', {
       method: 'POST',
@@ -17619,7 +16197,9 @@ function _reactorBuild() {
   }));
   return { rings: parts.length ? rings : [], parts, t: _reactorState ? _reactorState.t : 0 };
 }
-function initReactorCore() {
+let _reactor3d = null;
+let _reactorInitToken = 0;
+async function initReactorCore() {
   const canvas = document.getElementById('reactor-canvas'), wrap = document.getElementById('reactor-wrap');
   if (!canvas || !wrap) return;
   // Optional status endpoint — soft-miss so a 404 never surfaces as a broken empty state.
@@ -17628,49 +16208,187 @@ function initReactorCore() {
       if (st && typeof st === 'object') window._reactorApiStatus = st;
     }).catch(function() {});
   }
-  const ctx = canvas.getContext('2d');
-  const VW = 680, VH = 460, CX = 340, CY = 215;
-  let dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const resize = () => { const w = wrap.clientWidth || 680, hh = w / VW * VH; dpr = Math.min(window.devicePixelRatio || 1, 2); canvas.width = w * dpr; canvas.height = hh * dpr; canvas.style.width = w + 'px'; canvas.style.height = hh + 'px'; };
-  resize();
+  stopReactorCore();
   _reactorState = _reactorBuild();
-  if (_reactorRO) _reactorRO.disconnect();
-  _reactorRO = new ResizeObserver(resize); _reactorRO.observe(wrap);
-  cancelAnimationFrame(_reactorRaf);
-  const hexToRgb = h => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
-  function draw() {
-    const st = _reactorState; if (!st) return;
-    st.t += 0.016; const t = st.t, PAL = _reactorPal(), SIG = { ok: PAL.ok, warn: PAL.warn, crit: PAL.crit, off: PAL.off };
-    const pr = hexToRgb(PAL.plasma), scale = (canvas.width / dpr) / VW;
-    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
-    ctx.clearRect(0, 0, VW, VH);
-    const health = _reactorHealth(), coreR = 46 * (1 + Math.sin(t * 2.2) * 0.04);
-    st.rings.forEach(ring => { ctx.beginPath(); for (let a = 0; a <= 360; a += 6) { const rad = a * Math.PI / 180, x = CX + Math.cos(rad) * ring.r, y = CY + Math.sin(rad) * ring.r * ring.tilt * 1.6; a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.strokeStyle = ring.dead ? 'rgba(226,75,74,.4)' : 'rgba(' + pr[0] + ',' + pr[1] + ',' + pr[2] + ',.22)'; ctx.lineWidth = 1; ctx.stroke(); });
-    const halo = ctx.createRadialGradient(CX, CY, 0, CX, CY, 150);
-    halo.addColorStop(0, 'rgba(' + pr[0] + ',' + pr[1] + ',' + pr[2] + ',0.30)'); halo.addColorStop(1, 'rgba(' + pr[0] + ',' + pr[1] + ',' + pr[2] + ',0)');
-    ctx.fillStyle = halo; ctx.globalAlpha = 0.5 + Math.sin(t * 2.2) * 0.12; ctx.beginPath(); ctx.arc(CX, CY, 150, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
-    const ord = [];
-    st.parts.forEach(p => { const ring = st.rings[p.ring]; if (!ring) return; const dead = p.sig === 'off'; p.ang += ring.speed * 0.01 * (dead ? 0 : 1) * (1 + p.load * 0.6); const x = CX + Math.cos(p.ang) * ring.r, y = CY + Math.sin(p.ang) * ring.r * ring.tilt * 1.6, depth = (Math.sin(p.ang) + 1) / 2; ord.push({ p, x, y, depth, col: dead ? SIG.off : (SIG[p.sig] || SIG.warn), dead }); });
-    ord.sort((a, b) => a.depth - b.depth);
-    ord.forEach(o => { const p = o.p, x = o.x, y = o.y, depth = o.depth, col = o.col, dead = o.dead;
-      if (!dead) { ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(x, y); ctx.strokeStyle = col; ctx.globalAlpha = 0.08 + p.load * 0.12; ctx.lineWidth = 0.6; ctx.stroke(); ctx.globalAlpha = 1; }
-      const baseR = (4 + p.load * 4) * (0.6 + depth * 0.6);
-      if (!dead) { ctx.beginPath(); ctx.arc(x, y, baseR + 4 + Math.sin(t * 3 + p.phase) * 2, 0, Math.PI * 2); ctx.fillStyle = col; ctx.globalAlpha = 0.15; ctx.fill(); ctx.globalAlpha = 1; }
-      ctx.beginPath(); ctx.arc(x, y, baseR, 0, Math.PI * 2); ctx.fillStyle = col; ctx.globalAlpha = dead ? 0.4 : 0.95; ctx.fill(); ctx.globalAlpha = 1; ctx.lineWidth = 1.2; ctx.strokeStyle = PAL.voidc; ctx.stroke(); });
-    const coreCol = health > 0.7 ? null : (health > 0.45 ? PAL.warn : PAL.crit);
-    ctx.beginPath(); ctx.arc(CX, CY, coreR, 0, Math.PI * 2);
-    if (coreCol) { ctx.fillStyle = coreCol; } else { const g = ctx.createRadialGradient(CX, CY - 10, 4, CX, CY, coreR); g.addColorStop(0, '#ffffff'); g.addColorStop(0.4, PAL.plasma); g.addColorStop(1, PAL.deep); ctx.fillStyle = g; }
-    ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.stroke();
-    for (let i = 0; i < 8; i++) { const sa = t * 1.3 + i * 0.785; ctx.beginPath(); ctx.moveTo(CX + Math.cos(sa) * coreR * 0.4, CY + Math.sin(sa) * coreR * 0.4); ctx.lineTo(CX + Math.cos(sa) * coreR * 0.85, CY + Math.sin(sa) * coreR * 0.85); ctx.strokeStyle = '#fff'; ctx.globalAlpha = 0.1 + Math.sin(t * 3 + i) * 0.08; ctx.lineWidth = 1; ctx.stroke(); ctx.globalAlpha = 1; }
-    ctx.fillStyle = '#fff'; ctx.font = "700 28px -apple-system,'SF Pro Display',sans-serif"; ctx.textAlign = 'center'; ctx.fillText(Math.round(health * 100) + '%', CX, CY + 4);
-    ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = "9px 'IBM Plex Mono',monospace"; ctx.fillText('CORE', CX, CY + 18);
-    ctx.textAlign = 'start';
-    st.rings.forEach(ring => { ctx.fillStyle = ring.dead ? SIG.crit : PAL.ink; ctx.fillText(ring.node, CX + ring.r - 6, CY + 4); });
-    _reactorRaf = requestAnimationFrame(draw);
+  // Generation token: rapid page-switch navigation can overlap two async
+  // initReactorCore() calls (each awaits a dynamic import before touching the
+  // DOM). Without this, an older call resolving after a newer one has already
+  // built its scene would append a second overlay/label layer on top without
+  // ever being told to clean up — verified empirically under rapid nav.
+  const myToken = ++_reactorInitToken;
+
+  let mod;
+  try { mod = await import('/assets/dashboard-veyron-3d.js'); }
+  catch (e) { console.error('Reactor Core: failed to load 3D module', e); return; }
+  // Bail if the user navigated away, or a newer initReactorCore() call has
+  // already superseded this one, while the module was loading.
+  if (myToken !== _reactorInitToken) return;
+  if (document.getElementById('reactor-canvas') !== canvas || !document.body.contains(canvas)) return;
+
+  const { THREE, createScene, attachOrbitDrag } = mod;
+  const handle = createScene(canvas, { fov: 45, cameraDistance: 14 });
+  const { scene, camera, renderer, colors } = handle;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const coreLight = new THREE.PointLight(0xffffff, 2.2, 40, 2);
+  scene.add(coreLight);
+
+  const group = new THREE.Group();
+  // Rings stay flat in the XZ plane — the camera's own elevation (phi, below)
+  // supplies the tilt. Tilting both compounds into a near edge-on view.
+  scene.add(group);
+
+  const RADIUS_SCALE = 0.045; // world units per legacy canvas-px ring radius
+  const ringMat = new THREE.LineBasicMaterial({ color: colors.plasma, transparent: true, opacity: 0.28 });
+  const deadRingMat = new THREE.LineBasicMaterial({ color: colors.critical, transparent: true, opacity: 0.35 });
+  const ringMeshes = [];
+  const vmMeshes = new Map();
+  const sphereGeo = new THREE.SphereGeometry(1, 20, 16);
+  const toneMatCache = {};
+  function toneColorHex(tone) { return tone === 'ok' ? colors.nominal : tone === 'warn' ? colors.caution : tone === 'crit' ? colors.critical : colors.inert; }
+  function matForTone(tone) {
+    if (!toneMatCache[tone]) {
+      const c = new THREE.Color(toneColorHex(tone));
+      toneMatCache[tone] = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.5, roughness: 0.4, metalness: 0.1 });
+    }
+    return toneMatCache[tone];
   }
-  _reactorRaf = requestAnimationFrame(draw);
+
+  function rebuildRings() {
+    ringMeshes.forEach(m => { group.remove(m); m.geometry.dispose(); });
+    ringMeshes.length = 0;
+    (_reactorState.rings || []).forEach(ring => {
+      const r = ring.r * RADIUS_SCALE, pts = [];
+      for (let a = 0; a <= 64; a++) { const th = (a / 64) * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(th) * r, 0, Math.sin(th) * r)); }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const line = new THREE.LineLoop(geo, ring.dead ? deadRingMat : ringMat);
+      group.add(line);
+      ringMeshes.push(line);
+    });
+  }
+
+  const coreMat = new THREE.MeshStandardMaterial({ color: colors.plasma, emissive: colors.plasma, emissiveIntensity: 0.9, roughness: 0.25, metalness: 0.2 });
+  const coreMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), coreMat);
+  scene.add(coreMesh);
+
+  // HTML overlays (core %, node labels) positioned over the WebGL canvas.
+  const overlay = document.createElement('div');
+  overlay.className = 'reactor-3d-overlay';
+  overlay.style.cssText = 'position:absolute;inset:0;pointer-events:none;font-family:-apple-system,"SF Pro Display",sans-serif';
+  if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+  wrap.appendChild(overlay);
+  overlay.innerHTML = '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:#fff">' +
+    '<div style="font-size:28px;font-weight:700;line-height:1" id="reactor-core-pct">100%</div>' +
+    '<div style="font-size:9px;letter-spacing:1px;opacity:.8;font-family:\'IBM Plex Mono\',monospace;margin-top:2px">CORE</div></div>' +
+    '<div class="reactor-label-layer" style="position:absolute;inset:0"></div>';
+  const labelLayer = overlay.querySelector('.reactor-label-layer');
+  const nodeLabelEls = new Map();
+
+  function project(vec3) {
+    const v = vec3.clone().project(camera);
+    const w = renderer.domElement.clientWidth || 1, h = renderer.domElement.clientHeight || 1;
+    return { x: (v.x * 0.5 + 0.5) * w, y: (-v.y * 0.5 + 0.5) * h, visible: v.z < 1 };
+  }
+
+  function syncVmMeshes() {
+    const seen = new Set();
+    (_reactorState.parts || []).forEach(p => {
+      seen.add(p.key);
+      let m = vmMeshes.get(p.key);
+      if (!m) { m = new THREE.Mesh(sphereGeo, matForTone(p.sig)); group.add(m); vmMeshes.set(p.key, m); }
+      else { m.material = matForTone(p.sig); }
+      m.userData.vm = p.vm;
+    });
+    vmMeshes.forEach((m, key) => { if (!seen.has(key)) { group.remove(m); vmMeshes.delete(key); } });
+  }
+
+  rebuildRings();
+  syncVmMeshes();
+
+  const orbit = attachOrbitDrag(camera, new THREE.Vector3(0, 0, 0), canvas, {
+    radius: 14, theta: Math.PI / 2, phi: 0.95, minPhi: 0.35, maxPhi: 1.4,
+    autoRotateSpeed: handle.reduceMotion ? 0 : 0.06,
+  });
+
+  const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  let hovered = null;
+  function pickAt(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(ndc, camera);
+    const hits = raycaster.intersectObjects(Array.from(vmMeshes.values()));
+    return hits.length ? hits[0].object : null;
+  }
+  function onMove(e) {
+    const hit = pickAt(e.clientX, e.clientY);
+    if (hit !== hovered) { hovered = hit; canvas.style.cursor = hit ? 'pointer' : 'grab'; }
+  }
+  function onClick(e) {
+    if (orbit.wasDragged()) return;
+    const hit = pickAt(e.clientX, e.clientY);
+    if (hit && hit.userData.vm && typeof selectVm === 'function') {
+      const v = hit.userData.vm;
+      selectVm(v.namespace || v.ns, v.name);
+    }
+  }
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('click', onClick);
+
+  let t = 0;
+  handle.onFrame(function (dt, reduceMotion) {
+    t += dt;
+    const rings = _reactorState.rings || [];
+    (_reactorState.parts || []).forEach(p => {
+      const ring = rings[p.ring]; if (!ring) return;
+      const dead = p.sig === 'off';
+      p.ang += ring.speed * (dead ? 0 : 1) * (1 + p.load * 0.6) * dt * 0.6;
+      const r = ring.r * RADIUS_SCALE;
+      const mesh = vmMeshes.get(p.key);
+      if (mesh) {
+        mesh.position.set(Math.cos(p.ang) * r, 0, Math.sin(p.ang) * r);
+        mesh.scale.setScalar((0.16 + p.load * 0.16) * (mesh === hovered ? 1.4 : 1));
+      }
+    });
+    const health = _reactorHealth(), coreR = 0.85 * (1 + Math.sin(t * 2.2) * 0.04);
+    coreMesh.scale.setScalar(coreR);
+    const col = new THREE.Color(health > 0.7 ? colors.plasma : health > 0.45 ? colors.caution : colors.critical);
+    coreMat.color.copy(col); coreMat.emissive.copy(col); coreLight.color.copy(col);
+    orbit.tick(dt, reduceMotion);
+
+    const pctEl = document.getElementById('reactor-core-pct');
+    if (pctEl) pctEl.textContent = Math.round(health * 100) + '%';
+    rings.forEach(ring => {
+      let el = nodeLabelEls.get(ring.node);
+      if (!el) {
+        el = document.createElement('div');
+        el.style.cssText = 'position:absolute;transform:translate(6px,-50%);font-family:\'IBM Plex Mono\',monospace;font-size:10px;white-space:nowrap';
+        labelLayer.appendChild(el);
+        nodeLabelEls.set(ring.node, el);
+      }
+      const worldPt = new THREE.Vector3(ring.r * RADIUS_SCALE, 0, 0).applyMatrix4(group.matrixWorld);
+      const p2 = project(worldPt);
+      el.style.left = p2.x + 'px'; el.style.top = p2.y + 'px';
+      el.style.color = ring.dead ? colors.critical : colors.ink;
+      el.style.display = p2.visible ? '' : 'none';
+      el.textContent = ring.node;
+    });
+  });
+
+  _reactor3d = { handle, canvas, overlay, onMove, onClick, orbit };
 }
-function stopReactorCore() { cancelAnimationFrame(_reactorRaf); _reactorRaf = 0; if (_reactorRO) { _reactorRO.disconnect(); _reactorRO = null; } }
+function stopReactorCore() {
+  cancelAnimationFrame(_reactorRaf); _reactorRaf = 0;
+  if (_reactorRO) { _reactorRO.disconnect(); _reactorRO = null; }
+  if (!_reactor3d) return;
+  const r = _reactor3d; _reactor3d = null;
+  r.canvas.removeEventListener('pointermove', r.onMove);
+  r.canvas.removeEventListener('click', r.onClick);
+  if (r.orbit && r.orbit.dispose) r.orbit.dispose();
+  if (r.overlay && r.overlay.parentNode) r.overlay.parentNode.removeChild(r.overlay);
+  if (r.handle && r.handle.dispose) r.handle.dispose();
+}
 
 // ── Natural-language Forge: "spin up 3 ubuntu web servers, 4 cores, 8Gi" ──
 const _FORGE_OS_WORDS = ['ubuntu','debian','fedora','centos','rocky','almalinux','alma','rhel','redhat','arch','opensuse','suse','freebsd','openbsd','talos','windows','win11','win10','win','flatcar','coreos','alpine','mint','kali','oracle'];
@@ -17742,7 +16460,7 @@ async function runCopilotAsk() {
   saveCopilotMessages(msgs);
   renderCopilotThread();
   const el = document.getElementById('copilot-result');
-  if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Thinking…</div>';
+  if (el) el.innerHTML = '<div class="copilot-thinking"><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span>Zeus is thinking…</div>';
   try {
     const body = {
       query: q.trim(),
@@ -18659,7 +17377,7 @@ async function fetchVMs(opts) {
         fleetHero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⊛</div>' +
           '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Fleet Command</h1>' +
           '<p class="vmr-hero-sub">' + running + ' of ' + total + ' VM' + (total !== 1 ? 's' : '') + ' running' +
-          (driftN > 0 ? ' · <span style="color:var(--warn)">' + driftN + ' with drift</span>' : '') +
+          (driftN > 0 ? ' · <span style="color:var(--warning)">' + driftN + ' with drift</span>' : '') +
           (failed > 0 ? ' · <span style="color:var(--error)">' + failed + ' failed</span>' : '') + '</p></div>' +
           '<div class="vmr-hero-actions">' +
           '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>' +
@@ -18836,7 +17554,7 @@ async function fetchSnapshots(opts) {
       const protectedVms = window.lastVMs.filter(function(v) { return snapVmNames.has(v.name); });
       const unprotected = window.lastVMs.filter(function(v) { return !snapVmNames.has(v.name); });
       if (unprotected.length > 0) {
-        snapsProtection.innerHTML = '<div class="vmr-panel" style="border-left:3px solid var(--warn)">' +
+        snapsProtection.innerHTML = '<div class="vmr-panel" style="border-left:3px solid var(--warning)">' +
           '<div class="vmr-panel-title" style="display:flex;align-items:center;gap:8px">⚠ Unprotected VMs <span style="font-size:.78rem;font-weight:400;color:var(--text-muted)">' + unprotected.length + ' VM' + (unprotected.length !== 1 ? 's' : '') + ' with no snapshot</span></div>' +
           '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' +
           unprotected.slice(0, 12).map(function(v) {
@@ -19246,7 +17964,7 @@ function filterVeleroBackupsView(query) {
   const vbCountEl = document.getElementById('velero-backups-count');
   if (vbCountEl) vbCountEl.textContent = filtered.length === items.length ? items.length + ' backups' : filtered.length + ' of ' + items.length + ' backups';
   tb.innerHTML = filtered.map(function(b) {
-    return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.namespace) + '</td><td>' + esc(b.phase) + '</td><td>' + esc(b.storage_location || '-') + '</td><td>' + (b.items_backed_up != null ? b.items_backed_up : '-') + '</td><td>' + fmtTime(b.completion_timestamp) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.namespace) + '</td><td>' + idSig(b.phase) + '</td><td>' + esc(b.storage_location || '-') + '</td><td>' + (b.items_backed_up != null ? b.items_backed_up : '-') + '</td><td>' + fmtTime(b.completion_timestamp) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' +
     (q ? 'No Velero backups match &ldquo;' + esc(q) + '&rdquo;' : 'No Velero backups') + '</td></tr>';
 }
@@ -19265,7 +17983,7 @@ function filterVeleroRestoresView(query) {
   const vrCountEl = document.getElementById('velero-restores-count');
   if (vrCountEl) vrCountEl.textContent = filtered.length === items.length ? items.length + ' restores' : filtered.length + ' of ' + items.length + ' restores';
   tb.innerHTML = filtered.map(function(r) {
-    return '<tr><td class="vmr-copy-tile" title="Copy restore name" ' + onStopHandler('copyToClipboard(' + jsArgs(r.name) + ')') + '>' + esc(r.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(r.namespace) + '</td><td>' + esc(r.phase) + '</td><td>' + esc(r.backup_name || '-') + '</td><td>' + fmtTime(r.completion_timestamp) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy restore name" ' + onStopHandler('copyToClipboard(' + jsArgs(r.name) + ')') + '>' + esc(r.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(r.namespace) + '</td><td>' + idSig(r.phase) + '</td><td>' + esc(r.backup_name || '-') + '</td><td>' + fmtTime(r.completion_timestamp) + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">' +
     (q ? 'No restores match &ldquo;' + esc(q) + '&rdquo;' : 'No Velero restores') + '</td></tr>';
 }
@@ -19405,17 +18123,18 @@ function filterChaosView(query) {
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching experiments</td></tr>';
 }
 
+function _heatColorRgb(name, fallback) {
+  const h = cssVar(name, fallback).replace('#', '');
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
 function heatColor(score) {
   const s = Math.max(0, Math.min(1, Number(score) || 0));
-  if (s < 0.5) {
-    const t = s * 2;
-    const r = Math.round(52 + (251-52)*t), g = Math.round(211 + (191-211)*t), b = Math.round(153 + (36-153)*t);
-    return 'rgba(' + r + ',' + g + ',' + b + ',.85)';
-  } else {
-    const t = (s - 0.5) * 2;
-    const r = Math.round(251 + (239-251)*t), g = Math.round(191 + (68-191)*t), b = Math.round(36 + (68-36)*t);
-    return 'rgba(' + r + ',' + g + ',' + b + ',.85)';
-  }
+  const nominal = _heatColorRgb('--nominal', '#1D9E75');
+  const caution = _heatColorRgb('--caution', '#EF9F27');
+  const critical = _heatColorRgb('--critical', '#E24B4A');
+  const lerp = (a, b, t) => [0, 1, 2].map(i => Math.round(a[i] + (b[i] - a[i]) * t));
+  const rgb = s < 0.5 ? lerp(nominal, caution, s * 2) : lerp(caution, critical, (s - 0.5) * 2);
+  return 'rgba(' + rgb.join(',') + ',.85)';
 }
 
 function filterHeatmapView(query) {
@@ -19508,13 +18227,12 @@ function filterIncidentsView(query) {
   });
   const incidentsCountEl = document.getElementById('incidents-filter-count');
   if (incidentsCountEl) incidentsCountEl.textContent = events.length === allEvents.length ? allEvents.length + ' incidents' : events.length + ' of ' + allEvents.length + ' incidents';
-  const kindColor = {'slo-breach':'var(--error)','k8s-event':'var(--warning)','action':'var(--spark)'};
+  const kindColor = {'slo-breach':'var(--error)','k8s-event':'var(--warning)','action':'var(--plasma)'};
   tb.innerHTML = events.map(function(e) {
-    const sc = e.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
     const kc = kindColor[e.kind] || 'var(--text-muted)';
     return '<tr><td class="incident-time">' + fmtTime(e.timestamp) + '</td>' +
       '<td><span class="incident-kind" style="color:' + kc + '">' + esc(e.kind) + '</span></td>' +
-      '<td style="color:' + sc + ';font-weight:600">' + esc(e.severity) + '</td>' +
+      '<td>' + idSigSev(e.severity) + '</td>' +
       '<td>' + esc(e.title) + '</td>' +
       '<td>' + (e.vm_name ? '<span class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(e.vm_name) + ')') + '>' + esc(e.vm_name) + '<span class="vmr-copy-hint">copy</span></span>' : '<span style="color:var(--text-dim)">—</span>') + '</td>' +
       '<td>' + esc(e.namespace) + '</td>' +
@@ -25949,7 +24667,7 @@ function renderMetricsDonut(vms) {
   }
   var osMap = {};
   vms.forEach(function(v) { var f = guessOsFamily(v); osMap[f] = (osMap[f] || 0) + 1; });
-  var OS_COLORS = { windows:'#3b82f6', ubuntu:'#ea580c', debian:'#dc2626', fedora:'#1e40af', linux:VMR_SIG.ok };
+  var OS_COLORS = { windows:cssVar('--accent-blue','#64a0dc'), ubuntu:cssVar('--accent-orange','#d4915a'), debian:cssVar('--accent-red','#d45a5a'), fedora:cssVar('--accent-purple','#9580d4'), linux:VMR_SIG.ok };
   var osData = Object.keys(osMap).sort().map(function(f) { return { label: f, count: osMap[f], color: OS_COLORS[f] || VMR_SIG.off }; });
   drawDonut('metrics-os-donut', 'metrics-os-legend', osData);
   var statusMap = {};
@@ -26103,7 +24821,7 @@ function renderGitopsDriftPanel() {
   }).join('');
   el.innerHTML = '<div class="grid-2" style="gap:16px;margin-top:0">' +
     '<div class="card glass-card"><div class="card-header"><span class="card-title">⚠ Drift Detected</span>' +
-    '<span style="font-size:.73rem;color:' + (drifted.length ? 'var(--warn)' : VMR_SIG.ok) + ';margin-left:auto">' + (drifted.length ? drifted.length + ' VM' + (drifted.length !== 1 ? 's' : '') + ' with drift' : '✓ All in sync') + '</span>' +
+    '<span style="font-size:.73rem;color:' + (drifted.length ? 'var(--warning)' : VMR_SIG.ok) + ';margin-left:auto">' + (drifted.length ? drifted.length + ' VM' + (drifted.length !== 1 ? 's' : '') + ' with drift' : '✓ All in sync') + '</span>' +
     '</div>' +
     (drifted.length ? '<table class="table" style="margin:0"><thead><tr><th>VM</th><th>Namespace</th><th>Status</th><th></th></tr></thead><tbody>' + driftRows + '</tbody></table>'
       : '<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:.82rem">All managed VMs are in sync with their VeyronVM spec.</div>') +
@@ -26118,7 +24836,7 @@ function renderGitopsDriftPanel() {
       '<span style="color:var(--text-primary);font-weight:600">' + unmanaged.length + ' VMs</span></div>' +
     '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.83rem">' +
       '<span style="color:var(--text-dim)">Drift detected</span>' +
-      '<span style="color:' + (drifted.length ? 'var(--warn)' : VMR_SIG.ok) + ';font-weight:600">' + drifted.length + ' VMs</span></div>' +
+      '<span style="color:' + (drifted.length ? 'var(--warning)' : VMR_SIG.ok) + ';font-weight:600">' + drifted.length + ' VMs</span></div>' +
     '<div style="border-top:1px solid rgba(255,255,255,.06);padding-top:10px;margin-top:2px">' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById(\'vm-filter-drift\').value=\'drift\';navigate(\'vms\');setTimeout(filterVMs,200)" style="width:100%">Show drifted VMs →</button>' +
     '</div></div></div>' +
@@ -26267,7 +24985,7 @@ function renderSchedulingDetailPanel(status) {
   }).join('');
   el.innerHTML = '<div class="grid-2" style="gap:16px;margin-top:0">' +
     '<div class="card glass-card"><div class="card-header"><span class="card-title">Pending VMs</span>' +
-    '<span style="font-size:.73rem;color:' + (pendingVms.length ? 'var(--warn)' : VMR_SIG.ok) + ';margin-left:auto">' + (pendingVms.length || '✓ None') + '</span></div>' +
+    '<span style="font-size:.73rem;color:' + (pendingVms.length ? 'var(--warning)' : VMR_SIG.ok) + ';margin-left:auto">' + (pendingVms.length || '✓ None') + '</span></div>' +
     (pendingVms.length
       ? '<table class="table" style="margin:0"><thead><tr><th>VM</th><th>Namespace</th><th></th></tr></thead><tbody>' + vmPressureRows + '</tbody></table>'
       : '<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:.82rem">No VMs pending scheduling — all scheduled or stopped.</div>') +
@@ -27120,7 +25838,7 @@ function renderFlamegraph() {
       const fw = Math.max((f.value / total) * totalW - 1, 0);
       if (fw < 2) { x += fw + 1; return; }
       html += `<g><rect x="${x.toFixed(1)}" y="${y}" width="${fw.toFixed(1)}" height="${ROW}" fill="${f.color}" rx="2" opacity=".9"/>`;
-      if (fw > 30) html += `<text x="${(x + fw/2).toFixed(1)}" y="${y + ROW - 7}" text-anchor="middle" font-size="10" fill="#fff" opacity=".85">${esc(f.name.length > 14 ? f.name.slice(0,13)+'…' : f.name)}</text>`;
+      if (fw > 30) html += `<text x="${(x + fw/2).toFixed(1)}" y="${y + ROW - 7}" text-anchor="middle" font-size="10" fill="var(--ink)" opacity=".85">${esc(f.name.length > 14 ? f.name.slice(0,13)+'…' : f.name)}</text>`;
       html += `<title>${esc(f.name)}: ${f.value} samples</title></g>`;
       if (f.children.length) drawFrames(f.children, y + ROW + PAD, fw, x);
       x += fw + 1;
@@ -27199,7 +25917,7 @@ async function fetchLogs() {
       stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px">No virt-launcher pod logs in scope (pick a namespace with running VMs, or use <code>?vm=</code> via the query API)</div>';
       return;
     }
-    const lvlColor = {error:'var(--error)',warn:'var(--warning)',info:'var(--spark)',debug:'var(--text-dim)'};
+    const lvlColor = {error:'var(--error)',warn:'var(--warning)',info:'var(--plasma)',debug:'var(--text-dim)'};
     stream.innerHTML = lines.map(l => {
       const c = lvlColor[l.level] || 'var(--text)';
       return `<div><span style="color:var(--text-dim)">${fmtTime(l.ts)}</span> <span style="color:${c};font-weight:600">${esc(l.level?.toUpperCase().padEnd(5,' '))}</span> <span style="color:var(--text-muted)">${esc(l.source)}</span> ${esc(l.msg)}</div>`;
