@@ -17342,18 +17342,14 @@ async function fetchVMs(opts) {
         fetchVmWorkspaceDetail(selectedVmNs, selectedVmName);
       }
       maybeSuggestAllWorkspace();
-      // Populate VMR fleet hero and metrics
-      const fleetHero = document.getElementById('vmr-fleet-hero');
-      if (fleetHero) {
-        fleetHero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⊛</div>' +
-          '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Fleet Command</h1>' +
-          '<p class="vmr-hero-sub">' + running + ' of ' + total + ' VM' + (total !== 1 ? 's' : '') + ' running' +
-          (driftN > 0 ? ' · <span style="color:var(--warning)">' + driftN + ' with drift</span>' : '') +
-          (failed > 0 ? ' · <span style="color:var(--error)">' + failed + ' failed</span>' : '') + '</p></div>' +
-          '<div class="vmr-hero-actions">' +
-          '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openForgeWizard()">Forge Wizard</button></div></div>';
-      }
+      // NOTE: #vmr-fleet-hero used to be populated here directly with a
+      // static hero block ("Fleet Command" + Forge buttons) — that ran
+      // *after* filterVMs() above (which calls renderFleetCommandVmr() ->
+      // the real deviation bar), silently overwriting the devbar with this
+      // stale content on every single refresh() poll. renderVmrDeviationBar()
+      // now owns #vmr-fleet-hero exclusively; deleted this block rather than
+      // reorder it, since the two were fully redundant (both showed
+      // running/total counts + a Forge VM button).
       const fleetMetrics = document.getElementById('vmr-fleet-metrics');
       if (fleetMetrics) {
         fleetMetrics.innerHTML = renderGlassStatPills([
