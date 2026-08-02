@@ -32,7 +32,12 @@ tls:
   existingSecret: ""
 
 auth:
-  apiKey: ""
+  apiKey: "CHANGE_ME"
+  adminUser: "admin"
+  adminPassword: "CHANGE_ME"
+  jwtSecret: "veyron-dev-jwt-secret-change-me"
+  jwtIssuer: "veyron"
+  bootstrapAdminSync: "1"
   additionalKeys: ""
   secretName: "veyron-api-key"
 

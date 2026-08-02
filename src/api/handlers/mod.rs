@@ -113,6 +113,7 @@ pub fn all_routes(
     state: std::sync::Arc<tokio::sync::RwLock<crate::api::http_server::web::WebState>>,
 ) -> axum::Router {
     axum::Router::new()
+        .merge(auth::router(state.clone()))
         // Real K8s data handlers (wired to KubeClient via SharedState)
         // NOTE: pods, nodes, events, namespaces, snapshots, templates are served from
         // `http_server.rs` under `/api/v1/...` (ApiResponse envelope); do not merge here or routes duplicate after nest.

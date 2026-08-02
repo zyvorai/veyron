@@ -37,10 +37,7 @@
   min-height: 100vh;
 }
 .login-glass {
-  border-radius: 1rem;
   padding: 2rem;
-  border: 1px solid rgba(140, 160, 190, 0.18);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
 }
 .login-form-open.login-glass,
 .login-form-open {
@@ -310,17 +307,8 @@
   position: relative;
 }
 .login-glass-border::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(139, 92, 246, 0.25), rgba(51, 65, 85, 0.4));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  /* de-box: no gradient ring around the sign-in card (flat webpage content) */
+  content: none;
 }
 .login-shake {
   animation: login-shake 0.45s ease-out;
@@ -418,10 +406,9 @@
   color: rgba(226, 232, 240, 0.95);
 }
 .login-panel {
-  background-color: #020617;
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12), transparent),
-    linear-gradient(180deg, #020617 0%, #0f172a 100%);
+  /* de-box: no separate flat-card background — let the shared .login-page
+     backdrop read through uniformly instead of a boxed two-tone split. */
+  background: transparent;
 }
 .login-panel-grid {
   position: absolute;

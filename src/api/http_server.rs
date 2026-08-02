@@ -149,6 +149,7 @@ pub mod web {
         pub api_keys: Vec<ApiKeyEntry>,
         rate_limiter: RateLimiterState,
         ai_rate_limiter: RateLimiterState,
+        login_rate_limiter: RateLimiterState,
     }
 
     impl WebState {
@@ -206,6 +207,8 @@ pub mod web {
                 api_keys,
                 rate_limiter: RateLimiterState::new(rate_limit_per_minute, 60),
                 ai_rate_limiter: RateLimiterState::new(copilot::ai_rate_limit_per_min(), 60),
+                // Brute-force guard on the public, unauthenticated login endpoint.
+                login_rate_limiter: RateLimiterState::new(30, 300),
             })
         }
 
@@ -277,6 +280,44 @@ pub mod web {
             };
 
             Some(role)
+        }
+
+        /// Whether another login attempt is allowed under the shared brute-force
+        /// guard for `POST /api/v1/auth/login`. Global, not per-caller — matches
+        /// the existing `rate_limiter`/`ai_rate_limiter` pattern (no per-IP state
+        /// exists elsewhere in this codebase).
+        pub fn check_login_rate_limit(&self) -> bool {
+            self.login_rate_limiter.check_rate_limit()
+        }
+
+        /// Mint a signed session token for a successfully authenticated username+
+        /// password login. Reuses the same `VEYRON_JWT_SECRET`/`VEYRON_JWT_ISSUER`
+        /// that `authenticate_jwt` already validates against, so the returned
+        /// token is accepted by every existing auth path with no other changes.
+        pub fn issue_jwt(&self, username: &str, role: &str, ttl_secs: i64) -> Result<String, String> {
+            let secret = std::env::var("VEYRON_JWT_SECRET")
+                .map_err(|_| "VEYRON_JWT_SECRET is not configured".to_string())?;
+            let issuer = std::env::var("VEYRON_JWT_ISSUER")
+                .map_err(|_| "VEYRON_JWT_ISSUER is not configured".to_string())?;
+            if secret.is_empty() || issuer.is_empty() {
+                return Err("VEYRON_JWT_SECRET/VEYRON_JWT_ISSUER must not be empty".to_string());
+            }
+            let role_claim =
+                std::env::var("VEYRON_JWT_ROLE_CLAIM").unwrap_or_else(|_| "role".to_string());
+            let now = chrono::Utc::now().timestamp();
+            let mut claims = serde_json::Map::new();
+            claims.insert("sub".to_string(), serde_json::Value::String(username.to_string()));
+            claims.insert("iss".to_string(), serde_json::Value::String(issuer));
+            claims.insert("iat".to_string(), serde_json::Value::from(now));
+            claims.insert("exp".to_string(), serde_json::Value::from(now + ttl_secs));
+            claims.insert(role_claim, serde_json::Value::String(role.to_string()));
+
+            jsonwebtoken::encode(
+                &jsonwebtoken::Header::new(jsonwebtoken::Algorithm::HS256),
+                &serde_json::Value::Object(claims),
+                &jsonwebtoken::EncodingKey::from_secret(secret.as_bytes()),
+            )
+            .map_err(|e| format!("failed to sign session token: {e}"))
         }
     }
 
@@ -1050,6 +1091,10 @@ pub mod web {
             WebState::new(namespace.clone(), rate_limit_per_minute).await?,
         ));
         {
+            let kube = { state.read().await.kube_client.clone() };
+            crate::kube::user_store::bootstrap_dashboard_admin(&kube, &namespace).await;
+        }
+        {
             let ns = namespace.clone();
             let k8s = {
                 let s = state.read().await;
@@ -1186,11 +1231,29 @@ pub mod web {
             .replace(
                 "/*__VMR_CSS__*/",
                 concat!(
-                    include_str!("web/dashboard-veyron.css"),
-                    "\n",
+                    /* tokens → carbon → deck components → shell → veyron → login */
                     include_str!("web/dashboard-ironwolf-themes.css"),
                     "\n",
+                    include_str!("web/dashboard-carbon.css"),
+                    "\n",
+                    include_str!("web/dashboard-carbon-deck.css"),
+                    "\n",
+                    include_str!("web/shell-layout.css"),
+                    "\n",
+                    include_str!("web/dashboard-veyron.css"),
+                    "\n",
                     include_str!("web/dashboard-ironwolf-login.css")
+                ),
+            )
+            .replace(
+                "/*__SHELL_LAYOUT__*/",
+                /* Late: shell law + carbon plates beat leftover inline / veyron rules */
+                concat!(
+                    include_str!("web/shell-layout.css"),
+                    "\n",
+                    include_str!("web/dashboard-carbon.css"),
+                    "\n",
+                    include_str!("web/dashboard-carbon-deck.css")
                 ),
             )
             .replace("/*__VMR_JS__*/", include_str!("web/dashboard-veyron.js"))

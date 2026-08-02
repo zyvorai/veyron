@@ -1592,6 +1592,10 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             handlers::agent::handle_agent(command, &cli.namespace).await?;
         }
 
+        Commands::AuthUser { command } => {
+            handlers::users::handle_auth_user(command, &cli.namespace).await?;
+        }
+
         Commands::Ai { action, query } => {
             use cli::AiCommands;
             match action {

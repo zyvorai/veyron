@@ -150,6 +150,37 @@ pub enum AgentCommands {
     },
 }
 
+/// Dashboard login accounts (username+password, backed by the `veyron-users`
+/// Secret and verified by `POST /api/v1/auth/login`). Distinct from the
+/// simulated `users-list`/`users-create`/`users-assign-role` RBAC preview
+/// commands, which are not backed by real storage.
+#[derive(Subcommand, Debug)]
+pub enum AuthUserCommands {
+    /// Create a dashboard login account (password is prompted, never an arg).
+    Create {
+        /// Username
+        username: String,
+        /// Role: admin, write, or readonly
+        #[arg(long, default_value = "readonly")]
+        role: String,
+        /// Display name shown in the dashboard (defaults to the username)
+        #[arg(long)]
+        display_name: Option<String>,
+    },
+    /// List dashboard login accounts (never prints password hashes).
+    List,
+    /// Delete a dashboard login account.
+    Delete {
+        /// Username
+        username: String,
+    },
+    /// Reset a dashboard login account's password (prompted, never an arg).
+    SetPassword {
+        /// Username
+        username: String,
+    },
+}
+
 #[derive(Subcommand, Debug)]
 pub enum AiCommands {
     /// VM health report (Veyron Doctor)
@@ -2592,6 +2623,13 @@ pub enum Commands {
     Agent {
         #[command(subcommand)]
         command: AgentCommands,
+    },
+
+    /// Dashboard login accounts — create, list, delete, reset password
+    #[command(name = "auth-user")]
+    AuthUser {
+        #[command(subcommand)]
+        command: AuthUserCommands,
     },
 
     // ========== GITOPS ==========

@@ -10,6 +10,7 @@ pub fn is_auth_exempt_path(path: &str) -> bool {
         || path == "/api/v1/platform/guestkit/binary"
         || path == "/api/v1/auth/oidc/config"
         || path == "/api/v1/auth/oidc/token"
+        || path == "/api/v1/auth/login"
         || path == "/"
         || path == "/dashboard"
         || path.starts_with("/assets/")
@@ -104,10 +105,12 @@ mod tests {
             "/api/v1/platform/guestkit/binary",
             "/api/v1/auth/oidc/config",
             "/api/v1/auth/oidc/token",
+            "/api/v1/auth/login",
         ] {
             assert!(is_auth_exempt_path(path), "{path}");
         }
         assert!(!is_auth_exempt_path("/api/v1/vms"));
+        assert!(!is_auth_exempt_path("/api/v1/auth/users"));
     }
 
     #[test]

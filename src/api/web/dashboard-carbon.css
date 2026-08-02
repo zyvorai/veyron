@@ -1,0 +1,704 @@
+/* ============================================================
+   ZEUS OS — CARBON (default dark theme)
+   Full port of Downloads/files/zeus-carbon.css + IronWolf bridge.
+
+   Material thesis: forged carbon. Surfaces are a composite —
+   near-black ground with faint marbling, and an anisotropic
+   sheen that catches light along one axis. Panels have a
+   milled top chamfer that takes the highlight; the bottom
+   edge does not. Light comes from above and slightly left.
+
+   Color is deviation. Plasma marks intent (what you chose),
+   amber and ember mark deviation (what the fleet did).
+   Nominal is deliberately colorless.
+
+   Theme id stays `tahoe` for storage; appearance is Carbon.
+   ============================================================ */
+
+:root,
+html[data-theme='tahoe'],
+html.theme-tahoe,
+html[data-theme='carbon'],
+html.theme-carbon {
+  /* ---- Ground ------------------------------------------- */
+  --zs-void: #07080A;
+  --zs-carbon: #0C0E12;
+  --zs-graphite: #12151B;
+  --zs-forged: #191D25;
+  --zs-channel: #060709;
+
+  /* ---- Edges -------------------------------------------- */
+  --zs-rule: rgba(255, 255, 255, 0.055);
+  --zs-rule-strong: rgba(255, 255, 255, 0.10);
+  --zs-chamfer: rgba(255, 255, 255, 0.075);
+
+  /* ---- Type --------------------------------------------- */
+  --zs-ink: #E7EAF0;
+  --zs-ink-2: #9CA3B2;
+  --zs-ink-3: #626B7C;
+  --zs-ink-4: #2C3341;
+  --zs-ink-mute: #3E4553;
+
+  /* ---- Intent: plasma ----------------------------------- */
+  --zs-plasma: #7F77DD;
+  --zs-plasma-lit: #9E97EA;
+  --zs-plasma-dim: rgba(127, 119, 221, 0.16);
+  --zs-plasma-edge: rgba(127, 119, 221, 0.42);
+
+  /* ---- Deviation ---------------------------------------- */
+  --zs-amber: #D8912F;
+  --zs-amber-dim: rgba(216, 145, 47, 0.14);
+  --zs-ember: #DE5A4E;
+  --zs-ember-dim: rgba(222, 90, 78, 0.14);
+  --zs-nominal: #7A8496;
+  --zs-idle: #4A5263;
+  --zs-unprov: #2E3542;
+
+  /* ---- Metrics (demo uses 12px plates) ------------------ */
+  --zs-rail-w: 420px;
+  --zs-dock-h: 56px;
+  --zs-scroll-tail: 24px;
+  --zs-radius: 12px;
+  --zs-radius-sm: 7px;
+
+  /* ---- Faces -------------------------------------------- */
+  --zs-face-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --zs-face-data: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  /* ---- Composite surfaces ------------------------------- */
+  --zs-sheen: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.048) 0%,
+    rgba(255, 255, 255, 0.014) 34%,
+    rgba(255, 255, 255, 0.000) 62%
+  );
+  --zs-forge: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.016' numOctaves='5' seed='7'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23f)' opacity='0.5'/%3E%3C/svg%3E");
+  --zs-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23g)' opacity='0.5'/%3E%3C/svg%3E");
+  --zs-bg: var(--zs-void);
+
+  /* ---- Bridge → IronWolf / dashboard tokens -------------- */
+  --bg-primary: var(--zs-carbon);
+  --bg-secondary: var(--zs-graphite);
+  --bg-tertiary: var(--zs-forged);
+  --text-primary: var(--zs-ink);
+  --text-secondary: var(--zs-ink-2);
+  --text-muted: var(--zs-ink-3);
+  --border-color: var(--zs-rule);
+  --border-hover: var(--zs-rule-strong);
+  --accent-blue: var(--zs-plasma);
+  --accent-green: var(--zs-nominal);
+  --accent-purple: var(--zs-plasma-lit);
+  --accent-cyan: #8B9BB8;
+  --accent-orange: var(--zs-amber);
+  --accent-red: var(--zs-ember);
+  --accent-yellow: var(--zs-amber);
+  --metal-sheen: rgba(255, 255, 255, 0.04);
+  --metal-highlight: var(--zs-chamfer);
+  --accent-steel: #94A0B4;
+  --accent-steel-bright: var(--zs-ink-2);
+  --accent-steel-muted: rgba(148, 160, 180, 0.12);
+
+  --void: var(--zs-void);
+  --hull: var(--zs-carbon);
+  --panel: var(--zs-graphite);
+  --panel-2: var(--zs-forged);
+  --panel-hi: #1E2330;
+  --hairline: var(--zs-rule);
+  --hairline-hi: var(--zs-rule-strong);
+  --plasma: var(--zs-plasma);
+  --plasma-deep: #574FB0;
+  --plasma-glow: var(--zs-plasma-dim);
+  --plasma-line: var(--zs-plasma-edge);
+  --deck-temp: var(--zs-plasma);
+  --deck-temp-glow: var(--zs-plasma-dim);
+  --ink: var(--zs-ink);
+  --ink-2: var(--zs-ink-2);
+  --ink-3: var(--zs-ink-3);
+  --primary: var(--zs-plasma);
+  --primary-dim: var(--zs-plasma-dim);
+  --primary-glow: rgba(127, 119, 221, 0.28);
+  --primary-blue: var(--zs-plasma);
+  --primary-purple: var(--zs-plasma-lit);
+  --bg-0: var(--zs-void);
+  --bg: var(--zs-carbon);
+  --bg-deep: var(--zs-void);
+  --bg-card: rgba(18, 21, 27, 0.92);
+  --bg-card-solid: var(--zs-graphite);
+  --bg-elevated: var(--zs-forged);
+  --text: var(--zs-ink);
+  --text-bright: #F2F4F8;
+  --text-dim: var(--zs-ink-3);
+  --border: var(--zs-rule);
+  --border-hot: var(--zs-plasma-edge);
+  --blue: var(--zs-plasma);
+  --cyan: #8B9BB8;
+  --violet: var(--zs-plasma-lit);
+  --green: var(--zs-nominal);
+  --orange: var(--zs-amber);
+  --red: var(--zs-ember);
+  --accent: var(--zs-plasma);
+  --molten: var(--zs-plasma);
+  --ember: var(--zs-ember);
+  --forge: var(--zs-plasma);
+  --spark: var(--zs-plasma-lit);
+  --glass-bg: rgba(12, 14, 18, 0.72);
+  --glass-border: var(--zs-rule);
+  --glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  --mac-vibrancy: rgba(12, 14, 18, 0.88);
+  --mac-border: var(--zs-rule);
+  --ironwolf-glass-chrome-bg: rgba(12, 14, 18, 0.92);
+  --ironwolf-glass-chrome-blur: 28px;
+  --pw-color-data: var(--zs-plasma);
+  --pw-color-network: #8B9BB8;
+  --pw-color-info: var(--zs-plasma);
+  --pw-color-ai: var(--zs-plasma-lit);
+  --pw-color-success: var(--zs-nominal);
+  --pw-color-warning: var(--zs-amber);
+  --pw-color-critical: var(--zs-ember);
+  --pw-table-accent: var(--zs-plasma);
+  --pw-accent-glow: var(--zs-plasma-dim);
+  --pw-cockpit-panel-bg: var(--zs-graphite);
+  --pw-chart-1: var(--zs-plasma);
+  --pw-chart-2: var(--zs-nominal);
+  --pw-chart-3: var(--zs-amber);
+  --pw-chart-4: var(--zs-plasma-lit);
+  --pw-chart-5: #8B9BB8;
+  --pw-chart-6: var(--zs-ember);
+  --chart-primary: var(--zs-plasma);
+  --chart-secondary: var(--zs-nominal);
+
+  --nominal: var(--zs-nominal);
+  --nominal-bg: rgba(122, 132, 150, 0.12);
+  --caution: var(--zs-amber);
+  --caution-bg: var(--zs-amber-dim);
+  --critical: var(--zs-ember);
+  --critical-bg: var(--zs-ember-dim);
+  --inert: var(--zs-idle);
+  --inert-bg: rgba(74, 82, 99, 0.12);
+  --info-deck: var(--zs-plasma);
+  --info-deck-bg: var(--zs-plasma-dim);
+
+  --sans-deck: var(--zs-face-display);
+  --mono-deck: var(--zs-face-data);
+  --font-display: var(--zs-face-display);
+  --font-sans: var(--zs-face-display);
+  --font-mono: var(--zs-face-data);
+
+  --liquid-glass: rgba(255, 255, 255, 0.03);
+  --liquid-glass-tint: rgba(12, 14, 18, 0.72);
+  --liquid-glass-elevated: rgba(25, 29, 37, 0.88);
+  --liquid-glass-border: var(--zs-rule);
+  --liquid-glass-border-soft: rgba(255, 255, 255, 0.04);
+  --liquid-glass-highlight: var(--zs-chamfer);
+  --liquid-glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+  --liquid-glass-blur: blur(28px) saturate(1.2);
+  --glass-bg-elevated: rgba(25, 29, 37, 0.94);
+  --glass-border-strong: var(--zs-rule-strong);
+  --glass-blur: blur(28px) saturate(1.2);
+  --glass-radius: var(--zs-radius);
+
+  color-scheme: dark;
+}
+
+/* ============================================================
+   MATERIAL PRIMITIVES (full zeus-carbon.css)
+   ============================================================ */
+
+html[data-theme='tahoe'] body.mac-desktop-root,
+html[data-theme='carbon'] body.mac-desktop-root,
+body.mac-desktop-root {
+  background: var(--zs-void) !important;
+  color: var(--zs-ink);
+  font-family: var(--zs-face-display);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Forged ground — chassis marbling */
+html[data-theme='tahoe'] body.mac-desktop-root::before,
+html[data-theme='carbon'] body.mac-desktop-root::before,
+body.mac-desktop-root[data-shell-layout="root"]::before,
+[data-shell-layout="root"]::before {
+  content: "" !important;
+  position: fixed !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  background-image: var(--zs-forge), var(--zs-grain) !important;
+  background-size: 480px 480px, 120px 120px !important;
+  opacity: 0.055 !important;
+  mix-blend-mode: overlay !important;
+  animation: none !important;
+}
+
+html[data-theme='tahoe'] body.mac-desktop-root > *,
+html[data-theme='carbon'] body.mac-desktop-root > *,
+body.mac-desktop-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme='tahoe'] body.mac-desktop-root::after,
+body.mac-desktop-root::after {
+  display: none !important;
+}
+
+body.mac-desktop-root[data-wallpaper='tahoe'],
+body.mac-desktop-root[data-wallpaper='aurora'],
+body.mac-desktop-root[data-wallpaper='midnight'],
+body.mac-desktop-root[data-wallpaper='ocean'] {
+  background: var(--zs-void) !important;
+}
+
+/* Panel: milled carbon plate. Chamfered top edge takes light. */
+.zs-plate {
+  position: relative;
+  background-color: var(--zs-graphite);
+  background-image: var(--zs-sheen);
+  border: 1px solid var(--zs-rule);
+  border-top-color: var(--zs-chamfer);
+  border-radius: var(--zs-radius);
+}
+
+/* Recess: machined channel */
+.zs-recess {
+  background: var(--zs-channel);
+  border: 1px solid var(--zs-rule);
+  border-bottom-color: var(--zs-rule-strong);
+  border-radius: var(--zs-radius-sm);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Signature — sheen turns on hover */
+.zs-plate--live { overflow: hidden; }
+
+.zs-plate--live::after {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  pointer-events: none;
+  background: linear-gradient(
+    104deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.055) 50%,
+    transparent 62%
+  );
+  transform: translateX(-38%);
+  opacity: 0;
+  transition: transform 620ms cubic-bezier(.22, .61, .36, 1), opacity 260ms ease;
+  z-index: 1;
+}
+
+.zs-plate--live:hover::after,
+.zs-plate--live:focus-within::after {
+  transform: translateX(38%);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zs-plate--live::after { transition: opacity 120ms ease; transform: none; }
+  .zs-plate--live:hover::after { transform: none; }
+}
+
+/* ---- Topbar: chassis rail -------------------------------- */
+html[data-theme='tahoe'] .mac-menubar.navbar,
+html[data-theme='carbon'] .mac-menubar.navbar,
+html[data-theme='tahoe'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='tahoe'] body.mac-desktop-root header.mac-menubar,
+[data-shell-region="topbar"] {
+  background: linear-gradient(180deg, var(--zs-carbon), var(--zs-void)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid var(--zs-rule) !important;
+  border-image: none !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset !important;
+}
+html[data-theme='tahoe'] .mac-menubar.navbar::before,
+html[data-theme='carbon'] .mac-menubar.navbar::before {
+  display: none !important;
+}
+
+html[data-theme='tahoe'] .mac-dock-inner,
+html[data-theme='carbon'] .mac-dock-inner {
+  background: rgba(12, 14, 18, 0.88) !important;
+  border: 1px solid var(--zs-rule) !important;
+  border-top-color: var(--zs-chamfer) !important;
+  backdrop-filter: blur(28px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.2) !important;
+}
+
+/* ---- Eyebrow / datum ------------------------------------- */
+.zs-eyebrow {
+  font-family: var(--zs-face-data);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--zs-ink-3);
+}
+.zs-datum {
+  font-family: var(--zs-face-data);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--zs-ink);
+}
+.zs-datum--unmeasured { color: var(--zs-ink-mute); }
+
+/* ---- Fleet state ----------------------------------------- */
+.zs-state { --dot: var(--zs-nominal); }
+.zs-state[data-state="nominal"] { --dot: var(--zs-nominal); }
+.zs-state[data-state="idle"] { --dot: var(--zs-idle); }
+.zs-state[data-state="unprovisioned"] { --dot: var(--zs-unprov); }
+.zs-state[data-state="deviating"] { --dot: var(--zs-amber); }
+.zs-state[data-state="blocked"] { --dot: var(--zs-ember); }
+.zs-state::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dot);
+  margin-inline-end: 10px;
+  vertical-align: middle;
+}
+.zs-state[data-state="deviating"]::before { box-shadow: 0 0 10px -1px var(--zs-amber); }
+.zs-state[data-state="blocked"]::before { box-shadow: 0 0 10px -1px var(--zs-ember); }
+
+/* ---- Roster row ------------------------------------------ */
+.zs-row {
+  position: relative;
+  border-bottom: 1px solid var(--zs-rule);
+  transition: background-color 140ms ease;
+}
+.zs-row::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 2px;
+  background: transparent;
+  transition: background-color 140ms ease, box-shadow 140ms ease;
+}
+.zs-row:hover { background: rgba(255, 255, 255, 0.018); }
+.zs-row:hover::before { background: var(--zs-rule-strong); }
+.zs-row[aria-selected="true"] {
+  background: linear-gradient(90deg, var(--zs-plasma-dim), transparent 42%);
+}
+.zs-row[aria-selected="true"]::before {
+  background: var(--zs-plasma);
+  box-shadow: 0 0 14px -2px var(--zs-plasma);
+}
+
+/* ---- Buttons --------------------------------------------- */
+.zs-btn {
+  font-family: var(--zs-face-display);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--zs-ink);
+  background-color: var(--zs-forged);
+  background-image: var(--zs-sheen);
+  border: 1px solid var(--zs-rule);
+  border-top-color: var(--zs-chamfer);
+  border-radius: var(--zs-radius-sm);
+  padding: 9px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+.zs-btn:hover { background-color: #1E2330; border-color: var(--zs-rule-strong); }
+.zs-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+}
+.zs-btn--primary {
+  color: #0A0B10;
+  background-color: var(--zs-plasma);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 58%);
+  border-color: var(--zs-plasma-edge);
+  border-top-color: rgba(255, 255, 255, 0.34);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 1px 16px -6px var(--zs-plasma);
+}
+.zs-btn--primary:hover { background-color: #8C84E4; }
+.zs-btn--quiet {
+  background-color: transparent;
+  background-image: none;
+  border-color: var(--zs-rule);
+  color: var(--zs-ink-2);
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.zs-btn--quiet:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  color: var(--zs-ink-2);
+}
+
+.zs-btn:focus-visible,
+html[data-theme='tahoe'] :focus-visible,
+html[data-theme='carbon'] :focus-visible {
+  outline: 2px solid var(--zs-plasma);
+  outline-offset: 2px;
+  border-radius: var(--zs-radius-sm);
+}
+
+/* ---- Alert chip ------------------------------------------ */
+.zs-alert-chip {
+  font-family: var(--zs-face-data);
+  font-size: 12px;
+  color: var(--zs-amber);
+  background: var(--zs-amber-dim);
+  border: 1px solid rgba(216, 145, 47, 0.28);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+/* ---- Rail ------------------------------------------------ */
+[data-shell-region="rail"] {
+  background: var(--zs-carbon);
+  border-inline-start: 1px solid var(--zs-rule);
+}
+[data-shell-region="rail-header"],
+[data-shell-region="rail-footer"] { border-color: var(--zs-rule); }
+
+/* ---- Scrollbars ------------------------------------------ */
+html[data-theme='tahoe'] [data-shell-scroll]::-webkit-scrollbar,
+html[data-theme='carbon'] [data-shell-scroll]::-webkit-scrollbar {
+  width: 10px;
+}
+html[data-theme='tahoe'] [data-shell-scroll]::-webkit-scrollbar-track,
+html[data-theme='carbon'] [data-shell-scroll]::-webkit-scrollbar-track {
+  background: transparent;
+}
+html[data-theme='tahoe'] [data-shell-scroll]::-webkit-scrollbar-thumb,
+html[data-theme='carbon'] [data-shell-scroll]::-webkit-scrollbar-thumb {
+  background: #232833;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+html[data-theme='tahoe'] [data-shell-scroll]::-webkit-scrollbar-thumb:hover,
+html[data-theme='carbon'] [data-shell-scroll]::-webkit-scrollbar-thumb:hover {
+  background-clip: content-box;
+  background-color: #333A48;
+}
+
+/* ---- Primary actions (existing classes → plasma) --------- */
+html[data-theme='tahoe'] .glass-btn-primary,
+html[data-theme='carbon'] .glass-btn-primary,
+html[data-theme='tahoe'] .btn-create,
+html[data-theme='carbon'] .btn-create,
+html[data-theme='tahoe'] .id-btn-plasma {
+  color: #0A0B10 !important;
+  background: var(--zs-plasma) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 58%) !important;
+  border: 1px solid var(--zs-plasma-edge) !important;
+  border-top-color: rgba(255, 255, 255, 0.34) !important;
+  box-shadow: 0 1px 16px -6px var(--zs-plasma) !important;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: var(--zs-radius-sm) !important;
+}
+html[data-theme='tahoe'] .glass-btn-primary:hover,
+html[data-theme='carbon'] .glass-btn-primary:hover,
+html[data-theme='tahoe'] .btn-create:hover,
+html[data-theme='carbon'] .btn-create:hover {
+  background-color: #8C84E4 !important;
+}
+
+/* Ghost / secondary buttons → forged plate */
+html[data-theme='tahoe'] .id-btn-ghost,
+html[data-theme='carbon'] .id-btn-ghost,
+html[data-theme='tahoe'] .glass-btn:not(.glass-btn-primary),
+html[data-theme='carbon'] .btn:not(.btn-create):not(.glass-btn-primary) {
+  background-color: var(--zs-forged);
+  background-image: var(--zs-sheen);
+  border: 1px solid var(--zs-rule);
+  border-top-color: var(--zs-chamfer);
+  border-radius: var(--zs-radius-sm);
+  color: var(--zs-ink);
+}
+
+.theme-swatch-preview.tahoe,
+.theme-swatch-preview.carbon {
+  background: linear-gradient(135deg, #07080A, #12151B 45%, #7F77DD) !important;
+}
+.mac-wallpaper-swatch-tahoe {
+  background: linear-gradient(135deg, #07080A, #191D25) !important;
+}
+
+/* ============================================================
+   DASHBOARD SURFACE BRIDGE
+   Existing .card / .id-tile / .vmr-panel become Carbon plates
+   (rounded graphite + chamfer + sheen + live sweep).
+   ============================================================ */
+
+html[data-theme='tahoe'] .page .card,
+html[data-theme='tahoe'] .page .glass-card,
+html[data-theme='tahoe'] .page .chart-card,
+html[data-theme='tahoe'] .page .vmr-panel,
+html[data-theme='tahoe'] .page .vmr-surface-card,
+html[data-theme='tahoe'] .page .vmr-page-hero,
+html[data-theme='tahoe'] .page .vmr-fleet-card,
+html[data-theme='tahoe'] .page .vmr-copy-tile,
+html[data-theme='tahoe'] .page .vmr-heat-tile,
+html[data-theme='tahoe'] .page .vmr-alog-panel,
+html[data-theme='tahoe'] .page .vmr-ns-card,
+html[data-theme='tahoe'] .page .vmr-incident-card,
+html[data-theme='tahoe'] .page .zeus-glass,
+html[data-theme='tahoe'] .page .vm-inspector-panel,
+html[data-theme='tahoe'] .page .vm-hero,
+html[data-theme='tahoe'] .page .mission-tile,
+html[data-theme='tahoe'] .page .security-finding-card,
+html[data-theme='tahoe'] .page .tile,
+html[data-theme='tahoe'] .page .panel,
+html[data-theme='tahoe'] .page .id-tile,
+html[data-theme='tahoe'] .page .id-vmcard,
+html[data-theme='tahoe'] .page .id-tpl,
+html[data-theme='tahoe'] .page .vm-card,
+html[data-theme='carbon'] .page .card,
+html[data-theme='carbon'] .page .glass-card,
+html[data-theme='carbon'] .page .chart-card,
+html[data-theme='carbon'] .page .vmr-panel,
+html[data-theme='carbon'] .page .vmr-surface-card,
+html[data-theme='carbon'] .page .vmr-page-hero,
+html[data-theme='carbon'] .page .vmr-fleet-card,
+html[data-theme='carbon'] .page .id-tile,
+html[data-theme='carbon'] .page .id-vmcard,
+html[data-theme='carbon'] .page .id-tpl,
+html[data-theme='carbon'] .page .vm-card,
+html[data-theme='carbon'] .page .tile,
+html[data-theme='carbon'] .page .panel {
+  position: relative;
+  background-color: var(--zs-graphite) !important;
+  background-image: var(--zs-sheen) !important;
+  border: 1px solid var(--zs-rule) !important;
+  border-top-color: var(--zs-chamfer) !important;
+  border-radius: var(--zs-radius) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: hidden;
+}
+
+/* Live sheen sweep on interactive plates */
+html[data-theme='tahoe'] .page .card::after,
+html[data-theme='tahoe'] .page .id-tile::after,
+html[data-theme='tahoe'] .page .id-vmcard::after,
+html[data-theme='tahoe'] .page .vm-card::after,
+html[data-theme='tahoe'] .page .vmr-panel::after,
+html[data-theme='tahoe'] .page .vmr-fleet-card::after,
+html[data-theme='carbon'] .page .card::after,
+html[data-theme='carbon'] .page .id-tile::after,
+html[data-theme='carbon'] .page .id-vmcard::after,
+html[data-theme='carbon'] .page .vm-card::after,
+html[data-theme='carbon'] .page .vmr-panel::after {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  pointer-events: none;
+  background: linear-gradient(
+    104deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.055) 50%,
+    transparent 62%
+  );
+  transform: translateX(-38%);
+  opacity: 0;
+  transition: transform 620ms cubic-bezier(.22, .61, .36, 1), opacity 260ms ease;
+  z-index: 2;
+}
+html[data-theme='tahoe'] .page .card:hover::after,
+html[data-theme='tahoe'] .page .id-tile:hover::after,
+html[data-theme='tahoe'] .page .id-vmcard:hover::after,
+html[data-theme='tahoe'] .page .vm-card:hover::after,
+html[data-theme='tahoe'] .page .vmr-panel:hover::after,
+html[data-theme='carbon'] .page .card:hover::after,
+html[data-theme='carbon'] .page .id-tile:hover::after,
+html[data-theme='carbon'] .page .id-vmcard:hover::after,
+html[data-theme='carbon'] .page .vm-card:hover::after,
+html[data-theme='carbon'] .page .vmr-panel:hover::after {
+  transform: translateX(38%);
+  opacity: 1;
+}
+
+html[data-theme='tahoe'] .page .card:hover,
+html[data-theme='tahoe'] .page .id-tile:hover,
+html[data-theme='tahoe'] .page .vmr-panel:hover,
+html[data-theme='carbon'] .page .card:hover,
+html[data-theme='carbon'] .page .id-tile:hover {
+  transform: none !important;
+  border-color: var(--zs-rule-strong) !important;
+  border-top-color: var(--zs-chamfer) !important;
+}
+
+/* Inputs / search → recess */
+html[data-theme='tahoe'] .page input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme='tahoe'] .page select,
+html[data-theme='tahoe'] .page textarea,
+html[data-theme='tahoe'] .btn-spotlight,
+html[data-theme='carbon'] .page input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme='carbon'] .page select,
+html[data-theme='carbon'] .page textarea {
+  background: var(--zs-channel) !important;
+  border: 1px solid var(--zs-rule) !important;
+  border-bottom-color: var(--zs-rule-strong) !important;
+  border-radius: var(--zs-radius-sm) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+  color: var(--zs-ink) !important;
+}
+
+/* Status pills keep signal semantics; chrome matches plate */
+html[data-theme='tahoe'] .id-sig,
+html[data-theme='carbon'] .id-sig {
+  border-radius: 999px;
+  font-family: var(--zs-face-data);
+}
+
+/* Chip / pill readings */
+html[data-theme='tahoe'] .id-chip,
+html[data-theme='tahoe'] .vmr-chip,
+html[data-theme='carbon'] .id-chip,
+html[data-theme='carbon'] .vmr-chip {
+  background: var(--zs-forged) !important;
+  border: 1px solid var(--zs-rule) !important;
+  border-top-color: var(--zs-chamfer) !important;
+  border-radius: 999px !important;
+  font-family: var(--zs-face-data);
+  color: var(--zs-ink-2) !important;
+}
+
+/* Roster rows → zs-row channel */
+html[data-theme='tahoe'] .page .vm-row,
+html[data-theme='tahoe'] .page .vmr-roster-body .vm-row,
+html[data-theme='carbon'] .page .vm-row {
+  position: relative;
+  border-bottom: 1px solid var(--zs-rule);
+}
+html[data-theme='tahoe'] .page .vm-row:hover,
+html[data-theme='carbon'] .page .vm-row:hover {
+  background: rgba(255, 255, 255, 0.018) !important;
+}
+
+/* Split rail plate */
+html[data-theme='tahoe'] [data-shell-region="rail"],
+html[data-theme='carbon'] [data-shell-region="rail"] {
+  background: var(--zs-carbon) !important;
+  border-inline-start: 1px solid var(--zs-rule) !important;
+}
+
+/* mac-page-window: transparent — plates live inside */
+html[data-theme='tahoe'] .page .mac-page-window,
+html[data-theme='carbon'] .page .mac-page-window {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}

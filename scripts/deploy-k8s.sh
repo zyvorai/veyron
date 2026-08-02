@@ -240,7 +240,10 @@ cmd_deploy() {
     # Create or update API key secret
     ${KUBECTL} -n "${NAMESPACE}" delete secret veyron-api-key --ignore-not-found 2>/dev/null
     ${KUBECTL} -n "${NAMESPACE}" create secret generic veyron-api-key \
-        --from-literal=api-key="${API_KEY}"
+        --from-literal=api-key="${API_KEY}" \
+        --from-literal=jwt-secret="${VEYRON_JWT_SECRET:-veyron-dev-jwt-secret-change-me}" \
+        --from-literal=jwt-issuer="${VEYRON_JWT_ISSUER:-veyron}" \
+        --from-literal=admin-password="${VEYRON_BOOTSTRAP_ADMIN_PASSWORD:-${API_KEY}}"
     echo "API key secret created"
 
     # For local clusters, set imagePullPolicy to Never/IfNotPresent

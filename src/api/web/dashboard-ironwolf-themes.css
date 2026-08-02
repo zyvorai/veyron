@@ -719,16 +719,7 @@ html[data-theme='light'] .mac-nav-icon-btn.open {
   .mac-nav-icon-btn { width: 1.7rem; height: 1.7rem; }
 }
 
-body.mac-desktop-root,
-body.mac-desktop-root[data-desktop-tier],
-body.mac-desktop-root[data-desktop-tier="normal"] {
-  padding-bottom: 2.25rem !important; /* ticker clearance only */
-}
-
-/* Finder / main offset under chrome stack */
-body.mac-desktop-root .cloudos-body-row {
-  min-height: calc(100dvh - var(--veyron-chrome-stack-h, 5.3rem)) !important;
-}
+/* Root padding / body-row height owned by shell-layout.css — do not subtract chrome. */
 
 /* ── Command Centre PRO — ops bridge, not a SaaS dash ── */
 #page-dashboard.iw-home-page {
@@ -1546,7 +1537,7 @@ body.mac-desktop-root #cloudos-dock.mac-dock {
 }
 
 #page-dashboard .iw-home.iw-cc {
-  min-height: calc(100dvh - var(--veyron-menubar-h, 2.75rem) - 2.25rem) !important;
+  min-height: 0 !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;

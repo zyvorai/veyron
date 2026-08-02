@@ -42,6 +42,7 @@ dialoguer = "0.11"
 indicatif = "0.17"
 rand = "0.8"
 zeroize = "1.8"
+argon2 = "0.5"
 base64 = "0.22"
 http = "1.1"
 guestkit-agent-protocol = { path = "guestkit/crates/guestkit-agent-protocol" }

@@ -1,0 +1,253 @@
+/* ============================================================
+   ZEUS OS — CARBON · COMMAND DECK COMPONENTS
+   Load order:  shell-layout.css → zeus-carbon.css → this file
+
+   Tokens come from zeus-carbon.css. Nothing here declares a
+   color literal except where a value is derived from a token.
+   ============================================================ */
+
+/* ---- Icon rail ------------------------------------------- */
+[data-shell-region="rail-nav"] {
+  flex: 0 0 68px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 0;
+  background: var(--zs-carbon);
+  border-inline-end: 1px solid var(--zs-rule);
+  overflow-y: auto;
+}
+[data-shell-region="rail-nav"]::-webkit-scrollbar { width: 0; }
+
+.ico {
+  position: relative;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border-radius: 9px;
+  color: var(--zs-ink-3);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+.ico:hover { color: var(--zs-ink-2); background: rgba(255, 255, 255, 0.035); }
+
+.ico[aria-current] {
+  color: var(--zs-ink);
+  background: var(--zs-forged);
+  border-color: var(--zs-rule);
+  border-top-color: var(--zs-chamfer);
+}
+
+/* Plasma marks the operator's position — intent, not status. */
+.ico[aria-current]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -14px;
+  width: 2px; height: 20px;
+  border-radius: 2px;
+  background: var(--zs-plasma);
+  box-shadow: 0 0 12px -1px var(--zs-plasma);
+}
+
+.ico svg {
+  width: 18px; height: 18px;
+  fill: none; stroke: currentColor; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+.rail-sep { width: 22px; height: 1px; background: var(--zs-rule); margin: 9px 0; }
+
+
+/* ---- Spotlight ------------------------------------------- */
+.spot { display: flex; align-items: center; gap: 10px; padding: 9px 13px; cursor: text; }
+.spot input {
+  flex: 1; background: 0; border: 0; outline: 0;
+  color: var(--zs-ink); font-family: var(--zs-face-display); font-size: 13px;
+}
+.spot input::placeholder { color: var(--zs-ink-4); }
+.kbd {
+  font-family: var(--zs-face-data); font-size: 10px; color: var(--zs-ink-3);
+  border: 1px solid var(--zs-rule); border-radius: 4px; padding: 2px 6px;
+}
+
+
+/* ---- Hero ------------------------------------------------- */
+.hero { display: flex; align-items: center; gap: 34px; padding: 28px 30px; flex-wrap: wrap; }
+.hero h1 { margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
+.hero-sub {
+  margin-top: 9px;
+  font-family: var(--zs-face-data); font-size: 12px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--zs-ink-3);
+}
+.hero-acts { display: flex; gap: 10px; }
+
+/* Pills are readings, so they set in mono. Only a pill that
+   reports deviation takes chroma.                            */
+.pills { display: flex; gap: 9px; flex-wrap: wrap; flex: 1; }
+.pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px;
+  background: var(--zs-forged);
+  border: 1px solid var(--zs-rule);
+  border-top-color: var(--zs-chamfer);
+  font-family: var(--zs-face-data); font-size: 12px;
+  color: var(--zs-ink-2); white-space: nowrap;
+}
+.pill svg { width: 13px; height: 13px; fill: none; stroke: var(--zs-ink-3); stroke-width: 1.6; }
+.pill--dev {
+  color: var(--zs-amber);
+  background: var(--zs-amber-dim);
+  border-color: rgba(216, 145, 47, 0.26);
+}
+.pill--dev svg { stroke: var(--zs-amber); }
+
+
+/* ---- Section plate ---------------------------------------- */
+.sect { margin-top: 22px; padding: 24px 30px 28px; }
+.sect-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.sect-title { margin: 9px 0 0; font-size: 21px; font-weight: 600; letter-spacing: -0.02em; }
+.sect-ctl { display: flex; gap: 6px; }
+.sect-link { color: var(--zs-plasma-lit); text-decoration: none; font-size: 13px; white-space: nowrap; }
+
+
+/* ============================================================
+   HEADROOM RINGS
+
+   Band is a function of headroom, never of which metric it is.
+   The metric is named by its legend row and its radius; color
+   is spent entirely on how close it is to running out.
+
+     >= 50%   nominal     graphite, no chroma
+     25–49%   strained    amber
+     <  25%   critical    ember
+     unknown  none        dashed track, no arc
+
+   Radii step by 19px with an 11px stroke — 8px of channel
+   between rings so the concentric read stays legible at 340px.
+   dasharray = [C x pct/100, C]; the oversized gap guarantees a
+   single arc. Recompute C when a radius changes.
+   ============================================================ */
+
+.rings {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 44px;
+  align-items: center;
+  margin-top: 26px;
+}
+
+.ring-svg { width: 340px; height: 340px; display: block; }
+
+.ring-track { stroke: rgba(255, 255, 255, 0.05); }
+
+/* Not measured. The channel is cut but nothing filled it. */
+.ring-track--none {
+  stroke: var(--zs-ink-4);
+  stroke-dasharray: 2 7;
+  stroke-linecap: butt;
+}
+
+.ring-arc {
+  stroke-linecap: round;
+  transition: opacity 180ms ease, stroke-width 180ms ease;
+}
+.ring-arc[data-band="critical"] { stroke: var(--zs-ember); }
+.ring-arc[data-band="strained"] { stroke: var(--zs-amber); }
+.ring-arc[data-band="nominal"]  { stroke: var(--zs-nominal); }
+
+/* Legend hover isolates one ring out of the stack. */
+.rings[data-focus] .ring-arc { opacity: 0.22; }
+.rings[data-focus="compute"]  .ring-arc[data-key="compute"],
+.rings[data-focus="memory"]   .ring-arc[data-key="memory"],
+.rings[data-focus="storage"]  .ring-arc[data-key="storage"],
+.rings[data-focus="network"]  .ring-arc[data-key="network"],
+.rings[data-focus="security"] .ring-arc[data-key="security"],
+.rings[data-focus="recovery"] .ring-arc[data-key="recovery"] {
+  opacity: 1;
+  stroke-width: 13;
+}
+
+.ring-hub-label { font-family: var(--zs-face-data); font-size: 10px; letter-spacing: 0.22em; fill: var(--zs-ink-3); }
+.ring-hub-val   { font-family: var(--zs-face-data); font-size: 38px; font-weight: 500; letter-spacing: -0.02em; fill: var(--zs-amber); }
+.ring-hub-cap   { font-family: var(--zs-face-data); font-size: 9px;  letter-spacing: 0.14em; fill: var(--zs-ink-4); }
+
+/* Hub inherits the band of the composite, same rule as a ring */
+.ring-hub-val[data-band="critical"] { fill: var(--zs-ember); }
+.ring-hub-val[data-band="strained"] { fill: var(--zs-amber); }
+.ring-hub-val[data-band="nominal"]  { fill: var(--zs-nominal); }
+
+/* Legend row: milled channel on the leading edge, like a
+   roster row. Lights to the metric's band on hover.          */
+.legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px 30px; }
+
+.leg {
+  padding: 2px 0 2px 15px;
+  border-inline-start: 2px solid var(--zs-rule);
+  transition: border-color 160ms ease;
+}
+.leg:hover { border-inline-start-color: var(--zs-rule-strong); }
+.leg[data-band="critical"]:hover { border-inline-start-color: var(--zs-ember); }
+.leg[data-band="strained"]:hover { border-inline-start-color: var(--zs-amber); }
+
+.leg-name { font-size: 14px; font-weight: 500; color: var(--zs-ink); }
+.leg-val  { margin-top: 7px; font-family: var(--zs-face-data); font-size: 15px; color: var(--zs-nominal); }
+.leg[data-band="critical"] .leg-val { color: var(--zs-ember); }
+.leg[data-band="strained"] .leg-val { color: var(--zs-amber); }
+.leg-val--none { color: var(--zs-ink-mute); font-size: 13px; }
+.leg-cause { margin-top: 6px; font-size: 11px; color: var(--zs-ink-3); line-height: 1.45; }
+
+
+/* ---- Fleet signals ---------------------------------------- */
+.sig {
+  position: relative;
+  display: grid;
+  grid-template-columns: 92px 132px 1fr 128px;
+  gap: 20px;
+  align-items: baseline;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--zs-rule);
+}
+.sig:last-child { border-bottom: 0; }
+
+.sig::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -30px;
+  width: 2px;
+  background: transparent;
+}
+.sig[data-sev="critical"]::before { background: var(--zs-ember); box-shadow: 0 0 12px -2px var(--zs-ember); }
+.sig[data-sev="warn"]::before     { background: var(--zs-amber); box-shadow: 0 0 12px -2px var(--zs-amber); }
+
+.sig-t, .sig-src { font-family: var(--zs-face-data); font-size: 12px; color: var(--zs-ink-3); }
+.sig-msg { font-size: 13px; color: var(--zs-ink-2); line-height: 1.5; }
+.sig-act { text-align: end; font-family: var(--zs-face-data); font-size: 12px; color: var(--zs-plasma-lit); cursor: pointer; }
+
+
+/* ---- Tour strip ------------------------------------------- */
+.tour {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 18px; margin-bottom: 18px;
+  border-radius: var(--zs-radius);
+  background: var(--zs-plasma-dim);
+  border: 1px solid rgba(127, 119, 221, 0.22);
+  font-size: 13px; color: var(--zs-ink-2);
+}
+.tour b { color: var(--zs-ink); font-weight: 500; }
+.tour a { color: var(--zs-plasma-lit); text-decoration: none; }
+.tour button { background: 0; border: 0; color: var(--zs-ink-3); cursor: pointer; font-size: 15px; }
+
+
+/* ---- Page frame ------------------------------------------- */
+.wrap { max-width: 1420px; margin: 0 auto; padding: 22px 28px 0; }
+
+@media (max-width: 1180px) {
+  .rings  { grid-template-columns: 1fr; justify-items: center; gap: 32px; }
+  .legend { grid-template-columns: repeat(2, 1fr); }
+  .sig    { grid-template-columns: 84px 1fr; gap: 8px 16px; }
+  .sig-msg, .sig-act { grid-column: 1 / -1; }
+  .sig-act { text-align: start; }
+}

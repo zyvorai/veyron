@@ -85,6 +85,11 @@ pkg_env_bootstrap_auth_for_file() {
             ;;
         veyron)
             pkg_env_ensure_var "${env_file}" "VEYRON_API_KEY" "CHANGE_ME"
+            pkg_env_ensure_jwt_secret "${env_file}" "VEYRON_JWT_SECRET"
+            pkg_env_ensure_var "${env_file}" "VEYRON_JWT_ISSUER" "veyron"
+            pkg_env_ensure_var "${env_file}" "VEYRON_BOOTSTRAP_ADMIN_USER" "admin"
+            pkg_env_ensure_var "${env_file}" "VEYRON_BOOTSTRAP_ADMIN_PASSWORD" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "VEYRON_BOOTSTRAP_ADMIN_SYNC" "1"
             ;;
         forge)
             pkg_env_ensure_var "${env_file}" "FORGE_API_KEY" "CHANGE_ME"
