@@ -63,6 +63,25 @@ spec:
                 secretKeyRef:
                   name: {{ include "veyron.apiKeySecretName" . }}
                   key: api-key
+            - name: VEYRON_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "veyron.apiKeySecretName" . }}
+                  key: jwt-secret
+            - name: VEYRON_JWT_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "veyron.apiKeySecretName" . }}
+                  key: jwt-issuer
+            - name: VEYRON_BOOTSTRAP_ADMIN_USER
+              value: {{ .Values.auth.adminUser | default "admin" | quote }}
+            - name: VEYRON_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "veyron.apiKeySecretName" . }}
+                  key: admin-password
+            - name: VEYRON_BOOTSTRAP_ADMIN_SYNC
+              value: {{ .Values.auth.bootstrapAdminSync | default "1" | quote }}
             {{- if .Values.auth.additionalKeys }}
             - name: VEYRON_API_KEYS
               value: {{ .Values.auth.additionalKeys | quote }}

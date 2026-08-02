@@ -1,10 +1,14 @@
 # Veyron Kubernetes Deployment
 #
-# Prerequisites:
+# Prerequisites (created automatically by deploy-k8s.sh / deploy-all-remote.sh):
 #   kubectl create secret generic veyron-api-key \
 #     --namespace=veyron-system \
-#     --from-literal=api-key=$(openssl rand -hex 32)
+#     --from-literal=api-key=Admin@321 \
+#     --from-literal=jwt-secret=veyron-dev-jwt-secret-change-me \
+#     --from-literal=jwt-issuer=veyron \
+#     --from-literal=admin-password=Admin@321
 #
+# Dashboard login: username admin · password Admin@321 (same as API key by default).
 # Or use: ./scripts/deploy-k8s.sh deploy (creates the secret automatically)
 #
 # Legacy: veyron-system / veyron-api still work on existing clusters until migrated.
@@ -280,6 +284,28 @@ spec:
                 secretKeyRef:
                   name: veyron-api-key
                   key: api-key
+            # Username/password dashboard login (POST /api/v1/auth/login)
+            - name: VEYRON_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: veyron-api-key
+                  key: jwt-secret
+            - name: VEYRON_JWT_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: veyron-api-key
+                  key: jwt-issuer
+            - name: VEYRON_BOOTSTRAP_ADMIN_USER
+              value: "admin"
+            - name: VEYRON_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: veyron-api-key
+                  key: admin-password
+            - name: VEYRON_BOOTSTRAP_ADMIN_SYNC
+              value: "1"
+            - name: VEYRON_NAMESPACE
+              value: "veyron-system"
             - name: RUST_LOG
               value: "info"
             - name: VEYRON_API_NODE_HOST

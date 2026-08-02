@@ -4,28 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260801a">
+<meta name="veyron-dashboard-rev" content="20260802f">
 <title>Veyron · Kubernetes VM Command Center</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%237ab3e8'/%3E%3Cstop offset='1' stop-color='%2364a0dc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%23fff'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%237ab3e8'/%3E%3Cstop offset='1' stop-color='%2364a0dc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260801a';
+  var DASH_REV = '20260802f';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
     return;
   }
-  /* IronWolf themes only: tahoe (dark) · light */
+  /* Default dark = Carbon (stored as tahoe). Light remains light. */
   function parseStoredThemeEarly(raw) {
     if (raw === 'light' || raw === 'tahoe-light' || raw === 'daylight' || raw === 'frost') return 'light';
     return 'tahoe';
   }
   try {
-    if (!localStorage.getItem('veyron_theme_ironwolf_v1')) {
+    if (!localStorage.getItem('veyron_theme_carbon_v1')) {
+      localStorage.setItem('veyron_theme', parseStoredThemeEarly(localStorage.getItem('veyron_theme')));
+      var wp = localStorage.getItem('veyron_wallpaper');
+      if (!wp || ['tahoe','aurora','midnight','ocean'].indexOf(wp) < 0) localStorage.setItem('veyron_wallpaper', 'tahoe');
+      localStorage.setItem('veyron_theme_carbon_v1', '1');
+      localStorage.setItem('veyron_theme_ironwolf_v1', '1');
+    } else if (!localStorage.getItem('veyron_theme_ironwolf_v1')) {
       localStorage.setItem('veyron_theme', parseStoredThemeEarly(localStorage.getItem('veyron_theme')));
       var wp = localStorage.getItem('veyron_wallpaper');
       if (!wp || ['tahoe','aurora','midnight','ocean'].indexOf(wp) < 0) localStorage.setItem('veyron_wallpaper', 'tahoe');
@@ -90,51 +96,51 @@
   --glow-molten:0 0 20px rgba(199,208,219,.16),0 0 48px rgba(110,122,138,.08);
   --glow-spark:0 0 16px rgba(214,221,230,.15),0 0 40px rgba(214,221,230,.06);
   --glow-success:0 0 12px rgba(29,158,117,.2);
-  --font-sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;
-  --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+  --font-sans:'Space Grotesk','Inter',system-ui,sans-serif;
+  --font-display:'Space Grotesk','Inter',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --space-page:14px;
   --space-card:12px;
   --space-row:10px;
   /* Liquid Glass design tokens */
-  --glass-bg:rgba(20,22,28,.68);
-  --glass-bg-elevated:rgba(28,31,40,.82);
-  --glass-border:rgba(255,255,255,.08);
-  --glass-blur:blur(24px) saturate(1.4);
+  --glass-bg:rgba(12,14,18,.72);
+  --glass-bg-elevated:rgba(25,29,37,.88);
+  --glass-border:rgba(255,255,255,.055);
+  --glass-blur:blur(28px) saturate(1.2);
   --glass-radius:1rem;
-  --primary-blue:#64a0dc;
-  --primary-purple:#9580d4;
-  --glass-shadow:0 10px 30px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.35);
-  --glass-shadow-hero:0 12px 48px rgba(0,0,0,.35),0 0 0 1px rgba(59,130,246,.12),inset 0 1px 0 rgba(255,255,255,.08);
+  --primary-blue:#7F77DD;
+  --primary-purple:#9E97EA;
+  --glass-shadow:0 18px 48px rgba(0,0,0,.55);
+  --glass-shadow-hero:0 12px 48px rgba(0,0,0,.45),0 0 0 1px rgba(127,119,221,.12),inset 0 1px 0 rgba(255,255,255,.06);
   --radius-liquid:22px;
   --radius-liquid-lg:28px;
-  --blur-liquid:24px;
-  --glass-border-strong:rgba(255,255,255,.15);
+  --blur-liquid:28px;
+  --glass-border-strong:rgba(255,255,255,.10);
   /* ── Instrument Deck design system tokens ── */
-  --void:        #070a10;
-  --hull:        #0b1220;
-  --panel:       #121824;
-  --panel-2:     #1c2432;
-  --panel-hi:    #243044;
-  --hairline:    rgba(148,168,200,.16);
-  --hairline-hi: rgba(148,168,200,.28);
-  --plasma:      #64a0dc;
-  --plasma-deep: #3b82b8;
-  --plasma-glow: rgba(100,160,220,0.18);
-  --plasma-line: rgba(100,160,220,0.45);
+  --void:        #07080A;
+  --hull:        #0C0E12;
+  --panel:       #12151B;
+  --panel-2:     #191D25;
+  --panel-hi:    #1E2330;
+  --hairline:    rgba(255,255,255,.055);
+  --hairline-hi: rgba(255,255,255,.10);
+  --plasma:      #7F77DD;
+  --plasma-deep: #574FB0;
+  --plasma-glow: rgba(127,119,221,0.16);
+  --plasma-line: rgba(127,119,221,0.42);
   /* Reactive ambient layer — JS overwrites these on every VM fetch tick */
   --fleet-health:   100;
-  --deck-temp:      #64a0dc;
-  --deck-temp-glow: rgba(100,160,220,.18);
-  --nominal:     #1D9E75;  --nominal-bg: rgba(29,158,117,0.12);
-  --caution:     #EF9F27;  --caution-bg: rgba(239,159,39,0.12);
-  --critical:    #E24B4A;  --critical-bg: rgba(226,75,74,0.12);
-  --inert:       #5F5E5A;  --inert-bg: rgba(95,94,90,0.10);
-  --info-deck:   #378ADD;  --info-deck-bg: rgba(55,138,221,0.12);
-  --ink:         #f1f5f9;
-  --ink-2:       #94a3b8;
-  --ink-3:       #8898aa;
-  --sans-deck:   -apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+  --deck-temp:      #7F77DD;
+  --deck-temp-glow: rgba(127,119,221,.16);
+  --nominal:     #7A8496;  --nominal-bg: rgba(122,132,150,0.12);
+  --caution:     #D8912F;  --caution-bg: rgba(216,145,47,0.14);
+  --critical:    #DE5A4E;  --critical-bg: rgba(222,90,78,0.14);
+  --inert:       #4A5263;  --inert-bg: rgba(74,82,99,0.12);
+  --info-deck:   #7F77DD;  --info-deck-bg: rgba(127,119,221,0.16);
+  --ink:         #E7EAF0;
+  --ink-2:       #9CA3B2;
+  --ink-3:       #626B7C;
+  --sans-deck:   'Space Grotesk','Inter',system-ui,sans-serif;
   --mono-deck:   'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --r-sm:6px; --r-deck:10px; --r-lg-deck:14px;
   --gap-deck:16px;
@@ -1981,7 +1987,7 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 @media(min-width:769px) and (max-width:960px){
   .btn-nav-browse{display:inline-flex!important}
 }
-.vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;min-height:min(72vh,720px);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
+.vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
 .vm-list-pane{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0;overflow:hidden}
 .vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
 .vmr-preset-chip{display:inline-flex;align-items:center;gap:0}
@@ -2022,10 +2028,10 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vmr-briefing-pill{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;font-size:.72rem;line-height:1.4;border-left-width:3px;border-left-style:solid;backdrop-filter:blur(4px)}
 .vmr-briefing-icon{font-size:.8rem;flex-shrink:0;opacity:.9}
 .vmr-briefing-text{flex:1}
-.vm-list-scroll{flex:1;overflow-y:auto;min-height:200px}
+.vm-list-scroll{flex:1;overflow-y:auto;min-height:0;overscroll-behavior:contain}
 .vm-list-scroll .vm-row,.vm-list-scroll .vm-card-grid .vm-card{border-radius:0;border-left:3px solid transparent}
 .vm-row.selected,.vm-card.selected{border-left-color:var(--primary)!important;background:rgba(59,130,246,.1)!important}
-.vm-focus-pane{overflow-y:visible;padding:20px;background:linear-gradient(180deg,rgba(15,23,42,.4),rgba(0,0,0,.15));min-height:0}
+.vm-focus-pane{overflow-y:visible;padding:20px;background:transparent;min-height:0}
 .vm-focus-empty{text-align:center;padding:48px 24px;color:var(--text-muted)}
 .vm-focus-empty h3{color:var(--text-bright);margin:0 0 8px;font-size:1.2rem}
 .zeus-glass{background:rgba(22,27,34,.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.35)}
@@ -2124,7 +2130,7 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 #ssh-popover.open{display:block}
 .zeus-ai-bar{
   position:fixed;left:0;right:0;z-index:155;
-  bottom:calc(4.5rem + env(safe-area-inset-bottom,0px));
+  bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
   padding:12px 20px 16px;background:rgba(12,16,24,.88);
   backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
   border-top:1px solid rgba(255,255,255,.08);
@@ -2921,7 +2927,7 @@ body.vmr-ticker-on .mac-dock{margin-bottom:28px}
   transition:border-color .15s,color .15s,background .15s;
 }
 .btn-spotlight:hover{border-color:rgba(59,130,246,.35);color:var(--primary);background:rgba(30,41,59,.75)}
-.cloudos-body-row{display:flex;align-items:stretch;min-height:calc(100vh - 56px)}
+.cloudos-body-row{display:flex;align-items:stretch;min-height:0}
 /* Top icon rail — frees the left column; labels appear on hover */
 @keyframes refresh-pulse{0%{color:var(--success)}100%{color:var(--text-muted)}}
 .refresh-pulse{animation:refresh-pulse 2.5s ease-out forwards}
@@ -2961,7 +2967,7 @@ body.vmr-ticker-on .mac-dock{margin-bottom:28px}
 .copilot-tool-chip{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;padding:3px 8px;border-radius:999px;background:rgba(59,130,246,.1);color:var(--primary);border:1px solid rgba(59,130,246,.15)}
 .copilot-tool-args{color:var(--text-dim);font-size:.68rem}
 .cloudos-main{flex:1;min-width:0;display:flex;flex-direction:column}
-body.mac-desktop-root .cloudos-main{padding-bottom:120px}
+body.mac-desktop-root .cloudos-main{padding-bottom:var(--bottom-safe-area,16px)}
 .app-store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:12px}
 .app-store-card{
   border-radius:14px;border:1px solid var(--border);
@@ -3008,30 +3014,29 @@ body.mac-desktop-root .cloudos-main{padding-bottom:120px}
   .cloudos-finder{position:relative;transform:none!important}
 }
 
-/* ── macOS 26 Tahoe shell — menubar + dock ── */
+/* ── Carbon shell — menubar + dock (ground from dashboard-carbon.css) ── */
 body.mac-desktop-root{
   font-family:var(--font-sans);
-  --glass-bg:rgba(20,22,28,.68);
-  --glass-bg-elevated:rgba(28,31,40,.82);
-  --glass-border:rgba(255,255,255,.08);
-  --glass-border-strong:rgba(255,255,255,.15);
-  --glass-blur:blur(24px) saturate(1.4);
-  --glass-radius:1rem;
+  --glass-bg:rgba(12,14,18,.72);
+  --glass-bg-elevated:rgba(25,29,37,.88);
+  --glass-border:rgba(255,255,255,.055);
+  --glass-border-strong:rgba(255,255,255,.10);
+  --glass-blur:blur(28px) saturate(1.2);
+  --glass-radius:10px;
 }
+/* Forge grain is owned by dashboard-carbon.css — do not paint aurora here */
 body.mac-desktop-root::before{
-  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(56,189,248,.06),transparent 55%),
-    radial-gradient(ellipse 60% 50% at 100% 100%,rgba(99,102,241,.05),transparent 50%);
+  /* reinforced by carbon / late shell; keep empty so inline does not win */
 }
-body.mac-desktop-root[data-wallpaper="tahoe"]::before{
-  background:
-    radial-gradient(ellipse 70% 55% at 20% 10%,rgba(148,163,184,.12),transparent 52%),
-    radial-gradient(ellipse 55% 45% at 85% 30%,rgba(56,189,248,.1),transparent 48%),
-    radial-gradient(ellipse 90% 70% at 50% 100%,rgba(15,23,42,.35),transparent 58%);
+body.mac-desktop-root[data-wallpaper="tahoe"]::before,
+body.mac-desktop-root[data-wallpaper="aurora"]::before,
+body.mac-desktop-root[data-wallpaper="midnight"]::before,
+body.mac-desktop-root[data-wallpaper="ocean"]::before{
+  /* wallpaper bloom retired under Carbon chassis */
 }
-body.mac-desktop-root{padding-bottom:calc(4.5rem + env(safe-area-inset-bottom,0px))}
+body.mac-desktop-root{padding-bottom:0}
 body.mac-desktop-root .container{padding:16px 14px}
-body.mac-desktop-root .cloudos-body-row{min-height:calc(100dvh - var(--cloudos-menubar-h, 40px))}
+body.mac-desktop-root .cloudos-body-row{min-height:0}
 @media(max-width:960px){
   body.mac-desktop-root .cloudos-finder{top:var(--cloudos-menubar-h, 40px)}
 }
@@ -3073,7 +3078,7 @@ body.mac-desktop-root .cloudos-body-row{min-height:calc(100dvh - var(--cloudos-m
 body[data-desktop-tier="normal"] .mac-desktop-tabs{display:none!important}
 body[data-desktop-tier="power"] .mac-desktop-tabs{display:none!important}
 body[data-desktop-tier="normal"] .topbar-location-wrap{display:none!important}
-body.mac-desktop-root[data-desktop-tier="normal"]{padding-bottom:72px}
+body.mac-desktop-root[data-desktop-tier="normal"]{padding-bottom:16px}
 body[data-desktop-tier="advanced"] .menubar-tier-advanced-only{display:flex}
 body:not([data-desktop-tier="advanced"]) .menubar-tier-advanced-only{display:none!important}
 body[data-desktop-tier="normal"] .menubar-tier-collapsible,
@@ -3241,19 +3246,18 @@ body[data-shell="orbit"]:not(.orbit-home) #orbit-panel-close{
   -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 10px 30px rgba(2,4,16,.5);transition:.15s}
 #orbit-panel-close:hover{border-color:var(--plasma,#5b8cff);transform:scale(1.08);box-shadow:0 0 24px var(--plasma-glow,rgba(91,140,255,.4))}
 .vm-workspace.mac-vm-workspace{
-  border-radius:var(--radius-liquid);border:1px solid var(--glass-border-strong);
-  background:rgba(12,18,32,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  border-radius:0;border:none;
+  background:transparent;box-shadow:none;
 }
 .vm-focus-pane.mac-inspector-pane{
-  background:linear-gradient(180deg,rgba(255,255,255,.04) 0%,rgba(12,18,32,.35) 48px);
-  border-left:1px solid var(--glass-border-strong);
+  background:transparent;
+  border-left:1px solid var(--hairline,var(--glass-border));
 }
 .mac-inspector-header{
   display:none;align-items:center;justify-content:space-between;gap:10px;
-  padding:10px 16px;border-bottom:1px solid var(--glass-border);
-  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
-  position:sticky;top:0;z-index:3;backdrop-filter:blur(12px);
+  padding:10px 16px;border-bottom:1px solid var(--hairline,var(--glass-border));
+  background:transparent;
+  position:sticky;top:0;z-index:3;
 }
 body.vm-focus-active .mac-inspector-header{display:flex}
 .mac-inspector-title{
@@ -3850,7 +3854,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 }
 @media(max-width:768px){
   .cloudos-mobile-bar{display:flex;align-items:center}
-  body.mac-desktop-root .cloudos-main{padding-bottom:calc(var(--bottom-safe-area, var(--vmr-dock-safe, 88px)) + 48px)}
+  /* shell-layout: dock overlays; no main padding subtraction */
 }
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
@@ -4173,10 +4177,7 @@ body.mac-desktop-root .mac-menubar.navbar{
 }
 .vmr-header-search::placeholder{color:var(--ink-3)}
 
-/* A4: Dock — compact PacketWolf-style fisheye dock, shown at bottom */
-body.mac-desktop-root,
-body.mac-desktop-root[data-desktop-tier],
-body.mac-desktop-root[data-desktop-tier="normal"]{padding-bottom:92px!important}
+/* A4: Dock overlays the shell (see shell-layout.css) — no root padding subtraction */
 body.vmr-ticker-on .mac-dock{display:none!important}
 
 /* A5: Flatten page content — no glass card */
@@ -4197,43 +4198,98 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 /* ── end Instrument Deck shell overrides ──────────────────────────────────── */
 
 /* ══════════════════════════════════════════════════════════════════════════
-   FLAT WEB CONTENT — "de-box" (owner: web-page UX)
-   Keep the aurora/glass AMBIENCE (background, glow, palette, parallax, orb) and
-   all nav (menubar / sidebar / dock) + status semantics. Strip the "box feel":
-   no per-page window frame, no fake title-bar traffic lights, and content
-   surfaces flatten to borderless sections separated by whitespace + hairlines.
-   One late, high-priority layer so it wins over the glass-deck !important rules.
+   CARBON CONTENT — milled plates (owner: Zeus OS Carbon)
+   Replaces flat de-box. Surfaces are .zs-plate: graphite + sheen + chamfer
+   + 12px radius. Paint lives in dashboard-carbon.css; this late block only
+   strips fake mac chrome and keeps page rhythm. Do NOT zero plate borders.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* 1 — flatten every content surface (strip box paint) */
+/* Tour / notice banners → plasma dim plate */
+.page .glass-banner,
+.page .veyron-cap-banner{
+  background:var(--zs-plasma-dim,rgba(127,119,221,.16))!important;
+  border:1px solid rgba(127,119,221,.22)!important;
+  border-radius:var(--zs-radius,12px)!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  color:var(--zs-ink-2,#9CA3B2)!important;
+}
 
-/* 1a — notice banners: flatten the box but keep a left accent so callouts read */
+/* Space-y children keep plate paint + gap (not hairline-only sections) */
+.page .space-y > .card,
+.page .space-y > .glass-card,
+.page .space-y > .chart-card,
+.page .space-y > .vmr-panel,
+.page .space-y > .vmr-surface-card{
+  margin-top:22px;
+  padding:24px 30px 28px!important;
+}
 
-/* 1b — inline-styled inner stat tiles (inspector / capsule / fleet cards).
-        !important is the one case that beats an inline style= border. */
+/* Card headers sit on the plate (eyebrow rhythm) */
+.page .card-header,
+.page .id-card-h{
+  background:transparent!important;
+  border-bottom:1px solid var(--zs-rule,var(--hairline))!important;
+}
 
-/* 2 — no hover-float on flattened sections */
-/* keep a faint tint on genuinely clickable items */
-
-/* 3 — drop box-edge adornments (accent bar / shimmer top-rule / tile bloom) */
-
-/* 4 — section separation: top-level groups become web sections
-        (top hairline + gutter-aligned); the first child stays flush */
-
-/* 5 — card headers become flat section headings (underline, no fill) */
-
-/* 6 — remove the fake macOS window title bar (traffic lights + frame) */
+/* Remove fake macOS window title bar (traffic lights + frame) */
 .mac-page-toolbar-traffic{ display:none!important; }
+.page .mac-page-toolbar,
+.mac-page-toolbar{
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  border:none!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
 .mac-page-toolbar-wrap::before{ display:none!important; }
 
-/* 7 — magazine/web page headers (not a card toolbar) */
+/* Page headers — command-deck title rhythm */
+.page .page-header{
+  align-items:flex-end;
+  gap:18px;
+  padding:8px 0 18px!important;
+  margin:0 0 8px;
+  border-bottom:1px solid var(--zs-rule,var(--hairline));
+  background:transparent!important;
+}
+.page .page-header h1{
+  font-family:var(--zs-face-display,var(--sans-deck),system-ui,sans-serif);
+  font-size:clamp(1.65rem, 2.2vw, 2.05rem);
+  font-weight:600;
+  letter-spacing:-.03em;
+  line-height:1.1;
+}
+.page .page-header p{
+  font-family:var(--zs-face-data,var(--mono-deck),monospace);
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  max-width:62ch;
+  margin-top:9px;
+  color:var(--zs-ink-3,var(--ink-3));
+}
+.page .page-header-right{
+  margin-left:auto;
+  padding:0;
+  border:none;
+  background:transparent;
+}
 
-/* 8 — full-bleed page shell gutters (no floating window frame) */body.mac-desktop-root .page.section-shell{
+/* Full-bleed page shell gutters */
+body.mac-desktop-root .page.section-shell{
   max-width:var(--vmr-canvas-max,1680px);
   width:100%;
   margin:0 auto;
-  padding:0 24px 48px;
-}body.mac-desktop-root .page.section-shell > .space-y.mac-page-window{
+  padding:0 24px 0;
+}
+body.mac-desktop-root .page.section-shell[data-shell-region="page"]{
+  max-width:none;
+  padding-left:0;
+  padding-right:0;
+}
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window{
   background:transparent!important;
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
@@ -4245,15 +4301,243 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   padding:12px 0 24px!important;
   overflow:visible!important;
 }
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window::before{display:none!important}
 
-/* 9 — restore containment for real interactive surfaces */
+/* Tables sit in channel, not glass */
+.page .table-wrap,
+.page .vmr-table-wrap{
+  background:var(--zs-channel,#060709)!important;
+  border:1px solid var(--zs-rule)!important;
+  border-bottom-color:var(--zs-rule-strong)!important;
+  border-radius:var(--zs-radius-sm,7px)!important;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.6)!important;
+}
+.page .table thead th{
+  background:transparent!important;
+  border-bottom:1px solid var(--zs-rule)!important;
+  font-family:var(--zs-face-data,monospace);
+  color:var(--zs-ink-3)!important;
+}
 
-/* 10 — forms that own a control surface keep a subtle wash + hairline */
+/* Overlays / drawers → forged plates */
+.modal-overlay .modal,
+.modal-overlay .zeus-glass,
+.mac-connect-sheet,
+.glass-modal,
+#spotlight-modal .spotlight-panel,
+#spotlight-modal .modal,
+.glass-confirm-panel,
+.glass-prompt-panel,
+.create-modal .modal,
+.ssh-popover,
+.mac-menu-panel,
+.launchpad-panel,
+.ask-zeus-drawer,
+.zeus-drawer{
+  background-color:var(--zs-forged,#191D25)!important;
+  background-image:var(--zs-sheen)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  border:1px solid var(--zs-rule)!important;
+  border-top-color:var(--zs-chamfer)!important;
+  border-radius:var(--zs-radius,12px)!important;
+  box-shadow:0 18px 48px rgba(0,0,0,.55)!important;
+}
+
+.modal .card,
+.mac-connect-sheet .card,
+form.card,
+.form-panel.card{
+  background-color:var(--zs-graphite)!important;
+  background-image:var(--zs-sheen)!important;
+  border:1px solid var(--zs-rule)!important;
+  border-top-color:var(--zs-chamfer)!important;
+  border-radius:var(--zs-radius)!important;
+  box-shadow:none!important;
+  padding:14px!important;
+}
+
+/* Shell layout contract — late include wins over any leftover inline rules */
+/*__SHELL_LAYOUT__*/
+
+/* Late Carbon ground — wins over any leftover aurora / liquid-glass body rules */
+html[data-theme='tahoe'] body.mac-desktop-root,
+html[data-theme='carbon'] body.mac-desktop-root,
+body.mac-desktop-root[data-shell-layout="root"] {
+  background: var(--zs-void, #07080A) !important;
+}
+html[data-theme='tahoe'] body.mac-desktop-root::before,
+html[data-theme='carbon'] body.mac-desktop-root::before,
+body.mac-desktop-root[data-shell-layout="root"]::before {
+  content: "" !important;
+  position: fixed !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  background-image: var(--zs-forge), var(--zs-grain) !important;
+  background-size: 480px 480px, 120px 120px !important;
+  opacity: 0.055 !important;
+  mix-blend-mode: overlay !important;
+  animation: none !important;
+}
+
+/* ── Fleet Command: fill + color ─────────────────────────────── */
+#page-vms[data-shell-region="page"].active,
+#page-nodes[data-shell-region="page"].active {
+  min-height: 0 !important;
+}
+#page-vms[data-shell-region="page"].active > [data-shell-region="page-stack"],
+#page-nodes[data-shell-region="page"].active > [data-shell-region="page-stack"] {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+#page-vms [data-shell-region="page-header"],
+#page-nodes [data-shell-region="page-header"] {
+  flex: 0 0 auto !important;
+  max-height: none;
+  overflow: visible;
+}
+#page-vms #vmr-fleet-metrics,
+#page-vms .vmr-fleet-kpis {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  width: 100%;
+  margin: 0 0 4px;
+}
+@media (max-width: 900px) {
+  #page-vms #vmr-fleet-metrics,
+  #page-vms .vmr-fleet-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+#page-vms #vmr-fleet-metrics .tahoe-stat-pill,
+#page-vms #vmr-fleet-metrics .glass-stat-pill,
+#page-vms .vmr-fleet-kpis .tahoe-stat-pill,
+#page-vms .vmr-fleet-kpis .glass-stat-pill {
+  width: auto !important;
+  min-width: 0 !important;
+  flex: none !important;
+}
+#page-vms [data-shell-region="split"],
+#page-nodes [data-shell-region="split"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  align-self: stretch !important;
+  overflow: hidden !important;
+  border: 1px solid var(--zs-rule) !important;
+  border-top-color: var(--zs-chamfer) !important;
+  border-radius: var(--zs-radius, 12px) !important;
+  background-color: var(--zs-graphite) !important;
+  background-image: var(--zs-sheen) !important;
+}
+#page-vms .vm-list-pane,
+#page-nodes .vm-list-pane {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border-right: 1px solid var(--zs-rule) !important;
+}
+#page-vms .vm-list-scroll,
+#page-vms #vm-full-list[data-shell-scroll],
+#page-nodes .vm-list-scroll {
+  flex: 1 1 auto !important;
+  min-height: 120px !important;
+  overflow-y: auto !important;
+}
+#page-vms .vmr-roster-headroom,
+#page-nodes .vmr-roster-headroom {
+  flex: 0 0 auto !important;
+}
+
+/* Colorful KPI plates */
+#page-vms .vmr-fleet-kpis .tahoe-stat-pill,
+#page-vms .vmr-fleet-kpis .glass-stat-pill {
+  background-color: var(--zs-forged) !important;
+  background-image: var(--zs-sheen) !important;
+  border: 1px solid var(--zs-rule) !important;
+  border-top-color: var(--zs-chamfer) !important;
+  border-left: 3px solid var(--zs-plasma) !important;
+  border-radius: var(--zs-radius-sm, 7px) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+#page-vms .vmr-fleet-kpis .ok {
+  border-left-color: #3DDC97 !important;
+  background: linear-gradient(135deg, rgba(61, 220, 151, 0.12), var(--zs-forged) 55%) !important;
+}
+#page-vms .vmr-fleet-kpis .ok .gsv { color: #3DDC97 !important; }
+#page-vms .vmr-fleet-kpis .warn {
+  border-left-color: var(--zs-amber) !important;
+  background: linear-gradient(135deg, var(--zs-amber-dim), var(--zs-forged) 55%) !important;
+}
+#page-vms .vmr-fleet-kpis .warn .gsv { color: var(--zs-amber) !important; }
+#page-vms .vmr-fleet-kpis .tahoe-stat-pill:nth-child(3),
+#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(3) {
+  border-left-color: #5B9FD4 !important;
+  background: linear-gradient(135deg, rgba(91, 159, 212, 0.14), var(--zs-forged) 55%) !important;
+}
+#page-vms .vmr-fleet-kpis .tahoe-stat-pill:nth-child(3) .gsv,
+#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(3) .gsv { color: #8EC5F2 !important; }
+#page-vms .vmr-fleet-kpis .tahoe-stat-pill:nth-child(4),
+#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(4) {
+  border-left-color: #C084FC !important;
+  background: linear-gradient(135deg, rgba(192, 132, 252, 0.14), var(--zs-forged) 55%) !important;
+}
+#page-vms .vmr-fleet-kpis .tahoe-stat-pill:nth-child(4) .gsv,
+#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(4) .gsv { color: #D8B4FE !important; }
+
+/* Hero + deviation bar color */
+#page-vms .vmr-devbar-verdict { color: #3DDC97; text-shadow: 0 0 24px rgba(61, 220, 151, 0.35); }
+#page-vms .vmr-devbar-verdict.dev { color: var(--zs-amber); text-shadow: 0 0 24px rgba(216, 145, 47, 0.4); }
+#page-vms .vmr-devbar-seg { background: #3DDC97; box-shadow: 0 0 10px -2px rgba(61, 220, 151, 0.55); }
+#page-vms .vmr-devbar-seg.warn { background: var(--zs-amber); box-shadow: 0 0 10px -2px var(--zs-amber); }
+#page-vms .vmr-devbar-seg.crit { background: var(--zs-ember); box-shadow: 0 0 10px -2px var(--zs-ember); }
+#page-vms .vmr-devbar-seg.off { background: var(--zs-idle); box-shadow: none; }
+
+/* Roster rows — status chroma on the milled edge */
+#page-vms .vmr-roster-row,
+#page-vms .vm-row {
+  border-bottom: 1px solid var(--zs-rule);
+  transition: background-color 140ms ease;
+}
+#page-vms .vmr-roster-row:hover,
+#page-vms .vm-row:hover {
+  background: linear-gradient(90deg, rgba(127, 119, 221, 0.1), transparent 48%) !important;
+}
+#page-vms .vmr-roster-tick {
+  box-shadow: 0 0 10px -1px currentColor;
+}
+#page-vms .vmr-roster-tick.ok,
+#page-vms .vmr-roster-tick.run { color: #3DDC97; background: #3DDC97; }
+#page-vms .vmr-roster-tick.warn { color: var(--zs-amber); background: var(--zs-amber); }
+#page-vms .vmr-roster-tick.crit { color: var(--zs-ember); background: var(--zs-ember); }
+
+#page-vms .vmr-roster-seg-btn.active {
+  color: var(--zs-ink) !important;
+  box-shadow: inset 0 -2px 0 var(--zs-plasma) !important;
+  background: var(--zs-plasma-dim) !important;
+}
+#page-vms .btn-create,
+#page-vms .glass-btn-primary {
+  background-color: var(--zs-plasma) !important;
+  color: #0A0B10 !important;
+  box-shadow: 0 1px 18px -4px var(--zs-plasma) !important;
+}
+
+#page-vms .vmr-freshness-label { color: var(--zs-ink-3); }
+#page-vms .vm-list-header,
+#page-vms .vmr-roster-head {
+  background: linear-gradient(180deg, rgba(127, 119, 221, 0.08), transparent) !important;
+  border-bottom: 1px solid var(--zs-rule) !important;
+}
 </style>
 </head>
-<body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto" data-shell="desktop">
+<body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto" data-shell="desktop" data-shell-layout="root" data-dock="visible" data-focus="off">
 <div id="vmr-ambient" class="vmr-ambient" aria-hidden="true"></div>
-<header class="navbar cloudos-topbar mac-menubar" role="banner">
+<header class="navbar cloudos-topbar mac-menubar" role="banner" data-shell-region="topbar">
   <div class="mac-menubar-left navbar-left">
     <div class="mac-menubar-menus">
       <div class="mac-menu-wrap">
@@ -4271,7 +4555,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
           <button type="button" class="mac-menu-item" role="menuitem" onclick="openDockEditor();closeMacMenus()">Customize Dock…</button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="openLaunchpad();closeMacMenus()">Launchpad (Templates)</button>
           <div class="mac-menu-sep"></div>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="tahoe" onclick="setDesktopWallpaper('tahoe')">Wallpaper: Tahoe</button>
+          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="tahoe" onclick="setDesktopWallpaper('tahoe')">Wallpaper: Carbon</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="aurora" onclick="setDesktopWallpaper('aurora')">Wallpaper: Aurora</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="midnight" onclick="setDesktopWallpaper('midnight')">Wallpaper: Midnight</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="ocean" onclick="setDesktopWallpaper('ocean')">Wallpaper: Ocean</button>
@@ -4440,7 +4724,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <button type="button" class="btn-spotlight" id="vmr-action-log-btn" onclick="toggleActionLog()" title="Session action log" style="position:relative" aria-label="Action log">◎<span id="vmr-action-log-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--caution);color:#000;border-radius:8px;font-size:.55rem;font-weight:700;min-width:14px;height:14px;line-height:14px;padding:0 3px;text-align:center"></span></button>
     <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select menubar-tier-collapsible" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
-      <option value="tahoe">Tahoe</option>
+      <option value="tahoe">Carbon</option>
       <option value="light">Light</option>
       <option value="auto">Auto · Day/Night</option>
     </select>
@@ -4478,23 +4762,23 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <span>Theme</span>
       <div class="theme-swatch-group-label">IronWolf</div>
       <div class="theme-swatch-grid" id="cc-theme-swatch-grid-macos" role="radiogroup" aria-label="IronWolf themes">
-        <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
+        <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Carbon</span></button>
         <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
-        <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Tahoe by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
+        <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Carbon by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
       </div>
       <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
-        <option value="tahoe">Tahoe</option><option value="light">Light</option><option value="auto">Auto · Day/Night</option>
+        <option value="tahoe">Carbon</option><option value="light">Light</option><option value="auto">Auto · Day/Night</option>
       </select>
     </div>
     <div class="mac-cc-row mac-cc-wallpaper-row" style="flex-direction:column;align-items:stretch;gap:8px">
       <span>Wallpaper</span>
       <div class="mac-cc-wallpaper-grid" id="cc-wallpaper-swatch-grid" role="radiogroup" aria-label="Desktop wallpaper">
-        <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-tahoe" data-wallpaper="tahoe" role="radio" title="Tahoe" onclick="setDesktopWallpaper('tahoe')" aria-label="Tahoe"></button>
+        <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-tahoe" data-wallpaper="tahoe" role="radio" title="Carbon" onclick="setDesktopWallpaper('tahoe')" aria-label="Carbon"></button>
         <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-aurora" data-wallpaper="aurora" role="radio" title="Aurora" onclick="setDesktopWallpaper('aurora')" aria-label="Aurora"></button>
         <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-midnight" data-wallpaper="midnight" role="radio" title="Midnight" onclick="setDesktopWallpaper('midnight')" aria-label="Midnight"></button>
         <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-ocean" data-wallpaper="ocean" role="radio" title="Ocean" onclick="setDesktopWallpaper('ocean')" aria-label="Ocean"></button>
       </div>
-      <select class="form-select sr-only" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)" aria-hidden="true" tabindex="-1"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option></select>
+      <select class="form-select sr-only" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)" aria-hidden="true" tabindex="-1"><option value="tahoe">Carbon</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option></select>
     </div>
     <div class="mac-cc-row"><span>Desktop</span><select class="form-select" id="cc-tier-select" onchange="setDesktopTier(this.value,true)"><option value="auto">Automatic</option><option value="normal">Normal</option><option value="power">Power user</option><option value="advanced">Advanced</option></select></div>
     <div class="mac-cc-row"><span>Shell</span><select class="form-select" id="cc-shell-select" onchange="setShell(this.value)"><option value="orbit">Orbit · Spatial</option><option value="desktop">Desktop · Classic</option></select></div>
@@ -4691,7 +4975,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 </div>
 
 <div class="cloudos-body-row">
-<div class="cloudos-main">
+<div class="cloudos-main" data-shell-region="main">
 
 <div class="mac-shortcuts-overlay" id="mac-shortcuts-overlay" role="dialog" aria-label="Keyboard shortcuts" hidden>
   <div class="mac-shortcuts-panel" onclick="event.stopPropagation()">
@@ -4902,7 +5186,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 
   <header class="iw-home-hero iw-cc-banner" id="iw-cc-banner">
     <div class="iw-home-hero-text">
-      <p class="iw-home-kicker"><span class="iw-cc-pulse"></span> <span id="iw-cc-kicker-text">Veyron · macOS Tahoe 26</span></p>
+      <p class="iw-home-kicker"><span class="iw-cc-pulse"></span> <span id="iw-cc-kicker-text">Veyron · Carbon</span></p>
       <h1 class="iw-home-title">Command Centre</h1>
       <p class="iw-home-desc" id="iw-home-desc">Liquid Glass ops bridge — posture, pulse, and only the signals that matter.</p>
       <p class="iw-cc-surprise-tip" id="iw-cc-surprise-tip" hidden></p>
@@ -5020,10 +5304,11 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 </div>
 
 <!-- VMS PAGE -->
-<div class="page section-shell" id="page-vms" data-section="compute">
-<div class="space-y animate-fade-in">
+<div class="page section-shell" id="page-vms" data-section="compute" data-shell-region="page">
+<div class="space-y animate-fade-in" data-shell-region="page-stack">
+  <div data-shell-region="page-header">
   <div id="vmr-fleet-hero"></div>
-  <div id="vmr-fleet-metrics"></div>
+  <div id="vmr-fleet-metrics" class="grid-4 page-glass-stats vmr-fleet-kpis"></div>
   <div id="vmr-ns-overview" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:2px 0 4px;scrollbar-width:none"></div>
   <div id="vmr-recent-strip" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0 6px;scrollbar-width:none"></div>
   <div class="vmr-fleet-toolbar vmr-roster-filter-row">
@@ -5047,20 +5332,22 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   </div>
   <div id="vm-search-node-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
-  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="vm-workspace">
+  </div>
+  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="vm-workspace" data-shell-region="split" data-rail="open">
     <div class="vm-list-pane">
       <span id="vms-freshness" class="vmr-freshness-label"></span>
       <div id="vmr-delta-strip" style="display:none"></div>
       <div id="vmr-fleet-briefing" style="display:none"></div>
       <div id="vmr-anomaly-ribbon" style="display:none"></div>
-      <div class="vm-list-scroll" id="vm-full-list"></div>
+      <div class="vm-list-scroll" id="vm-full-list" data-shell-scroll></div>
       <div id="vmr-roster-headroom" class="vmr-roster-headroom"></div>
     </div>
-    <div class="vm-focus-pane mac-inspector-pane vmr-roster-rail" id="vm-focus-pane">
-      <div class="mac-inspector-header" id="mac-inspector-header">
+    <aside class="vm-focus-pane mac-inspector-pane vmr-roster-rail" id="vm-focus-pane" data-shell-region="rail">
+      <div class="mac-inspector-header" id="mac-inspector-header" data-shell-region="rail-header">
         <span class="mac-inspector-title" id="vm-inspector-title">Inspector</span>
         <button type="button" class="mac-inspector-close" onclick="clearVmSelection()" aria-label="Close inspector">×</button>
       </div>
+      <div data-shell-region="rail-body">
       <button type="button" class="vm-focus-back mac-console-back" style="display:none;margin:12px 16px 0" onclick="clearVmSelection()"><span aria-hidden="true">‹</span> Fleet</button>
       <div class="vm-focus-empty" id="vm-focus-empty">
         <h3>Select a virtual machine</h3>
@@ -5072,7 +5359,8 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <div id="vm-focus-quick-picks" class="vm-focus-quick-picks" style="margin-top:20px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
       </div>
       <div id="vm-focus-content" style="display:none"></div>
-    </div>
+      </div>
+    </aside>
   </div>
 </div>
 </div>
@@ -5311,8 +5599,9 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 </div>
 
 <!-- NODES PAGE -->
-<div class="page section-shell" id="page-nodes" data-section="compute">
-<div class="space-y animate-fade-in">
+<div class="page section-shell" id="page-nodes" data-section="compute" data-shell-region="page">
+<div class="space-y animate-fade-in" data-shell-region="page-stack">
+  <div data-shell-region="page-header">
   <div id="vmr-nodes-hero"></div>
   <div id="node-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Node Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('node-advisor-card')">Dismiss</button></div>
@@ -5328,39 +5617,44 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('heatmap')">Heatmap</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNodesCsv()" title="Export node list as CSV">Export</button>
   </div>
-  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="node-workspace">
+  </div>
+  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="node-workspace" data-shell-region="split" data-rail="open">
     <div class="vm-list-pane">
       <div class="vmr-roster-head"><span></span><span>Instance</span><span>Roles</span><span>Capacity</span><span></span></div>
+      <div data-shell-scroll class="vm-list-scroll">
       <div id="node-list" class="vmr-roster-list"></div>
       <div id="vmr-nodes-headroom" class="vmr-roster-headroom"></div>
+      <div class="card glass-card" style="margin-top:16px;display:none" id="gpu-inventory-card">
+        <div class="card-header"><span class="card-title">GPU Inventory</span><span id="gpu-inventory-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchGpus()">&#8635;</button></div>
+        <table class="table"><thead><tr><th>Node</th><th>Resource</th><th>Kind</th><th>Allocatable</th><th>Capacity</th><th>Product</th></tr></thead><tbody id="gpu-inventory-body"></tbody></table>
+      </div>
+      <div class="card glass-card" style="margin-top:16px">
+        <div class="card-header"><span class="card-title">Platform Readiness</span><span id="platform-ready-badge" style="font-size:.8rem;padding:0 6px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchPlatformReadiness()">&#8635;</button></div>
+        <div id="platform-readiness-body" style="padding:12px 16px"><p style="color:var(--text-dim);font-size:.84rem">Loading…</p></div>
+      </div>
+      <div class="card glass-card" style="margin-top:16px">
+        <div class="card-header"><span class="card-title">Cluster Locations</span><span id="cluster-locations-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchClusterLocations()">&#8635;</button></div>
+        <table class="table"><thead><tr><th>Name</th><th>Region</th><th>Health</th><th>VMs</th><th>Nodes</th><th>Active</th></tr></thead><tbody id="cluster-locations-body"><tr><td colspan="6" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+      </div>
+      <div class="card glass-card" style="margin-top:16px" id="platform-ops-card">
+        <div class="card-header"><span class="card-title">Platform &amp; Capacity</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchPlatformOps()">&#8635;</button></div>
+        <div id="platform-ops-body" style="padding:12px 16px"><p style="color:var(--text-dim);font-size:.84rem">Loading…</p></div>
+      </div>
+      </div>
     </div>
-    <div class="vm-focus-pane mac-inspector-pane vmr-roster-rail" id="node-focus-pane">
-      <div class="mac-inspector-header">
+    <aside class="vm-focus-pane mac-inspector-pane vmr-roster-rail" id="node-focus-pane" data-shell-region="rail">
+      <div class="mac-inspector-header" data-shell-region="rail-header">
         <span class="mac-inspector-title">Inspector</span>
         <button type="button" class="mac-inspector-close" onclick="clearNodeSelection()" aria-label="Close inspector">×</button>
       </div>
+      <div data-shell-region="rail-body">
       <div class="vm-focus-empty" id="node-focus-empty">
         <h3>Select a node</h3>
         <p>Choose a node from the roster to inspect capacity, workloads, and cordon state.</p>
       </div>
       <div id="node-focus-content" style="display:none"></div>
-    </div>
-  </div>
-  <div class="card glass-card" style="margin-top:16px;display:none" id="gpu-inventory-card">
-    <div class="card-header"><span class="card-title">GPU Inventory</span><span id="gpu-inventory-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchGpus()">&#8635;</button></div>
-    <table class="table"><thead><tr><th>Node</th><th>Resource</th><th>Kind</th><th>Allocatable</th><th>Capacity</th><th>Product</th></tr></thead><tbody id="gpu-inventory-body"></tbody></table>
-  </div>
-  <div class="card glass-card" style="margin-top:16px">
-    <div class="card-header"><span class="card-title">Platform Readiness</span><span id="platform-ready-badge" style="font-size:.8rem;padding:0 6px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchPlatformReadiness()">&#8635;</button></div>
-    <div id="platform-readiness-body" style="padding:12px 16px"><p style="color:var(--text-dim);font-size:.84rem">Loading…</p></div>
-  </div>
-  <div class="card glass-card" style="margin-top:16px">
-    <div class="card-header"><span class="card-title">Cluster Locations</span><span id="cluster-locations-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchClusterLocations()">&#8635;</button></div>
-    <table class="table"><thead><tr><th>Name</th><th>Region</th><th>Health</th><th>VMs</th><th>Nodes</th><th>Active</th></tr></thead><tbody id="cluster-locations-body"><tr><td colspan="6" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
-  </div>
-  <div class="card glass-card" style="margin-top:16px" id="platform-ops-card">
-    <div class="card-header"><span class="card-title">Platform &amp; Capacity</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchPlatformOps()">&#8635;</button></div>
-    <div id="platform-ops-body" style="padding:12px 16px"><p style="color:var(--text-dim);font-size:.84rem">Loading…</p></div>
+      </div>
+    </aside>
   </div>
 </div>
 </div>
@@ -6765,6 +7059,28 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 .vmr-metric-value{font-family:var(--font-mono);font-size:1.6rem;font-weight:700;font-feature-settings:"tnum";letter-spacing:-.5px;color:var(--ink)}
 .vmr-metric-value.ok{color:var(--nominal)}
 .vmr-metric-value.warn{color:var(--caution)}
+/* Gallery Wall — Carbon plates (not flat de-box) */
+#page-gallery-wall .gw-bigring,
+#page-gallery-wall .gw-stat,
+#page-gallery-wall .gw-tile,
+#page-gallery-wall .gw-ibanner,
+#page-gallery-wall .gw-statebar{
+  background-color:var(--zs-graphite,#12151B)!important;
+  background-image:var(--zs-sheen)!important;
+  border:1px solid var(--zs-rule)!important;
+  border-top-color:var(--zs-chamfer)!important;
+  border-radius:var(--zs-radius,12px)!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+#page-gallery-wall .gw-tile:hover,
+#page-gallery-wall .gw-tile.gw-run:hover{
+  transform:none!important;
+  border-color:var(--zs-rule-strong)!important;
+  border-top-color:var(--zs-chamfer)!important;
+}
+#page-gallery-wall .gw-tile.gw-crit::before{display:none!important}
 </style>
 
 <div class="gw-wrap" id="gw-root">
@@ -7367,45 +7683,45 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <div style="width:100%;max-width:420px;position:relative;z-index:10">
         <div style="margin-bottom:32px">
           <h2 class="login-panel-title" style="color:#fff;margin:0 0 6px">Sign in</h2>
-          <p class="login-panel-sub" style="margin:0">Use your API key to continue</p>
+          <p class="login-panel-sub" style="margin:0" id="login-panel-sub">Sign in with your username and password</p>
         </div>
 
         <div class="login-glass login-glass-border">
           <!-- auth mode badge -->
           <div style="margin-bottom:20px">
-            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4)">
-              API Key
+            <span id="login-mode-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4)">
+              Username &amp; password
             </span>
           </div>
 
-          <!-- inline error (shown on bad key) -->
+          <!-- inline error (shown on bad credentials) -->
           <div id="apikey-error" role="alert" style="display:none;align-items:flex-start;gap:8px;background:var(--critical-bg);border:1px solid rgba(226,75,74,.4);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:.8rem;color:var(--critical);line-height:1.45">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span id="apikey-error-msg">Invalid API key — check and try again.</span>
+            <span id="apikey-error-msg">Invalid username or password.</span>
           </div>
 
           <!-- SSO section (shown when OIDC configured) -->
           <div id="oidc-login-section" style="display:none;margin-bottom:16px">
             <button type="button" class="login-btn-secondary" style="width:100%;text-align:center" onclick="startOidcLogin()">Sign in with SSO</button>
-            <div class="auth-divider">or use API key</div>
+            <div class="auth-divider">or sign in below</div>
           </div>
 
-          <!-- display name field (cosmetic only — not sent to the server, not verified) -->
-          <div style="margin-bottom:20px">
-            <label style="display:block;font-size:.875rem;font-weight:500;color:#cbd5e1;margin-bottom:8px" for="login-username-input">Your name</label>
+          <!-- username field -->
+          <div style="margin-bottom:20px" id="login-username-row">
+            <label style="display:block;font-size:.875rem;font-weight:500;color:#cbd5e1;margin-bottom:8px" for="login-username-input">Username</label>
             <div style="position:relative" class="group">
               <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <input type="text" class="login-input" id="login-username-input" placeholder="e.g. Jordan" autocomplete="name">
+              <input type="text" class="login-input" id="login-username-input" placeholder="e.g. jordan" autocomplete="username" autofocus>
             </div>
           </div>
 
-          <!-- API key field -->
+          <!-- password / API key field (relabeled per login-mode) -->
           <div style="margin-bottom:20px">
-            <label style="display:block;font-size:.875rem;font-weight:500;color:#cbd5e1;margin-bottom:8px" for="apikey-input">API key</label>
+            <label style="display:block;font-size:.875rem;font-weight:500;color:#cbd5e1;margin-bottom:8px" for="apikey-input" id="apikey-input-label">Password</label>
             <div style="position:relative" class="group">
               <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input type="password" class="login-input" id="apikey-input" placeholder="Enter your API key" autocomplete="off" autofocus>
-              <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide key" aria-label="Show/hide API key" style="right:14px;color:#64748b">&#128065;</button>
+              <input type="password" class="login-input" id="apikey-input" placeholder="Enter your password" autocomplete="current-password">
+              <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide" aria-label="Show/hide password" style="right:14px;color:#64748b">&#128065;</button>
             </div>
           </div>
 
@@ -7417,13 +7733,18 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 
           <!-- connect button -->
           <button type="button" class="login-btn-primary" onclick="submitApiKey()" style="margin-top:24px">
-            <span style="position:relative;z-index:1">Connect to Veyron</span>
+            <span style="position:relative;z-index:1" id="login-submit-label">Sign in</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="position:relative;z-index:1" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
+
+          <!-- login mode toggle -->
+          <p style="text-align:center;margin:16px 0 0">
+            <button type="button" id="login-mode-toggle" onclick="toggleLoginMode()" style="background:none;border:none;color:#94a3b8;font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0">Use an API key instead</button>
+          </p>
         </div>
 
         <!-- hint -->
-        <p style="font-size:.72rem;text-align:center;margin-top:14px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.6;color:#475569">
+        <p style="font-size:.72rem;text-align:center;margin-top:14px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.6;color:#475569" id="login-apikey-hint">
           Default key: <code style="font-family:monospace;color:#94a3b8;font-size:.72rem">Admin@321</code> — change after first sign-in.
         </p>
 
@@ -7431,7 +7752,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <div class="signin-theme-picker">
           <div class="signin-theme-label">Appearance</div>
           <div class="theme-swatch-grid signin-theme-grid" id="signin-theme-swatch-grid" role="radiogroup" aria-label="Theme">
-            <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
+            <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Carbon</span></button>
             <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
           </div>
         </div>
@@ -7692,7 +8013,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260801a';
+window.__VEYRON_DASH_REV = '20260802f';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
@@ -7736,10 +8057,10 @@ let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
 const THEME_KEY = 'veyron_theme';
-/* IronWolf appearance model — dark Tahoe + light only */
+/* Appearance model — dark Carbon (id tahoe) + light only */
 const THEME_PRESETS = [
-  { id: 'tahoe', label: 'Tahoe', category: 'ironwolf', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,rgb(8,12,22) 0%,rgb(30,58,95) 55%,rgb(100,160,220) 100%)' },
-  { id: 'light', label: 'Light', category: 'ironwolf', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#f7f8fa 0%,#dbeafe 50%,#2563eb 100%)' }
+  { id: 'tahoe', label: 'Carbon', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#07080A 0%,#12151B 45%,#7F77DD 100%)' },
+  { id: 'light', label: 'Light', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#f7f8fa 0%,#dbeafe 50%,#2563eb 100%)' }
 ];
 const VALID_THEMES = THEME_PRESETS.map(function(p) { return p.id; });
 const LEGACY_THEME_ALIASES = {
@@ -10123,6 +10444,40 @@ async function initAuth() {
   updateAuthSessionUI();
 }
 
+let loginMode = 'password'; // 'password' (username+password) | 'apikey' (raw key, for CI/automation)
+
+function applyLoginModeUI() {
+  const usernameRow = document.getElementById('login-username-row');
+  const pwLabel = document.getElementById('apikey-input-label');
+  const pwInput = document.getElementById('apikey-input');
+  const modeBadge = document.getElementById('login-mode-badge');
+  const subEl = document.getElementById('login-panel-sub');
+  const submitLabel = document.getElementById('login-submit-label');
+  const toggleBtn = document.getElementById('login-mode-toggle');
+  const hint = document.getElementById('login-apikey-hint');
+  const errEl = document.getElementById('apikey-error');
+  if (errEl) errEl.style.display = 'none';
+  const isApiKey = loginMode === 'apikey';
+  if (usernameRow) usernameRow.style.display = isApiKey ? 'none' : '';
+  if (pwLabel) pwLabel.textContent = isApiKey ? 'API key' : 'Password';
+  if (pwInput) {
+    pwInput.placeholder = isApiKey ? 'Enter your API key' : 'Enter your password';
+    pwInput.autocomplete = isApiKey ? 'off' : 'current-password';
+  }
+  if (modeBadge) modeBadge.textContent = isApiKey ? 'API key' : 'Username & password';
+  if (subEl) subEl.textContent = isApiKey ? 'Use your API key to continue' : 'Sign in with your username and password';
+  if (submitLabel) submitLabel.textContent = isApiKey ? 'Connect to Veyron' : 'Sign in';
+  if (toggleBtn) toggleBtn.textContent = isApiKey ? 'Use username and password instead' : 'Use an API key instead';
+  if (hint) hint.style.display = isApiKey ? '' : 'none';
+}
+
+function toggleLoginMode() {
+  loginMode = loginMode === 'password' ? 'apikey' : 'password';
+  applyLoginModeUI();
+  const focusId = loginMode === 'apikey' ? 'apikey-input' : 'login-username-input';
+  setTimeout(() => { const el = document.getElementById(focusId); if (el) el.focus(); }, 0);
+}
+
 function requireApiKey() {
   return new Promise(resolve => {
     const existing = getAuthCredential();
@@ -10130,17 +10485,72 @@ function requireApiKey() {
     loadOidcConfig();
     apiKeyResolve = resolve;
     document.getElementById('apikey-input').value = '';
+    const userInp = document.getElementById('login-username-input');
+    if (userInp) userInp.value = '';
+    loginMode = 'password';
+    applyLoginModeUI();
     document.getElementById('apikey-modal').classList.add('open');
     try {
       syncThemeSwatches(parseStoredTheme(localStorage.getItem(THEME_KEY)));
     } catch (e) {
       syncThemeSwatches('tahoe');
     }
-    setTimeout(() => document.getElementById('apikey-input').focus(), 100);
+    setTimeout(() => document.getElementById('login-username-input').focus(), 100);
   });
 }
 
 function submitApiKey() {
+  if (loginMode === 'apikey') { submitApiKeyRaw(); return; }
+  submitLogin();
+}
+
+function submitLogin() {
+  const userInp = document.getElementById('login-username-input');
+  const passInp = document.getElementById('apikey-input');
+  const errEl = document.getElementById('apikey-error');
+  const errMsg = document.getElementById('apikey-error-msg');
+  const btn = document.querySelector('#apikey-modal .login-btn-primary');
+  if (!userInp || !passInp) return;
+  const username = userInp.value.trim();
+  const password = passInp.value;
+  if (!username) { userInp.focus(); return; }
+  if (!password) { passInp.focus(); return; }
+  if (errEl) errEl.style.display = 'none';
+  sessionStorage.removeItem(OIDC_TOKEN_KEY);
+  const rememberEl = document.getElementById('apikey-remember');
+  const remember = rememberEl ? rememberEl.checked : false;
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+
+  fetch('/api/v1/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: username, password: password }),
+    signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined
+  })
+    .then(function(r) { return r.json().catch(function() { return {}; }).then(function(body) { return { ok: r.ok, body: body }; }); })
+    .then(function(res) {
+      if (!res.ok || !res.body || !res.body.token) {
+        if (errMsg) errMsg.textContent = (res.body && res.body.message) ? res.body.message : 'Invalid username or password.';
+        if (errEl) errEl.style.display = 'flex';
+        if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        passInp.select(); passInp.focus();
+        return;
+      }
+      localStorage.removeItem('veyron_display_name'); sessionStorage.removeItem('veyron_display_name');
+      if (res.body.display_name) {
+        if (remember) { localStorage.setItem('veyron_display_name', res.body.display_name); } else { sessionStorage.setItem('veyron_display_name', res.body.display_name); }
+      }
+      if (remember) { localStorage.setItem('veyron_api_key', res.body.token); } else { sessionStorage.setItem('veyron_api_key', res.body.token); localStorage.removeItem('veyron_api_key'); }
+      _applyKeyAccepted(res.body.token);
+    })
+    .catch(function() {
+      if (errMsg) errMsg.textContent = 'Could not reach the server — check your connection and try again.';
+      if (errEl) errEl.style.display = 'flex';
+      if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+    });
+}
+
+function submitApiKeyRaw() {
   const inp = document.getElementById('apikey-input');
   const errEl = document.getElementById('apikey-error');
   const errMsg = document.getElementById('apikey-error-msg');
@@ -10153,14 +10563,7 @@ function submitApiKey() {
   const rememberEl = document.getElementById('apikey-remember');
   const remember = rememberEl ? rememberEl.checked : false;
 
-  // Cosmetic display name — not validated, not sent anywhere; stored the same
-  // way as the key so it survives/expires alongside the session that set it.
-  const nameInp = document.getElementById('login-username-input');
-  const name = nameInp ? nameInp.value.trim() : '';
   localStorage.removeItem('veyron_display_name'); sessionStorage.removeItem('veyron_display_name');
-  if (name) {
-    if (remember) { localStorage.setItem('veyron_display_name', name); } else { sessionStorage.setItem('veyron_display_name', name); }
-  }
 
   // Store key then probe to validate before closing the modal
   if (remember) { localStorage.setItem('veyron_api_key', key); } else { sessionStorage.setItem('veyron_api_key', key); localStorage.removeItem('veyron_api_key'); }
@@ -17372,6 +17775,7 @@ async function fetchVMs(opts) {
       // running/total counts + a Forge VM button).
       const fleetMetrics = document.getElementById('vmr-fleet-metrics');
       if (fleetMetrics) {
+        fleetMetrics.className = 'grid-4 page-glass-stats vmr-fleet-kpis';
         fleetMetrics.innerHTML = renderGlassStatPills([
           { label: 'Running', value: running, cls: running > 0 ? ' ok' : '', onclick: "setVmStatusFilter(document.querySelector('[data-filter=\"Running\"]'),'Running')", title: 'Filter running VMs' },
           { label: 'Stopped', value: stopped, cls: stopped > 0 ? ' warn' : '', onclick: "setVmStatusFilter(document.querySelector('[data-filter=\"Stopped\"]'),'Stopped')", title: 'Filter stopped VMs' },
@@ -19548,6 +19952,9 @@ function syncVmSelectionUi() {
     el.classList.toggle('selected', match);
   });
   document.body.classList.toggle('vm-focus-active', !!selectedVmKey);
+  document.body.setAttribute('data-focus', selectedVmKey ? 'on' : 'off');
+  var split = document.getElementById('vm-workspace');
+  if (split) split.setAttribute('data-rail', 'open');
   const ws = document.getElementById('vm-workspace');
   if (ws) ws.classList.toggle('mac-inspector-open', !!selectedVmKey);
   const inspTitle = document.getElementById('vm-inspector-title');
@@ -27931,23 +28338,23 @@ function closeMacShortcuts() {
           <span>Theme</span>
           <div class="theme-swatch-group-label">IronWolf</div>
           <div class="theme-swatch-grid" id="pref-theme-swatch-grid-macos" role="radiogroup" aria-label="IronWolf themes">
-            <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
+            <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Carbon</span></button>
             <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
-            <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Tahoe by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
+            <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Carbon by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
           </div>
           <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
-            <option value="tahoe">Tahoe</option><option value="light">Light</option><option value="auto">Auto · Day/Night</option>
+            <option value="tahoe">Carbon</option><option value="light">Light</option><option value="auto">Auto · Day/Night</option>
           </select>
         </div>
         <div class="mac-cc-row mac-cc-wallpaper-row" style="flex-direction:column;align-items:stretch;gap:8px">
           <span>Wallpaper</span>
           <div class="mac-cc-wallpaper-grid" role="radiogroup" aria-label="Desktop wallpaper">
-            <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-tahoe" data-wallpaper="tahoe" role="radio" title="Tahoe" onclick="setDesktopWallpaper('tahoe')" aria-label="Tahoe"></button>
+            <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-tahoe" data-wallpaper="tahoe" role="radio" title="Carbon" onclick="setDesktopWallpaper('tahoe')" aria-label="Carbon"></button>
             <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-aurora" data-wallpaper="aurora" role="radio" title="Aurora" onclick="setDesktopWallpaper('aurora')" aria-label="Aurora"></button>
             <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-midnight" data-wallpaper="midnight" role="radio" title="Midnight" onclick="setDesktopWallpaper('midnight')" aria-label="Midnight"></button>
             <button type="button" class="mac-cc-wp-swatch mac-wallpaper-swatch-ocean" data-wallpaper="ocean" role="radio" title="Ocean" onclick="setDesktopWallpaper('ocean')" aria-label="Ocean"></button>
           </div>
-          <select class="form-select sr-only" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)" aria-hidden="true" tabindex="-1"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option></select>
+          <select class="form-select sr-only" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)" aria-hidden="true" tabindex="-1"><option value="tahoe">Carbon</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option></select>
         </div>
       </div>
       <div class="mac-pref-section">

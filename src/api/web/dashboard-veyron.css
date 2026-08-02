@@ -29,7 +29,7 @@
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --radius-liquid: 22px;
   --vmr-canvas-max: 1680px;
-  --floating-dock-height: 72px;
+  --floating-dock-height: 0px;
   --bottom-safe-area: calc(var(--floating-dock-height) + env(safe-area-inset-bottom, 0px) + 16px);
   --vmr-dock-safe: var(--bottom-safe-area);
   --cloudos-menubar-h: 40px;
@@ -55,7 +55,7 @@ body.mac-desktop-root .cloudos-main {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: var(--bottom-safe-area);
+  /* padding-bottom owned by shell-layout (dock overlays; no chrome subtraction) */
 }
 
 body.mac-desktop-root .container {
@@ -133,37 +133,27 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
   letter-spacing: 0.04em;
 }
 
-/* Page heroes */
+/* Page heroes — flat web section, not a floating card */
 .vmr-page-hero {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 20px 24px;
-  margin-bottom: 16px;
-  border-radius: 16px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 42%, transparent 100%),
-    linear-gradient(160deg, color-mix(in srgb, var(--pw-bg-deep, var(--bg-deep)) 78%, transparent) 0%, color-mix(in srgb, var(--pw-bg-deep, var(--bg-deep)) 92%, transparent) 100%);
-  border: 1px solid var(--glass-border, var(--line));
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  padding: 12px 0 18px;
+  margin-bottom: 8px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--hairline, var(--line));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   position: relative;
-  overflow: hidden;
-  box-shadow: inset 0 1px 0 var(--glass-highlight, rgba(255, 255, 255, 0.04)), 0 28px 56px -28px rgba(0, 0, 0, 0.14);
+  overflow: visible;
+  box-shadow: none;
 }
 
-.vmr-page-hero::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--pw-color-data, var(--cyan)), var(--pw-color-info, var(--blue)), var(--pw-color-ai, var(--violet)));
-  opacity: 0.88;
-}
+.vmr-page-hero::before { display: none; }
 
 .vmr-page-hero h1 {
   font-family: var(--font-display);
@@ -235,11 +225,11 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
 }
 
 .vmr-panel {
-  padding: 18px 20px;
-  border-radius: 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  padding: 18px 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .vmr-panel-title {
@@ -292,10 +282,11 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
   gap: 10px;
   align-items: center;
   margin-bottom: 16px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  padding: 12px 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--hairline, var(--line));
 }
 
 .vmr-view-switch {
@@ -361,13 +352,12 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
 .vmr-roster-seg-btn.active { color: var(--ink); background: var(--panel-hi); box-shadow: inset 0 -2px 0 var(--plasma); }
 
 .vmr-roster-body {
+  /* Height/overflow owned by [data-shell-region="split"] in shell-layout.css */
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
   gap: 0;
-  min-height: min(72vh, 720px);
-  border: 1px solid var(--hairline);
-  border-radius: 14px;
-  overflow: hidden;
+  border: none;
+  border-radius: 0;
 }
 @media (max-width: 1000px) {
   .vmr-roster-body { grid-template-columns: 1fr; }
@@ -416,9 +406,10 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
 /* Headroom — unprovisioned capacity, from /api/v1/capacity/headroom */
 .vmr-roster-headroom {
   margin: 14px 0 0;
-  padding: 16px;
-  border: 1px dashed var(--hairline-hi);
-  border-radius: 10px;
+  padding: 16px 0;
+  border: none;
+  border-top: 1px dashed var(--hairline-hi);
+  border-radius: 0;
 }
 .vmr-roster-headroom-h {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
@@ -487,7 +478,12 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
 @media (max-width: 1300px) { .vmr-roster-actions { opacity: 1; } }
 
 /* Rail — always-visible detail panel, replaces the tabbed accordion */
-.vmr-roster-rail { display: flex; flex-direction: column; }
+.vmr-roster-rail {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--hairline);
+  background: transparent;
+}
 .vmr-rail-h { padding: 16px 18px 14px; border-bottom: 1px solid var(--hairline); }
 .vmr-rail-name { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: 6px; word-break: break-all; }
 .vmr-rail-meta { display: flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: .7rem; color: var(--ink-3); }
@@ -502,29 +498,26 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
 .vmr-rail-dash { color: var(--ink-3); }
 
 .vmr-fleet-card {
-  padding: 18px 20px;
-  border-radius: 14px;
-  background: linear-gradient(165deg, var(--panel-strong) 0%, rgba(15, 23, 42, 0.35) 100%);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--green);
-  transition: border-color 0.15s, transform 0.15s, box-shadow 0.2s;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+  padding: 18px 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--hairline, var(--line));
+  border-left: 3px solid var(--nominal, var(--green));
+  padding-left: 14px;
+  transition: background 0.15s;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
-.vmr-fleet-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 100% 0%, rgba(50, 224, 176, 0.06), transparent 55%);
-  pointer-events: none;
-}
+.vmr-fleet-card::after { display: none; }
 
 .vmr-fleet-card:not(.stopped):not(.issue):hover {
-  box-shadow: 0 8px 28px rgba(50, 224, 176, 0.12), 0 4px 16px rgba(0, 0, 0, 0.14);
+  box-shadow: none;
+  background: color-mix(in srgb, var(--plasma, #64a0dc) 6%, transparent);
 }
 
 .vmr-fleet-card.stopped { border-left-color: var(--muted); }
@@ -1430,11 +1423,12 @@ body.veyron-shell .cloudos-main {
   display: grid;
   grid-template-columns: minmax(260px, 300px) 1fr;
   gap: 14px;
-  min-height: min(560px, calc(100dvh - 240px));
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 body.mac-desktop-root #page-console-hub.active .vmr-console-hub-layout {
-  min-height: calc(100dvh - 220px);
+  min-height: 0;
 }
 
 .vmr-console-sidebar {
@@ -1865,7 +1859,7 @@ body.mac-desktop-root #page-console-hub.active .vmr-console-hub-layout {
 
 .veyron-forge-wizard {
   width: min(920px, 96vw);
-  max-height: min(92dvh, calc(100dvh - var(--cloudos-menubar-h, 40px) - 24px));
+  max-height: min(92dvh, 900px);
   margin: auto;
   display: flex;
   flex-direction: column;
@@ -2228,13 +2222,13 @@ body.mac-desktop-root .vmr-capsule-hero[data-vm-status="pending"]::after { backg
 .veyron-shell .mac-inspector-pane {
   width: min(480px, 92vw);
   min-width: 260px;
-  background: rgba(10,15,26,.97);
+  background: transparent;
   border-left: 1px solid var(--line);
   display: flex;
   flex-direction: column;
 }
 .veyron-shell .mac-inspector-header {
-  background: rgba(18,24,36,.9);
+  background: transparent;
   border-bottom: 1px solid var(--line);
   padding: 10px 14px;
   flex-shrink: 0;
@@ -3003,22 +2997,25 @@ body.mac-desktop-root .mac-page-window > * + * {
   margin-top: 0;
 }
 
+/* Surface cards are flattened by FLAT WEB CONTENT in dashboard.html —
+   keep only spacing/transition here so we don't re-box page content. */
 body.mac-desktop-root .vmr-surface-card,
 body.mac-desktop-root .mac-page-window > .card,
 body.mac-desktop-root .mac-page-window .glass-card:not(.vmr-panel) {
-  border-radius: 16px;
-  background: var(--glass-bg, linear-gradient(165deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)));
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
-  box-shadow: var(--glass-shadow, 0 8px 28px rgba(0, 0, 0, 0.14)), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: var(--glass-blur, blur(20px));
-  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
-  transition: border-color 0.15s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: background 0.15s ease;
 }
 
 body.mac-desktop-root .vmr-surface-card:hover,
 body.mac-desktop-root .mac-page-window > .card:hover {
-  border-color: var(--pw-accent-border, color-mix(in srgb, var(--pw-color-data, var(--blue)) 18%, transparent));
-  box-shadow: var(--glass-shadow-elevated, 0 12px 32px rgba(0, 0, 0, 0.18)), 0 0 24px var(--pw-accent-glow, transparent);
+  border-color: transparent;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--plasma, #64a0dc) 6%, transparent);
 }
 
 body.mac-desktop-root .vmr-legacy-page-header {
@@ -3636,7 +3633,7 @@ body.mac-desktop-root .card-title {
   color: var(--muted);
 }html[data-theme="light"] body.mac-desktop-root .vmr-surface-card,
 html[data-theme="light"] body.mac-desktop-root .mac-page-window > .card{
-  background: rgba(255, 255, 255, 0.88);
+  background: transparent;
 }
 
 /* ── PacketWolf-style navigation sidebar ── */

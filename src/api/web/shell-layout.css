@@ -1,0 +1,254 @@
+/* ============================================================
+   ZEUS OS — SHELL LAYOUT
+   Viewport ownership and scroll containment for every page.
+
+   Load once, after tokens (carbon/themes) and before components.
+   Pages do not redefine height, overflow, or min-height on
+   any element carrying [data-shell-region].
+
+   The law: exactly one element owns the viewport. Everything
+   below it either fills or scrolls. Nothing subtracts pixels.
+
+   Root: body.mac-desktop-root / [data-shell-layout="root"]
+   (body[data-shell] remains orbit/desktop mode — do not reuse it.)
+   ============================================================ */
+
+html {
+  height: 100%;
+  margin: 0;
+}
+
+body.mac-desktop-root,
+[data-shell-layout="root"] {
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: none;
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+  background: var(--zs-bg, var(--void, #07080A));
+}
+
+@supports not (height: 100dvh) {
+  body.mac-desktop-root,
+  [data-shell-layout="root"] {
+    height: 100vh;
+  }
+}
+
+body.mac-desktop-root > #vmr-ambient,
+body.mac-desktop-root > .mac-dock,
+body.mac-desktop-root > #cloudos-dock {
+  flex: none;
+}
+
+[data-shell-region="topbar"],
+[data-shell-region="dock"],
+[data-shell-region="statusbar"],
+body.mac-desktop-root > .mac-menubar.navbar,
+body.mac-desktop-root > header.navbar {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+body.mac-desktop-root > .cloudos-body-row,
+[data-shell-layout="root"] > .cloudos-body-row {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  min-width: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+[data-shell-region="main"],
+body.mac-desktop-root .cloudos-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: 0;
+}
+
+body.mac-desktop-root .cloudos-main > .container {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--vmr-canvas-max, 1680px);
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+  padding-bottom: 0;
+}
+
+[data-shell-region="main"]:has([data-shell-region="page"].active),
+body.mac-desktop-root .cloudos-main:has([data-shell-region="page"].active) {
+  overflow: hidden;
+}
+
+[data-shell-region="page"].active,
+.page.active[data-shell-region="page"] {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  max-width: none;
+  width: 100%;
+}
+
+[data-shell-region="page"].active > .space-y,
+[data-shell-region="page"].active > [data-shell-region="page-stack"] {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  gap: 12px;
+}
+
+[data-shell-region="page"].active > .space-y > * + *,
+[data-shell-region="page"].active > [data-shell-region="page-stack"] > * + * {
+  margin-top: 0;
+}
+
+[data-shell-region="page-header"] {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+[data-shell-scroll] {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-block-end: var(--zs-scroll-tail, 24px);
+  scroll-padding-block-end: var(--zs-scroll-tail, 24px);
+}
+
+[data-shell-scroll="both"] { overflow-x: auto; }
+[data-shell-scroll="none"] { overflow: hidden; }
+
+[data-shell-region="split"] {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--zs-rail-w, 420px);
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+  align-self: stretch;
+  border-block: 1px solid var(--zs-rule, var(--hairline, rgba(255, 255, 255, 0.055)));
+}
+
+/* List/rail panes must shrink so [data-shell-scroll] can scroll */
+[data-shell-region="split"] > .vm-list-pane,
+[data-shell-region="split"] > [data-shell-region="rail"],
+[data-shell-region="split"] > aside {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-shell-region="split"][data-rail="closed"] {
+  grid-template-columns: minmax(0, 1fr) 0;
+}
+
+[data-shell-region="split"][data-rail="closed"] > [data-shell-region="rail"] {
+  display: none;
+}
+
+[data-shell-region="split"] > * {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-shell-region="rail"] {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-inline-start: 1px solid var(--zs-rule, var(--hairline, rgba(255, 255, 255, 0.08)));
+}
+
+[data-shell-region="rail-header"] { flex: 0 0 auto; }
+
+[data-shell-region="rail-body"] {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-block-end: var(--zs-scroll-tail, 24px);
+}
+
+[data-shell-region="rail-footer"] {
+  flex: 0 0 auto;
+  border-block-start: 1px solid var(--zs-rule, var(--hairline, rgba(255, 255, 255, 0.08)));
+}
+
+@media (max-width: 1024px) {
+  [data-shell-region="split"],
+  [data-shell-region="split"][data-rail="closed"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-shell-region="rail"] {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: min(420px, 92vw);
+    z-index: 40;
+    background: var(--zs-carbon, var(--panel, #0C0E12));
+    transform: translateX(100%);
+    transition: transform 180ms ease;
+  }
+
+  [data-shell-region="split"][data-rail="open"] { position: relative; }
+  [data-shell-region="split"][data-rail="open"] [data-shell-region="rail"] {
+    transform: translateX(0);
+  }
+
+  [data-shell-region="split"] > *:not([data-shell-region="rail"]) {
+    overflow: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-shell-region="rail"] { transition: none; }
+}
+
+[data-shell-layout="root"][data-dock="visible"],
+body.mac-desktop-root[data-dock="visible"] {
+  --zs-scroll-tail: calc(var(--zs-dock-h, 56px) + 24px);
+}
+
+[data-shell-layout="root"][data-dock="hidden"],
+body.mac-desktop-root[data-dock="hidden"],
+body.mac-desktop-root[data-focus="on"],
+body.mac-desktop-root.vmr-ticker-on {
+  --zs-scroll-tail: 24px;
+}
+
+[data-shell-region] > * { min-width: 0; }
+[data-shell-scroll] :where(pre, code, table) { max-width: 100%; }

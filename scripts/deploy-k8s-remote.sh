@@ -63,6 +63,9 @@ HOST="${1:?Usage: $0 <host> [user]   (see --help)}"
 USER="${2:-root}"
 REMOTE_DIR="/home/${USER}/veyron"
 API_KEY="${VEYRON_API_KEY:-Admin@321}"
+JWT_SECRET="${VEYRON_JWT_SECRET:-veyron-dev-jwt-secret-change-me}"
+JWT_ISSUER="${VEYRON_JWT_ISSUER:-veyron}"
+ADMIN_PASSWORD="${VEYRON_BOOTSTRAP_ADMIN_PASSWORD:-${API_KEY}}"
 NODE_PORT="${VEYRON_NODE_PORT:-30151}"
 NS="${VEYRON_NAMESPACE:-veyron-system}"
 # shellcheck source=./cluster/versions.env
@@ -146,6 +149,7 @@ echo "  ${COLOR_DIM}Import:${COLOR_RESET}     ${IMPORT_CMD}"
 echo "  ${COLOR_DIM}Namespace:${COLOR_RESET}  ${NS}"
 echo "  ${COLOR_DIM}NodePort:${COLOR_RESET}   ${NODE_PORT} → pod :5151 (TLS)"
 echo "  ${COLOR_DIM}API key:${COLOR_RESET}    ${API_KEY}"
+echo "  ${COLOR_DIM}Dashboard:${COLOR_RESET}  admin / ${ADMIN_PASSWORD:-${API_KEY}}"
 echo ""
 
 # ── Step 1: Rsync ──
@@ -390,6 +394,9 @@ metadata:
 type: Opaque
 stringData:
   api-key: "${API_KEY}"
+  jwt-secret: "${JWT_SECRET}"
+  jwt-issuer: "${JWT_ISSUER}"
+  admin-password: "${ADMIN_PASSWORD}"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -446,6 +453,27 @@ spec:
                 secretKeyRef:
                   name: veyron-api-key
                   key: api-key
+            - name: VEYRON_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: veyron-api-key
+                  key: jwt-secret
+            - name: VEYRON_JWT_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: veyron-api-key
+                  key: jwt-issuer
+            - name: VEYRON_BOOTSTRAP_ADMIN_USER
+              value: 'admin'
+            - name: VEYRON_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: veyron-api-key
+                  key: admin-password
+            - name: VEYRON_BOOTSTRAP_ADMIN_SYNC
+              value: '1'
+            - name: VEYRON_NAMESPACE
+              value: '${NS}'
             - name: RUST_LOG
               value: info
             - name: VEYRON_API_NODE_HOST
@@ -559,6 +587,7 @@ echo "    Health:     https://${HOST}:${DISPLAY_NODE_PORT}/api/v1/health"
 echo ""
 echo "  ${COLOR_DIM}TLS:${COLOR_RESET} self-signed init-container cert (browser warning) unless you mount a Secret at /certs."
 echo "  ${COLOR_DIM}API key:${COLOR_RESET} ${API_KEY}"
+echo "  ${COLOR_DIM}Dashboard login:${COLOR_RESET} admin / ${ADMIN_PASSWORD:-${API_KEY}}"
 echo ""
 echo "  ${COLOR_DIM}kubectl (on remote):${COLOR_RESET}"
 echo "    ${K} -n ${NS} logs deployment/veyron-api -f"

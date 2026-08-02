@@ -30,6 +30,14 @@ fn role_rank(role: &ApiRole) -> u8 {
 
 /// Minimum role required for a route. Safe methods always require ReadOnly.
 pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
+    // User-account management (list/create/delete/reset password) is Admin-only
+    // even for GET — usernames+roles are sensitive and this must NOT fall
+    // through to the blanket "safe methods are ReadOnly" rule below.
+    // `/api/v1/auth/login` itself is unauthenticated (see dashboard_paths) and
+    // never reaches this check.
+    if path.starts_with("/api/v1/auth/users") || path.starts_with("/api/v1/veyron/auth/users") {
+        return ApiRole::Admin;
+    }
     if matches!(method, &Method::GET | &Method::HEAD | &Method::OPTIONS) {
         return ApiRole::ReadOnly;
     }
@@ -172,6 +180,26 @@ mod tests {
     fn admin_required_for_tenant_create() {
         assert_eq!(
             min_role_for_route(&Method::POST, "/api/v1/tenants"),
+            ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn admin_required_for_user_management_including_get() {
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/auth/users"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/auth/users"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::DELETE, "/api/v1/auth/users/alice"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/auth/users"),
             ApiRole::Admin
         );
     }

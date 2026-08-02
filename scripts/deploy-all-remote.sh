@@ -468,10 +468,16 @@ deploy_ssh "${REMOTE}" "
     done
 " 2>&1
 
-# Create API key secret
+# Create API key + JWT + bootstrap admin password (dashboard login: admin / Admin@321)
+JWT_SECRET="${VEYRON_JWT_SECRET:-veyron-dev-jwt-secret-change-me}"
+JWT_ISSUER="${VEYRON_JWT_ISSUER:-veyron}"
+ADMIN_PASSWORD="${VEYRON_BOOTSTRAP_ADMIN_PASSWORD:-${API_KEY}}"
 deploy_ssh "${REMOTE}" "
     ${K8S_CMD} -n ${NAMESPACE} create secret generic veyron-api-key \
-        --from-literal=api-key='${API_KEY}'
+        --from-literal=api-key='${API_KEY}' \
+        --from-literal=jwt-secret='${JWT_SECRET}' \
+        --from-literal=jwt-issuer='${JWT_ISSUER}' \
+        --from-literal=admin-password='${ADMIN_PASSWORD}'
 " 2>&1
 
 # Apply Veyron API deployment

@@ -166,6 +166,7 @@ deploy_complete() {
 
     pkg_box_begin "Credentials & ops"
     pkg_box_line "API key: ${api_key}" "${PKG_C_YELLOW}"
+    pkg_box_line "Dashboard login: admin / ${api_key}" "${PKG_C_YELLOW}"
     pkg_box_line "Total time: $(deploy_format_duration "${total}")" "${PKG_C_DIM}"
     pkg_box_line "Container listens on :5151 · use NodePort ${node_port} externally" "${PKG_C_DIM}"
     pkg_box_end
