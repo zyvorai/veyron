@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260802q">
+<meta name="veyron-dashboard-rev" content="20260802s">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260802q';
+  var DASH_REV = '20260802s';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -8166,12 +8166,37 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 </div>
 
 <div class="footer-bar vmr-footer-bar" hidden aria-hidden="true"></div>
+
+<!-- TENANTS PAGE -->
+<div class="page section-shell" id="page-tenants" data-section="platform">
+<div class="space-y animate-fade-in">
+  <div class="page-header">
+    <div><h1>Tenants</h1><p>Multi-tenant workspace management — namespaces, quotas, and billing tags</p></div>
+    <div class="page-header-right" style="display:flex;gap:8px">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTenants()">&#8635; Refresh</button>
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="createTenantDialog()">+ New Tenant</button>
+    </div>
+  </div>
+  <div id="tenants-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card">
+    <div class="card-header">
+      <span class="card-title">Tenants</span>
+      <span id="tenants-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
+      <input type="search" id="tenants-search" class="form-input" placeholder="Filter tenants…" oninput="filterTenantsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto">
+    </div>
+    <table class="table">
+      <thead><tr><th>ID</th><th>Name</th><th>Owner</th><th>Status</th><th>Namespaces</th><th>CPU Quota</th><th>Memory</th><th>Max VMs</th><th>Billing Tags</th><th>Created</th><th></th></tr></thead>
+      <tbody id="tenants-body"><tr><td colspan="11" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+</div>
 </div>
 </div>
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260802q';
+window.__VEYRON_DASH_REV = '20260802s';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
@@ -16883,12 +16908,6 @@ let _reactorInitToken = 0;
 async function initReactorCore() {
   const canvas = document.getElementById('reactor-canvas'), wrap = document.getElementById('reactor-wrap');
   if (!canvas || !wrap) return;
-  // Optional status endpoint — soft-miss so a 404 never surfaces as a broken empty state.
-  if (typeof apiJsonOptional === 'function') {
-    apiJsonOptional('/api/v1/reactor/status').then(function(st) {
-      if (st && typeof st === 'object') window._reactorApiStatus = st;
-    }).catch(function() {});
-  }
   stopReactorCore();
   _reactorState = _reactorBuild();
   // Generation token: rapid page-switch navigation can overlap two async
@@ -28694,31 +28713,6 @@ function closeMacShortcuts() {
       <button type="button" class="glass-btn-primary" onclick="dockEditorSave()">Save</button>
     </div>
   </div>
-</div>
-
-<!-- TENANTS PAGE -->
-<div class="page section-shell" id="page-tenants" data-section="platform">
-<div class="space-y animate-fade-in">
-  <div class="page-header">
-    <div><h1>Tenants</h1><p>Multi-tenant workspace management — namespaces, quotas, and billing tags</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTenants()">&#8635; Refresh</button>
-      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="createTenantDialog()">+ New Tenant</button>
-    </div>
-  </div>
-  <div id="tenants-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card">
-    <div class="card-header">
-      <span class="card-title">Tenants</span>
-      <span id="tenants-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
-      <input type="search" id="tenants-search" class="form-input" placeholder="Filter tenants…" oninput="filterTenantsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto">
-    </div>
-    <table class="table">
-      <thead><tr><th>ID</th><th>Name</th><th>Owner</th><th>Status</th><th>Namespaces</th><th>CPU Quota</th><th>Memory</th><th>Max VMs</th><th>Billing Tags</th><th>Created</th><th></th></tr></thead>
-      <tbody id="tenants-body"><tr><td colspan="11" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody>
-    </table>
-  </div>
-</div>
 </div>
 
 <script>
