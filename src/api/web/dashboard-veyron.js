@@ -3055,8 +3055,9 @@
 
   function settingsThemeSwatchGrid() {
     var themes = [
-      { id: 'tahoe', label: 'Tahoe', cls: 'tahoe' },
-      { id: 'light', label: 'Light', cls: 'light' }
+      { id: 'tahoe', label: 'Carbon', cls: 'tahoe' },
+      { id: 'light', label: 'Light', cls: 'light' },
+      { id: 'holo', label: 'Zeus', cls: 'holo' }
     ];
     return '<div class="theme-swatch-grid vmr-settings-theme-grid" role="radiogroup" aria-label="Theme">' +
       themes.map(function(t) {

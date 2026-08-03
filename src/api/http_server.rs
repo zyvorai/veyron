@@ -1231,7 +1231,7 @@ pub mod web {
             .replace(
                 "/*__VMR_CSS__*/",
                 concat!(
-                    /* tokens → carbon → deck components → shell → veyron → login */
+                    /* tokens → carbon → deck components → shell → sidebar → veyron → login → holo */
                     include_str!("web/dashboard-ironwolf-themes.css"),
                     "\n",
                     include_str!("web/dashboard-carbon.css"),
@@ -1240,9 +1240,13 @@ pub mod web {
                     "\n",
                     include_str!("web/shell-layout.css"),
                     "\n",
+                    include_str!("web/dashboard-sidebar.css"),
+                    "\n",
                     include_str!("web/dashboard-veyron.css"),
                     "\n",
-                    include_str!("web/dashboard-ironwolf-login.css")
+                    include_str!("web/dashboard-ironwolf-login.css"),
+                    "\n",
+                    include_str!("web/dashboard-holo.css")
                 ),
             )
             .replace(
@@ -1250,6 +1254,8 @@ pub mod web {
                 /* Late: shell law + carbon plates beat leftover inline / veyron rules */
                 concat!(
                     include_str!("web/shell-layout.css"),
+                    "\n",
+                    include_str!("web/dashboard-sidebar.css"),
                     "\n",
                     include_str!("web/dashboard-carbon.css"),
                     "\n",
