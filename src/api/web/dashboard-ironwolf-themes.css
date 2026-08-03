@@ -568,18 +568,18 @@ body:has(#apikey-modal.open) #cloudos-dock {
    ════════════════════════════════════════════════════════════════════════ */body.mac-desktop-root #cloudos-dock,
 body.mac-desktop-root .mac-dock,
 body.mac-desktop-root #cloudos-dock.mac-dock,
-body.mac-desktop-root #mac-menubar-sidebar-btn,
-body.mac-desktop-root .mac-menubar-sidebar-btn,
 body.mac-desktop-root .mac-quick-nav,
 body.mac-desktop-root #cloudos-browse-rail,
 body.mac-desktop-root .cloudos-browse-rail,
 body.mac-desktop-root #mac-desktop-tabs,
 body.mac-desktop-root .mac-desktop-tabs,
 body.mac-desktop-root .tahoe-context-bar-wrap,
-body.mac-desktop-root #tahoe-context-bar,
-body.mac-desktop-root[data-desktop-tier="power"] #mac-menubar-sidebar-btn{
+body.mac-desktop-root #tahoe-context-bar{
   display: none !important;
 }
+/* #mac-menubar-sidebar-btn deliberately excluded from the block above — it's
+   the reopen affordance for the revived left nav sidebar (dashboard-sidebar.css),
+   not the old dead side menu this rule was written to suppress. */
 body.mac-desktop-root {
   --veyron-chrome-stack-h: var(--veyron-menubar-h, 2.75rem) !important;
   padding-top: var(--veyron-menubar-h, 2.75rem) !important;

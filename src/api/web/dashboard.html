@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260802f">
+<meta name="veyron-dashboard-rev" content="20260802q">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
@@ -13,15 +13,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260802f';
+  var DASH_REV = '20260802q';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
     return;
   }
-  /* Default dark = Carbon (stored as tahoe). Light remains light. */
+  /* Default dark = Carbon (stored as tahoe). Light remains light. Zeus (holo)
+     is a 3rd explicit choice — must be recognized here or it flashes back to
+     Carbon on every boot before hydration re-applies it. */
   function parseStoredThemeEarly(raw) {
     if (raw === 'light' || raw === 'tahoe-light' || raw === 'daylight' || raw === 'frost') return 'light';
+    if (raw === 'holo') return 'holo';
     return 'tahoe';
   }
   try {
@@ -4568,6 +4571,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
           <button type="button" class="mac-menu-item" role="menuitem" id="mac-menu-signout" onclick="signOut();closeMacMenus()">Sign out</button>
         </div>
       </div>
+      <button type="button" class="mac-menubar-icon-btn mac-menubar-sidebar-btn" id="mac-menubar-sidebar-btn" onclick="setFinderSidebarMode('expanded')" title="Show navigation (&#8984;\\)" aria-label="Show navigation">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      </button>
+      <button type="button" class="mac-menubar-icon-btn mac-menubar-sidebar-mobile-btn" id="mac-menubar-sidebar-mobile-btn" onclick="openFinderMobile()" title="Navigation" aria-label="Open navigation">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      </button>
       <div class="mac-menu-wrap">
         <button type="button" class="mac-menu-trigger" id="mac-menu-go-btn" onclick="toggleMacMenu('go')" aria-haspopup="true" aria-expanded="false">
           <svg class="mac-menu-trigger-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -4764,10 +4773,11 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
       <div class="theme-swatch-grid" id="cc-theme-swatch-grid-macos" role="radiogroup" aria-label="IronWolf themes">
         <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Carbon</span></button>
         <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
+        <button type="button" class="theme-swatch" data-theme="holo" role="radio" onclick="setTheme('holo')"><span class="theme-swatch-preview holo"></span><span class="theme-swatch-label">Zeus</span></button>
         <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Carbon by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
       </div>
       <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
-        <option value="tahoe">Carbon</option><option value="light">Light</option><option value="auto">Auto · Day/Night</option>
+        <option value="tahoe">Carbon</option><option value="light">Light</option><option value="holo">Zeus</option><option value="auto">Auto · Day/Night</option>
       </select>
     </div>
     <div class="mac-cc-row mac-cc-wallpaper-row" style="flex-direction:column;align-items:stretch;gap:8px">
@@ -4975,6 +4985,153 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 </div>
 
 <div class="cloudos-body-row">
+<div class="cloudos-finder-backdrop" id="cloudos-finder-backdrop" onclick="closeFinderMobile()" aria-hidden="true"></div>
+<aside class="cloudos-finder" id="cloudos-finder" data-shell-region="nav" aria-label="Veyron navigation" data-sidebar-mode="expanded">
+  <div class="finder-toolbar">
+    <button type="button" class="finder-sidebar-toggle" id="finder-sidebar-toggle" onclick="cycleFinderSidebar()" title="Collapse sidebar (&#8984;\\)" aria-label="Collapse sidebar">
+      <span aria-hidden="true">&#9707;</span>
+    </button>
+    <span class="finder-toolbar-title">Navigate</span>
+  </div>
+  <div class="finder-search-wrap">
+    <span class="finder-search-icon" aria-hidden="true">&#8981;</span>
+    <input type="search" id="finder-nav-search" class="finder-nav-search" placeholder="Filter navigation" aria-label="Filter navigation" oninput="filterFinderNav(this.value)">
+  </div>
+  <div class="finder-nav-scroll" id="finder-nav-scroll">
+  <div class="finder-section" id="finder-sec-workspace" data-finder-section="workspace">
+    <div class="finder-section-label">Workspace</div>
+    <div class="finder-section-body" id="finder-workspace">
+      <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon"><i data-lucide="home"></i></span><span class="fi-label">Signal Desk</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon"><i data-lucide="server"></i></span><span class="fi-label">Fleet Command</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="reactor" onclick="finderNavigate('reactor')"><span class="fi-icon"><i data-lucide="atom"></i></span><span class="fi-label">Reactor Core</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="fleet-constellation" onclick="finderNavigate('fleet-constellation')"><span class="fi-icon"><i data-lucide="orbit"></i></span><span class="fi-label">Fleet Constellation</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="topology" onclick="finderNavigate('topology')"><span class="fi-icon"><i data-lucide="layout-panel-top"></i></span><span class="fi-label">Topology</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="gallery-wall" onclick="finderNavigate('gallery-wall')"><span class="fi-icon"><i data-lucide="grid-2x2"></i></span><span class="fi-label">Gallery Wall</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="vcentre" onclick="finderNavigate('vcentre')"><span class="fi-icon"><i data-lucide="zap"></i></span><span class="fi-label">vCentre</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="console-hub" onclick="finderNavigate('console-hub')"><span class="fi-icon"><i data-lucide="monitor"></i></span><span class="fi-label">ConsoleHub</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon"><i data-lucide="box"></i></span><span class="fi-label">VM Capsule</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon"><i data-lucide="package"></i></span><span class="fi-label">Template Foundry</span></button>
+    </div>
+  </div>
+  <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
+    <div class="finder-section-label">AI</div>
+    <div class="finder-section-body" id="finder-ai">
+      <button type="button" class="cloudos-finder-item" data-page="ask-zeus" onclick="finderNavigate('ask-zeus')"><span class="fi-icon"><i data-lucide="sparkles"></i></span><span class="fi-label">Ask Zeus</span></button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon"><i data-lucide="heart-pulse"></i></span><span class="fi-label">Unhealthy VMs</span></button>
+      <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon"><i data-lucide="archive"></i></span><span class="fi-label">Backup Advisor</span></button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon"><i data-lucide="hard-drive"></i></span><span class="fi-label">Storage Doctor</span></button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-compute" data-finder-section="compute">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('compute')"><span>Compute</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-compute">
+      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon"><i data-lucide="cpu"></i></span><span class="fi-label">Nodes</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="pods" onclick="finderNavigate('pods')"><span class="fi-icon"><i data-lucide="container"></i></span><span class="fi-label">Pods</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon"><i data-lucide="layers"></i></span><span class="fi-label">Workloads</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="scheduling" onclick="finderNavigate('scheduling')"><span class="fi-icon"><i data-lucide="clock"></i></span><span class="fi-label">Scheduling</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="hpa" onclick="finderNavigate('hpa')"><span class="fi-icon"><i data-lucide="trending-up"></i></span><span class="fi-label">HPA</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="autoscaler" onclick="finderNavigate('autoscaler')"><span class="fi-icon"><i data-lucide="gauge"></i></span><span class="fi-label">Autoscaler</span></button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-observe" data-finder-section="observe">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('observe')"><span>Observe</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-observe">
+      <button type="button" class="cloudos-finder-item" data-page="stack-health" onclick="finderNavigate('stack-health')"><span class="fi-icon"><i data-lucide="activity"></i></span><span class="fi-label">Monitoring</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="mission-control" onclick="finderNavigate('mission-control')"><span class="fi-icon"><i data-lucide="network"></i></span><span class="fi-label">Mission Control</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="metrics" onclick="finderNavigate('metrics')"><span class="fi-icon"><i data-lucide="bar-chart-2"></i></span><span class="fi-label">Metrics</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="alerts" onclick="finderNavigate('alerts')"><span class="fi-icon"><i data-lucide="bell"></i></span><span class="fi-label">Alerts</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon"><i data-lucide="clock"></i></span><span class="fi-label">Events</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="slo" onclick="finderNavigate('slo')"><span class="fi-icon"><i data-lucide="check-square"></i></span><span class="fi-label">SLO</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="performance" onclick="finderNavigate('performance')"><span class="fi-icon"><i data-lucide="zap"></i></span><span class="fi-label">Performance</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="heatmap" onclick="finderNavigate('heatmap')"><span class="fi-icon"><i data-lucide="grid-2x2"></i></span><span class="fi-label">Heatmap</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="custom-dashboards" onclick="finderNavigate('custom-dashboards')"><span class="fi-icon"><i data-lucide="layout-dashboard"></i></span><span class="fi-label">Custom Dashboards</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="observability" onclick="finderNavigate('observability')"><span class="fi-icon"><i data-lucide="radar"></i></span><span class="fi-label">Overview</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="insights" onclick="finderNavigate('insights')"><span class="fi-icon"><i data-lucide="brain"></i></span><span class="fi-label">Insights</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="traces" onclick="finderNavigate('traces')"><span class="fi-icon"><i data-lucide="share-2"></i></span><span class="fi-label">Traces</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="logs" onclick="finderNavigate('logs')"><span class="fi-icon"><i data-lucide="file-text"></i></span><span class="fi-label">Logs</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="incidents" onclick="finderNavigate('incidents')"><span class="fi-icon"><i data-lucide="heart-pulse"></i></span><span class="fi-label">Incidents</span></button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-storage" data-finder-section="storage">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('storage')"><span>Storage</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-storage">
+      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon"><i data-lucide="camera"></i></span><span class="fi-label">Snapshots</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="storage" onclick="finderNavigate('storage')"><span class="fi-icon"><i data-lucide="hard-drive"></i></span><span class="fi-label">Storage</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="images" onclick="finderNavigate('images')"><span class="fi-icon"><i data-lucide="box"></i></span><span class="fi-label">Images</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="backups" onclick="finderNavigate('backups')"><span class="fi-icon"><i data-lucide="archive"></i></span><span class="fi-label">Backups</span></button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-network" data-finder-section="network">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('network')"><span>Network</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-network">
+      <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon"><i data-lucide="arrow-right-left"></i></span><span class="fi-label">Ingress</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="network-policies" onclick="finderNavigate('network-policies')"><span class="fi-icon"><i data-lucide="shield"></i></span><span class="fi-label">Network Policies</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="cilium" onclick="finderNavigate('cilium')"><span class="fi-icon"><i data-lucide="network"></i></span><span class="fi-label">Cilium</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="network-intel" data-min-tier="advanced" onclick="finderNavigate('network-intel')"><span class="fi-icon"><i data-lucide="radar"></i></span><span class="fi-label">Network Intel</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="dependencies" onclick="finderNavigate('dependencies')"><span class="fi-icon"><i data-lucide="share-2"></i></span><span class="fi-label">Dependencies</span></button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-security" data-finder-section="security">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('security')"><span>Security</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-security">
+      <button type="button" class="cloudos-finder-item" data-page="security" data-min-tier="advanced" onclick="finderNavigate('security')"><span class="fi-icon"><i data-lucide="shield"></i></span><span class="fi-label">Posture</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="compliance" onclick="finderNavigate('compliance')"><span class="fi-icon"><i data-lucide="check-square"></i></span><span class="fi-label">Compliance</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="rbac" onclick="finderNavigate('rbac')"><span class="fi-icon"><i data-lucide="lock"></i></span><span class="fi-label">RBAC</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="policies" onclick="finderNavigate('policies')"><span class="fi-icon"><i data-lucide="file-check"></i></span><span class="fi-label">Policies</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="quotas" onclick="finderNavigate('quotas')"><span class="fi-icon"><i data-lucide="gauge"></i></span><span class="fi-label">Quotas</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="audit" onclick="finderNavigate('audit')"><span class="fi-icon"><i data-lucide="file-text"></i></span><span class="fi-label">Audit</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="soc" onclick="finderNavigate('soc')"><span class="fi-icon"><i data-lucide="radar"></i></span><span class="fi-label">SOC</span></button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-platform" data-finder-section="platform">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('platform')"><span>Platform</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-platform">
+      <button type="button" class="cloudos-finder-item" data-page="helm" onclick="finderNavigate('helm')"><span class="fi-icon"><i data-lucide="package"></i></span><span class="fi-label">Helm</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="operators" onclick="finderNavigate('operators')"><span class="fi-icon"><i data-lucide="settings"></i></span><span class="fi-label">Operators</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="crds" onclick="finderNavigate('crds')"><span class="fi-icon"><i data-lucide="folder-tree"></i></span><span class="fi-label">CRDs</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="blueprint-studio" onclick="finderNavigate('blueprint-studio')"><span class="fi-icon"><i data-lucide="layout-dashboard"></i></span><span class="fi-label">Blueprint Studio</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="custom-resources" onclick="finderNavigate('custom-resources')"><span class="fi-icon"><i data-lucide="box"></i></span><span class="fi-label">Custom Resources</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="catalog" onclick="finderNavigate('catalog')"><span class="fi-icon"><i data-lucide="book-open"></i></span><span class="fi-label">Catalog</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="gitops" onclick="finderNavigate('gitops')"><span class="fi-icon"><i data-lucide="plug-zap"></i></span><span class="fi-label">GitOps</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="integrations" data-min-tier="power" onclick="finderNavigate('integrations')"><span class="fi-icon"><i data-lucide="plug"></i></span><span class="fi-label">Integrations</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="webhooks" onclick="finderNavigate('webhooks')"><span class="fi-icon"><i data-lucide="zap"></i></span><span class="fi-label">Webhooks</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="tenants" onclick="finderNavigate('tenants')"><span class="fi-icon"><i data-lucide="users"></i></span><span class="fi-label">Tenants</span></button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-finops" data-finder-section="finops">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('finops')"><span>FinOps</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-finops">
+      <button type="button" class="cloudos-finder-item" data-page="costs" data-min-tier="advanced" onclick="finderNavigate('costs')"><span class="fi-icon"><i data-lucide="dollar-sign"></i></span><span class="fi-label">Costs</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="forecasting" onclick="finderNavigate('forecasting')"><span class="fi-icon"><i data-lucide="line-chart"></i></span><span class="fi-label">Forecasting</span></button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-ops" data-finder-section="ops">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('ops')"><span>Ops</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-ops">
+      <button type="button" class="cloudos-finder-item" data-page="chaos" onclick="finderNavigate('chaos')"><span class="fi-icon"><i data-lucide="flame"></i></span><span class="fi-label">Chaos</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="dr" onclick="finderNavigate('dr')"><span class="fi-icon"><i data-lucide="archive"></i></span><span class="fi-label">Disaster Recovery</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="actions" onclick="finderNavigate('actions')"><span class="fi-icon"><i data-lucide="terminal"></i></span><span class="fi-label">Actions</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="notifications" onclick="finderNavigate('notifications')"><span class="fi-icon"><i data-lucide="bell"></i></span><span class="fi-label">Notifications</span></button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-admin" data-finder-section="admin">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('admin')"><span>Admin</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-admin">
+      <button type="button" class="cloudos-finder-item" data-page="stack-health" data-min-tier="power" onclick="finderNavigate('stack-health')"><span class="fi-icon"><i data-lucide="activity"></i></span><span class="fi-label">Stack Health</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="settings" onclick="finderNavigate('settings')"><span class="fi-icon"><i data-lucide="settings"></i></span><span class="fi-label">Settings</span></button>
+    </div>
+  </div>
+  <div class="finder-section" id="finder-sec-recent-vms" data-finder-section="recent-vms" style="display:none">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('recent-vms')"><span>Recent VMs</span><span class="finder-chevron">&#9662;</span></button>
+    <div class="finder-section-body" id="finder-recent-vms-links"></div>
+  </div>
+  <button type="button" class="cloudos-finder-item finder-browse-all" onclick="toggleClassicNav()"><span class="fi-icon"><i data-lucide="more-horizontal"></i></span><span class="fi-label">Browse all pages</span></button>
+  </div>
+  <div class="finder-footer">
+    <div id="finder-current-window" class="finder-current-window">Signal Desk</div>
+    <div class="cloudos-finder-title">Veyron</div>
+  </div>
+</aside>
 <div class="cloudos-main" data-shell-region="main">
 
 <div class="mac-shortcuts-overlay" id="mac-shortcuts-overlay" role="dialog" aria-label="Keyboard shortcuts" hidden>
@@ -7754,6 +7911,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
           <div class="theme-swatch-grid signin-theme-grid" id="signin-theme-swatch-grid" role="radiogroup" aria-label="Theme">
             <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Carbon</span></button>
             <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
+            <button type="button" class="theme-swatch" data-theme="holo" role="radio" onclick="setTheme('holo')"><span class="theme-swatch-preview holo"></span><span class="theme-swatch-label">Zeus</span></button>
           </div>
         </div>
       </div>
@@ -8013,7 +8171,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260802f';
+window.__VEYRON_DASH_REV = '20260802q';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
@@ -8057,10 +8215,12 @@ let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
 const THEME_KEY = 'veyron_theme';
-/* Appearance model — dark Carbon (id tahoe) + light only */
+/* Appearance model — dark Carbon (id tahoe), Light, and Zeus (id holo, matched
+   to the zeus-os "zyvor-carbon" shell theme: orange accent on near-black navy). */
 const THEME_PRESETS = [
   { id: 'tahoe', label: 'Carbon', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#07080A 0%,#12151B 45%,#7F77DD 100%)' },
-  { id: 'light', label: 'Light', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#f7f8fa 0%,#dbeafe 50%,#2563eb 100%)' }
+  { id: 'light', label: 'Light', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#f7f8fa 0%,#dbeafe 50%,#2563eb 100%)' },
+  { id: 'holo', label: 'Zeus', category: 'glass', defaultWallpaper: 'tahoe', previewGradient: 'radial-gradient(120% 100% at 20% 0%,#F97316 0%,#7c2d12 42%,#0a0a0c 100%)' }
 ];
 const VALID_THEMES = THEME_PRESETS.map(function(p) { return p.id; });
 const LEGACY_THEME_ALIASES = {
@@ -8068,12 +8228,12 @@ const LEGACY_THEME_ALIASES = {
   slate: 'tahoe', steel: 'tahoe', zinc: 'tahoe', obsidian: 'tahoe', graphite: 'tahoe',
   sonoma: 'tahoe', wolf: 'tahoe', forge: 'tahoe', carbon: 'tahoe', synthwave: 'tahoe',
   aurora: 'tahoe', nord: 'tahoe', 'royal-gold': 'tahoe', matrix: 'tahoe',
-  holo: 'tahoe', nebula: 'tahoe', solaris: 'tahoe', biolume: 'tahoe', sakura: 'tahoe',
+  nebula: 'tahoe', solaris: 'tahoe', biolume: 'tahoe', sakura: 'tahoe',
   mono: 'tahoe', inferno: 'tahoe', voltage: 'tahoe', prism: 'tahoe', borealis: 'tahoe',
   ember: 'tahoe', 'ember-glow': 'tahoe', forgesim: 'tahoe', zyvor: 'tahoe', neon: 'tahoe'
 };
 const THEME_WALLPAPER_PAIRING = {
-  tahoe: 'tahoe', light: 'tahoe'
+  tahoe: 'tahoe', light: 'tahoe', holo: 'tahoe'
 };
 
 function parseStoredTheme(raw) {
@@ -11135,6 +11295,9 @@ const _SVGP = {
   'radar':             '<path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 6h.01"/><path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"/><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"/><path d="M12 18h.01"/><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"/><circle cx="12" cy="12" r="2"/><path d="m13.41 10.59 5.66-5.66"/>',
   'flame':             '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
   'building2':         '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>',
+  'orbit':              '<circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><path d="M10.4 21.9a10 10 0 0 0 9.941-15.416"/><path d="M13.5 2.1a10 10 0 0 0-9.841 15.416"/>',
+  'atom':               '<circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-6.7-4.5-11.2s-9.17-6.54-11.2-4.5c-2.04 2.03-.02 6.7 4.5 11.2s9.17 6.54 11.2 4.5Z"/><path d="M15.7 15.7c4.52-4.5 6.54-9.17 4.5-11.2-2.03-2.04-6.7-.02-11.2 4.5s-6.54 9.17-4.5 11.2c2.03 2.04 6.7.02 11.2-4.5Z"/>',
+  'layout-panel-top':   '<rect width="18" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/>',
 };
 
 function vicon(name, sw) {
@@ -11396,6 +11559,7 @@ function setDesktopTier(tier, resetPins) {
     renderCloudOsDock();
     updateMacPageToolbar(currentPage);
     closeMacMenus();
+    if (typeof syncFinderTierLocks === 'function') syncFinderTierLocks();
     toast('Automatic desktop — pages unlock as you explore', 'success', 5000);
     return;
   }
@@ -11416,6 +11580,7 @@ function setDesktopTier(tier, resetPins) {
   renderCloudOsDock();
   updateMacPageToolbar(currentPage);
   closeMacMenus();
+  if (typeof syncFinderTierLocks === 'function') syncFinderTierLocks();
 }
 
 function bootExperienceWarn(label, e) {
@@ -13815,6 +13980,7 @@ function finderNavigate(page) {
     return;
   }
   closeClassicNav();
+  closeFinderMobile();
   navigate(page, { skipTierCheck: true });
 }
 
@@ -13825,7 +13991,8 @@ function syncFinderTierLocks() {
     const allowed = auto || (typeof isPageAllowedForTier !== 'function' || isPageAllowedForTier(page, desktopTier));
     btn.classList.toggle('tier-locked', !allowed);
     if (allowed) {
-      btn.title = '';
+      const label = btn.querySelector('.fi-label');
+      btn.title = label ? label.textContent : '';
     } else {
       const need = typeof requiredTierForPage === 'function' ? requiredTierForPage(page) : 'advanced';
       btn.title = requiredTierLabel(need) + ' desktop required';
@@ -14014,6 +14181,126 @@ function syncFinderActive(page) {
     btn.classList.toggle('active', btn.dataset.page === page);
   });
   syncFinderTierLocks();
+}
+
+/* ── Sidebar mode machine (expanded / narrow / hidden) ──
+   Persisted three-state toggle, mirroring the pattern zeus-os's own
+   ZeusSidebar uses (icon-rail vs expanded), plus a fully-hidden state
+   for users who prefer the old menubar-only flow. Default is
+   'expanded' — this sidebar is the primary navigation now, not an
+   optional extra, so it should be visible out of the box. */
+const FINDER_SIDEBAR_MODE_KEY = 'veyron_finder_sidebar_mode';
+const FINDER_SECTION_STATE_KEY = 'veyron_finder_sections_v1';
+
+function isFinderMobile() {
+  return window.matchMedia && window.matchMedia('(max-width: 960px)').matches;
+}
+
+function setFinderSidebarMode(mode, persist) {
+  if (!['expanded', 'narrow', 'hidden'].includes(mode)) mode = 'expanded';
+  document.body.classList.remove('finder-narrow', 'finder-collapsed');
+  if (mode === 'narrow') document.body.classList.add('finder-narrow');
+  else if (mode === 'hidden') document.body.classList.add('finder-collapsed');
+  const aside = document.getElementById('cloudos-finder');
+  if (aside) aside.setAttribute('data-sidebar-mode', mode);
+  if (persist !== false) {
+    try { localStorage.setItem(FINDER_SIDEBAR_MODE_KEY, mode); } catch (e) {}
+  }
+  syncFinderToggleUi(mode);
+}
+
+function syncFinderToggleUi(mode) {
+  const btn = document.getElementById('mac-menubar-sidebar-btn');
+  if (btn) btn.style.display = mode === 'hidden' ? '' : 'none';
+  const toggle = document.getElementById('finder-sidebar-toggle');
+  if (toggle) toggle.title = mode === 'expanded' ? 'Narrow sidebar (⌘\\\\)' : (mode === 'narrow' ? 'Hide sidebar (⌘\\\\)' : 'Show sidebar (⌘\\\\)');
+}
+
+function cycleFinderSidebar() {
+  if (isFinderMobile()) { closeFinderMobile(); return; }
+  const cur = document.body.classList.contains('finder-collapsed') ? 'hidden'
+    : (document.body.classList.contains('finder-narrow') ? 'narrow' : 'expanded');
+  const next = cur === 'expanded' ? 'narrow' : (cur === 'narrow' ? 'hidden' : 'expanded');
+  setFinderSidebarMode(next, true);
+}
+
+function initFinderCollapsed() {
+  if (isFinderMobile()) { setFinderSidebarMode('expanded', false); return; }
+  let mode = 'expanded';
+  try {
+    const saved = localStorage.getItem(FINDER_SIDEBAR_MODE_KEY);
+    if (saved === 'narrow' || saved === 'hidden' || saved === 'expanded') mode = saved;
+  } catch (e) {}
+  setFinderSidebarMode(mode, false);
+  initFinderSections();
+  initFinderItemTooltips();
+}
+
+function initFinderItemTooltips() {
+  document.querySelectorAll('.cloudos-finder-item[data-page]').forEach(function(btn) {
+    if (!btn.title) {
+      const label = btn.querySelector('.fi-label');
+      if (label) btn.title = label.textContent;
+    }
+  });
+}
+
+/* Per-section collapse state persists across sessions so a user's
+   preferred layout (e.g. "Compute" pinned open) survives reloads. */
+function loadFinderSectionState() {
+  try {
+    const raw = localStorage.getItem(FINDER_SECTION_STATE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function saveFinderSectionState(state) {
+  try { localStorage.setItem(FINDER_SECTION_STATE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function initFinderSections() {
+  const state = loadFinderSectionState();
+  Object.keys(state).forEach(function(name) {
+    const sec = document.getElementById('finder-sec-' + name);
+    if (sec) sec.classList.toggle('collapsed', !!state[name]);
+  });
+}
+
+function toggleFinderSection(name) {
+  const sec = document.getElementById('finder-sec-' + name);
+  if (!sec) return;
+  const collapsed = sec.classList.toggle('collapsed');
+  const state = loadFinderSectionState();
+  state[name] = collapsed;
+  saveFinderSectionState(state);
+}
+
+function filterFinderNav(query) {
+  const q = (query || '').trim().toLowerCase();
+  document.querySelectorAll('.finder-section[data-finder-section]').forEach(function(sec) {
+    let anyMatch = !q;
+    sec.querySelectorAll('.cloudos-finder-item').forEach(function(item) {
+      if (item.classList.contains('finder-browse-all')) return;
+      const label = (item.querySelector('.fi-label')?.textContent || item.textContent || '').toLowerCase();
+      const match = !q || label.includes(q);
+      item.style.display = match ? '' : 'none';
+      if (match) anyMatch = true;
+    });
+    sec.style.display = anyMatch ? '' : 'none';
+    if (q && anyMatch) sec.classList.remove('collapsed');
+  });
+}
+
+function syncFinderMobileUi() {
+  document.body.classList.toggle('finder-mobile-open', false);
+}
+
+function closeFinderMobile() {
+  document.body.classList.remove('finder-mobile-open');
+}
+
+function openFinderMobile() {
+  document.body.classList.add('finder-mobile-open');
 }
 
 async function fetchExperienceSession() {
@@ -19491,6 +19778,14 @@ document.addEventListener('keydown', e => {
       return;
     }
   }
+  if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      if (typeof cycleFinderSidebar === 'function') cycleFinderSidebar();
+      return;
+    }
+  }
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'o') {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
@@ -24313,6 +24608,9 @@ window.addEventListener('load', async () => {
   initVmViewMode();
   initDesktopShell();
   initZeusShell();
+  initFinderCollapsed();
+  syncFinderActive(currentPage);
+  updateFinderBadges();
   syncBrowseMenuLabels();
   fetchExperienceSession();
   fetchExperienceDesktop();
@@ -28340,10 +28638,11 @@ function closeMacShortcuts() {
           <div class="theme-swatch-grid" id="pref-theme-swatch-grid-macos" role="radiogroup" aria-label="IronWolf themes">
             <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Carbon</span></button>
             <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
+            <button type="button" class="theme-swatch" data-theme="holo" role="radio" onclick="setTheme('holo')"><span class="theme-swatch-preview holo"></span><span class="theme-swatch-label">Zeus</span></button>
             <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Carbon by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
           </div>
           <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
-            <option value="tahoe">Carbon</option><option value="light">Light</option><option value="auto">Auto · Day/Night</option>
+            <option value="tahoe">Carbon</option><option value="light">Light</option><option value="holo">Zeus</option><option value="auto">Auto · Day/Night</option>
           </select>
         </div>
         <div class="mac-cc-row mac-cc-wallpaper-row" style="flex-direction:column;align-items:stretch;gap:8px">
@@ -28465,7 +28764,7 @@ function closeMacShortcuts() {
    Active on Forge + glass decks + solid dark themes (not glass-only). */
 (function(){
   var raf = 0, hoverIdx = -1, t = 0, layout = [], dust = [], lastN = -1, lastSigKey = '', cssW = 0, cssH = 0, dpr = 1, boot = 0, wasActive = false, flash = 0, flashed = false;
-  var ORB_THEMES = ['tahoe','light'];
+  var ORB_THEMES = ['tahoe','light','holo'];
   function getVms(){
     try { if (document.body.dataset.shell === 'orbit' && window.orbitFleetVms && window.orbitFleetVms.length) return window.orbitFleetVms; } catch(e){}
     try { if (typeof vmData !== 'undefined' && vmData && vmData.length) return vmData; } catch(e){}
@@ -28683,8 +28982,13 @@ function closeMacShortcuts() {
   };
   window.orbitRebuildOrb = function(){ lastN = -1; lastSigKey = ''; try { window.renderHoloFleetOrb(); } catch(e){} };
   function hit(e){
-    var cv = curCanvas(); if (!cv) return null;
+    var cv = curCanvas(); if (!cv) return -2;
     var r = cv.getBoundingClientRect();
+    // A hidden/detached/mid-transition canvas reports a degenerate {0,0,0,0}
+    // rect, and (0,0) — the clientX/clientY a keyboard-triggered synthetic
+    // click carries — trivially satisfies the bounds check below against
+    // that zero-sized rect. Treat a zero-area rect as a miss too.
+    if (!r.width || !r.height) return -2;
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return -2;
     var mx = e.clientX - r.left, my = e.clientY - r.top, best = -1, bd = 12;
     for (var i = 0; i < layout.length; i++){ var nd = layout[i]; if (nd.x == null || !nd.interactive) continue;

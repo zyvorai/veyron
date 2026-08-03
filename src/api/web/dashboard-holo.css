@@ -1,0 +1,283 @@
+/* ============================================================
+   ZEUS — a Zeus OS–matched theme (id: holo, label: "Zeus"),
+   alongside Carbon (tahoe) and Light.
+
+   Ported from /Users/ssahani/tt/zeus-os/ui's "zyvor-carbon" shell
+   theme (ui/src/index.css:11343-11383) and Liquid Glass design
+   system (docs/liquid-glass-design-system.md, LiquidGlassKit.tsx):
+   orange primary accent (hsl(24 95% 53%) = #F97316) on a near-black
+   navy background, subtle glass cards with soft white borders (not
+   heavy blue/purple blur), and a gold→amber→sky gradient reserved
+   for headline/KPI text. This intentionally REPLACES the earlier
+   blue/purple "Aurora" pass — no aurora blooms, no cursor spotlight,
+   no starfield; zeus-os's own shell doesn't have those effects, so
+   this theme doesn't invent them either.
+
+   Every rule is prefixed `html[data-theme='holo'] body.mac-desktop-root`
+   rather than just `html[data-theme='holo']`. That's not decorative: the
+   IronWolf "flat web content" layer (dashboard-ironwolf-themes.css, e.g.
+   `body.mac-desktop-root .card:not(.modal):not([role="dialog"])`) is
+   theme-unconditional and its `:not()` clauses push its specificity to
+   (0,4,1) with `!important` — higher than a bare `html[data-theme='holo']
+   .page .card` (0,3,1) despite also using `!important`. Adding the
+   `body.mac-desktop-root` segment raises ours to (0,4,2), which wins on
+   the specificity tie-break (verified against the deployed bundle).
+
+   Mutually exclusive with Carbon: `[data-theme='holo']` and
+   `[data-theme='tahoe']` never match the same <html> element at
+   once, so this file can load anywhere in the CSS concat chain
+   without fighting Carbon's rules.
+   ============================================================ */
+
+html[data-theme='holo']{
+  --void:hsl(220,15%,4%); --hull:hsl(220,15%,6%); --bg-deep:hsl(220,15%,4%); --bg:hsl(220,15%,6%); --bg-secondary:hsl(220,15%,6%);
+  --bg-card:hsl(220,14%,9%); --bg-card-solid:hsl(220,14%,9%); --bg-elevated:hsl(220,12%,12%);
+  --bg-tertiary:hsl(220,12%,12%); --bg-0:hsl(220,15%,4%);
+  --steel:hsl(220,12%,12%); --steel-light:hsl(220,12%,16%); --steel-bright:hsl(220,10%,20%);
+  --panel:hsl(220,14%,9%); --panel-2:hsl(220,12%,12%); --panel-hi:hsl(220,12%,16%);
+  --hairline:rgba(255,255,255,.09); --hairline-hi:rgba(255,255,255,.16);
+  --border:hsl(220,10%,18%); --border-hot:rgba(249,115,22,.4); --border-cold:hsl(220,10%,18%);
+  --plasma:#F97316; --plasma-deep:#C2410C; --plasma-glow:rgba(249,115,22,.30); --plasma-line:rgba(249,115,22,.52);
+  --primary:#F97316; --primary-blue:#F97316; --primary-purple:#F97316;
+  --primary-dim:rgba(249,115,22,.16); --primary-glow:rgba(249,115,22,.34);
+  --accent:#F97316; --molten:#FB923C; --spark:#FDBA74; --forge:#F97316; --ember:#F97316;
+  --blue:#38bdf8; --cyan:#38bdf8; --violet:#a78bfa; --green:#34d399; --orange:#F97316; --red:#f87171;
+  --ink:hsl(210,25%,96%); --ink-2:hsl(215,15%,72%); --ink-3:hsl(215,15%,55%);
+  --text:hsl(210,25%,96%); --text-bright:#ffffff; --text-muted:hsl(215,15%,72%); --text-dim:hsl(215,15%,55%);
+  --glass-bg:rgba(255,255,255,.04); --glass-bg-elevated:rgba(255,255,255,.06);
+  --glass-border:rgba(255,255,255,.09); --glass-border-strong:rgba(255,255,255,.16);
+  --glass-blur:blur(40px) saturate(1.2); --glass-radius:1.25rem;
+  --glass-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 16px 40px -24px rgba(0,0,0,.45);
+  --radius:1.25rem; --radius-liquid:1.25rem; --radius-liquid-lg:1.5rem;
+  --mac-vibrancy:rgba(12,18,32,.55); --mac-border:rgba(255,255,255,.08);
+  --deck-temp:var(--plasma); --deck-temp-glow:var(--plasma-glow);
+  /* Tone chips — literal zeus-os .zeus-glass-metric-icon-* colors (ui/src/index.css:10783-10817) */
+  --tone-emerald:rgb(52,211,153); --tone-emerald-bg:rgba(16,185,129,.18);
+  --tone-sky:rgb(56,189,248); --tone-sky-bg:rgba(56,189,248,.18);
+  --tone-indigo:rgb(129,140,248); --tone-indigo-bg:rgba(99,102,241,.18);
+  --tone-amber:rgb(251,191,36); --tone-amber-bg:rgba(245,158,11,.18);
+  --tone-red:rgb(248,113,113); --tone-red-bg:rgba(239,68,68,.18);
+  --tone-violet:rgb(167,139,250); --tone-violet-bg:rgba(139,92,246,.18);
+  color-scheme:dark;
+}
+
+/* ---- Body ground — literal zeus-os zyvor-carbon desktop background
+   (ui/src/index.css:11365-11369): a soft orange glow top-left, a faint
+   dark bloom bottom-right, over a near-black vertical gradient. Static,
+   no parallax/aurora — matches zeus-os's actual, much quieter shell.
+   !important is required: dashboard-carbon-deck.css sets an UNSCOPED
+   (theme-independent) `body.mac-desktop-root{background:var(--zs-void)!important}`
+   that would otherwise win regardless of our higher selector specificity. ---- */
+html[data-theme='holo'] body.mac-desktop-root{
+  background:
+    radial-gradient(ellipse 100% 70% at 12% -8%, rgba(249,115,22,.12), transparent 50%),
+    radial-gradient(ellipse 80% 55% at 88% 108%, rgba(30,30,35,.45), transparent 48%),
+    linear-gradient(180deg, rgb(10,10,12) 0%, rgb(6,7,9) 100%) !important;
+}
+/* Suppress the unconditional multi-hue aurora blob (dashboard.html:701) — zeus-os
+   has no such effect; the flat gradient above is the whole background under Zeus. */
+html[data-theme='holo'] body::before{ display:none !important; }
+/* Faint technical grid veil, ported from zeus-os's `.login-grid` (ui/src/index.css:273-279). */
+html[data-theme='holo'] body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:1;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse 75% 65% at 50% 30%, #000 20%, transparent 78%);
+  mask-image:radial-gradient(ellipse 75% 65% at 50% 30%, #000 20%, transparent 78%);
+}
+
+/* Zeus OS's shell has no cursor spotlight or starfield — turn both off
+   unconditionally (this also fixes a pre-existing leak where the starfield
+   animated at low opacity on every theme because its @keyframes had no gate). */
+#holo-cursor-glow, #holo-starfield{ display:none !important; }
+
+/* ---- Floating glass surfaces — inherited by every page.
+   Literal zeus-os GlassSection formula (LiquidGlassKit.tsx / index.css:10534-10546). ---- */
+html[data-theme='holo'] body.mac-desktop-root .page .card,
+html[data-theme='holo'] body.mac-desktop-root .page .glass-card,
+html[data-theme='holo'] body.mac-desktop-root .page .chart-card,
+html[data-theme='holo'] body.mac-desktop-root .page .vmr-surface-card,
+html[data-theme='holo'] body.mac-desktop-root .page .vmr-page-hero,
+html[data-theme='holo'] body.mac-desktop-root .page .vmr-fleet-card,
+html[data-theme='holo'] body.mac-desktop-root .page .id-tile,
+html[data-theme='holo'] body.mac-desktop-root .page .id-vmcard,
+html[data-theme='holo'] body.mac-desktop-root .page .id-tpl,
+html[data-theme='holo'] body.mac-desktop-root .page .vm-card,
+html[data-theme='holo'] body.mac-desktop-root .page .tile,
+html[data-theme='holo'] body.mac-desktop-root .page .panel{
+  position:relative;
+  background:linear-gradient(155deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.02) 100%) !important;
+  -webkit-backdrop-filter:blur(40px) saturate(1.2) !important; backdrop-filter:blur(40px) saturate(1.2) !important;
+  border:1px solid rgba(255,255,255,.09) !important; border-radius:1.25rem !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 16px 40px -24px rgba(0,0,0,.45) !important;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  overflow:hidden;
+}
+html[data-theme='holo'] body.mac-desktop-root .page .id-tile > *,
+html[data-theme='holo'] body.mac-desktop-root .page .id-vmcard > *,
+html[data-theme='holo'] body.mac-desktop-root .page .id-tpl > *{position:relative;z-index:1}
+/* Subtle lift on hover — zeus-os's GlassMetricCard hover is understated
+   (border-color shift + translateY(-1px)), not a heavy bloom. */
+html[data-theme='holo'] body.mac-desktop-root .page .card:hover,
+html[data-theme='holo'] body.mac-desktop-root .page .glass-card:hover,
+html[data-theme='holo'] body.mac-desktop-root .page .id-tile:hover,
+html[data-theme='holo'] body.mac-desktop-root .page .id-vmcard:hover,
+html[data-theme='holo'] body.mac-desktop-root .page .id-tpl:hover,
+html[data-theme='holo'] body.mac-desktop-root .page .vm-card:hover{
+  transform:translateY(-2px) !important;
+  border-color:rgba(249,115,22,.35) !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 20px 48px -20px rgba(0,0,0,.55),0 0 0 1px rgba(249,115,22,.12) !important;
+}
+
+/* ---- Luminous signal orbs (glow layered on top of the theme-independent
+   --nominal/--caution/--critical/--inert tokens, never redefining them) ---- */
+html[data-theme='holo'] body.mac-desktop-root .id-pulse{width:7px;height:7px;box-shadow:0 0 8px currentColor !important}
+html[data-theme='holo'] body.mac-desktop-root .id-sig{-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+
+/* ---- KPI numerals — literal zeus-os login headline gradient
+   (gold → amber → sky, ui/src/zyvor-premium-login.css:542-547). ---- */
+html[data-theme='holo'] body.mac-desktop-root .id-tile .id-big,
+html[data-theme='holo'] body.mac-desktop-root .id-metric,
+html[data-theme='holo'] body.mac-desktop-root .id-gauge .id-v{
+  background:linear-gradient(135deg,#fef3c7 0%,#fbbf24 42%,#38bdf8 100%) !important;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+/* ---- Live badge ---- */
+html[data-theme='holo'] body.mac-desktop-root .mission-live-badge{
+  background:var(--tone-emerald-bg) !important; border:1px solid rgba(16,185,129,.4) !important; color:var(--tone-emerald) !important;
+  box-shadow:none !important;
+}
+
+/* ---- Frosted floating chrome (menubar + dock) — literal zeus-os values
+   (.mac-menubar-inner / .mac-dock-utilities,.mac-dock-modules, index.css:11931-12058) ---- */
+html[data-theme='holo'] body.mac-desktop-root .mac-menubar.navbar{
+  background:rgba(12,18,32,.55) !important;-webkit-backdrop-filter:blur(32px) saturate(1.35) !important;backdrop-filter:blur(32px) saturate(1.35) !important;
+  border-bottom:1px solid rgba(255,255,255,.08) !important;
+}
+html[data-theme='holo'] body.mac-desktop-root .mac-dock-inner,
+html[data-theme='holo'] body.mac-desktop-root #cloudos-dock .mac-dock-inner{
+  background:rgba(12,18,32,.62) !important;-webkit-backdrop-filter:blur(30px) saturate(1.3) !important;backdrop-filter:blur(30px) saturate(1.3) !important;
+  border:1px solid rgba(255,255,255,.07) !important;
+  box-shadow:none !important;
+}
+html[data-theme='holo'] body.mac-desktop-root .id-sec-h .id-line{background:linear-gradient(90deg, rgba(249,115,22,.5), transparent) !important}
+html[data-theme='holo'] body.mac-desktop-root .id-zeus .id-orb{box-shadow:0 0 20px rgba(249,115,22,.5) !important}
+
+/* ---- Dashboard panels (.vmr-panel — the 44 Mission Control / Signal Desk
+   panels) get the same glass treatment as cards ---- */
+html[data-theme='holo'] body.mac-desktop-root .page .vmr-panel{
+  background:linear-gradient(155deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.02) 100%) !important;
+  -webkit-backdrop-filter:blur(40px) saturate(1.2) !important; backdrop-filter:blur(40px) saturate(1.2) !important;
+  border:1px solid rgba(255,255,255,.09) !important; border-radius:1.25rem !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 16px 40px -24px rgba(0,0,0,.45) !important;
+  position:relative; overflow:hidden;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+html[data-theme='holo'] body.mac-desktop-root .page .vmr-panel:hover{
+  transform:translateY(-2px) !important; border-color:rgba(249,115,22,.3) !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 20px 48px -20px rgba(0,0,0,.55) !important;
+}
+/* Boot-up reveal — hero panels rise into place (reuses @keyframes holo-rise, dashboard.html:302) */
+html[data-theme='holo'] .vmr-mission-grid > .vmr-panel{animation:holo-rise .5s cubic-bezier(.22,1,.36,1) both}
+html[data-theme='holo'] .vmr-mission-grid > .vmr-panel:nth-child(2){animation-delay:.06s}
+html[data-theme='holo'] .vmr-mission-grid > .vmr-panel:nth-child(3){animation-delay:.12s}
+html[data-theme='holo'] .vmr-mission-grid > .vmr-panel:nth-child(4){animation-delay:.18s}
+
+/* ---- Primitives polish (buttons, fields, tables, modals, scrollbar) ---- */
+html[data-theme='holo'] body.mac-desktop-root .glass-btn-primary,
+html[data-theme='holo'] body.mac-desktop-root .btn-create,
+html[data-theme='holo'] body.mac-desktop-root .id-btn-plasma,
+html[data-theme='holo'] body.mac-desktop-root .btn-primary,
+html[data-theme='holo'] body.mac-desktop-root .iw-home-action-primary{
+  background:linear-gradient(135deg,#F97316 0%,#C2410C 100%) !important;
+  border:1px solid rgba(251,146,60,.5) !important; color:#fff !important;
+  box-shadow:0 6px 26px rgba(249,115,22,.35),inset 0 1px 0 rgba(255,255,255,.2) !important;
+}
+html[data-theme='holo'] body.mac-desktop-root .glass-btn-primary:hover,
+html[data-theme='holo'] body.mac-desktop-root .btn-create:hover,
+html[data-theme='holo'] body.mac-desktop-root .iw-home-action-primary:hover{
+  transform:translateY(-1px) !important;
+  box-shadow:0 10px 32px rgba(249,115,22,.42),inset 0 1px 0 rgba(255,255,255,.24) !important;
+}
+html[data-theme='holo'] body.mac-desktop-root .glass-btn-secondary,
+html[data-theme='holo'] body.mac-desktop-root .btn:not(.btn-create):not(.glass-btn-primary){
+  background:rgba(255,255,255,.04) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  -webkit-backdrop-filter:blur(10px) !important; backdrop-filter:blur(10px) !important;
+  color:var(--ink) !important;
+  transition:transform .15s,background .15s,border-color .15s,box-shadow .15s;
+}
+html[data-theme='holo'] body.mac-desktop-root .glass-btn-secondary:hover,
+html[data-theme='holo'] body.mac-desktop-root .btn:not(.btn-create):not(.glass-btn-primary):hover{
+  border-color:hsl(215,15%,55%) !important;
+  background:rgba(255,255,255,.07) !important;
+}
+html[data-theme='holo'] body.mac-desktop-root .page input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme='holo'] body.mac-desktop-root .page select,
+html[data-theme='holo'] body.mac-desktop-root .page textarea,
+html[data-theme='holo'] body.mac-desktop-root .zeus-ai-input{
+  background:rgba(0,0,0,.2) !important;
+  border:1px solid rgba(255,255,255,.08) !important;
+  -webkit-backdrop-filter:blur(10px) !important; backdrop-filter:blur(10px) !important;
+  color:hsl(210,25%,96%) !important;
+}
+html[data-theme='holo'] body.mac-desktop-root .page input:focus,
+html[data-theme='holo'] body.mac-desktop-root .page select:focus,
+html[data-theme='holo'] body.mac-desktop-root .page textarea:focus,
+html[data-theme='holo'] body.mac-desktop-root .zeus-ai-input:focus{
+  border-color:rgba(249,115,22,.6) !important;
+  box-shadow:0 0 0 3px rgba(249,115,22,.18) !important;
+}
+html[data-theme='holo'] body.mac-desktop-root .page select option{background:hsl(220,14%,9%);color:hsl(210,25%,96%)}
+html[data-theme='holo'] body.mac-desktop-root .table thead th{
+  background:linear-gradient(180deg, rgba(249,115,22,.08), transparent) !important;
+  color:hsl(215,15%,72%) !important; border-bottom-color:rgba(255,255,255,.09) !important;
+}
+html[data-theme='holo'] body.mac-desktop-root .table tbody tr:hover td{
+  background:rgba(249,115,22,.06) !important;
+  box-shadow:inset 2px 0 0 var(--plasma) !important;
+}
+html[data-theme='holo'] body.mac-desktop-root .modal{
+  background:linear-gradient(160deg, hsl(220,14%,10%) 0%, hsl(220,15%,7%) 100%) !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  -webkit-backdrop-filter:blur(40px) saturate(1.2) !important; backdrop-filter:blur(40px) saturate(1.2) !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 40px 100px -30px rgba(0,0,0,.7) !important;
+}
+html[data-theme='holo'] ::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,#F97316,#C2410C) !important; border-radius:3px;
+}
+html[data-theme='holo'] ::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#FB923C,#F97316) !important}
+
+/* ---- VMs/Nodes roster+rail split container: strip the Carbon plate box ----
+   dashboard.html:4425-4437 hardcodes `#page-vms [data-shell-region="split"],
+   #page-nodes [data-shell-region="split"]` with Carbon's --zs-rule/--zs-chamfer/
+   --zs-radius/--zs-graphite/--zs-sheen tokens and `!important`, with NO theme
+   guard at all — it leaks Carbon's boxed plate onto every theme, including
+   this one. That selector carries an ID (#page-vms), so beating it requires
+   matching an ID too, not just stacking classes. Only the cosmetic
+   (border/radius/background) properties are reset here — the layout
+   properties (flex/overflow/min-height) on that same rule are left alone. */
+html[data-theme='holo'] #page-vms [data-shell-region="split"],
+html[data-theme='holo'] #page-nodes [data-shell-region="split"]{
+  border:none !important;
+  border-radius:0 !important;
+  background-color:transparent !important;
+  background-image:none !important;
+}
+
+/* ---- Fleet Orb tint (canvas draws itself via JS; this is background only) ---- */
+html[data-theme='holo'] body.mac-desktop-root .holo-orb-wrap{
+  background:radial-gradient(60% 70% at 50% 48%, rgba(249,115,22,.10), rgba(10,10,12,.4) 70%, transparent) !important;
+  border-color:rgba(255,255,255,.09) !important;
+}
+
+/* ---- Theme swatch preview art (fossil class already existed; keep it in
+   sync with the token block above rather than relying on the stray rule) ---- */
+.theme-swatch-preview.holo{background:radial-gradient(120% 100% at 20% 0%,#F97316 0%,#7c2d12 42%,#0a0a0c 100%)}
+
+@media (prefers-reduced-motion: reduce){
+  html[data-theme='holo'] .vmr-mission-grid > .vmr-panel{animation:none}
+}
