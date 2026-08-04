@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260804b">
+<meta name="veyron-dashboard-rev" content="20260804d">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260804b';
+  var DASH_REV = '20260804d';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -195,78 +195,6 @@
   --bg-card:      var(--panel);
 }
 
-/* ── Carbon Black — professional void: pure charcoal, platinum hairlines, soft white accent.
-   Signature Veyron dark look. Full surface reskin (others mostly swap wallpaper). */
-
-/* ── Forge (ZyForgeSim default) — navy void + orange #f0583a ── */
-
-/* ── Synthwave: Outrun night — deep indigo, neon-magenta accent, sunset horizon + retro grid ── */
-/* Sunset horizon glow + faint perspective grid over the night */
-
-/* ── Aurora: polar night with shifting green-teal-violet curtains ── */
-
-/* ── Nord: arctic polar-night slate with frost accent ── */
-
-/* ── Royal Gold: obsidian black + luxe gold ── */
-
-/* ── Matrix: phosphor green on black, faux glyph-rain streaks ── */
-
-/* ════════════════════════════════════════════════════════════════════════
-   ◜ HOLOGRAPHIC OPS — the redesign
-   Volumetric glass · aurora depth · floating panels · parallax · luminous.
-   Defined once here; cascades across all 67 pages via shared surface classes
-   (.card .glass-card .tile .panel .id-*). Higher specificity wins by design.
-   ════════════════════════════════════════════════════════════════════════ */
-
-/* ════════════════════════════════════════════════════════════════════════
-   ◈ NEBULA — cosmic deep-space theme (glass-deck family)
-   Violet void · magenta + cyan nebula clouds · twinkling starfield.
-   Shares the full holo engine (glass shape, parallax, fleet orb, cursor
-   spotlight, reactive deck) via .glass-deck; only the colour skin differs.
-   ════════════════════════════════════════════════════════════════════════ */
-/* Nebula colour skin over the shared glass engine */
-
-/* ◈ SOLARIS — golden-hour warm glass (glass-deck family) */
-/* Solaris colour skin */
-/* ◈ BIOLUME — deep-ocean bioluminescence (glass-deck family) */
-/* Biolume colour skin */
-
-/* ◈ SAKURA — rose champagne glass (glass-deck family) */
-/* Sakura colour skin */
-/* ◈ MONO — platinum monochrome glass (glass-deck family) */
-/* Mono colour skin */
-/* ◈ INFERNO — ember reactor glass (glass-deck family) */
-/* Inferno colour skin */
-
-/* ◈ VOLTAGE — electric lime cyberglass (glass-deck family) */
-/* Voltage colour skin */
-
-/* Daylight colour skin (light) */
-
-/* ◈ PRISM — iridescent magenta→cyan oil-slick hologlass (glass-deck family) */
-/* Prism colour skin */
-
-/* ◈ BOREALIS — emerald-jade → violet aurora hologlass (glass-deck family, default deck)
-   Northern lights over a deep polar sky: minty jade accent, violet secondary,
-   green/cyan/violet aurora shimmer. Green is deliberately distinct from the muted
-   status-nominal green so a running orb never blurs into the accent. */
-/* Borealis colour skin */
-
-/* Deep-space hull */
-/* Living aurora field — multi-hue, drifting, parallax-reactive (--holo-px/py set by JS) */
-@keyframes holo-drift{
-  0%{transform:translate3d(0,0,0) scale(1)}
-  50%{transform:translate3d(2.4%,-1.6%,0) scale(1.07)}
-  100%{transform:translate3d(-2.4%,1.6%,0) scale(1.04)}
-}
-/* Holographic grid veil */
-/* ── Floating glass surfaces — inherited by every page ── */
-/* Top-edge specular sheen */
-/* The holographic float — lift + plasma bloom on hover */
-/* Luminous signal orbs */
-/* Aurora-lit KPI numerals */
-/* Plasma action buttons → glowing glass pills */
-/* Frosted floating chrome */
 /* Holographic cursor spotlight — only visible under holo */
 #holo-cursor-glow{position:fixed;left:0;top:0;width:560px;height:560px;border-radius:50%;
   transform:translate(-50%,-50%);pointer-events:none;z-index:0;opacity:0;transition:opacity .5s ease;
@@ -285,26 +213,6 @@
   animation:holo-twinkle 4.5s ease-in-out infinite alternate}
 @keyframes holo-twinkle{0%{opacity:var(--star-lo,.35)}100%{opacity:var(--star-hi,.7)}}
 @media (prefers-reduced-motion: reduce){ #holo-starfield{animation:none;opacity:.5} }
-
-/* ── Holographic hero: Mission Control header + dashboard panels ──
-   .vmr-panel ships with NO base CSS — holo gives those 44 dashboard
-   panels real floating-glass chrome. Restructures the hero layout. */
-/* Mission Control header → luminous command banner */
-/* Floating VM cards consistent with the deck */
-/* Animated shimmer bar already on chart-card picks up aurora hues via tokens */
-
-/* ── Holographic Ops — primitives polish (buttons, fields, tables, modals) ──
-   Keeps the glass illusion intact on the controls that live on every page. */
-/* Primary action → luminous plasma pill */
-/* Secondary / ghost buttons → frosted glass with plasma hover */
-/* Form fields → translucent glass with plasma focus ring */
-/* Tables → glassy header, plasma row highlight */
-/* Non-glass modals → match the deck */
-/* Plasma scrollbar */
-/* Boot-up reveal — hero panels rise into place */
-@keyframes holo-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion: reduce){
-}
 
 /* ── Fleet Orb — the holographic centerpiece (dashboard hero) ──
    Concentric orbital rings, one luminous node per VM coloured by status,
@@ -1808,7 +1716,7 @@ button.glass-stat-pill.clickable-stat:hover,
   font-family:var(--font-mono);font-size:.82rem;color:var(--spark);
   word-break:break-all;line-height:1.45;
 }
-.glass-details{margin-top:20px;border-radius:var(--glass-radius);border:1px solid rgba(139,92,246,.2);background:rgba(139,92,246,.04);overflow:hidden}
+.glass-details{margin-top:20px;border-top:1px solid var(--hairline,rgba(139,92,246,.2));background:transparent}
 .glass-details > summary{
   padding:14px 18px;cursor:pointer;font-weight:700;font-size:.84rem;
   color:var(--primary-purple);list-style:none;
@@ -2171,7 +2079,10 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 @keyframes cc-slide-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .security-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}
 .security-finding-cards{display:flex;flex-direction:column;gap:10px}
-.security-finding-card.zeus-glass{padding:14px 16px;border-left:4px solid var(--border)}
+.security-finding-card.zeus-glass{
+  padding:14px 16px;background:rgba(255,255,255,.03);backdrop-filter:none;-webkit-backdrop-filter:none;
+  box-shadow:none;border:none;border-radius:0;border-left:4px solid var(--border);
+}
 .security-finding-card.critical{border-left-color:var(--error)}
 .security-finding-card.high{border-left-color:var(--warning)}
 .security-finding-card.medium{border-left-color:var(--spark)}
@@ -2628,12 +2539,8 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .dc-briefing-detail{font-size:.78rem;color:var(--text-dim);line-height:1.4}
 .dc-section-label{font-size:.78rem;font-weight:600;color:var(--text-dim);margin-bottom:10px}
 .dc-pinned-section{
-  margin-bottom:18px;padding:16px 18px;border-radius:var(--glass-radius);border:1px solid var(--glass-border);
-  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
-}
-.dc-today-panel{
-  margin-bottom:18px;padding:16px 18px;border-radius:var(--glass-radius);border:1px solid var(--glass-border);
-  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  margin-bottom:18px;padding:16px 0;border-top:1px solid var(--hairline,var(--glass-border));
+  background:transparent;
 }
 .dc-today-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .dc-today-stats{display:flex;gap:10px;flex-wrap:wrap}
@@ -2645,10 +2552,8 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .dc-stat-label{font-size:.72rem;color:var(--text-dim)}
 .dc-stat-value{font-size:1rem;font-weight:600;margin-top:2px}
 .operator-details{
-  margin-top:12px;padding:16px 18px 18px;border-radius:var(--glass-radius);
-  background:var(--glass-bg);border:1px solid var(--glass-border);
-  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
-  box-shadow:var(--glass-shadow);
+  margin-top:12px;padding:16px 0 18px;border-top:1px solid var(--hairline,var(--glass-border));
+  background:transparent;
 }
 .operator-details>summary{
   cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text-muted);padding:4px 0 8px;list-style:none;
@@ -2728,8 +2633,8 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .vmr-recent-chip:hover{color:var(--text);border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.07)}
 #vmr-recent-strip::-webkit-scrollbar{display:none}
 .vmr-heatmap-grid{display:flex;flex-wrap:wrap;gap:8px;padding:16px}
-.vmr-heat-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:10px;border:1px solid rgba(255,255,255,.1);cursor:pointer;font-family:inherit;transition:transform .12s,box-shadow .12s;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.vmr-heat-tile:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 6px 20px rgba(0,0,0,.35);z-index:2}
+.vmr-heat-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:6px;border:1px solid rgba(255,255,255,.1);cursor:pointer;font-family:inherit;transition:border-color .12s;box-shadow:none}
+.vmr-heat-tile:hover{border-color:rgba(255,255,255,.32);z-index:2}
 .vmr-heat-tile-name{font-size:.7rem;font-weight:600;color:rgba(0,0,0,.8);text-align:center;word-break:break-all;padding:0 4px;line-height:1.2}
 .vmr-heat-tile-vms{font-size:.65rem;color:rgba(0,0,0,.65)}
 .vmr-heat-tile-score{font-size:.6rem;color:rgba(0,0,0,.5);font-family:var(--font-mono,monospace)}
@@ -4201,24 +4106,16 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 /* ── end Instrument Deck shell overrides ──────────────────────────────────── */
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CARBON CONTENT — milled plates (owner: Zeus OS Carbon)
-   Replaces flat de-box. Surfaces are .zs-plate: graphite + sheen + chamfer
-   + 12px radius. Paint lives in dashboard-carbon.css; this late block only
-   strips fake mac chrome and keeps page rhythm. Do NOT zero plate borders.
+   CARBON CONTENT — page rhythm (owner: Zeus OS Carbon)
+   The "milled plate" surface paint this block used to layer on top of
+   .card/.glass-card/etc (and a matching tour-banner plate rule) was removed
+   2026-08-04 — it was fully redundant with (and, for the .glass-banner /
+   .veyron-cap-banner pair, tied and shadowed by) the flatten rules in the
+   UNBOX EVERYTHING block below. What's left here is the actual flat-page
+   structural CSS: spacing rhythm, header typography, fake-chrome removal.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* Tour / notice banners → plasma dim plate */
-.page .glass-banner,
-.page .veyron-cap-banner{
-  background:var(--zs-plasma-dim,rgba(127,119,221,.16))!important;
-  border:1px solid rgba(127,119,221,.22)!important;
-  border-radius:var(--zs-radius,12px)!important;
-  box-shadow:none!important;
-  backdrop-filter:none!important;
-  color:var(--zs-ink-2,#9CA3B2)!important;
-}
-
-/* Space-y children keep plate paint + gap (not hairline-only sections) */
+/* Space-y children keep their own gap/padding rhythm (not hairline-only sections) */
 .page .space-y > .card,
 .page .space-y > .glass-card,
 .page .space-y > .chart-card,
@@ -4228,7 +4125,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   padding:24px 30px 28px!important;
 }
 
-/* Card headers sit on the plate (eyebrow rhythm) */
+/* Card headers (eyebrow rhythm) */
 .page .card-header,
 .page .id-card-h{
   background:transparent!important;
@@ -4306,15 +4203,6 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window{
 }
 body.mac-desktop-root .page.section-shell > .space-y.mac-page-window::before{display:none!important}
 
-/* Tables sit in channel, not glass */
-.page .table-wrap,
-.page .vmr-table-wrap{
-  background:var(--zs-channel,#070A12)!important;
-  border:1px solid var(--zs-rule)!important;
-  border-bottom-color:var(--zs-rule-strong)!important;
-  border-radius:var(--zs-radius-sm,7px)!important;
-  box-shadow:inset 0 1px 2px rgba(0,0,0,.6)!important;
-}
 .page .table thead th{
   background:transparent!important;
   border-bottom:1px solid var(--zs-rule)!important;
@@ -5981,19 +5869,19 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <div class="vmr-panel-title">Optimization Recommendations</div>
     <div id="cost-optimization-body" style="margin-top:8px">
       <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--caution-bg);border:1px solid rgba(239,159,39,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:0.9rem;background:rgba(239,159,39,.08);border:none;border-inline-start:2px solid var(--caution)">
           <div><strong style="font-size:.84rem">Downsize idle VMs</strong><div style="font-size:.78rem;color:var(--muted)">VMs with sustained low CPU may be over-provisioned</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find idle VMs to downsize')">Analyze</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--caution-bg);border:1px solid rgba(239,159,39,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:0.9rem;background:rgba(239,159,39,.08);border:none;border-inline-start:2px solid var(--caution)">
           <div><strong style="font-size:.84rem">Delete orphaned PVCs</strong><div style="font-size:.78rem;color:var(--muted)">Unbound PersistentVolumeClaims accumulate storage costs</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find orphaned PVCs')">Find PVCs</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--caution-bg);border:1px solid rgba(239,159,39,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:0.9rem;background:rgba(239,159,39,.08);border:none;border-inline-start:2px solid var(--caution)">
           <div><strong style="font-size:.84rem">Schedule-based shutdown</strong><div style="font-size:.78rem;color:var(--muted)">Stop dev/test VMs outside business hours</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Create shutdown schedule for dev VMs')">Configure</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--caution-bg);border:1px solid rgba(239,159,39,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:0.9rem;background:rgba(239,159,39,.08);border:none;border-inline-start:2px solid var(--caution)">
           <div><strong style="font-size:.84rem">Move to cheaper storage class</strong><div style="font-size:.78rem;color:var(--muted)">Cold workloads can use HDD or object storage tiers</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Suggest cheaper storage classes for VMs')">Suggest</button>
         </div>
@@ -7322,12 +7210,15 @@ html[data-theme='holo'] body.mac-desktop-root .page .vmr-panel:hover{
 .page .tile,
 .page .panel,
 .page .mac-page-window,
-.page .zs-plate,
-.page .zs-recess,
 .page .table-wrap,
 .page .vmr-table-wrap,
 .page .glass-banner,
 .page .veyron-cap-banner,
+.page .vm-inspector-panel,
+.page .zeus-inspector-section,
+.page .vc-card,
+.page .app-store-card,
+.page .dr-output-glass,
 #page-vms [data-shell-region="split"],
 #page-nodes [data-shell-region="split"],
 #vm-focus-pane,
@@ -7371,6 +7262,11 @@ html[data-theme='holo'] body.mac-desktop-root .page .vmr-panel:hover{
 button.page .glass-stat-pill.clickable-stat:hover,
 .page .glass-stat-pill.clickable-stat:hover{
   border-color:rgba(255,255,255,.16)!important;
+  transform:none!important;
+  box-shadow:none!important;
+}
+.page .vc-card:hover,
+.page .app-store-card:hover{
   transform:none!important;
   box-shadow:none!important;
 }
@@ -8532,7 +8428,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260804b';
+window.__VEYRON_DASH_REV = '20260804d';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
