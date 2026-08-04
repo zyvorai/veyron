@@ -2216,14 +2216,14 @@ body.mac-desktop-root .browse-mega-header,
 body.mac-desktop-root #browse-mega-header {
   backdrop-filter: blur(40px) saturate(1.8) !important;
   -webkit-backdrop-filter: blur(40px) saturate(1.8) !important;
-  background: rgba(28, 28, 32, 0.55) !important;
+  background: rgba(16, 16, 19, 0.94) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 body.mac-desktop-root .browse-mega-menu,
 body.mac-desktop-root #browse-mega-menu {
   backdrop-filter: blur(36px) saturate(1.7) !important;
   -webkit-backdrop-filter: blur(36px) saturate(1.7) !important;
-  background: rgba(22, 22, 26, 0.52) !important;
+  background: rgba(14, 14, 17, 0.94) !important;
 }
 
 /* Calm density — quieter motion + softer atmosphere */
