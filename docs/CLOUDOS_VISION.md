@@ -2,7 +2,7 @@
 
 CloudOS is the default shell for the Veyron dashboard: a macOS Tahoe–inspired desktop for Kubernetes-native VM operations. The UI ships as a single self-contained SPA embedded in the Rust binary — no separate frontend build, no CDN at runtime.
 
-**Current dashboard revision:** `20260618f` (cache-bust via `?dash=<rev>` and `<meta name="veyron-dashboard-rev">`).
+**Current dashboard revision:** `20260804b` (cache-bust via `?dash=<rev>` and `<meta name="veyron-dashboard-rev">`).
 
 > **Staleness note:** this doc predates the **IronWolf** theme pivot (see `CLAUDE.md` § Design system) and the growth to 65 pages. The Themes section and page/line counts below have been corrected; other sections (tier gating, chrome-layer specifics) may still describe an earlier revision and would benefit from a fuller refresh alongside the active 65-page redesign sweep.
 
@@ -162,8 +162,9 @@ Configure OpenRouter from shell keys:
 
 ## 5. VM Inspector & Capsule
 
-Selecting a VM in Fleet opens a right-side drawer (480px) without leaving the page:
+Selecting a VM or node in the roster no longer opens a persistent right-side rail. As of the 2026-08-04 "unbox everything" pass, `positionVmFocusPaneInline()` / `positionNodeFocusPaneInline()` (`dashboard.html`) move the Inspector `<aside>` via JS to sit directly after the clicked roster row — an accordion-style inline expand, full width, no side column. The split grid (`[data-shell-region="split"]`) collapses to a single column on desktop; the roster's own scroll box is un-bounded so expanded content flows with the page instead of clipping to a fixed-height panel. This only runs above the 1024px breakpoint — below it the pane is moved back to its original rail slot so the pre-existing mobile slide-in drawer (`shell-layout.css`) is unaffected.
 
+Inspector content, unchanged:
 - Identity, state, namespace, IP, node
 - Resource summary (vCPU, memory, disk)
 - **Console**, **Capsule**, **YAML**, **Ask Zeus**, **Diagnose**
