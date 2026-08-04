@@ -21,11 +21,11 @@ html.theme-tahoe,
 html[data-theme='carbon'],
 html.theme-carbon {
   /* ---- Ground ------------------------------------------- */
-  --zs-void: #07080A;
-  --zs-carbon: #0C0E12;
-  --zs-graphite: #12151B;
-  --zs-forged: #191D25;
-  --zs-channel: #060709;
+  --zs-void: #0B0F18;
+  --zs-carbon: #10151F;
+  --zs-graphite: #161C28;
+  --zs-forged: #1E2531;
+  --zs-channel: #070A12;
 
   /* ---- Edges -------------------------------------------- */
   --zs-rule: rgba(255, 255, 255, 0.055);
@@ -528,10 +528,10 @@ html[data-theme='carbon'] .btn:not(.btn-create):not(.glass-btn-primary) {
 
 .theme-swatch-preview.tahoe,
 .theme-swatch-preview.carbon {
-  background: linear-gradient(135deg, #07080A, #12151B 45%, #7F77DD) !important;
+  background: linear-gradient(135deg, #0B0F18, #161C28 45%, #7F77DD) !important;
 }
 .mac-wallpaper-swatch-tahoe {
-  background: linear-gradient(135deg, #07080A, #191D25) !important;
+  background: linear-gradient(135deg, #0B0F18, #1E2531) !important;
 }
 
 /* ============================================================
