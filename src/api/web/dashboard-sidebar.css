@@ -98,9 +98,8 @@ body.finder-narrow .finder-search-wrap{ display: none; }
 .finder-count-badge:empty{ display: none; }
 body.finder-narrow .finder-section-label,
 body.finder-narrow .finder-section-toggle > *:not(.finder-chevron){ display: none; }
-body.finder-narrow .finder-section-toggle{ justify-content: center; padding: 10px 0 4px; }
-body.finder-narrow .finder-chevron{ display: none; }
-body.finder-narrow .finder-section.collapsed .finder-section-body{ display: block; }
+body.finder-narrow .finder-section-toggle{ justify-content: center; padding: 6px 0; }
+body.finder-narrow .finder-chevron{ font-size: 7px; opacity: .55; }
 
 .cloudos-finder-item{
   position: relative;

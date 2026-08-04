@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260802s">
+<meta name="veyron-dashboard-rev" content="20260802w">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260802s';
+  var DASH_REV = '20260802w';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -865,7 +865,7 @@ body.classic-nav-open .browse-mega-header{display:flex}
   background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   box-shadow:0 20px 48px rgba(0,0,0,.55);
   grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
-  gap:10px 22px;align-content:start;
+  gap:10px 22px;align-content:start;align-items:start;
 }
 body.classic-nav-open .browse-mega-menu{display:grid}
 @media(min-width:901px){
@@ -7238,6 +7238,164 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
   border-top-color:var(--zs-chamfer)!important;
 }
 #page-gallery-wall .gw-tile.gw-crit::before{display:none!important}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   UNBOX EVERYTHING — free-flow webpage pass (2026-08-04)
+   Owner override on top of "CARBON CONTENT — milled plates": the milled-plate
+   direction (graphite + sheen + chamfer + radius boxes) is retired again in
+   favor of flat, borderless page content — a normal flowing webpage, not a
+   boxed desktop app. This block is placed last in the document's CSS so it
+   wins cascade ties against every plate rule above it (mirrors their
+   selectors/specificity where a plain class would lose). Modals/popovers are
+   intentionally left alone — a floating dialog is expected to read as a
+   distinct surface on any webpage; this is about persistent page content.
+   To change surface framing globally, edit THIS block.
+   ══════════════════════════════════════════════════════════════════════════ */
+.page .space-y > .card,
+.page .space-y > .glass-card,
+.page .space-y > .chart-card,
+.page .space-y > .vmr-panel,
+.page .space-y > .vmr-surface-card,
+.page .card,
+.page .glass-card,
+.page .chart-card,
+.page .vmr-panel,
+.page .vmr-surface-card,
+.page .id-tile,
+.page .id-vmcard,
+.page .id-tpl,
+.page .tile,
+.page .panel,
+.page .mac-page-window,
+#page-vms #vmr-fleet-metrics .tahoe-stat-pill,
+#page-vms #vmr-fleet-metrics .glass-stat-pill,
+#page-vms .vmr-fleet-kpis .tahoe-stat-pill,
+#page-vms .vmr-fleet-kpis .glass-stat-pill,
+.page .glass-stat-pill,
+.page .tahoe-stat-pill,
+#page-vms [data-shell-region="split"],
+#page-nodes [data-shell-region="split"],
+#vm-focus-pane,
+#node-focus-pane,
+.vm-focus-pane,
+.mac-inspector-pane,
+#page-gallery-wall .gw-bigring,
+#page-gallery-wall .gw-stat,
+#page-gallery-wall .gw-tile,
+#page-gallery-wall .gw-ibanner,
+#page-gallery-wall .gw-statebar{
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+/* Sections, not boxes: a top hairline replaces the plate border on grouped
+   content blocks; the first child of a page stays flush (no leading rule). */
+.page .space-y > .card,
+.page .space-y > .glass-card,
+.page .space-y > .chart-card,
+.page .space-y > .vmr-panel,
+.page .space-y > .vmr-surface-card{
+  border-top:1px solid var(--hairline,rgba(255,255,255,.08))!important;
+  padding-top:20px!important;
+}
+.page .space-y > .card:first-child,
+.page .space-y > .glass-card:first-child,
+.page .space-y > .chart-card:first-child,
+.page .space-y > .vmr-panel:first-child,
+.page .space-y > .vmr-surface-card:first-child{
+  border-top:none!important;
+  padding-top:0!important;
+}
+/* Roster/split panes: a hairline divider stands in for the box border */
+#page-vms [data-shell-region="split"],
+#page-nodes [data-shell-region="split"]{
+  border:1px solid var(--hairline,rgba(255,255,255,.08))!important;
+}
+#vm-focus-pane,
+#node-focus-pane{
+  border-left:1px solid var(--hairline,rgba(255,255,255,.08))!important;
+}
+/* No bottom footer/dock chrome — free-flow page, nothing pinned below content */
+.footer-bar,
+.vmr-footer-bar,
+#cloudos-dock,
+.mac-dock{
+  display:none!important;
+}
+/* Fix: dashboard-carbon.css's `body.mac-desktop-root > *{position:relative;
+   z-index:1}` universal-child rule (equal specificity, later load order)
+   silently overrides plain `position:fixed` AND `z-index` on any direct
+   <body> child — affects #browse-mega-header, #browse-mega-menu, and
+   .classic-nav-backdrop (all rendered as direct body children), collapsing
+   the backdrop to a zero-height div, turning the header/menu into
+   normal-flow boxes, and dropping their z-index from 130/131/125 down to 1
+   — which then loses stacking-order ties against nested page content
+   stacking contexts (e.g. the Signal Desk hero), letting the hero paint on
+   top and bleed through. Reassert fixed positioning and a z-index well
+   above ordinary page content on all three. */
+#browse-mega-header,
+body.classic-nav-open #browse-mega-header{
+  position:fixed!important;
+  z-index:1131!important;
+}
+#browse-mega-menu,
+body.classic-nav-open #browse-mega-menu{
+  position:fixed!important;
+  z-index:1130!important;
+}
+body.classic-nav-open .classic-nav-backdrop{
+  position:fixed!important;
+  inset:96px 0 0 0!important;
+  z-index:1125!important;
+}
+/* Signal Desk hero (dashboard page) — same treatment, per explicit request
+   that no page keeps the milled-plate box look, hero pages included.
+   dashboard-ironwolf-themes.css's "Command Centre surfaces — softer macOS
+   window chrome" block (body.mac-desktop-root .iw-cc-banner/.iw-cc-board/
+   .iw-cc-readouts .iw-home-stat/#page-dashboard .iw-cc-orb, specificity
+   (0,2,0)+, all !important) outranks a plain-class override at (0,1,0), so
+   mirror its exact selector prefix here to win the tie. */
+body.mac-desktop-root .iw-home-hero,
+body.mac-desktop-root .iw-cc-banner,
+body.mac-desktop-root .iw-cc-board,
+body.mac-desktop-root .iw-cc-readouts .iw-home-stat,
+body.mac-desktop-root #page-dashboard .iw-cc-orb,
+body.mac-desktop-root .iw-home-action{
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+body.mac-desktop-root .iw-home-hero,
+body.mac-desktop-root .iw-cc-banner{
+  border-bottom:1px solid var(--hairline,rgba(255,255,255,.08))!important;
+}
+/* .mission-tile.zeus-glass — reused KPI-tile pattern on Security and other
+   pages, same milled-plate look, same treatment. */
+.mission-tile.zeus-glass{
+  background-color:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  border-bottom:1px solid var(--hairline,rgba(255,255,255,.08))!important;
+}
+/* VM/node focus rail: the outer [data-shell-region="rail"] wrapper sets
+   overflow:hidden purely for flex-layout containment (BFC), but with no
+   inner scrollable region that silently clips detail-panel content taller
+   than the pane instead of letting it scroll. Let it scroll instead. */
+[data-shell-region="rail"]{
+  overflow-y:auto!important;
+}
 </style>
 
 <div class="gw-wrap" id="gw-root">
@@ -8196,7 +8354,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260802s';
+window.__VEYRON_DASH_REV = '20260802w';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
