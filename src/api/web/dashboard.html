@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260804d">
+<meta name="veyron-dashboard-rev" content="20260804f">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260804d';
+  var DASH_REV = '20260804f';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -7238,22 +7238,18 @@ html[data-theme='holo'] body.mac-desktop-root .page .vmr-panel:hover{
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
 }
-/* KPI/stat tiles (.glass-stat-pill/.tahoe-stat-pill) — per the zeus-os
-   reference (ui/src/index.css .zeus-glass-metric / "flat pass 2" whisper
-   surface), small stat tiles are NOT fully zeroed like page sections above:
-   they keep a faint whisper surface (rgba(255,255,255,.03) fill, hairline
-   border, small radius) with zero shadow/blur/hover-lift — enough to still
-   read as a tile without reading as a "milled plate" box. */
+/* KPI/stat tiles (.glass-stat-pill/.tahoe-stat-pill): fully flat, no
+   visible box of any kind — no fill, no border, no radius. */
 #page-vms #vmr-fleet-metrics .tahoe-stat-pill,
 #page-vms #vmr-fleet-metrics .glass-stat-pill,
 #page-vms .vmr-fleet-kpis .tahoe-stat-pill,
 #page-vms .vmr-fleet-kpis .glass-stat-pill,
 .page .glass-stat-pill,
 .page .tahoe-stat-pill{
-  background:rgba(255,255,255,.03)!important;
+  background:transparent!important;
   background-image:none!important;
-  border:1px solid rgba(255,255,255,.08)!important;
-  border-radius:0.9rem!important;
+  border:none!important;
+  border-radius:0!important;
   box-shadow:none!important;
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
@@ -7261,7 +7257,6 @@ html[data-theme='holo'] body.mac-desktop-root .page .vmr-panel:hover{
 }
 button.page .glass-stat-pill.clickable-stat:hover,
 .page .glass-stat-pill.clickable-stat:hover{
-  border-color:rgba(255,255,255,.16)!important;
   transform:none!important;
   box-shadow:none!important;
 }
@@ -7354,37 +7349,33 @@ body.mac-desktop-root .iw-home-hero,
 body.mac-desktop-root .iw-cc-banner{
   border-bottom:1px solid var(--hairline,rgba(255,255,255,.08))!important;
 }
-/* .iw-home-stat (Signal Desk ONLINE/FLEET/ALERTS tiles) — same KPI-tile
-   pattern as .glass-stat-pill, same whisper treatment. */
+/* .iw-home-stat (Signal Desk ONLINE/FLEET/ALERTS tiles) — fully flat. */
 body.mac-desktop-root .iw-cc-readouts .iw-home-stat{
-  background:rgba(255,255,255,.03)!important;
+  background:transparent!important;
   background-image:none!important;
-  border:1px solid rgba(255,255,255,.08)!important;
-  border-radius:0.9rem!important;
+  border:none!important;
+  border-radius:0!important;
   box-shadow:none!important;
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
   transform:none!important;
 }
 body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
-  border-color:rgba(255,255,255,.16)!important;
   transform:none!important;
 }
 /* .mission-tile.zeus-glass — reused KPI-tile pattern on Security and other
-   pages. Same whisper-tile treatment as .glass-stat-pill (see above) —
-   small stat tiles stay faintly defined, not fully zeroed. */
+   pages. Fully flat, no visible box. */
 .mission-tile.zeus-glass{
-  background:rgba(255,255,255,.03)!important;
+  background:transparent!important;
   background-image:none!important;
-  border:1px solid rgba(255,255,255,.08)!important;
-  border-radius:0.9rem!important;
+  border:none!important;
+  border-radius:0!important;
   box-shadow:none!important;
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
   transform:none!important;
 }
 .mission-tile.zeus-glass:hover{
-  border-color:rgba(255,255,255,.16)!important;
   transform:none!important;
 }
 /* VM Inspector: stop it reading as a boxed master-detail desktop pane.
@@ -7402,11 +7393,19 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
   overflow-x:visible!important;
   max-height:none!important;
 }
-/* The split container and its page-stack ancestor both clip to viewport
-   height (overflow:hidden) so the roster+Inspector row behaves like a
-   bounded app pane rather than page content that can grow taller than
-   one screen. Let both grow to fit whichever child (the now-unbounded
-   Inspector, or the roster's own internally-scrolled box) is taller. */
+/* The page element itself, its page-stack child, AND the split container
+   all clip to a bounded flex height (overflow:hidden, shell-layout.css)
+   so the roster+Inspector row behaves like a bounded app pane rather than
+   page content that can grow taller than one screen. On pages with more
+   content above the roster (e.g. Nodes' platform-readiness widgets), the
+   page-stack fix alone wasn't enough — #page-nodes itself still clipped
+   the Inspector to invisibility even though it existed in the DOM with a
+   real, nonzero layout size. Let all three grow to fit whichever child
+   (the now-unbounded Inspector, or the roster's own internally-scrolled
+   box) is taller; .cloudos-main's own overflow-y:auto still scrolls the
+   page as a whole. */
+#page-vms[data-shell-region="page"].active,
+#page-nodes[data-shell-region="page"].active,
 #page-vms[data-shell-region="page"].active > [data-shell-region="page-stack"],
 #page-nodes[data-shell-region="page"].active > [data-shell-region="page-stack"]{
   overflow:visible!important;
@@ -8428,7 +8427,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260804d';
+window.__VEYRON_DASH_REV = '20260804f';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
@@ -20493,32 +20492,22 @@ function parseSelectedVmKey() {
   return { ns: selectedVmKey.slice(0, i), name: selectedVmKey.slice(i + 1) };
 }
 
-/* Inline Inspector: on desktop, move #vm-focus-pane to sit directly after
-   the selected roster row instead of leaving it in the persistent
-   right-side rail slot — an accordion-style expand, not a sidebar. Below
-   the existing mobile breakpoint the rail keeps its original slide-in-
-   drawer behavior (shell-layout.css position:absolute), which would break
-   if the pane were re-parented, so this only runs on wider viewports. */
+/* Inline Inspector: on desktop, render #vm-focus-pane full-width below the
+   roster instead of in the persistent right-side rail column — no side
+   panel. This ONLY toggles a class (CSS does the rest via
+   .vmr-inline-inspector in the UNBOX EVERYTHING block); it never moves the
+   pane's DOM node. It used to be re-parented next to the selected row via
+   insertAdjacentElement(), but the roster re-renders via innerHTML on every
+   view-mode switch (Roster/Table/Grid) and data refresh — nesting the pane
+   inside that container meant it got silently destroyed on the next
+   re-render, leaving no way to reopen the Inspector at all. Below the
+   mobile breakpoint the rail keeps its original slide-in-drawer behavior
+   (shell-layout.css position:absolute). */
 function positionVmFocusPaneInline() {
   var pane = document.getElementById('vm-focus-pane');
   if (!pane) return;
-  if (!selectedVmKey || window.innerWidth <= 1024) {
-    var ws = document.getElementById('vm-workspace');
-    if (ws && pane.parentElement !== ws) ws.appendChild(pane);
-    pane.classList.remove('vmr-inline-inspector');
-    return;
-  }
-  var items = document.querySelectorAll('#vm-full-list .vm-row, #vm-full-list .vm-card, #vm-full-list .vmr-roster-row');
-  for (var i = 0; i < items.length; i++) {
-    var el = items[i];
-    var ens = el.dataset.vmNs || 'default';
-    var ename = el.dataset.vmName;
-    if ((ens + '/' + ename) === selectedVmKey) {
-      if (el.nextElementSibling !== pane) el.insertAdjacentElement('afterend', pane);
-      pane.classList.add('vmr-inline-inspector');
-      return;
-    }
-  }
+  var inline = !!selectedVmKey && window.innerWidth > 1024;
+  pane.classList.toggle('vmr-inline-inspector', inline);
 }
 function syncVmSelectionUi() {
   document.querySelectorAll('#vm-full-list .vm-row, #vm-full-list .vm-card, #vm-full-list .vmr-roster-row').forEach(function(el) {
@@ -23110,29 +23099,18 @@ function clearNodeSelection() {
   setDashboardHash('nodes', null, false);
 }
 
-/* Inline Inspector (nodes): mirrors positionVmFocusPaneInline() — on desktop,
-   move #node-focus-pane to sit directly after the selected roster row instead
-   of the persistent right-side rail slot. Mobile keeps the original slide-in
+/* Inline Inspector (nodes): mirrors positionVmFocusPaneInline() — on
+   desktop, render #node-focus-pane full-width below the roster via a CSS
+   class only (no DOM re-parenting — see the comment on
+   positionVmFocusPaneInline() for why re-parenting into the roster broke
+   the Inspector entirely on re-render). Mobile keeps the original slide-in
    drawer (shell-layout.css position:absolute), so this only runs above the
    1024px breakpoint. */
 function positionNodeFocusPaneInline() {
   var pane = document.getElementById('node-focus-pane');
   if (!pane) return;
-  if (!selectedNodeName || window.innerWidth <= 1024) {
-    var ws = document.getElementById('node-workspace');
-    if (ws && pane.parentElement !== ws) ws.appendChild(pane);
-    pane.classList.remove('vmr-inline-inspector');
-    return;
-  }
-  var items = document.querySelectorAll('#node-list .vmr-roster-row');
-  for (var i = 0; i < items.length; i++) {
-    var el = items[i];
-    if (el.getAttribute('data-node-name') === selectedNodeName) {
-      if (el.nextElementSibling !== pane) el.insertAdjacentElement('afterend', pane);
-      pane.classList.add('vmr-inline-inspector');
-      return;
-    }
-  }
+  var inline = !!selectedNodeName && window.innerWidth > 1024;
+  pane.classList.toggle('vmr-inline-inspector', inline);
 }
 
 function syncNodeSelectionUi() {
