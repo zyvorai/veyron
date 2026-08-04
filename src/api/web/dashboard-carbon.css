@@ -249,56 +249,6 @@ body.mac-desktop-root[data-wallpaper='ocean'] {
   background: var(--zs-void) !important;
 }
 
-/* Panel: milled carbon plate. Chamfered top edge takes light. */
-.zs-plate {
-  position: relative;
-  background-color: var(--zs-graphite);
-  background-image: var(--zs-sheen);
-  border: 1px solid var(--zs-rule);
-  border-top-color: var(--zs-chamfer);
-  border-radius: var(--zs-radius);
-}
-
-/* Recess: machined channel */
-.zs-recess {
-  background: var(--zs-channel);
-  border: 1px solid var(--zs-rule);
-  border-bottom-color: var(--zs-rule-strong);
-  border-radius: var(--zs-radius-sm);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
-/* Signature — sheen turns on hover */
-.zs-plate--live { overflow: hidden; }
-
-.zs-plate--live::after {
-  content: "";
-  position: absolute;
-  inset: -40% -60%;
-  pointer-events: none;
-  background: linear-gradient(
-    104deg,
-    transparent 38%,
-    rgba(255, 255, 255, 0.055) 50%,
-    transparent 62%
-  );
-  transform: translateX(-38%);
-  opacity: 0;
-  transition: transform 620ms cubic-bezier(.22, .61, .36, 1), opacity 260ms ease;
-  z-index: 1;
-}
-
-.zs-plate--live:hover::after,
-.zs-plate--live:focus-within::after {
-  transform: translateX(38%);
-  opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .zs-plate--live::after { transition: opacity 120ms ease; transform: none; }
-  .zs-plate--live:hover::after { transform: none; }
-}
-
 /* ---- Topbar: chassis rail -------------------------------- */
 html[data-theme='tahoe'] .mac-menubar.navbar,
 html[data-theme='carbon'] .mac-menubar.navbar,
@@ -536,108 +486,14 @@ html[data-theme='carbon'] .btn:not(.btn-create):not(.glass-btn-primary) {
 
 /* ============================================================
    DASHBOARD SURFACE BRIDGE
-   Existing .card / .id-tile / .vmr-panel become Carbon plates
-   (rounded graphite + chamfer + sheen + live sweep).
+   Formerly turned .card / .id-tile / .vmr-panel into milled Carbon
+   plates (graphite fill + chamfer + sheen + hover light-sweep) — a
+   higher-specificity rule ([data-theme] + 2 classes = (0,3,0)) that
+   silently beat the flatten overrides in dashboard.html (plain
+   classes, (0,2,0)), so cards kept reading as boxed even after the
+   "unbox everything" pass. Removed at the source instead of adding
+   yet another override layer on top.
    ============================================================ */
-
-html[data-theme='tahoe'] .page .card,
-html[data-theme='tahoe'] .page .glass-card,
-html[data-theme='tahoe'] .page .chart-card,
-html[data-theme='tahoe'] .page .vmr-panel,
-html[data-theme='tahoe'] .page .vmr-surface-card,
-html[data-theme='tahoe'] .page .vmr-page-hero,
-html[data-theme='tahoe'] .page .vmr-fleet-card,
-html[data-theme='tahoe'] .page .vmr-copy-tile,
-html[data-theme='tahoe'] .page .vmr-heat-tile,
-html[data-theme='tahoe'] .page .vmr-alog-panel,
-html[data-theme='tahoe'] .page .vmr-ns-card,
-html[data-theme='tahoe'] .page .vmr-incident-card,
-html[data-theme='tahoe'] .page .zeus-glass,
-html[data-theme='tahoe'] .page .vm-inspector-panel,
-html[data-theme='tahoe'] .page .vm-hero,
-html[data-theme='tahoe'] .page .mission-tile,
-html[data-theme='tahoe'] .page .security-finding-card,
-html[data-theme='tahoe'] .page .tile,
-html[data-theme='tahoe'] .page .panel,
-html[data-theme='tahoe'] .page .id-tile,
-html[data-theme='tahoe'] .page .id-vmcard,
-html[data-theme='tahoe'] .page .id-tpl,
-html[data-theme='tahoe'] .page .vm-card,
-html[data-theme='carbon'] .page .card,
-html[data-theme='carbon'] .page .glass-card,
-html[data-theme='carbon'] .page .chart-card,
-html[data-theme='carbon'] .page .vmr-panel,
-html[data-theme='carbon'] .page .vmr-surface-card,
-html[data-theme='carbon'] .page .vmr-page-hero,
-html[data-theme='carbon'] .page .vmr-fleet-card,
-html[data-theme='carbon'] .page .id-tile,
-html[data-theme='carbon'] .page .id-vmcard,
-html[data-theme='carbon'] .page .id-tpl,
-html[data-theme='carbon'] .page .vm-card,
-html[data-theme='carbon'] .page .tile,
-html[data-theme='carbon'] .page .panel {
-  position: relative;
-  background-color: var(--zs-graphite) !important;
-  background-image: var(--zs-sheen) !important;
-  border: 1px solid var(--zs-rule) !important;
-  border-top-color: var(--zs-chamfer) !important;
-  border-radius: var(--zs-radius) !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  overflow: hidden;
-}
-
-/* Live sheen sweep on interactive plates */
-html[data-theme='tahoe'] .page .card::after,
-html[data-theme='tahoe'] .page .id-tile::after,
-html[data-theme='tahoe'] .page .id-vmcard::after,
-html[data-theme='tahoe'] .page .vm-card::after,
-html[data-theme='tahoe'] .page .vmr-panel::after,
-html[data-theme='tahoe'] .page .vmr-fleet-card::after,
-html[data-theme='carbon'] .page .card::after,
-html[data-theme='carbon'] .page .id-tile::after,
-html[data-theme='carbon'] .page .id-vmcard::after,
-html[data-theme='carbon'] .page .vm-card::after,
-html[data-theme='carbon'] .page .vmr-panel::after {
-  content: "";
-  position: absolute;
-  inset: -40% -60%;
-  pointer-events: none;
-  background: linear-gradient(
-    104deg,
-    transparent 38%,
-    rgba(255, 255, 255, 0.055) 50%,
-    transparent 62%
-  );
-  transform: translateX(-38%);
-  opacity: 0;
-  transition: transform 620ms cubic-bezier(.22, .61, .36, 1), opacity 260ms ease;
-  z-index: 2;
-}
-html[data-theme='tahoe'] .page .card:hover::after,
-html[data-theme='tahoe'] .page .id-tile:hover::after,
-html[data-theme='tahoe'] .page .id-vmcard:hover::after,
-html[data-theme='tahoe'] .page .vm-card:hover::after,
-html[data-theme='tahoe'] .page .vmr-panel:hover::after,
-html[data-theme='carbon'] .page .card:hover::after,
-html[data-theme='carbon'] .page .id-tile:hover::after,
-html[data-theme='carbon'] .page .id-vmcard:hover::after,
-html[data-theme='carbon'] .page .vm-card:hover::after,
-html[data-theme='carbon'] .page .vmr-panel:hover::after {
-  transform: translateX(38%);
-  opacity: 1;
-}
-
-html[data-theme='tahoe'] .page .card:hover,
-html[data-theme='tahoe'] .page .id-tile:hover,
-html[data-theme='tahoe'] .page .vmr-panel:hover,
-html[data-theme='carbon'] .page .card:hover,
-html[data-theme='carbon'] .page .id-tile:hover {
-  transform: none !important;
-  border-color: var(--zs-rule-strong) !important;
-  border-top-color: var(--zs-chamfer) !important;
-}
 
 /* Inputs / search → recess */
 html[data-theme='tahoe'] .page input:not([type="checkbox"]):not([type="radio"]),
@@ -649,9 +505,8 @@ html[data-theme='carbon'] .page select,
 html[data-theme='carbon'] .page textarea {
   background: var(--zs-channel) !important;
   border: 1px solid var(--zs-rule) !important;
-  border-bottom-color: var(--zs-rule-strong) !important;
   border-radius: var(--zs-radius-sm) !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: none !important;
   color: var(--zs-ink) !important;
 }
 
@@ -669,7 +524,6 @@ html[data-theme='carbon'] .id-chip,
 html[data-theme='carbon'] .vmr-chip {
   background: var(--zs-forged) !important;
   border: 1px solid var(--zs-rule) !important;
-  border-top-color: var(--zs-chamfer) !important;
   border-radius: 999px !important;
   font-family: var(--zs-face-data);
   color: var(--zs-ink-2) !important;
