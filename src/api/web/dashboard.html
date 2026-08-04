@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260802z">
+<meta name="veyron-dashboard-rev" content="20260802aa">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260802z';
+  var DASH_REV = '20260802aa';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -7491,12 +7491,52 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
   border-color:rgba(255,255,255,.16)!important;
   transform:none!important;
 }
-/* VM/node focus rail: the outer [data-shell-region="rail"] wrapper sets
-   overflow:hidden purely for flex-layout containment (BFC), but with no
-   inner scrollable region that silently clips detail-panel content taller
-   than the pane instead of letting it scroll. Let it scroll instead. */
+/* VM Inspector: stop it reading as a boxed master-detail desktop pane.
+   Previously this rail got its own overflow-y:auto so tall content
+   wouldn't clip — but an independently-scrolling side panel bounded to
+   viewport height is itself the "desktop app" pattern (Mail.app, file
+   browser, IDE explorer+editor), not a flowing webpage, regardless of
+   border/background styling. Let the Inspector grow to its natural
+   content height and scroll WITH the page instead. The roster list
+   (.vm-list-scroll) keeps its own scroll — a long list scrolling
+   independently is a normal, expected webpage pattern (e.g. comment
+   threads); it's the *detail* pane's isolation that read as app-like. */
 [data-shell-region="rail"]{
-  overflow-y:auto!important;
+  overflow-y:visible!important;
+  overflow-x:visible!important;
+  max-height:none!important;
+}
+/* The split container and its page-stack ancestor both clip to viewport
+   height (overflow:hidden) so the roster+Inspector row behaves like a
+   bounded app pane rather than page content that can grow taller than
+   one screen. Let both grow to fit whichever child (the now-unbounded
+   Inspector, or the roster's own internally-scrolled box) is taller. */
+#page-vms[data-shell-region="page"].active > [data-shell-region="page-stack"],
+#page-nodes[data-shell-region="page"].active > [data-shell-region="page-stack"]{
+  overflow:visible!important;
+}
+#page-vms [data-shell-region="split"],
+#page-nodes [data-shell-region="split"]{
+  overflow:visible!important;
+  height:auto!important;
+}
+/* Bottom bars (command mode, event ticker): keep them functionally fixed
+   to the viewport bottom, but drop the floating-glass-box treatment
+   (blur, opaque fill, border) so they read as a flat strip instead of a
+   panel bolted onto the page. */
+.vmr-cmdbar{
+  background:rgba(10,12,18,.7)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  border-top:1px solid var(--hairline,rgba(255,255,255,.08))!important;
+  box-shadow:none!important;
+}
+.vmr-event-ticker{
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  border-top:1px solid var(--hairline,rgba(255,255,255,.08))!important;
+  box-shadow:none!important;
 }
 </style>
 
@@ -8456,7 +8496,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260802z';
+window.__VEYRON_DASH_REV = '20260802aa';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
