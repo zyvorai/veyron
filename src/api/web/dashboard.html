@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260802aa">
+<meta name="veyron-dashboard-rev" content="20260804b">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260802aa';
+  var DASH_REV = '20260804b';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -120,11 +120,11 @@
   --blur-liquid:28px;
   --glass-border-strong:rgba(255,255,255,.10);
   /* ── Instrument Deck design system tokens ── */
-  --void:        #07080A;
-  --hull:        #0C0E12;
-  --panel:       #12151B;
-  --panel-2:     #191D25;
-  --panel-hi:    #1E2330;
+  --void:        #0B0F18;
+  --hull:        #10151F;
+  --panel:       #161C28;
+  --panel-2:     #1E2531;
+  --panel-hi:    #262E3B;
   --hairline:    rgba(255,255,255,.055);
   --hairline-hi: rgba(255,255,255,.10);
   --plasma:      #7F77DD;
@@ -4309,7 +4309,7 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window::before{dis
 /* Tables sit in channel, not glass */
 .page .table-wrap,
 .page .vmr-table-wrap{
-  background:var(--zs-channel,#060709)!important;
+  background:var(--zs-channel,#070A12)!important;
   border:1px solid var(--zs-rule)!important;
   border-bottom-color:var(--zs-rule-strong)!important;
   border-radius:var(--zs-radius-sm,7px)!important;
@@ -4337,7 +4337,7 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window::before{dis
 .launchpad-panel,
 .ask-zeus-drawer,
 .zeus-drawer{
-  background-color:var(--zs-forged,#191D25)!important;
+  background-color:var(--zs-forged,#1E2531)!important;
   background-image:var(--zs-sheen)!important;
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
@@ -4367,7 +4367,7 @@ form.card,
 html[data-theme='tahoe'] body.mac-desktop-root,
 html[data-theme='carbon'] body.mac-desktop-root,
 body.mac-desktop-root[data-shell-layout="root"] {
-  background: var(--zs-void, #07080A) !important;
+  background: var(--zs-void, #0B0F18) !important;
 }
 html[data-theme='tahoe'] body.mac-desktop-root::before,
 html[data-theme='carbon'] body.mac-desktop-root::before,
@@ -7222,7 +7222,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 #page-gallery-wall .gw-tile,
 #page-gallery-wall .gw-ibanner,
 #page-gallery-wall .gw-statebar{
-  background-color:var(--zs-graphite,#12151B)!important;
+  background-color:var(--zs-graphite,#161C28)!important;
   background-image:var(--zs-sheen)!important;
   border:1px solid var(--zs-rule)!important;
   border-top-color:var(--zs-chamfer)!important;
@@ -7537,6 +7537,42 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
   -webkit-backdrop-filter:none!important;
   border-top:1px solid var(--hairline,rgba(255,255,255,.08))!important;
   box-shadow:none!important;
+}
+/* Inline Inspector: accordion expand, not a side rail (2026-08-04).
+   positionVmFocusPaneInline()/positionNodeFocusPaneInline() move the
+   Inspector <aside> via JS to sit directly after the selected roster row
+   on desktop, instead of leaving it in the split grid's fixed 420px rail
+   column. Once it lives inside the roster, the roster's own scroll box
+   (.vm-list-scroll / #vm-full-list, previously fine as an isolated list)
+   would re-clip the expanded content exactly like the old rail did — so
+   the whole roster area now flows with the page too, same treatment
+   already given to the rail+split container above. Mobile (<=1024px) is
+   untouched: the JS never moves the pane there, so shell-layout.css's
+   slide-in-drawer rail behavior still applies unmodified. */
+@media (min-width: 1025px) {
+  #page-vms [data-shell-region="split"],
+  #page-nodes [data-shell-region="split"] {
+    display: block !important;
+  }
+  #page-vms .vm-list-pane,
+  #page-nodes .vm-list-pane {
+    overflow: visible !important;
+    border-right: none !important;
+  }
+  #page-vms .vm-list-scroll,
+  #page-vms #vm-full-list[data-shell-scroll],
+  #page-nodes .vm-list-scroll {
+    overflow-y: visible !important;
+    min-height: 0 !important;
+  }
+}
+.vmr-inline-inspector[data-shell-region="rail"] {
+  border-inline-start: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin-block: 12px !important;
+  border-top: 1px solid var(--hairline, rgba(255,255,255,.08)) !important;
+  background: transparent !important;
 }
 </style>
 
@@ -8496,7 +8532,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260802aa';
+window.__VEYRON_DASH_REV = '20260804b';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
@@ -8543,7 +8579,7 @@ const THEME_KEY = 'veyron_theme';
 /* Appearance model — dark Carbon (id tahoe), Light, and Zeus (id holo, matched
    to the zeus-os "zyvor-carbon" shell theme: orange accent on near-black navy). */
 const THEME_PRESETS = [
-  { id: 'tahoe', label: 'Carbon', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#07080A 0%,#12151B 45%,#7F77DD 100%)' },
+  { id: 'tahoe', label: 'Carbon', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#0B0F18 0%,#161C28 45%,#7F77DD 100%)' },
   { id: 'light', label: 'Light', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#f7f8fa 0%,#dbeafe 50%,#2563eb 100%)' },
   { id: 'holo', label: 'Zeus', category: 'glass', defaultWallpaper: 'tahoe', previewGradient: 'radial-gradient(120% 100% at 20% 0%,#F97316 0%,#7c2d12 42%,#0a0a0c 100%)' }
 ];
@@ -12090,6 +12126,14 @@ document.addEventListener('click', e => {
   closeDynamicIsland();
 });
 window.addEventListener('resize', () => { if (dynamicIslandOpen) closeDynamicIsland(); });
+let _focusPaneResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_focusPaneResizeTimer);
+  _focusPaneResizeTimer = setTimeout(() => {
+    if (typeof positionVmFocusPaneInline === 'function') positionVmFocusPaneInline();
+    if (typeof positionNodeFocusPaneInline === 'function') positionNodeFocusPaneInline();
+  }, 150);
+});
 
 function syncWallpaperSwatches(wp) {
   document.querySelectorAll('.mac-cc-wp-swatch[data-wallpaper]').forEach(el => {
@@ -20553,6 +20597,33 @@ function parseSelectedVmKey() {
   return { ns: selectedVmKey.slice(0, i), name: selectedVmKey.slice(i + 1) };
 }
 
+/* Inline Inspector: on desktop, move #vm-focus-pane to sit directly after
+   the selected roster row instead of leaving it in the persistent
+   right-side rail slot — an accordion-style expand, not a sidebar. Below
+   the existing mobile breakpoint the rail keeps its original slide-in-
+   drawer behavior (shell-layout.css position:absolute), which would break
+   if the pane were re-parented, so this only runs on wider viewports. */
+function positionVmFocusPaneInline() {
+  var pane = document.getElementById('vm-focus-pane');
+  if (!pane) return;
+  if (!selectedVmKey || window.innerWidth <= 1024) {
+    var ws = document.getElementById('vm-workspace');
+    if (ws && pane.parentElement !== ws) ws.appendChild(pane);
+    pane.classList.remove('vmr-inline-inspector');
+    return;
+  }
+  var items = document.querySelectorAll('#vm-full-list .vm-row, #vm-full-list .vm-card, #vm-full-list .vmr-roster-row');
+  for (var i = 0; i < items.length; i++) {
+    var el = items[i];
+    var ens = el.dataset.vmNs || 'default';
+    var ename = el.dataset.vmName;
+    if ((ens + '/' + ename) === selectedVmKey) {
+      if (el.nextElementSibling !== pane) el.insertAdjacentElement('afterend', pane);
+      pane.classList.add('vmr-inline-inspector');
+      return;
+    }
+  }
+}
 function syncVmSelectionUi() {
   document.querySelectorAll('#vm-full-list .vm-row, #vm-full-list .vm-card, #vm-full-list .vmr-roster-row').forEach(function(el) {
     const name = el.querySelector('.vm-name, .vm-card-name, .vmr-roster-name');
@@ -20565,6 +20636,7 @@ function syncVmSelectionUi() {
     }
     el.classList.toggle('selected', match);
   });
+  positionVmFocusPaneInline();
   document.body.classList.toggle('vm-focus-active', !!selectedVmKey);
   document.body.setAttribute('data-focus', selectedVmKey ? 'on' : 'off');
   var split = document.getElementById('vm-workspace');
@@ -23142,10 +23214,36 @@ function clearNodeSelection() {
   setDashboardHash('nodes', null, false);
 }
 
+/* Inline Inspector (nodes): mirrors positionVmFocusPaneInline() — on desktop,
+   move #node-focus-pane to sit directly after the selected roster row instead
+   of the persistent right-side rail slot. Mobile keeps the original slide-in
+   drawer (shell-layout.css position:absolute), so this only runs above the
+   1024px breakpoint. */
+function positionNodeFocusPaneInline() {
+  var pane = document.getElementById('node-focus-pane');
+  if (!pane) return;
+  if (!selectedNodeName || window.innerWidth <= 1024) {
+    var ws = document.getElementById('node-workspace');
+    if (ws && pane.parentElement !== ws) ws.appendChild(pane);
+    pane.classList.remove('vmr-inline-inspector');
+    return;
+  }
+  var items = document.querySelectorAll('#node-list .vmr-roster-row');
+  for (var i = 0; i < items.length; i++) {
+    var el = items[i];
+    if (el.getAttribute('data-node-name') === selectedNodeName) {
+      if (el.nextElementSibling !== pane) el.insertAdjacentElement('afterend', pane);
+      pane.classList.add('vmr-inline-inspector');
+      return;
+    }
+  }
+}
+
 function syncNodeSelectionUi() {
   document.querySelectorAll('#node-list .vmr-roster-row').forEach(function(el) {
     el.classList.toggle('selected', el.getAttribute('data-node-name') === selectedNodeName);
   });
+  positionNodeFocusPaneInline();
 }
 
 function renderNodeRail(node, pods) {
