@@ -628,19 +628,16 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
 
 .vmr-template-card {
   padding: 16px 18px;
-  border-radius: 14px;
-  background: linear-gradient(165deg, var(--panel-strong) 0%, rgba(15, 23, 42, 0.28) 100%);
-  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid rgba(255, 255, 255, .08);
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: border-color 0.15s, transform 0.15s, box-shadow 0.2s;
+  transition: border-color 0.15s;
 }
 
 .vmr-template-card:hover {
-  border-color: var(--line-strong);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(63, 124, 255, 0.1);
+  border-color: rgba(255, 255, 255, .16);
 }
 
 .vmr-template-card-actions {
@@ -653,9 +650,8 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
 
 .vmr-incident-card {
   padding: 16px 18px;
-  border-radius: 12px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: none;
   border-left: 3px solid var(--orange);
   margin-bottom: 12px;
 }
@@ -1379,9 +1375,8 @@ body.veyron-shell .cloudos-main {
 
 .vmr-bottom-card {
   padding: 16px 18px;
-  border-radius: 14px;
-  background: var(--panel-strong);
-  border: 1px solid var(--line);
+  background: transparent;
+  border-top: 1px solid var(--hairline, var(--line));
 }
 
 .vmr-bottom-stat { font-size: 1.4rem; font-weight: 800; color: var(--cyan); margin-top: 8px; }
@@ -2648,14 +2643,6 @@ body.mac-desktop-root .vmr-capsule-hero[data-vm-status="pending"]::after { backg
   transform: translateY(-1px);
 }
 
-.vmr-incident-card {
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.vmr-incident-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
-}
 
 .vmr-foundry-rail button.active {
   border-color: color-mix(in srgb, var(--blue) 22%, transparent);
@@ -3579,11 +3566,6 @@ body.mac-desktop-root .vmr-metrics-strip {
 body.mac-desktop-root .vmr-metric {
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
   border-color: rgba(255, 255, 255, 0.08);
-}
-
-body.mac-desktop-root .vmr-incident-card {
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
-  border-radius: 14px;
 }
 
 body.mac-desktop-root .vmr-capsule-hero {
