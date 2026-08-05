@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260804f">
+<meta name="veyron-dashboard-rev" content="20260804g">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260804f';
+  var DASH_REV = '20260804g';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1710,6 +1710,9 @@ button.glass-stat-pill.clickable-stat:hover,
 .glass-progress-hdr{display:flex;justify-content:space-between;font-size:.76rem;color:var(--text-muted);margin-bottom:4px}
 .glass-progress-track{height:6px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
 .glass-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--primary-blue),#38bdf8);transition:width .4s}
+.vmr-copy-tile{cursor:pointer}
+.vmr-copy-hint{opacity:0;margin-left:5px;font-size:.68em;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3,var(--text-dim));transition:opacity .15s ease}
+.vmr-copy-tile:hover .vmr-copy-hint,.vmr-copy-tile:focus-visible .vmr-copy-hint{opacity:.85}
 .glass-code-well{
   margin-top:8px;padding:10px 12px;border-radius:10px;
   background:rgba(0,0,0,.35);border:1px solid rgba(148,163,184,.12);
@@ -8427,7 +8430,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260804f';
+window.__VEYRON_DASH_REV = '20260804g';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
