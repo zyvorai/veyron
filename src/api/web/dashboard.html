@@ -18236,6 +18236,7 @@ async function fetchVMs(opts) {
     requestNotifPermission();
     vmData = list;
     window.lastVMs = list;
+    window.vmData = list;
     window._vmsLoaded = true;
     if (currentPage === 'vcentre' && window.vcRender) vcRender();
     const total = vmData.length;
@@ -18346,6 +18347,7 @@ async function fetchVMs(opts) {
       : ((e && e.message) || 'Fleet load failed');
     updateHealth(false, msg);
     vmData = [];
+    window.vmData = [];
     window._vmsLoaded = true;
     if (currentPage === 'vms') {
       const el = document.getElementById('vm-full-list');
