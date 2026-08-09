@@ -24,8 +24,11 @@ spec:
         - name: manager
           image: docker.io/library/veyron-operator:latest
           imagePullPolicy: Never
-          args:
-            - --leader-elect
+          # Leader election coordinates exactly one active controller among multiple
+          # replicas. This Deployment always runs replicas: 1, so it buys nothing —
+          # it only adds fragility: on a busy node, a slow API server response to the
+          # lease renewal can trip the deadline and crash the (only) manager for no
+          # reason. Re-add --leader-elect only if replicas is ever raised above 1.
           env:
             - name: NATS_URL
               value: "nats://nats.veyron-system.svc:4222"
