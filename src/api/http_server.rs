@@ -1464,6 +1464,7 @@ pub mod web {
             || lower.contains("already exists")
             || lower.contains("cannot restore")
             || lower.contains("still running")
+            || lower.contains("is not running")
         {
             return msg;
         }
@@ -3086,7 +3087,14 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "PAUSE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                if msg.to_lowercase().contains("is not running") {
+                    err_json(409, "CONFLICT", &msg)
+                } else {
+                    err_json(500, "PAUSE_FAILED", &msg)
+                }
+            }
         }
     }
 
@@ -3106,7 +3114,14 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "UNPAUSE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                if msg.to_lowercase().contains("is not running") {
+                    err_json(409, "CONFLICT", &msg)
+                } else {
+                    err_json(500, "UNPAUSE_FAILED", &msg)
+                }
+            }
         }
     }
 
