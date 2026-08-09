@@ -34,7 +34,11 @@ resources:
     memory: 128Mi
 
 leaderElection:
-  enabled: true
+  # Only useful when replicaCount > 1 (coordinates one active controller among
+  # several). At the default replicaCount: 1 it buys nothing and only adds
+  # fragility — a slow API server response on a busy node can trip the lease
+  # renewal deadline and crash the (only) manager for no reason.
+  enabled: false
 
 nodeSelector: {}
 tolerations: []
