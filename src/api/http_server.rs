@@ -1466,6 +1466,10 @@ pub mod web {
             || lower.contains("still running")
             || lower.contains("is not running")
             || lower.contains("no vmi found")
+            // Every raw KubeVirt/K8s 409 formats as "{message} (Conflict)"
+            // (see format_kube_error) — catch the whole family in one place
+            // instead of enumerating each specific message going forward.
+            || lower.ends_with("(conflict)")
         {
             return msg;
         }
@@ -3090,7 +3094,11 @@ pub mod web {
             }
             Err(e) => {
                 let msg = sanitize_error(&e);
-                if msg.to_lowercase().contains("is not running") || msg.to_lowercase().contains("no vmi found") {
+                let lower = msg.to_lowercase();
+                let is_conflict = lower.contains("is not running")
+                    || lower.contains("no vmi found")
+                    || lower.ends_with("(conflict)");
+                if is_conflict {
                     err_json(409, "CONFLICT", &msg)
                 } else {
                     err_json(500, "PAUSE_FAILED", &msg)
@@ -3117,7 +3125,11 @@ pub mod web {
             }
             Err(e) => {
                 let msg = sanitize_error(&e);
-                if msg.to_lowercase().contains("is not running") || msg.to_lowercase().contains("no vmi found") {
+                let lower = msg.to_lowercase();
+                let is_conflict = lower.contains("is not running")
+                    || lower.contains("no vmi found")
+                    || lower.ends_with("(conflict)");
+                if is_conflict {
                     err_json(409, "CONFLICT", &msg)
                 } else {
                     err_json(500, "UNPAUSE_FAILED", &msg)
