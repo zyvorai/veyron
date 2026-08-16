@@ -152,18 +152,32 @@ func createOrUpdate(ctx context.Context, c client.Client, desired *unstructured.
 }
 
 // RemoveVmInternetEgress deletes Veyron-managed internet policies for the VM.
+// Both deletes are attempted (best effort) even if one fails, but a real
+// error (RBAC-forbidden, admission-webhook denial, etc. — anything other
+// than NotFound) is propagated instead of being silently discarded, so
+// callers that check the returned error can actually observe and act on it.
 func RemoveVmInternetEgress(ctx context.Context, c client.Client, namespace, vmName string) error {
 	polName := InternetPolicyName(vmName)
 	cnp := &unstructured.Unstructured{}
 	cnp.SetGroupVersionKind(ciliumCNPGVK)
 	cnp.SetName(polName)
 	cnp.SetNamespace(namespace)
-	_ = client.IgnoreNotFound(c.Delete(ctx, cnp))
+	cnpErr := client.IgnoreNotFound(c.Delete(ctx, cnp))
 
 	np := &unstructured.Unstructured{}
 	np.SetGroupVersionKind(networkPolicyGVK)
 	np.SetName(polName)
 	np.SetNamespace(namespace)
-	_ = client.IgnoreNotFound(c.Delete(ctx, np))
+	npErr := client.IgnoreNotFound(c.Delete(ctx, np))
+
+	if cnpErr != nil && npErr != nil {
+		return fmt.Errorf("delete cilium network policy: %v; delete network policy: %w", cnpErr, npErr)
+	}
+	if cnpErr != nil {
+		return fmt.Errorf("delete cilium network policy: %w", cnpErr)
+	}
+	if npErr != nil {
+		return fmt.Errorf("delete network policy: %w", npErr)
+	}
 	return nil
 }

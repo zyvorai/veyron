@@ -220,8 +220,12 @@ func (r *VeyronBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 }
 
 func (r *VeyronBlueprintReconciler) handleDeletion(ctx context.Context, bp *veyronv1alpha1.VeyronBlueprint) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
 	if controllerutil.ContainsFinalizer(bp, blueprintFinalizer) {
-		// Delete all owned VeyronVM CRs
+		// Delete all owned VeyronVM CRs. A real delete error (RBAC-forbidden,
+		// admission-webhook denial, etc.) must not be silently discarded —
+		// mirrors VeyronVMReconciler.handleDeletion's pattern of only
+		// removing the finalizer once every owned resource is actually gone.
 		for _, vmSpec := range bp.Spec.VMs {
 			crName := fmt.Sprintf("%s-%s", bp.Name, vmSpec.Name)
 			var vm veyronv1alpha1.VeyronVM
@@ -229,7 +233,13 @@ func (r *VeyronBlueprintReconciler) handleDeletion(ctx context.Context, bp *veyr
 				Name:      crName,
 				Namespace: bp.Namespace,
 			}, &vm); err == nil {
-				_ = r.Delete(ctx, &vm)
+				if err := r.Delete(ctx, &vm); err != nil && !errors.IsNotFound(err) {
+					logger.Error(err, "failed to delete child VeyronVM", "name", crName)
+					return ctrl.Result{}, err
+				}
+			} else if !errors.IsNotFound(err) {
+				logger.Error(err, "failed to get child VeyronVM", "name", crName)
+				return ctrl.Result{}, err
 			}
 		}
 
