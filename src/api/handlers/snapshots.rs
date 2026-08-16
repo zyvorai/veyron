@@ -7,6 +7,7 @@ use axum::{
     Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
+    response::IntoResponse,
     routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -142,12 +143,15 @@ async fn create_snapshot(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
     Json(req): Json<CreateSnapshotRequest>,
-) -> Result<Json<SnapshotResponse>, StatusCode> {
+) -> Result<Json<SnapshotResponse>, (StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let ns =
         namespace_scope::resolve_opt(req.namespace.clone().or(q.namespace.clone()), &s.namespace);
     if namespace_scope::is_all_namespaces(&ns) {
-        return Err(StatusCode::BAD_REQUEST);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "namespace 'all' is not valid for snapshot creation" })),
+        ));
     }
     let manager = SnapshotManager::from_client(s.client().client(), &ns);
 
@@ -178,7 +182,21 @@ async fn create_snapshot(
                 created_at,
             }))
         }
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            log::error!("Failed to create snapshot for VM '{}': {}", req.vm_name, e);
+            let msg = e.to_string();
+            let lower = msg.to_lowercase();
+            let status = if lower.contains("is forbidden") || lower.contains("exceeded quota") {
+                StatusCode::FORBIDDEN
+            } else if lower.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else if lower.contains("already exists") || lower.ends_with("(conflict)") {
+                StatusCode::CONFLICT
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            Err((status, Json(serde_json::json!({ "error": msg }))))
+        }
     }
 }
 
@@ -208,14 +226,14 @@ async fn restore_snapshot(
     Path(id): Path<String>,
     Query(q): Query<DashboardNamespaceQuery>,
     Json(req): Json<RestoreSnapshotRequest>,
-) -> StatusCode {
+) -> impl IntoResponse {
     use crate::snapshots::restore::RestoreManager;
 
     let s = state.read().await;
     let client = s.client().client();
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
     let Some(snap_ns) = resolve_snapshot_op_namespace(&client, &scope, &id).await else {
-        return StatusCode::NOT_FOUND;
+        return StatusCode::NOT_FOUND.into_response();
     };
     let restore_mgr = RestoreManager::from_client(client.clone(), &snap_ns);
 
@@ -226,15 +244,29 @@ async fn restore_snapshot(
         let snap_mgr = SnapshotManager::from_client(client.clone(), &snap_ns);
         match snap_mgr.get_snapshot(&id).await {
             Ok(info) => restore_mgr.restore_in_place(&info.vm_name, &id).await,
-            Err(_) => return StatusCode::NOT_FOUND,
+            Err(_) => return StatusCode::NOT_FOUND.into_response(),
         }
     };
 
     match result {
-        Ok(_) => StatusCode::OK,
+        Ok(_) => StatusCode::OK.into_response(),
         Err(e) => {
             log::error!("Failed to restore snapshot '{}': {}", id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
+            let msg = e.to_string();
+            let lower = msg.to_lowercase();
+            let status = if lower.contains("is forbidden") || lower.contains("exceeded quota") {
+                StatusCode::FORBIDDEN
+            } else if lower.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else if lower.contains("already exists")
+                || lower.contains("still running")
+                || lower.ends_with("(conflict)")
+            {
+                StatusCode::CONFLICT
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            (status, Json(serde_json::json!({ "error": msg }))).into_response()
         }
     }
 }

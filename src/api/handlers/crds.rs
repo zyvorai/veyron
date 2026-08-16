@@ -62,6 +62,26 @@ fn crd_list_err<T: Serialize>(err: kube::Error) -> Json<CrdListResponse<T>> {
     })
 }
 
+/// Maps a create/update `kube::Error` to the real HTTP status the K8s API server
+/// assigned (403 for a ResourceQuota/RBAC rejection, 409 for a conflict, 422 for a
+/// rejected admission webhook, etc.) instead of collapsing every failure to a flat
+/// 500 with no explanation — mirrors the fix already shipped for VM creation in
+/// http_server.rs's create_vm_handler, but uses the structured `ErrorResponse` code
+/// kube-rs already parsed out of the API server's response instead of re-deriving
+/// it by pattern-matching the message text.
+#[cfg(feature = "web")]
+fn crd_write_err(err: kube::Error) -> (StatusCode, Json<serde_json::Value>) {
+    let (status, msg) = match &err {
+        kube::Error::Api(e) => (
+            StatusCode::from_u16(e.code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+            e.message.clone(),
+        ),
+        _ => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
+    };
+    log::error!("Veyron CRD write failed ({status}): {msg}");
+    (status, Json(serde_json::json!({ "error": msg })))
+}
+
 /// VeyronVM summary for API responses.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VeyronVMSummary {
@@ -282,7 +302,7 @@ pub struct CreateVeyronVMRequest {
 async fn create_veyron_vm(
     State(state): State<SharedState>,
     Json(body): Json<CreateVeyronVMRequest>,
-) -> Result<Json<VeyronVMSummary>, StatusCode> {
+) -> Result<Json<VeyronVMSummary>, (StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let ns = body
         .namespace
@@ -321,7 +341,7 @@ async fn create_veyron_vm(
                 .map(|t| t.0.to_rfc3339())
                 .unwrap_or_default(),
         })),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => Err(crd_write_err(e)),
     }
 }
 
@@ -423,7 +443,7 @@ async fn update_blueprint(
     State(state): State<SharedState>,
     Path((ns, name)): Path<(String, String)>,
     Json(spec): Json<VeyronBlueprintSpec>,
-) -> Result<Json<VeyronBlueprintDetail>, StatusCode> {
+) -> Result<Json<VeyronBlueprintDetail>, (StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let api: Api<VeyronBlueprint> = Api::namespaced(s.client().client().clone(), &ns);
     let patch = Patch::Merge(serde_json::json!({ "spec": spec }));
@@ -432,7 +452,7 @@ async fn update_blueprint(
         .await
     {
         Ok(bp) => Ok(Json(blueprint_detail(&bp, &ns))),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => Err(crd_write_err(e)),
     }
 }
 
@@ -449,7 +469,7 @@ pub struct CreateBlueprintRequest {
 async fn create_blueprint(
     State(state): State<SharedState>,
     Json(body): Json<CreateBlueprintRequest>,
-) -> Result<Json<VeyronBlueprintSummary>, StatusCode> {
+) -> Result<Json<VeyronBlueprintSummary>, (StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let ns = &s.namespace;
     let api: Api<VeyronBlueprint> = Api::namespaced(s.client().client().clone(), ns);
@@ -476,7 +496,7 @@ async fn create_blueprint(
                 .map(|t| t.0.to_rfc3339())
                 .unwrap_or_default(),
         })),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => Err(crd_write_err(e)),
     }
 }
 
@@ -570,7 +590,7 @@ async fn get_policy(
 async fn create_policy(
     State(state): State<SharedState>,
     Json(spec): Json<VeyronPolicySpec>,
-) -> Result<Json<VeyronPolicySummary>, StatusCode> {
+) -> Result<Json<VeyronPolicySummary>, (StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let ns = &s.namespace;
     let api: Api<VeyronPolicy> = Api::namespaced(s.client().client().clone(), ns);
@@ -594,7 +614,7 @@ async fn create_policy(
                 .map(|t| t.0.to_rfc3339())
                 .unwrap_or_default(),
         })),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => Err(crd_write_err(e)),
     }
 }
 
@@ -766,7 +786,7 @@ async fn get_action(
 async fn create_action(
     State(state): State<SharedState>,
     Json(spec): Json<VeyronActionSpec>,
-) -> Result<Json<VeyronActionSummary>, StatusCode> {
+) -> Result<Json<VeyronActionSummary>, (StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let ns = &s.namespace;
     let api: Api<VeyronAction> = Api::namespaced(s.client().client().clone(), ns);
@@ -788,7 +808,7 @@ async fn create_action(
                 .map(|t| t.0.to_rfc3339())
                 .unwrap_or_default(),
         })),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => Err(crd_write_err(e)),
     }
 }
 
