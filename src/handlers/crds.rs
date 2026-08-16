@@ -518,10 +518,11 @@ pub async fn handle_vrvm_apply(namespace: &str, file: &str, dry_run: bool) -> Re
             api.replace(&name, &PostParams::default(), &updated).await?;
             println!("VeyronVM '{}' updated in namespace '{}'", name, ns);
         }
-        Err(_) => {
+        Err(kube::Error::Api(ae)) if ae.code == 404 => {
             api.create(&PostParams::default(), &vm).await?;
             println!("VeyronVM '{}' created in namespace '{}'", name, ns);
         }
+        Err(e) => return Err(e.into()),
     }
 
     Ok(())

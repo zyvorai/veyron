@@ -1143,7 +1143,7 @@ pub async fn handle_ssh(name: String, user: String, namespace: &str) -> Result<(
                 }
             }
         }
-        Err(_) => Err(anyhow::anyhow!("Failed to connect to Kubernetes cluster")),
+        Err(e) => Err(anyhow::anyhow!("Failed to connect to Kubernetes cluster: {}", e)),
     }
 }
 
@@ -1884,8 +1884,12 @@ pub async fn handle_batch(
         }
     );
 
-    if error_count > 0 && !continue_on_error {
-        return Err(anyhow!("Batch creation had {} error(s)", error_count));
+    if error_count > 0 {
+        return Err(anyhow!(
+            "Batch creation had {} of {} VM(s) fail",
+            error_count,
+            batch.vms.len()
+        ));
     }
     Ok(())
 }
