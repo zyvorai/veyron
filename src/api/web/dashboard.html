@@ -9372,9 +9372,11 @@ function loadEditHardwarePanel(ns, name, vm) {
   var curCpu = (vm.cpu && parseInt(vm.cpu)) || 2;
   var curMem = (vm.memory_gb && parseInt(vm.memory_gb)) || (vm.memory && parseInt(vm.memory)) || 2;
   var curDisk = 36;
-  apiJson('/api/v1/heatmap/resources').catch(function() { return {nodes:[]}; }).then(function(heat) {
-    var nodes = heat.nodes || [];
-    var nd = nodes.find(function(n) { return n.node_name === vm.node; }) || {};
+  apiJson('/api/v1/heatmap/resources').catch(function() { return null; }).then(function(heat) {
+    var nodes = (heat && heat.nodes) || [];
+    var nd = nodes.find(function(n) { return n.node_name === vm.node; });
+    var headroomKnown = !!nd;
+    nd = nd || {};
     var hostCores = nd.cpu_capacity || 32;
     var hostMem = nd.memory_capacity_gb || 64;
     var usedCpu = nd.cpu_used || 8;
@@ -9382,16 +9384,17 @@ function loadEditHardwarePanel(ns, name, vm) {
     var freeCpu = Math.max(0, hostCores - usedCpu);
     var freeMem = Math.max(0, hostMem - usedMem);
     window['_hwBase_' + name] = {cpu:curCpu, mem:curMem, disk:curDisk, freeCpu:freeCpu, freeMem:freeMem, hostCores:hostCores, hostMem:hostMem};
-    el.innerHTML = renderEditHardwarePanel(name, curCpu, curMem, curDisk, hostCores, hostMem, freeCpu, freeMem);
+    el.innerHTML = renderEditHardwarePanel(name, curCpu, curMem, curDisk, hostCores, hostMem, freeCpu, freeMem, headroomKnown);
     hwUpd(name);
   });
 }
 
-function renderEditHardwarePanel(vmName, bCpu, bMem, bDisk, hostCores, hostMem, freeCpu, freeMem) {
+function renderEditHardwarePanel(vmName, bCpu, bMem, bDisk, hostCores, hostMem, freeCpu, freeMem, headroomKnown) {
+  var headroomSuffix = headroomKnown ? '' : ' <span style="color:var(--warning)" title="Could not reach host metrics — these are unverified estimates, not measured values">(est.)</span>';
   return '<div style="max-width:520px;padding:4px 0">' +
     '<div style="display:flex;gap:8px;margin-bottom:14px;font-family:var(--mono-deck);font-size:11px;color:var(--ink-3)">host headroom' +
-    ' <span id="hh-cpu-' + vmName + '" style="padding:3px 9px;border-radius:7px;background:var(--panel-2)">' + freeCpu + '/' + hostCores + 'c free</span>' +
-    ' <span id="hh-mem-' + vmName + '" style="padding:3px 9px;border-radius:7px;background:var(--panel-2)">' + freeMem + '/' + hostMem + 'Gi free</span></div>' +
+    ' <span id="hh-cpu-' + vmName + '" style="padding:3px 9px;border-radius:7px;background:var(--panel-2)">' + freeCpu + '/' + hostCores + 'c free' + headroomSuffix + '</span>' +
+    ' <span id="hh-mem-' + vmName + '" style="padding:3px 9px;border-radius:7px;background:var(--panel-2)">' + freeMem + '/' + hostMem + 'Gi free' + headroomSuffix + '</span></div>' +
     hwRow(vmName,'cpu','vCPU cores','hot',1,Math.max(16,hostCores),bCpu,'c') +
     hwRow(vmName,'mem','memory','hot',1,Math.max(64,hostMem),bMem,'Gi') +
     hwRow(vmName,'disk','root disk','cold',bDisk,512,bDisk,'Gi') +
@@ -14594,10 +14597,11 @@ async function fetchStackHealth() {
   const hero = document.getElementById('vmr-stack-hero');
   const body = document.getElementById('vmr-stack-body');
   if (hero) hero.innerHTML = '<div class="page-header"><div><h1>Stack Health</h1><p>KubeVirt, CDI, and platform component status</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStackHealth()">↺ Refresh</button></div></div>';
+  const stackHealthErrs = [];
   const [healthRes, operatorsRes, monRes] = await Promise.all([
-    apiJson('/api/v1/health').catch(function() { return { status: 'unreachable', version: '—', uptime_seconds: 0 }; }),
-    apiJson('/api/v1/operators').catch(function() { return []; }),
-    apiJson('/api/v1/monitoring/status' + nsParam()).catch(function() { return {}; }),
+    apiJson('/api/v1/health').catch(function() { stackHealthErrs.push('health'); return { status: 'unreachable', version: '—', uptime_seconds: 0 }; }),
+    apiJson('/api/v1/operators').catch(function() { stackHealthErrs.push('operators'); return []; }),
+    apiJson('/api/v1/monitoring/status' + nsParam()).catch(function() { stackHealthErrs.push('monitoring'); return {}; }),
   ]);
   const operators = asArray(operatorsRes);
   const kv = operators.find(function(o) { return (o.name || '').toLowerCase().indexOf('kubevirt') >= 0; });
@@ -14625,6 +14629,7 @@ async function fetchStackHealth() {
   const kvVer = kv ? (kv.version || '-') : 'Not detected';
   const cdiVer = cdi ? (cdi.version || '-') : 'Not detected';
   if (body) body.innerHTML =
+    (stackHealthErrs.length ? '<div style="margin-bottom:12px;padding:10px 14px;border-radius:10px;background:color-mix(in srgb, var(--critical) 12%, transparent);color:var(--critical);font-size:.82rem">Could not reach: ' + esc(stackHealthErrs.join(', ')) + ' — statuses below may show "Not detected" even if actually installed.</div>' : '') +
     '<div class="grid-4 page-glass-stats" style="margin-bottom:16px">' +
     tile('Veyron API', 'v' + esc(healthRes.version || '—') + ' · up ' + uptimeStr, apiStatus, apiStatus) +
     tile('KubeVirt', kvVer, kvStatus, kvStatus) +
@@ -16195,13 +16200,16 @@ async function fetchNetworkIntelData(opts) {
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'cilium\')">Cilium</button></div></div>';
   }
   try {
+    let overviewErr = null;
     const [overview, flows] = await Promise.all([
-      apiJson('/api/v1/packetwolf/network/overview' + nsParam(), opts).catch(function() { return null; }),
+      apiJson('/api/v1/packetwolf/network/overview' + nsParam(), opts).catch(function(e) { overviewErr = e; return null; }),
       apiJson('/api/v1/packetwolf/flows' + nsParam(), opts).catch(function() { return null; }),
     ]);
     if (metrics) {
       if (!overview) {
-        metrics.innerHTML = '<div class="vmr-panel"><p style="color:var(--text-dim)">PacketWolf not configured — set <code>VEYRON_PACKETWOLF_URL</code>. See <button type="button" class="glass-btn-ghost glass-btn-sm" style="display:inline;padding:0;font-size:inherit;vertical-align:baseline" onclick="navigate(\'integrations\')">Integrations</button>.</p></div>';
+        metrics.innerHTML = overviewErr && !/not configured/i.test(overviewErr.message || '')
+          ? '<div class="vmr-panel"><p style="color:var(--error)">PacketWolf integration error: ' + esc(overviewErr.message || String(overviewErr)) + '</p></div>'
+          : '<div class="vmr-panel"><p style="color:var(--text-dim)">PacketWolf not configured — set <code>VEYRON_PACKETWOLF_URL</code>. See <button type="button" class="glass-btn-ghost glass-btn-sm" style="display:inline;padding:0;font-size:inherit;vertical-align:baseline" onclick="navigate(\'integrations\')">Integrations</button>.</p></div>';
       } else {
         const ov = overview.overview || overview || {};
         metrics.innerHTML = renderGlassStatPills([
@@ -20906,7 +20914,7 @@ function loadVmRailObserved(ns, name, isRunning) {
   apiJson('/api/v1/metrics/' + encodeURIComponent(name) + '?namespace=' + encodeURIComponent(ns)).then(function(j) {
     var m = unwrapData(j);
     if (!m || !document.getElementById('vmr-rail-observed-' + name)) return;
-    var netRx = m.network_rx_bytes ? formatBytes(m.network_rx_bytes) + '/s' : '—';
+    var netRx = m.network_rx_bytes ? fmtBytes(m.network_rx_bytes) + '/s' : '—';
     document.getElementById('vmr-rail-observed-' + name).innerHTML = '<h4>Observed</h4>' +
       '<div class="vmr-rail-fact"><dt>CPU load</dt><dd>' + (m.cpu_usage_percent != null ? m.cpu_usage_percent.toFixed(1) + '%' : '—') + '<span class="vmr-rail-cause">measured just now</span></dd></div>' +
       '<div class="vmr-rail-fact"><dt>Memory used</dt><dd>' + (m.memory_usage_percent != null ? m.memory_usage_percent.toFixed(1) + '%' : '—') + '<span class="vmr-rail-cause">measured just now</span></dd></div>' +
@@ -21692,12 +21700,13 @@ async function fetchMissionControl() {
   const topo = document.getElementById('mission-topology-body');
   if (!wall) return;
   try {
+    const missionErrs = [];
     const [nodes, vms, map, netpol, migs] = await Promise.all([
-      apiJson('/api/v1/nodes').catch(function() { return []; }),
-      apiJson('/api/v1/vms' + nsParam()).catch(function() { return { vms: [] }; }),
-      apiJson('/api/v1/topology/map' + nsParam()).catch(function() { return { nodes: [], edges: [] }; }),
-      apiJson('/api/v1/network-policies' + nsParam()).catch(function() { return []; }),
-      apiJson('/api/v1/migrations').catch(function() { return []; }),
+      apiJson('/api/v1/nodes').catch(function() { missionErrs.push('hosts'); return []; }),
+      apiJson('/api/v1/vms' + nsParam()).catch(function() { missionErrs.push('VMs'); return { vms: [] }; }),
+      apiJson('/api/v1/topology/map' + nsParam()).catch(function() { missionErrs.push('topology'); return { nodes: [], edges: [] }; }),
+      apiJson('/api/v1/network-policies' + nsParam()).catch(function() { missionErrs.push('network policies'); return []; }),
+      apiJson('/api/v1/migrations').catch(function() { missionErrs.push('migrations'); return []; }),
     ]);
     const nodeList = asArray(nodes);
     const vmList = vms.vms != null ? vms.vms : asArray(vms);
@@ -21707,6 +21716,7 @@ async function fetchMissionControl() {
     const migList = asArray(migs);
     const activeMig = migList.filter(function(m) { return (m.status || '').toLowerCase() === 'running'; }).length;
     wall.innerHTML =
+      (missionErrs.length ? '<div class="mission-tile-warning" style="grid-column:1/-1;padding:10px 14px;border-radius:10px;background:color-mix(in srgb, var(--critical) 12%, transparent);color:var(--critical);font-size:.82rem">Could not reach: ' + esc(missionErrs.join(', ')) + ' — counts below may be incomplete.</div>' : '') +
       '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'nodes\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'nodes\')"><h3>Hosts</h3><div class="mt-val">' + nodeList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">Kubernetes nodes</p></div>' +
       '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'vms\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'vms\')"><h3>VMs</h3><div class="mt-val">' + vmList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">' + running + ' running</p></div>' +
       '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'network-policies\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'network-policies\')"><h3>Networks</h3><div class="mt-val">' + policies.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Network policies</p></div>' +
@@ -21933,15 +21943,6 @@ function vmiGuestAgentConnected(vmi) {
   });
 }
 
-function formatBytes(n) {
-  if (n == null || !Number.isFinite(n)) return '—';
-  const u = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
-  let i = 0;
-  let v = Number(n);
-  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
-  return v.toFixed(i === 0 ? 0 : 1) + ' ' + u[i];
-}
-
 function guestRuntimeNotConnectedMessage(vmi) {
   const os = (vmi && vmi.guest_os_info && (vmi.guest_os_info.id || vmi.guest_os_info.name || '')) || '';
   const isWin = /windows/i.test(String(os));
@@ -22006,7 +22007,7 @@ function renderGuestFilesystemPanel(container, st) {
     h += '<table class="iface-table"><thead><tr><th>Mount</th><th>Used</th><th>Avail</th><th>%</th></tr></thead><tbody>';
     rows.forEach(function(m) {
       const hot = m.use_percent >= 85;
-      h += '<tr' + (hot ? ' style="color:var(--warning)"' : '') + '><td>' + esc(m.mount || '—') + '</td><td>' + formatBytes(m.used_bytes) + '</td><td>' + formatBytes(m.avail_bytes) + '</td><td>' + (m.use_percent != null ? m.use_percent.toFixed(1) + '%' : '—') + '</td></tr>';
+      h += '<tr' + (hot ? ' style="color:var(--warning)"' : '') + '><td>' + esc(m.mount || '—') + '</td><td>' + fmtBytes(m.used_bytes) + '</td><td>' + fmtBytes(m.avail_bytes) + '</td><td>' + (m.use_percent != null ? m.use_percent.toFixed(1) + '%' : '—') + '</td></tr>';
     });
     h += '</tbody></table>';
     return h;
@@ -24051,7 +24052,8 @@ function nsParam() {
 }
 
 function fmtBytes(v) {
-  const n = Number(v || 0);
+  if (v == null) return '—';
+  const n = Number(v);
   if (!Number.isFinite(n) || n <= 0) return '0 B';
   const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
   let value = n;
@@ -26367,6 +26369,7 @@ function qfLoadTemplates() {
     qfPopulateTemplateSelect();
   }).catch(function() {
     _qfTemplates = [{name:'ubuntu-22.04',display_name:'Ubuntu 22.04',default_cpu:2,default_memory:'2Gi'},{name:'debian-12',display_name:'Debian 12',default_cpu:2,default_memory:'2Gi'},{name:'fedora-40',display_name:'Fedora 40',default_cpu:2,default_memory:'2Gi'},{name:'windows-server-2022',display_name:'Windows Server 2022',default_cpu:4,default_memory:'8Gi'}];
+    toast('Could not load the template catalog — showing a generic fallback list; these may not match what\'s actually available.', 'error');
     qfPopulateTemplateSelect();
   });
 }
