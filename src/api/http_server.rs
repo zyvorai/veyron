@@ -1923,7 +1923,14 @@ pub mod web {
                     }
                     Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
                 },
-                Err(e) => err_json(500, "EXPOSE_UPSERT_FAILED", &sanitize_error(&e)),
+                Err(e) => {
+                    let msg = sanitize_error(&e);
+                    err_json(
+                        status_for_sanitized_error(&msg),
+                        "EXPOSE_UPSERT_FAILED",
+                        &msg,
+                    )
+                }
             }
         }
     }
@@ -1997,7 +2004,14 @@ pub mod web {
                 let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/network/internet");
                 ok_json(&ApiResponse::success(&st, &ctx.request_id))
             }
-            Err(e) => err_json(500, "INTERNET_POLICY_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(
+                    status_for_sanitized_error(&msg),
+                    "INTERNET_POLICY_FAILED",
+                    &msg,
+                )
+            }
         }
     }
 
@@ -2018,7 +2032,14 @@ pub mod web {
                 let body = vm_internet::vm_internet_status(&client, &ns, &name).await;
                 ok_json(&ApiResponse::success(&body, &ctx.request_id))
             }
-            Err(e) => err_json(500, "INTERNET_POLICY_DELETE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(
+                    status_for_sanitized_error(&msg),
+                    "INTERNET_POLICY_DELETE_FAILED",
+                    &msg,
+                )
+            }
         }
     }
 
@@ -2159,7 +2180,14 @@ pub mod web {
                     }
                     Err(msg) => err_json(500, "INTERNAL_ERROR", &msg),
                 },
-                Err(e) => err_json(500, "RDP_EXPOSE_DELETE_FAILED", &sanitize_error(&e)),
+                Err(e) => {
+                    let msg = sanitize_error(&e);
+                    err_json(
+                        status_for_sanitized_error(&msg),
+                        "RDP_EXPOSE_DELETE_FAILED",
+                        &msg,
+                    )
+                }
             }
         } else {
             // Only NodePort/LoadBalancer need a node_port; ClusterIP does not.
@@ -2239,7 +2267,12 @@ pub mod web {
                     if raw.contains("VEYRON_ALLOW_PUBLIC_RDP") {
                         return err_json(403, "PUBLIC_RDP_FORBIDDEN", &raw);
                     }
-                    err_json(500, "RDP_EXPOSE_UPSERT_FAILED", &sanitize_error(&e))
+                    let msg = sanitize_error(&e);
+                    err_json(
+                        status_for_sanitized_error(&msg),
+                        "RDP_EXPOSE_UPSERT_FAILED",
+                        &msg,
+                    )
                 }
             }
         }
@@ -2558,7 +2591,14 @@ pub mod web {
                 }
                 Err(msg) => err_json(500, "INTERNAL_ERROR", &msg),
             },
-            Err(e) => err_json(500, "RDP_EXPOSE_DELETE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(
+                    status_for_sanitized_error(&msg),
+                    "RDP_EXPOSE_DELETE_FAILED",
+                    &msg,
+                )
+            }
         }
     }
 
@@ -3459,7 +3499,14 @@ pub mod web {
                 );
                 ok_json(&ApiResponse::success(&body, &ctx.request_id))
             }
-            Err(e) => err_json(500, "DATA_DISK_DEFAULTS_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(
+                    status_for_sanitized_error(&msg),
+                    "DATA_DISK_DEFAULTS_FAILED",
+                    &msg,
+                )
+            }
         }
     }
 
@@ -3477,7 +3524,14 @@ pub mod web {
                 let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/storage/data-disk");
                 ok_json(&ApiResponse::success(&body, &ctx.request_id))
             }
-            Err(e) => err_json(500, "ADD_DATA_DISK_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(
+                    status_for_sanitized_error(&msg),
+                    "ADD_DATA_DISK_FAILED",
+                    &msg,
+                )
+            }
         }
     }
 
@@ -3510,7 +3564,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "HOTPLUG_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "HOTPLUG_FAILED", &msg)
+            }
         }
     }
 
@@ -3536,7 +3593,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "HOTREMOVE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "HOTREMOVE_FAILED", &msg)
+            }
         }
     }
 
@@ -3586,7 +3646,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "UPDATE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "UPDATE_FAILED", &msg)
+            }
         }
     }
 
@@ -4693,7 +4756,8 @@ pub mod web {
                         // response alone (e.g. an admission-webhook denial like
                         // "snapshot feature gate not enabled").
                         log::error!("Create snapshot '{}/{}' failed: {}", ns, vm, e);
-                        err_json(500, "CREATE_FAILED", &sanitize_error(&e))
+                        let msg = sanitize_error(&e);
+                        err_json(status_for_sanitized_error(&msg), "CREATE_FAILED", &msg)
                     }
                 }
             }
@@ -4726,7 +4790,10 @@ pub mod web {
                             &ctx.request_id,
                         ))
                     }
-                    Err(e) => err_json(500, "RESTORE_FAILED", &sanitize_error(&e)),
+                    Err(e) => {
+                        let msg = sanitize_error(&e);
+                        err_json(status_for_sanitized_error(&msg), "RESTORE_FAILED", &msg)
+                    }
                 }
             }
             Err(e) => err_json(503, "SERVICE_UNAVAILABLE", &sanitize_error(&e)),
