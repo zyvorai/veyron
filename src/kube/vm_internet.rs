@@ -225,13 +225,26 @@ pub async fn remove_vm_internet_egress(
     vm_name: &str,
 ) -> Result<()> {
     let pol_name = internet_policy_name(vm_name);
+
     let cnp_res = cilium_cnp_resource();
     let cnp_api: Api<DynamicObject> = Api::namespaced_with(client.clone(), namespace, &cnp_res);
-    let _ = cnp_api.delete(&pol_name, &DeleteParams::default()).await;
+    if let Err(e) = cnp_api.delete(&pol_name, &DeleteParams::default()).await {
+        if !matches!(&e, kube::Error::Api(ae) if ae.code == 404) {
+            return Err(e).with_context(|| {
+                format!("failed to delete CiliumNetworkPolicy {namespace}/{pol_name}")
+            });
+        }
+    }
 
     use k8s_openapi::api::networking::v1::NetworkPolicy;
     let np_api: Api<NetworkPolicy> = Api::namespaced(client.clone(), namespace);
-    let _ = np_api.delete(&pol_name, &DeleteParams::default()).await;
+    if let Err(e) = np_api.delete(&pol_name, &DeleteParams::default()).await {
+        if !matches!(&e, kube::Error::Api(ae) if ae.code == 404) {
+            return Err(e)
+                .with_context(|| format!("failed to delete NetworkPolicy {namespace}/{pol_name}"));
+        }
+    }
+
     Ok(())
 }
 
