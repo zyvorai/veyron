@@ -167,6 +167,7 @@ func (r *VeyronVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if err := r.Create(ctx, desired); err != nil {
 			logger.Error(err, "failed to create KubeVirt VM")
 			r.Recorder.Eventf(&vm, "Warning", "CreateFailed", "Failed to create KubeVirt VM: %v", err)
+			r.updateStatus(ctx, &vm, veyronv1alpha1.VMPhaseFailed, fmt.Sprintf("create KubeVirt VM: %v", err))
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 
@@ -207,6 +208,7 @@ func (r *VeyronVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if specChanged || annChanged {
 			if err := r.Update(ctx, existing); err != nil {
 				logger.Error(err, "failed to update KubeVirt VM")
+				r.updateStatus(ctx, &vm, veyronv1alpha1.VMPhaseFailed, fmt.Sprintf("update KubeVirt VM: %v", err))
 				return ctrl.Result{}, err
 			}
 			r.publishEvent(eventbus.SubjectVMUpdated, &vm, "Updated")

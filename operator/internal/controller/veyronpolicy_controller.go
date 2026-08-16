@@ -75,6 +75,16 @@ func (r *VeyronPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		selector, err := metav1.LabelSelectorAsSelector(policy.Spec.Selector)
 		if err != nil {
 			logger.Error(err, "invalid label selector")
+			now := metav1.Now()
+			policy.Status.LastEvaluated = &now
+			setCondition(&policy.Status.Conditions, metav1.Condition{
+				Type:               "Evaluated",
+				Status:             metav1.ConditionFalse,
+				Reason:             "InvalidSelector",
+				Message:            fmt.Sprintf("invalid spec.selector: %v", err),
+				LastTransitionTime: now,
+			})
+			_ = r.Status().Update(ctx, &policy)
 			return ctrl.Result{}, nil
 		}
 		for _, vm := range vmList.Items {
