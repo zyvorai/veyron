@@ -171,13 +171,21 @@ async fn get_gitops_status(
             Default::default()
         };
 
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
+    let vms_list_result = if namespace == "all" {
+        s.client().list_all_vms().await
     } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
+        s.client().list_vms(&namespace).await
     };
 
-    let drift_detected = stored_vm_count.map(|c| c != vms.len()).unwrap_or(false);
+    // A failed list call must not be treated as "zero VMs" for drift purposes —
+    // that would flip drift_detected on an API hiccup, a false "out_of_sync"
+    // alarm unrelated to real GitOps drift. Only compare when the list actually
+    // succeeded; an unreadable count (list failed, or nothing stored yet) means
+    // "can't tell," not "drifted."
+    let drift_detected = match (&vms_list_result, stored_vm_count) {
+        (Ok(vms), Some(count)) => count != vms.len(),
+        _ => false,
+    };
 
     let (argo_apps, argo_sync, _argo_health) = argo_app_status(client.clone(), &namespace).await;
     let flux_kusts = list_dynamic_crs(
