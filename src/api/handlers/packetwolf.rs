@@ -80,6 +80,102 @@ pub fn packetwolf_api_key() -> Option<String> {
     crate::api::integrations::env_var("VEYRON_PACKETWOLF_API_KEY")
 }
 
+/// PacketWolf's actual auth model (confirmed against a live deployment): `/api/v1/auth/login`
+/// with a username/password returns a short-lived (~24h) JWT that must be sent as
+/// `Authorization: Bearer <token>` — a static `X-API-Key` header (what packetwolf_api_key()
+/// sends) is simply not an auth mechanism this API accepts, so a deployment without these
+/// two set can never succeed no matter what VEYRON_PACKETWOLF_API_KEY contains.
+pub fn packetwolf_username() -> Option<String> {
+    crate::api::integrations::env_var("VEYRON_PACKETWOLF_USERNAME")
+}
+
+pub fn packetwolf_password() -> Option<String> {
+    crate::api::integrations::env_var("VEYRON_PACKETWOLF_PASSWORD")
+}
+
+#[cfg(feature = "web")]
+#[derive(Debug, Clone)]
+struct PacketWolfToken {
+    token: String,
+    expires_at: std::time::Instant,
+}
+
+#[cfg(feature = "web")]
+static PACKETWOLF_TOKEN: std::sync::OnceLock<tokio::sync::RwLock<Option<PacketWolfToken>>> =
+    std::sync::OnceLock::new();
+
+#[cfg(feature = "web")]
+fn packetwolf_token_cache() -> &'static tokio::sync::RwLock<Option<PacketWolfToken>> {
+    PACKETWOLF_TOKEN.get_or_init(|| tokio::sync::RwLock::new(None))
+}
+
+/// Logs in to PacketWolf (if VEYRON_PACKETWOLF_USERNAME/PASSWORD are set) and returns a
+/// cached bearer token, transparently re-logging in ~60s before the cached token expires.
+/// Returns None if username/password aren't configured (caller falls back to X-API-Key).
+#[cfg(feature = "web")]
+async fn packetwolf_bearer_token(client: &reqwest::Client, base: &str) -> Option<String> {
+    let username = packetwolf_username()?;
+    let password = packetwolf_password()?;
+
+    {
+        let cached = packetwolf_token_cache().read().await;
+        if let Some(t) = cached.as_ref() {
+            if t.expires_at > std::time::Instant::now() {
+                return Some(t.token.clone());
+            }
+        }
+    }
+
+    let login_url = format!("{}/api/v1/auth/login", base.trim_end_matches('/'));
+    let resp = client
+        .post(&login_url)
+        .json(&serde_json::json!({ "username": username, "password": password }))
+        .send()
+        .await
+        .ok()?;
+    if !resp.status().is_success() {
+        log::warn!(
+            "PacketWolf login failed: HTTP {}",
+            resp.status().as_u16()
+        );
+        return None;
+    }
+    let body: serde_json::Value = resp.json().await.ok()?;
+    let token = body.get("token")?.as_str()?.to_string();
+    let expires_in = body
+        .get("expires_in")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(3600);
+    let expires_at = std::time::Instant::now()
+        + std::time::Duration::from_secs(expires_in.saturating_sub(60).max(1));
+
+    let mut cached = packetwolf_token_cache().write().await;
+    *cached = Some(PacketWolfToken {
+        token: token.clone(),
+        expires_at,
+    });
+    Some(token)
+}
+
+/// Applies whichever PacketWolf auth mechanism is actually configured. JWT bearer-token
+/// login takes priority (it's the only mechanism this API genuinely accepts); a static
+/// X-API-Key header is sent as a fallback for PacketWolf deployments/versions that use
+/// that model instead.
+#[cfg(feature = "web")]
+async fn apply_packetwolf_auth(
+    req: reqwest::RequestBuilder,
+    client: &reqwest::Client,
+    base: &str,
+) -> reqwest::RequestBuilder {
+    if let Some(token) = packetwolf_bearer_token(client, base).await {
+        return req.bearer_auth(token);
+    }
+    if let Some(key) = packetwolf_api_key().filter(|k| !k.trim().is_empty()) {
+        return req.header("X-API-Key", key);
+    }
+    req
+}
+
 #[cfg(feature = "web")]
 fn health_url(base: &str) -> String {
     let trimmed = base.trim_end_matches('/');
@@ -97,10 +193,7 @@ pub async fn probe_packetwolf_health(base: &str) -> Option<serde_json::Value> {
     let Ok(client) = crate::api::integrations::http_client().await else {
         return None;
     };
-    let mut req = client.get(&url);
-    if let Some(key) = packetwolf_api_key().filter(|k| !k.trim().is_empty()) {
-        req = req.header("X-API-Key", key);
-    }
+    let req = apply_packetwolf_auth(client.get(&url), &client, base).await;
     match req.send().await {
         Ok(resp) if resp.status().is_success() => resp.json().await.ok(),
         _ => None,
@@ -140,9 +233,7 @@ async fn proxy_packetwolf_json(
     if !query_pairs.is_empty() {
         req = req.query(query_pairs);
     }
-    if let Some(key) = packetwolf_api_key().filter(|k| !k.trim().is_empty()) {
-        req = req.header("X-API-Key", key);
-    }
+    req = apply_packetwolf_auth(req, &client, &base).await;
     let resp = req.send().await.map_err(|e| {
         (
             StatusCode::BAD_GATEWAY,
