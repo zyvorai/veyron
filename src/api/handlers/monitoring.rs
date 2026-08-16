@@ -264,7 +264,12 @@ async fn list_anomalies(
                 metric: "disk_write_mb_per_sec".to_string(),
                 current_value: (write_mb * 100.0).round() / 100.0,
                 threshold: 100.0,
-                deviation_percent: ((write_mb - 100.0) / 100.0 * 100.0 * 100.0).round() / 100.0,
+                // Same two-step shape as the CPU/memory checks above: scale the
+                // fractional deviation to a percent, then round to 2 decimals.
+                deviation_percent: {
+                    let disk_deviation = (write_mb - 100.0) / 100.0 * 100.0;
+                    (disk_deviation * 100.0).round() / 100.0
+                },
                 severity: if write_mb > 250.0 {
                     "critical"
                 } else {
