@@ -26,6 +26,13 @@ pub struct ComplianceStatus {
     pub passing_controls: u32,
     pub failing_controls: u32,
     pub last_checked: String,
+    /// True if a control check below couldn't reach the Kubernetes API (as opposed
+    /// to genuinely finding zero matching resources) — when true, `score` may be
+    /// artificially low because a failed check is conservatively scored as failing.
+    #[serde(default)]
+    pub data_incomplete: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<String>,
 }
 
 /// Compliance report
@@ -118,40 +125,44 @@ async fn compute_compliance_statuses(
         }
     }
 
-    // Namespace-level checks (count as pass/fail against total_vms for scoring)
-    let np_count = if namespace_scope::is_all_namespaces(scope) {
+    // Namespace-level checks (count as pass/fail against total_vms for scoring).
+    // A list failure here (permissions, API hiccup) is NOT the same as "genuinely
+    // zero policies/bindings" — track it separately so the score doesn't silently
+    // masquerade a broken check as a real compliance finding.
+    let mut warnings: Vec<String> = Vec::new();
+
+    let np_result = if namespace_scope::is_all_namespaces(scope) {
         let np_api: kube::api::Api<NetworkPolicy> = kube::api::Api::all(kube.clone());
-        np_api
-            .list(&kube::api::ListParams::default())
-            .await
-            .map(|l| l.items.len() as u32)
-            .unwrap_or(0)
+        np_api.list(&kube::api::ListParams::default()).await
     } else {
         let np_api: kube::api::Api<NetworkPolicy> = kube::api::Api::namespaced(kube.clone(), scope);
-        np_api
-            .list(&kube::api::ListParams::default())
-            .await
-            .map(|l| l.items.len() as u32)
-            .unwrap_or(0)
+        np_api.list(&kube::api::ListParams::default()).await
+    };
+    let np_count = match np_result {
+        Ok(l) => l.items.len() as u32,
+        Err(e) => {
+            warnings.push(format!("network-policies check could not reach the API: {e}"));
+            0
+        }
     };
     let has_network_policies = if np_count > 0 { total_vms } else { 0 };
 
-    let rb_count = if namespace_scope::is_all_namespaces(scope) {
+    let rb_result = if namespace_scope::is_all_namespaces(scope) {
         let rb_api: kube::api::Api<RoleBinding> = kube::api::Api::all(kube.clone());
-        rb_api
-            .list(&kube::api::ListParams::default())
-            .await
-            .map(|l| l.items.len() as u32)
-            .unwrap_or(0)
+        rb_api.list(&kube::api::ListParams::default()).await
     } else {
         let rb_api: kube::api::Api<RoleBinding> = kube::api::Api::namespaced(kube.clone(), scope);
-        rb_api
-            .list(&kube::api::ListParams::default())
-            .await
-            .map(|l| l.items.len() as u32)
-            .unwrap_or(0)
+        rb_api.list(&kube::api::ListParams::default()).await
+    };
+    let rb_count = match rb_result {
+        Ok(l) => l.items.len() as u32,
+        Err(e) => {
+            warnings.push(format!("rbac-configured check could not reach the API: {e}"));
+            0
+        }
     };
     let has_rbac = if rb_count > 0 { total_vms } else { 0 };
+    let data_incomplete = !warnings.is_empty();
 
     // CIS KubeVirt Benchmark: 7 controls
     let cis_controls: &[(&str, u32)] = &[
@@ -197,6 +208,8 @@ async fn compute_compliance_statuses(
             passing_controls: cis_passing,
             failing_controls: cis_failing,
             last_checked: now.clone(),
+            data_incomplete,
+            warnings: warnings.clone(),
         },
         ComplianceStatus {
             framework: "NIST SP 800-190".to_string(),
@@ -206,6 +219,8 @@ async fn compute_compliance_statuses(
             passing_controls: nist_passing,
             failing_controls: nist_failing,
             last_checked: now.clone(),
+            data_incomplete,
+            warnings,
         },
     ]
 }

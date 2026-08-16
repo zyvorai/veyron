@@ -6,6 +6,7 @@
 use axum::{
     Json, Router,
     extract::{Query, State},
+    http::StatusCode,
     routing::get,
 };
 use serde::{Deserialize, Serialize};
@@ -39,20 +40,24 @@ pub fn router(state: SharedState) -> Router {
 async fn list_network_policies(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
-) -> Json<Vec<NetworkPolicyResponse>> {
+) -> Result<Json<Vec<NetworkPolicyResponse>>, (StatusCode, Json<serde_json::Value>)> {
     use k8s_openapi::api::networking::v1::NetworkPolicy;
 
     let s = state.read().await;
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let policies = match namespace_scope::list_namespaced_resource::<NetworkPolicy>(
+    let policies = namespace_scope::list_namespaced_resource::<NetworkPolicy>(
         &s.client().client(),
         &scope,
     )
     .await
-    {
-        Ok(items) => items,
-        Err(_) => return Json(vec![]),
-    };
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "error": format!("failed to list network policies: {e}")
+            })),
+        )
+    })?;
 
     let results: Vec<NetworkPolicyResponse> = policies
         .iter()
@@ -96,5 +101,5 @@ async fn list_network_policies(
         })
         .collect();
 
-    Json(results)
+    Ok(Json(results))
 }

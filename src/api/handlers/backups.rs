@@ -58,7 +58,7 @@ pub fn router(state: SharedState) -> Router {
 async fn list_backups(
     State(state): State<SharedState>,
     Query(query): Query<BackupQuery>,
-) -> Json<Vec<BackupResponse>> {
+) -> Result<Json<Vec<BackupResponse>>, StatusCode> {
     use crate::snapshots::crds::VirtualMachineSnapshot;
     use kube::api::{Api, ListParams};
 
@@ -70,13 +70,19 @@ async fn list_backups(
         None => Api::namespaced(client, &s.namespace),
     };
 
-    let results = api
+    let results: Vec<BackupResponse> = api
         .list(&ListParams::default())
         .await
-        .map(|list| list.items.into_iter().map(snapshot_to_backup).collect())
-        .unwrap_or_default();
+        .map_err(|e| {
+            log::error!("failed to list backups: {e}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .items
+        .into_iter()
+        .map(snapshot_to_backup)
+        .collect();
 
-    Json(results)
+    Ok(Json(results))
 }
 
 #[cfg(feature = "web")]
