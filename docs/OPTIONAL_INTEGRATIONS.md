@@ -60,7 +60,9 @@ With Helm, set `integrations.*` in [charts/veyron/values.yaml](../charts/veyron/
 | `VEYRON_SOAR_WEBHOOK_URL` | SOAR on new SOC detections | HTTPS webhook |
 | `VEYRON_PACKETWOLF_URL` | PacketWolf Network Brain health (`GET /api/v1/packetwolf/status`), Cilium page banner | `http://packetwolf-api.packetwolf.svc:9191` |
 | `VEYRON_PACKETWOLF_EXTERNAL_URL` | Integrations **Open PacketWolf UI** (browser) | `http://YOUR_NODE_IP:30808` |
-| `VEYRON_PACKETWOLF_API_KEY` | PacketWolf API auth (optional when in-cluster trust is enabled) | (secret) |
+| `VEYRON_PACKETWOLF_USERNAME` | PacketWolf login — JWT bearer auth (primary mechanism) | (secret) |
+| `VEYRON_PACKETWOLF_PASSWORD` | PacketWolf login — JWT bearer auth (primary mechanism) | (secret) |
+| `VEYRON_PACKETWOLF_API_KEY` | PacketWolf `X-API-Key` fallback (only for PacketWolf deployments that accept static keys — most don't) | (secret) |
 | `VEYRON_ATLAS_URL` | Atlas storage control plane — Ceph-backed VM disk snapshot/backup/restore (`GET /api/v1/atlas/status`) | `http://atlas-gateway-ceph.rook-ceph.svc:5110` |
 | `VEYRON_ATLAS_TOKEN` | Atlas HS256 JWT bearer (only when `ATLAS_AUTH_REQUIRED=1`) | (secret) |
 | `VEYRON_ATLAS_TENANT` | Tenant id tagged on Atlas-provisioned volumes/backups | `global` |
@@ -119,7 +121,7 @@ curl -sk -H "X-API-Key: $VEYRON_API_KEY" \
   https://HOST:30151/api/v1/integrations/status | grep packetwolf
 ```
 
-**In-cluster trust:** when PacketWolf is deployed with `PACKETWOLF_TRUST_CLUSTER_NETWORKS=true` (default), the API pod can reach PacketWolf without `VEYRON_PACKETWOLF_API_KEY`. Set the key only for external or authenticated endpoints.
+**Auth is JWT bearer-token, not a static key:** PacketWolf's `/health` probe (used by `/api/v1/packetwolf/status`) is unauthenticated, so `status` can report `reachable: true` even when nothing else works. The proxied data endpoints (`/network/overview`, `/flows`) require a real login — set `VEYRON_PACKETWOLF_USERNAME`/`VEYRON_PACKETWOLF_PASSWORD` and Veyron logs in against `POST {VEYRON_PACKETWOLF_URL}/api/v1/auth/login`, caching the returned JWT (~24h TTL, auto-refreshed ~60s before expiry; `src/api/handlers/packetwolf.rs`). `VEYRON_PACKETWOLF_API_KEY` (a static `X-API-Key` header) is a fallback for PacketWolf deployments that use that model instead — most current PacketWolf instances do **not**, and will 401 on every proxied call if only the API key is set.
 
 Veyron does not proxy the full PacketWolf UI/API (unlike v9s Zeus OS); use **Open PacketWolf** on the Cilium page or the external URL for the Network Brain console. Live Hubble flows in the Cilium page remain policy-derived; PacketWolf provides the production Network Brain layer.
 
