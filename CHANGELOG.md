@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Real errors silently collapsed into generic/misleading results across the dashboard, API, CLI, and operator** — a recurring pattern: a specific, actionable failure (a ResourceQuota rejection, an admission-webhook denial, a Kubernetes NotFound/Forbidden/Conflict, a real network error) was discarded and replaced with a bare "Internal server error", a false-success response, or a misleading "not configured"/empty UI state, making real problems indistinguishable from healthy-empty states. Fixed across ~30 sites:
+  - `src/api/http_server.rs` — `sanitize_error()` gained missing patterns (`deadline exceeded`, `dial tcp`, `connection reset`, `is forbidden`/`exceeded quota`); a new `status_for_sanitized_error()` helper replaced hardcoded `500`s with the correct status (403/404/409) across 23 VM/snapshot/migration/expose/hotplug/resize handlers.
+  - `src/api/handlers/{snapshots,clones,crds}.rs` — snapshot/clone/CRD-write handlers no longer return a bare, message-less 500.
+  - `src/api/handlers/dr.rs` — `dr_apply`'s `restore_latest_snapshot` no longer reports `"applied"` success when the snapshot lookup failed or found nothing; a DR failover can no longer silently produce a fresh/empty VM while claiming success.
+  - `src/api/handlers/{network_policies,backups}.rs` — a failed list call no longer returns an empty array indistinguishable from "genuinely none exist".
+  - `src/api/handlers/compliance.rs` — NetworkPolicy/RoleBinding list failures now set `data_incomplete`/`warnings` instead of silently deflating `cis_score`/`nist_score`.
+  - `src/api/handlers/gitops.rs` — a failed VM list no longer flips `drift_detected = true` (false "out of sync" alarm from an API hiccup, not real drift).
+  - `src/kube/vm_internet.rs` and `operator/internal/network/internet.go` — VM teardown no longer discards NetworkPolicy/CiliumNetworkPolicy delete errors and orphans the object.
+  - `operator/internal/controller/veyronvm_controller.go` — KubeVirt Create/Update failures now reach `status.conditions` instead of only a transient Event.
+  - `operator/internal/controller/veyronblueprint_controller.go` — child VeyronVM delete errors during blueprint teardown are no longer discarded before removing the finalizer.
+  - `operator/internal/controller/veyronpolicy_controller.go` — an invalid `spec.selector` now sets a condition instead of reconciling away silently.
+  - `src/handlers/vm.rs` — `handle_ssh`/`handle_troubleshoot` no longer discard the real connection error; `handle_clone`/`handle_import`/`handle_wizard` now say clearly when the primary action succeeded but a follow-up `start` failed; `handle_batch --continue-on-error` no longer exits `0` when VMs actually failed (the check was unreachable dead code).
+  - `src/handlers/crds.rs` — `Api::get` failures other than a real 404 are no longer treated as "doesn't exist yet, so create".
+  - `src/api/web/dashboard.html` — the VM resize "Edit Hardware" panel no longer shows fabricated fallback capacity numbers indistinguishable from real measured headroom; Stack Health/Mission Control no longer show "Not detected"/all-zero tiles on API failures indistinguishable from a genuinely healthy-empty cluster; Quick Forge's template dropdown now warns when showing a hardcoded fallback list.
+
 ### Added
 
 - **CLI `--gpu` flag** — `veyron create` and `veyron vrvm-create` accept `--gpu <count | resource | resource:count>` (e.g. `--gpu 1`, `--gpu nvidia.com/GRID_T4-2Q:2`).
