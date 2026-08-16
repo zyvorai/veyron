@@ -1466,6 +1466,15 @@ pub mod web {
             || lower.contains("still running")
             || lower.contains("is not running")
             || lower.contains("no vmi found")
+            // "<resource> "<name>" is forbidden: exceeded quota: <quota-name>, ..." —
+            // doesn't match the bare `starts_with("Forbidden")` check below (K8s
+            // prefixes it with the resource/name, not the word "Forbidden"), so this
+            // was previously falling all the way through to "Internal server error"
+            // even though it's exactly the kind of actionable, no-secrets K8s error
+            // this block already exists to surface (e.g. VM creation rejected by a
+            // ResourceQuota — the user needs to see which quota and its limit/used).
+            || lower.contains("is forbidden")
+            || lower.contains("exceeded quota")
             // Every raw KubeVirt/K8s 409 formats as "{message} (Conflict)"
             // (see format_kube_error) — catch the whole family in one place
             // instead of enumerating each specific message going forward.
@@ -1483,12 +1492,56 @@ pub mod web {
             "Unauthorized".to_string()
         } else if msg.starts_with("Forbidden") {
             "Forbidden".to_string()
-        } else if msg.starts_with("Timeout") || msg.contains("timed out") {
+        } else if msg.starts_with("Timeout")
+            || lower.contains("timed out")
+            // Go's canonical context-timeout string — surfaces verbatim from any
+            // k8s-client call that hits its deadline (e.g. a slow apiserver);
+            // didn't contain "timed out"/"timeout" so it fell through to the
+            // generic 500 despite this branch already existing to handle exactly
+            // this category.
+            || lower.contains("deadline exceeded")
+        {
             "Request timed out".to_string()
-        } else if msg.starts_with("connection") || msg.contains("connection refused") {
+        } else if msg.starts_with("connection")
+            || lower.contains("connection refused")
+            // Same gap as above but for the "service unavailable" bucket: Go's
+            // networking-error prefix ("dial tcp ...") and "connection reset by
+            // peer" are both common when the apiserver is briefly unreachable
+            // (restart/network blip) but neither starts with "connection" nor
+            // contains "connection refused".
+            || lower.contains("dial tcp")
+            || lower.contains("connection reset")
+        {
             "Service unavailable".to_string()
         } else {
             "Internal server error".to_string()
+        }
+    }
+
+    /// Maps a `sanitize_error()` output back to the HTTP status it actually
+    /// represents. Handlers acting on a named VM (start/stop/restart/pause/
+    /// unpause/delete/migrate/clone) previously hardcoded 500 for every
+    /// failure — including "Resource not found" (the VM was deleted/renamed
+    /// out from under the caller) and "is forbidden"/quota errors (like the
+    /// create-VM 403 fix) — which is misleading for a client trying to
+    /// distinguish "retry me" from "this VM doesn't exist"/"you're not
+    /// allowed to do this". Call with the *sanitized* message (not the raw
+    /// error) so this only ever inspects the same safe text already sent to
+    /// the client.
+    fn status_for_sanitized_error(msg: &str) -> u16 {
+        let lower = msg.to_lowercase();
+        if lower.contains("not found") {
+            404
+        } else if lower.contains("already exists") || lower.contains("conflict") {
+            409
+        } else if lower.contains("forbidden") || lower.contains("exceeded quota") {
+            403
+        } else if lower.contains("unauthorized") {
+            401
+        } else if lower.contains("timed out") || lower.contains("service unavailable") {
+            503
+        } else {
+            500
         }
     }
 
@@ -2530,7 +2583,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "START_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "START_FAILED", &msg)
+            }
         }
     }
 
@@ -2555,7 +2611,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "STOP_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "STOP_FAILED", &msg)
+            }
         }
     }
 
@@ -2580,7 +2639,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "RESTART_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "RESTART_FAILED", &msg)
+            }
         }
     }
 
@@ -3071,7 +3133,8 @@ pub mod web {
             }
             Err(e) => {
                 log::error!("Clone VM failed: {}", e);
-                err_json(500, "CLONE_FAILED", &sanitize_error(&e))
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "CLONE_FAILED", &msg)
             }
         }
     }
@@ -3101,7 +3164,7 @@ pub mod web {
                 if is_conflict {
                     err_json(409, "CONFLICT", &msg)
                 } else {
-                    err_json(500, "PAUSE_FAILED", &msg)
+                    err_json(status_for_sanitized_error(&msg), "PAUSE_FAILED", &msg)
                 }
             }
         }
@@ -3132,7 +3195,7 @@ pub mod web {
                 if is_conflict {
                     err_json(409, "CONFLICT", &msg)
                 } else {
-                    err_json(500, "UNPAUSE_FAILED", &msg)
+                    err_json(status_for_sanitized_error(&msg), "UNPAUSE_FAILED", &msg)
                 }
             }
         }
@@ -3245,7 +3308,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "MIGRATE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "MIGRATE_FAILED", &msg)
+            }
         }
     }
 
@@ -3287,7 +3353,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "DELETE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "DELETE_FAILED", &msg)
+            }
         }
     }
 
@@ -3657,7 +3726,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "DELETE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "DELETE_FAILED", &msg)
+            }
         }
     }
 
@@ -4313,12 +4385,15 @@ pub mod web {
             }
             Err(e) => {
                 let msg = sanitize_error(&e);
+                let msg_lower = msg.to_lowercase();
                 if msg.contains("already exists") || msg.contains("conflict") {
                     err_json(
                         409,
                         "VM_EXISTS",
                         &format!("VM '{}' already exists", req.name),
                     )
+                } else if msg_lower.contains("forbidden") || msg_lower.contains("exceeded quota") {
+                    err_json(403, "CREATE_FORBIDDEN", &msg)
                 } else {
                     err_json(500, "CREATE_FAILED", &msg)
                 }
@@ -4444,7 +4519,10 @@ pub mod web {
                         &ctx.request_id,
                     ))
                 }
-                Err(e) => err_json(500, "DELETE_FAILED", &sanitize_error(&e)),
+                Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "DELETE_FAILED", &msg)
+            }
             },
             Err(e) => err_json(503, "SERVICE_UNAVAILABLE", &sanitize_error(&e)),
         }
@@ -4793,7 +4871,10 @@ pub mod web {
                     &ctx.request_id,
                 ))
             }
-            Err(e) => err_json(500, "DELETE_FAILED", &sanitize_error(&e)),
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "DELETE_FAILED", &msg)
+            }
         }
     }
 
