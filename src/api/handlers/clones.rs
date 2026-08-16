@@ -38,7 +38,7 @@ pub fn router(state: SharedState) -> Router {
 async fn create_clone(
     State(state): State<SharedState>,
     Json(req): Json<CloneRequest>,
-) -> Result<Json<CloneResponse>, StatusCode> {
+) -> Result<Json<CloneResponse>, (StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let ns = req.namespace.as_deref().unwrap_or(&s.namespace);
 
@@ -55,7 +55,18 @@ async fn create_clone(
         })),
         Err(e) => {
             log::error!("Failed to clone VM: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            let msg = e.to_string();
+            let lower = msg.to_lowercase();
+            let status = if lower.contains("is forbidden") || lower.contains("exceeded quota") {
+                StatusCode::FORBIDDEN
+            } else if lower.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else if lower.contains("already exists") || lower.ends_with("(conflict)") {
+                StatusCode::CONFLICT
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            Err((status, Json(serde_json::json!({ "error": msg }))))
         }
     }
 }
