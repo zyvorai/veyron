@@ -20,6 +20,14 @@ pub struct ResourceHeatmap {
 }
 
 /// Node heatmap entry
+///
+/// NOTE: `cpu_utilization`/`memory_utilization` are estimated as
+/// `(capacity - allocatable) / capacity` — Kubernetes' fixed
+/// system/kubelet-reserved fraction of the node, NOT actual VM-driven
+/// resource usage. A heavily-loaded node and an idle one report nearly
+/// identical values here. Wiring in real usage (e.g. from Prometheus,
+/// already queried elsewhere in this codebase — see monitoring.rs) is a
+/// larger change than this field's name implies; left as-is pending that.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeHeatmapEntry {
     pub node_name: String,

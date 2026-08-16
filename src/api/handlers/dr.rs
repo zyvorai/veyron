@@ -370,31 +370,44 @@ async fn dr_apply(
                     Json(serde_json::json!({ "error": e.to_string() })),
                 )
             })?;
-        let mut snapshots = snap_mgr
-            .list_snapshots_for_vm(&req.vm_name)
-            .await
-            .unwrap_or_default();
+        let mut snapshots = snap_mgr.list_snapshots_for_vm(&req.vm_name).await.map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "error": format!("failed to list snapshots for restore: {e}")
+                })),
+            )
+        })?;
         snapshots.sort_by_key(|s| std::cmp::Reverse(s.created_at));
-        if let Some(latest) = snapshots.into_iter().find(|s| s.ready_to_use) {
-            let restore_mgr = crate::snapshots::RestoreManager::new(&target_ns)
-                .await
-                .map_err(|e| {
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(serde_json::json!({ "error": e.to_string() })),
+        let Some(latest) = snapshots.into_iter().find(|s| s.ready_to_use) else {
+            return Err((
+                StatusCode::UNPROCESSABLE_ENTITY,
+                Json(serde_json::json!({
+                    "error": format!(
+                        "restore_latest_snapshot was requested but no ready-to-use snapshot exists for VM '{}'",
+                        req.vm_name
                     )
-                })?;
-            restore_mgr
-                .restore_to_new_vm(&latest.name, &target_name, false)
-                .await
-                .map_err(|e| {
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(serde_json::json!({ "error": e.to_string() })),
-                    )
-                })?;
-            snapshot_used = Some(latest.name);
-        }
+                })),
+            ));
+        };
+        let restore_mgr = crate::snapshots::RestoreManager::new(&target_ns)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": e.to_string() })),
+                )
+            })?;
+        restore_mgr
+            .restore_to_new_vm(&latest.name, &target_name, false)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": e.to_string() })),
+                )
+            })?;
+        snapshot_used = Some(latest.name);
     }
 
     Ok(Json(DrApplyResponse {
