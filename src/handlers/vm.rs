@@ -1484,7 +1484,13 @@ pub async fn handle_clone(
 
     if start {
         println!("{}", color::info(&format!("Starting VM '{}'...", target)));
-        client.start_vm(namespace, &target).await?;
+        client.start_vm(namespace, &target).await.map_err(|e| {
+            anyhow!(
+                "VM '{}' was cloned successfully but failed to start: {}",
+                target,
+                e
+            )
+        })?;
         println!("{}", color::success(&format!("VM '{}' started", target)));
     }
     Ok(())
@@ -1746,7 +1752,13 @@ pub async fn handle_wizard(name: Option<String>, namespace: &str) -> Result<()> 
     );
 
     if start_vm {
-        client.start_vm(namespace, &vm_name).await?;
+        client.start_vm(namespace, &vm_name).await.map_err(|e| {
+            anyhow!(
+                "VM '{}' was created successfully but failed to start: {}",
+                vm_name,
+                e
+            )
+        })?;
         println!("{}", color::success(&format!("VM '{}' started", vm_name)));
     }
     Ok(())
@@ -2182,15 +2194,24 @@ pub async fn handle_troubleshoot(name: String, namespace: &str) -> Result<()> {
     // Check if VM exists
     let vm = match client.get_vm(namespace, &name).await {
         Ok(vm) => vm,
-        Err(_) => {
+        Err(e) => {
+            if let Some(::kube::Error::Api(ae)) = e.downcast_ref::<::kube::Error>() {
+                if ae.code == 404 {
+                    println!(
+                        "{}",
+                        color::error(&format!(
+                            "VM '{}' not found in namespace '{}'",
+                            name, namespace
+                        ))
+                    );
+                    return Ok(());
+                }
+            }
             println!(
                 "{}",
-                color::error(&format!(
-                    "VM '{}' not found in namespace '{}'",
-                    name, namespace
-                ))
+                color::error(&format!("Failed to look up VM '{}': {}", name, e))
             );
-            return Ok(());
+            return Err(e);
         }
     };
 
@@ -2612,7 +2633,13 @@ pub async fn handle_import(
     );
 
     if start {
-        client.start_vm(namespace, vm_name).await?;
+        client.start_vm(namespace, vm_name).await.map_err(|e| {
+            anyhow::anyhow!(
+                "VM '{}' was imported successfully but failed to start: {}",
+                vm_name,
+                e
+            )
+        })?;
         println!("{}", color::success(&format!("VM '{}' started", vm_name)));
     }
 
