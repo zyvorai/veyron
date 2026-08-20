@@ -1467,7 +1467,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .page.active{animation:page-enter .18s cubic-bezier(.16,1,.3,1)}
 /* Global keyboard focus rings */
 :focus-visible{outline:2px solid rgba(59,130,246,.65);outline-offset:2px}
-.form-input:focus-visible,.form-select:focus-visible,.zeus-ai-input:focus-visible,.spotlight-input:focus-visible,.serial-input:focus-visible,.launchpad-search:focus-visible,.copilot-input:focus-visible,.veyron-copilot-input:focus-visible{outline:none}
+.form-input:focus-visible,.form-select:focus-visible,.zyra-ai-input:focus-visible,.spotlight-input:focus-visible,.serial-input:focus-visible,.launchpad-search:focus-visible,.copilot-input:focus-visible,.veyron-copilot-input:focus-visible{outline:none}
 .mac-dock-item:focus-visible{outline:2px solid rgba(59,130,246,.6);outline-offset:3px}
 
 /* ═══════════════════════════════════════════════════
@@ -1859,7 +1859,7 @@ button.glass-stat-pill.clickable-stat:hover,
 .glass-details-ai{border-color:rgba(139,92,246,.25)}
 /* ═══ Veyron VM-First UX ═══ */
 /* Ask Zyra: single entry on dock — legacy bottom AI bar removed */
-.zeus-ai-bar,.zeus-ai-results{display:none!important}
+.zyra-ai-bar,.zyra-ai-results{display:none!important}
 body.vm-focus-active .vm-list-pane{display:none}
 body.vm-focus-active .vm-workspace{grid-template-columns:1fr}
 body.vm-focus-active .vm-focus-back{display:inline-flex!important}
@@ -2042,7 +2042,7 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .connect-protocol-opt input{margin:0}
 #ssh-popover.zeus-glass{position:fixed;z-index:240;max-width:420px;padding:16px;display:none;box-shadow:0 16px 48px rgba(0,0,0,.5)}
 #ssh-popover.open{display:block}
-.zeus-ai-bar{
+.zyra-ai-bar{
   position:fixed;left:0;right:0;z-index:155;
   bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
   padding:12px 20px 16px;background:rgba(12,16,24,.88);
@@ -2053,10 +2053,10 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 }
 .mac-rdp-sheet{max-width:min(520px,96vw)}
 .mac-rdp-sheet .mac-console-back{margin-left:0}
-.zeus-ai-bar-inner{max-width:1200px;margin:0 auto;display:flex;gap:10px;align-items:center}
-.zeus-ai-input{flex:1;padding:12px 16px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.35);color:var(--text);font-size:.9rem}
-.zeus-ai-input:focus{outline:none;border-color:var(--primary-purple)}
-.zeus-ai-results{max-width:1200px;margin:0 auto 8px;max-height:200px;overflow-y:auto}
+.zyra-ai-bar-inner{max-width:1200px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.zyra-ai-input{flex:1;padding:12px 16px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.35);color:var(--text);font-size:.9rem}
+.zyra-ai-input:focus{outline:none;border-color:var(--primary-purple)}
+.zyra-ai-results{max-width:1200px;margin:0 auto 8px;max-height:200px;overflow-y:auto}
 .spotlight-panel.zeus-spotlight{width:min(640px,94vw);border-radius:16px}
 .mission-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px}
 .mission-tile.zeus-glass{padding:20px;cursor:pointer;transition:transform .15s ease,border-color .15s}
@@ -10397,13 +10397,13 @@ function loadPageData(page, opts) {
     if(el('gw-h-vit'))   { el('gw-h-vit').textContent=vit+'%'; el('gw-h-vit').style.color=m==='ok'?'var(--gw-ok)':'var(--gw-warn)'; }
     if(el('gw-hero-word')) el('gw-hero-word').textContent=m==='ok'?'running clean':'under pressure';
     if(el('gw-ring-n'))  el('gw-ring-n').textContent=vit+'%';
-    if(el('gw-ring-s'))  el('gw-ring-s').innerHTML=m==='ok'?'<b>All systems nominal.</b><br>Fleet healthy across <b>'+nodeSet.size+'</b> node'+(nodeSet.size!==1?'s':'')+'.':'<b>'+critN+' VM'+(critN!==1?'s':'')+' need attention.</b><br>Zeus has a fix ready.';
+    if(el('gw-ring-s'))  el('gw-ring-s').innerHTML=m==='ok'?'<b>All systems nominal.</b><br>Fleet healthy across <b>'+nodeSet.size+'</b> node'+(nodeSet.size!==1?'s':'')+'.':'<b>'+critN+' VM'+(critN!==1?'s':'')+' need attention.</b><br>Zyra has a fix ready.';
     if(el('gw-store-card')) el('gw-store-card').classList.toggle('gw-alert',m==='bad');
     // incident banner
     if(m==='bad' && critN>0){
       const critVms=_gwFleet.filter(v=>v.failed||v.warn).slice(0,3).map(v=>v.nm);
       if(el('gw-ib-title')) el('gw-ib-title').textContent=critN+' VM'+(critN!==1?'s':'')+' need attention';
-      if(el('gw-ib-sub'))   el('gw-ib-sub').innerHTML=critVms.map(n=>'<b>'+n+'</b>').join(' · ')+' · Zeus has a fix ready.';
+      if(el('gw-ib-sub'))   el('gw-ib-sub').innerHTML=critVms.map(n=>'<b>'+n+'</b>').join(' · ')+' · Zyra has a fix ready.';
     }
     _gwRender();
   }
@@ -14374,7 +14374,7 @@ function renderSettingsVmr() {
     ['c',    'Forge new VM shortcut'],
     ['p',    'Pause / unpause selected VM (VMs page, VM selected)'],
     ['s',    'Quick snapshot selected VM (VMs page, VM selected)'],
-    ['d',    'Diagnose selected VM with Zeus AI (VMs page, VM selected)'],
+    ['d',    'Diagnose selected VM with Zyra AI (VMs page, VM selected)'],
     ['g',    'Toggle VM name-pattern grouping (VMs page)'],
     ['Enter', 'Open selected VM inspector'],
     ['Esc',  'Dismiss modal, drawer, or command bar'],
@@ -14669,7 +14669,7 @@ function vmHealthPill(vm) {
   const ns = vm.namespace || 'default';
   const name = vm.name;
   const cls = h.health_score >= 85 ? 'good' : h.health_score >= 65 ? 'fair' : 'bad';
-  return '<button type="button" class="vm-health-pill ' + cls + '" title="Open Zeus Doctor" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>' + h.health_score + '% ' + esc(h.health_label) + '</button>';
+  return '<button type="button" class="vm-health-pill ' + cls + '" title="Open Zyra Doctor" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>' + h.health_score + '% ' + esc(h.health_label) + '</button>';
 }
 
 let appStoreCache = [];
@@ -16792,7 +16792,7 @@ function renderCopilotBriefing(items) {
   window._copilotBriefingCache = list;
   if (!list.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
   el.style.display = 'flex';
-  let html = '<div class="dc-briefing-label">Zeus briefing</div>';
+  let html = '<div class="dc-briefing-label">Zyra briefing</div>';
   list.forEach(function(item, i) {
     const sev = item.severity || 'info';
     html += '<button type="button" class="dc-briefing-item ' + esc(sev) + '" ' +
@@ -17066,7 +17066,7 @@ function openCopilotDoctor(ns, name) {
 
 async function runCopilotAskScoped(ns, name, query) {
   const el = document.getElementById('copilot-result');
-  if (el) el.innerHTML = '<div class="copilot-thinking"><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span>Zeus is thinking…</div>';
+  if (el) el.innerHTML = '<div class="copilot-thinking"><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span>Zyra is thinking…</div>';
   try {
     const data = await apiJson('/api/v1/experience/copilot/ask', {
       method: 'POST',
@@ -17410,7 +17410,7 @@ async function runCopilotAsk() {
   saveCopilotMessages(msgs);
   renderCopilotThread();
   const el = document.getElementById('copilot-result');
-  if (el) el.innerHTML = '<div class="copilot-thinking"><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span>Zeus is thinking…</div>';
+  if (el) el.innerHTML = '<div class="copilot-thinking"><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span><span class="copilot-thinking-dot"></span>Zyra is thinking…</div>';
   try {
     const body = {
       query: q.trim(),
@@ -25920,7 +25920,7 @@ async function azSend() {
   _azHistory.push({ role: 'user', content: q });
   renderAzThread();
   const azThread = document.getElementById('az-thread');
-  if (azThread) azThread.insertAdjacentHTML('beforeend', '<div id="az-thinking" style="color:var(--text-dim);padding:8px;font-size:.84rem">Zeus is thinking…</div>');
+  if (azThread) azThread.insertAdjacentHTML('beforeend', '<div id="az-thinking" style="color:var(--text-dim);padding:8px;font-size:.84rem">Zyra is thinking…</div>');
   try {
     const body = {
       query: q,

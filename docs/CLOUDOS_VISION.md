@@ -143,7 +143,7 @@ Navigation is client-side: JavaScript toggles `[data-page]` visibility. Labels a
 | Control Center tile | Ask Zyra |
 | Spotlight / Launchpad | Search "zeus" or "copilot" (alias) |
 | VM context menu | Ask Zyra (scoped to VM) |
-| Mission Control briefing chips | Zeus briefing from `GET /experience/home` → `copilot_briefing` |
+| Mission Control briefing chips | Zyra briefing from `GET /experience/home` → `copilot_briefing` |
 | Page stat pills | "Ask Zyra" on clickable fleet metrics |
 
 The modal is a macOS-style sheet (`#copilot-modal`). Module badges show backend names (e.g. **Veyron Doctor**, **Veyron YAML Builder**); the default badge is **Ask Zyra**.
