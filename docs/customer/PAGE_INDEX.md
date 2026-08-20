@@ -115,11 +115,11 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Actions | `actions` | Queued / recent operator actions. | [Open](pages/ops/actions.md) |
 | Notifications | `notifications` | Notification channels and delivery preferences. | [Open](pages/ops/notifications.md) |
 
-## Ask Zeus
+## Ask Zyra
 
 | Page | Route | Purpose | Guide |
 |------|-------|---------|-------|
-| Ask Zeus | `ask-zeus` | Ask Zeus — AI assistant grounded on this cluster. | [Open](pages/ask-zeus/ask-zeus.md) |
+| Ask Zyra | `ask-zyra` | Ask Zyra — AI assistant grounded on this cluster. | [Open](pages/ask-zyra/ask-zyra.md) |
 
 ## Related
 

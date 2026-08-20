@@ -164,14 +164,14 @@ See [Disk management](../DISK_MANAGEMENT.md).
 
 ## AI / integrations
 
-### "Ask Zeus" returns errors or is disabled
+### "Ask Zyra" returns errors or is disabled
 Verify AI config; if unset, the assistant is off.
 
 ```bash
 env | grep '^VEYRON_AI_'
 # needs at least VEYRON_AI_MODE, VEYRON_AI_URL, VEYRON_AI_API_KEY, VEYRON_AI_MODEL
 ```
-Configure OpenRouter with `scripts/configure-zeus-openrouter.sh HOST USER`. See
+Configure OpenRouter with `scripts/configure-zyra-openrouter.sh HOST USER`. See
 [Veyron AI](../VEYRON_AI.md).
 
 ### Observability / cost panels empty

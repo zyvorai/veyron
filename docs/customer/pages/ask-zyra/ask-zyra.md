@@ -1,8 +1,8 @@
-# Ask Zeus
+# Ask Zyra
 
 ## Purpose
 
-Ask Zeus — AI assistant grounded on this cluster.
+Ask Zyra — AI assistant grounded on this cluster.
 
 ## When to use it
 
@@ -12,12 +12,12 @@ Ask Zeus — AI assistant grounded on this cluster.
 
 ## How to get there
 
-- Route: `/dashboard#ask-zeus`
-- Nav: **Ask Zeus → Ask Zeus** (Browse mega-menu, Finder, or Spotlight `⌘K`)
+- Route: `/dashboard#ask-zyra`
+- Nav: **Ask Zyra → Ask Zyra** (Browse mega-menu, Finder, or Spotlight `⌘K`)
 
 ## What you can do
 
-1. Open `/dashboard#ask-zeus` and wait for live API data from the Veyron server.
+1. Open `/dashboard#ask-zyra` and wait for live API data from the Veyron server.
 2. Use filters (namespace, label, status) when the page provides them.
 3. Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).
 4. For mutating actions (create VM, migrate, apply policy): review impact and role gates first.

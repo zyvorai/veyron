@@ -12,7 +12,7 @@
 
 - Local: `http://127.0.0.1:8080/dashboard`
 - Cluster: `https://<host>:30151/dashboard` (chart defaults vary — use your deploy output)
-- Ask Zeus deep link: `https://<host>:30151/ask-zeus`
+- Ask Zyra deep link: `https://<host>:30151/ask-zyra`
 
 ## 2. Sign in
 
@@ -43,9 +43,9 @@
 
 **Template Foundry** (`#app-store`) or **Blueprint Studio** (`#blueprint-studio`).
 
-### D. Ask Zeus
+### D. Ask Zyra
 
-**Ask Zeus** (`#ask-zeus`) — cluster-grounded Q&A before mutating actions.
+**Ask Zyra** (`#ask-zyra`) — cluster-grounded Q&A before mutating actions.
 
 ## Next steps
 

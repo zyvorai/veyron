@@ -167,10 +167,10 @@ The `charts/veyron-monitoring` chart ships ServiceMonitors, rules, and dashboard
 Splunk, QRadar (LEEF), Microsoft Sentinel, Elastic, and a generic SOAR webhook. See
 [SOC](../SOC.md).
 
-**36. What is "Ask Zeus"?**
+**36. What is "Ask Zyra"?**
 Veyron's built-in LLM assistant plus per-domain copilots, configured via
 `VEYRON_AI_*`. Optional and provider-agnostic (e.g. OpenRouter via
-`scripts/configure-zeus-openrouter.sh`). See [Veyron AI](../VEYRON_AI.md).
+`scripts/configure-zyra-openrouter.sh`). See [Veyron AI](../VEYRON_AI.md).
 
 **37. Is there a Terraform provider?**
 Yes — `terraform-provider-veyron/`.

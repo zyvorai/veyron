@@ -12,7 +12,7 @@ CloudOS is the default shell for the Veyron dashboard: a macOS Tahoe–inspired 
 
 | Asset | Source | Role |
 |---|---|---|
-| HTML shell + inline JS | `src/api/web/dashboard.html` (~30k lines) | All 65 pages, CloudOS chrome, Ask Zeus modal |
+| HTML shell + inline JS | `src/api/web/dashboard.html` (~30k lines) | All 65 pages, CloudOS chrome, Ask Zyra modal |
 | Layout & VMR panels | `src/api/web/dashboard-veyron.css` | Glass surfaces, dock, fleet cards |
 | Theme tokens | `src/api/web/dashboard-ironwolf-themes.css` | IronWolf `tahoe`/`light` token blocks |
 | Sign-in page | `src/api/web/dashboard-ironwolf-login.css` | Split-screen login hero + glass panel |
@@ -37,14 +37,14 @@ The active layout uses `body.mac-desktop-root`. Legacy `veyron-topbar` / `veyron
 
 | Layer | Purpose | Key shortcuts |
 |---|---|---|
-| **Menubar** (40px) | App menu, View, tier badge, clock, Control Center | ⌘J Ask Zeus, ⌘K Spotlight, ⌘⇧B Browse |
+| **Menubar** (40px) | App menu, View, tier badge, clock, Control Center | ⌘J Ask Zyra, ⌘K Spotlight, ⌘⇧B Browse |
 | ~~Finder sidebar~~ | Legacy collapsible sidebar (`#cloudos-finder`) — force-hidden at boot (`initFinderCollapsed()`), its reopen control permanently disabled. Dead code pending removal; **not** live navigation. | — |
-| **Dock** | Pinned pages + Ask Zeus (✦) + trash metaphor | Click or Launchpad |
+| **Dock** | Pinned pages + Ask Zyra (✦) + trash metaphor | Click or Launchpad |
 | **mac-page-window** | Content pane for the active `data-page` section | `.mac-page-toolbar` replaces legacy `.page-header` on Normal/Power |
 | **Mission Control overlay** | Cluster overview grid (F3) | Fleet health at a glance |
 | **Launchpad** | Full-page app grid | All tier-allowed pages |
-| **Spotlight** | ⌘K fuzzy search | Pages, VMs, actions including Ask Zeus |
-| **Control Center** | Theme, wallpaper, tier, quick tiles | Ask Zeus tile, desktop tier switcher |
+| **Spotlight** | ⌘K fuzzy search | Pages, VMs, actions including Ask Zyra |
+| **Control Center** | Theme, wallpaper, tier, quick tiles | Ask Zyra tile, desktop tier switcher |
 | **Browse sheet** | Mega-menu of all pages (⌘⇧B) | Mobile: bottom sheet |
 
 ### Desktop tiers
@@ -66,10 +66,10 @@ The default Mission Control home matches the `veyron.png` reference layout:
 
 | Surface | Behavior |
 |---|---|
-| **Menubar center** | Search, alert pill, **Home / Monitor / Ask Zeus** quick pills |
+| **Menubar center** | Search, alert pill, **Home / Monitor / Ask Zyra** quick pills |
 | **Finder Platform rail** | Stack Health → Settings (nine links); Favorites collapsed on Power |
-| **Finder Ask Zeus** | Four shortcuts: Ask Zeus, Unhealthy VMs, Backup Advisor, Storage Doctor |
-| **Mission Control** | Compact title + Live badge; 4-card grid (Fleet Health, Ask Zeus, Quick Actions, Alerts) |
+| **Finder Ask Zyra** | Four shortcuts: Ask Zyra, Unhealthy VMs, Backup Advisor, Storage Doctor |
+| **Mission Control** | Compact title + Live badge; 4-card grid (Fleet Health, Ask Zyra, Quick Actions, Alerts) |
 | **Pinned VMs** | Always visible with dashed **Forge New VM** placeholder |
 | **Status bar** | **Zen mode on** (Automatic tier or View → Zen mode) + large clock above dock |
 | **Advanced home** | Restores hero, metrics strip, and Recent Activity on Mission Control |
@@ -99,7 +99,7 @@ Keys: `veyron_theme`, `veyron_wallpaper`.
 
 - System stack: `-apple-system`, SF Pro, Segoe UI fallbacks
 - Menubar 40px; glass cards with `backdrop-filter: blur(12–20px)`
-- `--violet` (`#9b7cff`) for Ask Zeus / AI surfaces
+- `--violet` (`#9b7cff`) for Ask Zyra / AI surfaces
 
 ---
 
@@ -109,7 +109,7 @@ Navigation is client-side: JavaScript toggles `[data-page]` visibility. Labels a
 
 | Page ID | Label | Key content |
 |---|---|---|
-| `home` | Mission Control | Fleet health ring, Ask Zeus panel, quick actions, alerts, pinned VMs (+ Forge placeholder) |
+| `home` | Mission Control | Fleet health ring, Ask Zyra panel, quick actions, alerts, pinned VMs (+ Forge placeholder) |
 | `vms` | Fleet Command | VM cards/table/topology, inspector drawer, bulk lifecycle |
 | `create` | Forge VM | 6-step wizard: Template → Profile → Hardware → Network → Security → Review |
 | `app-store` | Template Foundry | 44+ OS templates, category rail, GPU/Windows/UEFI filters |
@@ -128,25 +128,25 @@ Navigation is client-side: JavaScript toggles `[data-page]` visibility. Labels a
 
 ---
 
-## 4. Ask Zeus (AI Assistant)
+## 4. Ask Zyra (AI Assistant)
 
-**Ask Zeus** is the user-facing name for the experience-layer assistant. Internal JS still uses `openCopilot()` / `/api/v1/experience/copilot/*` for API compatibility.
+**Ask Zyra** is the user-facing name for the experience-layer assistant. Internal JS still uses `openCopilot()` / `/api/v1/experience/copilot/*` for API compatibility.
 
 ### Entry points
 
 | Surface | Action |
 |---|---|
-| Dock ✦ button | `openAskZeus()` |
+| Dock ✦ button | `openAskZyra()` |
 | ⌘J | Global shortcut |
-| Menubar → Ask Zeus… | Opens modal |
-| Finder → Ask Zeus section | Quick fleet prompts (Doctor, Storage, Cost, …) |
-| Control Center tile | Ask Zeus |
+| Menubar → Ask Zyra… | Opens modal |
+| Finder → Ask Zyra section | Quick fleet prompts (Doctor, Storage, Cost, …) |
+| Control Center tile | Ask Zyra |
 | Spotlight / Launchpad | Search "zeus" or "copilot" (alias) |
-| VM context menu | Ask Zeus (scoped to VM) |
+| VM context menu | Ask Zyra (scoped to VM) |
 | Mission Control briefing chips | Zeus briefing from `GET /experience/home` → `copilot_briefing` |
-| Page stat pills | "Ask Zeus" on clickable fleet metrics |
+| Page stat pills | "Ask Zyra" on clickable fleet metrics |
 
-The modal is a macOS-style sheet (`#copilot-modal`). Module badges show backend names (e.g. **Veyron Doctor**, **Veyron YAML Builder**); the default badge is **Ask Zeus**.
+The modal is a macOS-style sheet (`#copilot-modal`). Module badges show backend names (e.g. **Veyron Doctor**, **Veyron YAML Builder**); the default badge is **Ask Zyra**.
 
 ### Backend modules
 
@@ -155,7 +155,7 @@ See [VEYRON_AI.md](./VEYRON_AI.md) for the full API table. Deterministic advisor
 Configure OpenRouter from shell keys:
 
 ```bash
-./scripts/configure-zeus-openrouter.sh HOST USER
+./scripts/configure-zyra-openrouter.sh HOST USER
 ```
 
 ---
@@ -167,7 +167,7 @@ Selecting a VM or node in the roster no longer opens a persistent right-side rai
 Inspector content, unchanged:
 - Identity, state, namespace, IP, node
 - Resource summary (vCPU, memory, disk)
-- **Console**, **Capsule**, **YAML**, **Ask Zeus**, **Diagnose**
+- **Console**, **Capsule**, **YAML**, **Ask Zyra**, **Diagnose**
 
 Recent VMs: `localStorage` key `veyron_recent_vms` (Spotlight empty state).
 
@@ -192,7 +192,7 @@ Six steps with a top progress rail:
 |---|---|
 | ≥ 1280px | Full CloudOS: Finder + dock + page window |
 | 768–1279px | Finder overlay with backdrop; quick nav bar |
-| &lt; 768px | Bottom mobile nav (Mission Control, Fleet, Forge, Console, Ask Zeus); Browse as bottom sheet |
+| &lt; 768px | Bottom mobile nav (Mission Control, Fleet, Forge, Console, Ask Zyra); Browse as bottom sheet |
 
 Mission Control and fleet grids use CSS Grid `auto-fit, minmax(320px, 1fr)`.
 
@@ -253,7 +253,7 @@ VEYRON_API_KEY='...' ./scripts/test-vm-daily-ops-remote.sh HOST [30151]
 
 Force cache refresh in browser: `https://HOST:30151/dashboard?dash=20260618b`
 
-Dashboard tier checks in `test-remote.sh` validate CloudOS shell markers (`mac-desktop-root`, dock, Ask Zeus entry).
+Dashboard tier checks in `test-remote.sh` validate CloudOS shell markers (`mac-desktop-root`, dock, Ask Zyra entry).
 
 ---
 
@@ -261,7 +261,7 @@ Dashboard tier checks in `test-remote.sh` validate CloudOS shell markers (`mac-d
 
 | Doc | Topic |
 |---|---|
-| [VEYRON_AI.md](./VEYRON_AI.md) | Ask Zeus API, modules, LLM agent layer |
+| [VEYRON_AI.md](./VEYRON_AI.md) | Ask Zyra API, modules, LLM agent layer |
 | [OPTIONAL_INTEGRATIONS.md](./OPTIONAL_INTEGRATIONS.md) | Prometheus, Grafana, PacketWolf |
 | [TEMPLATE_CATALOG.md](./TEMPLATE_CATALOG.md) | VMTemplate / VMProfile CRDs |
 | [SOC.md](./SOC.md) | Security Posture / SOC handlers |

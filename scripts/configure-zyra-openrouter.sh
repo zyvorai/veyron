@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Wire Ask Zeus (Veyron Copilot LLM) to OpenRouter using keys from ~/.zshrc.
+# Wire Ask Zyra (Veyron Copilot LLM) to OpenRouter using keys from ~/.zshrc.
 #
 # Local API:
-#   eval "$(./scripts/configure-zeus-openrouter.sh --print-env)"
+#   eval "$(./scripts/configure-zyra-openrouter.sh --print-env)"
 #   cargo run --features web -- api-serve ...
 #
 # Remote cluster (default veyron-integrations secret + rollout restart):
-#   ./scripts/configure-zeus-openrouter.sh HOST USER
-#   ./scripts/configure-zeus-openrouter.sh <host> <user>
+#   ./scripts/configure-zyra-openrouter.sh HOST USER
+#   ./scripts/configure-zyra-openrouter.sh <host> <user>
 
 set -euo pipefail
 
@@ -27,7 +27,7 @@ apply_local_env() {
   while IFS= read -r line; do
     export "$line"
   done < <(print_env)
-  echo "Zeus OpenRouter env loaded from $RC_FILE (mode=${VEYRON_AI_MODE}, model=${VEYRON_AI_MODEL})" >&2
+  echo "Zyra OpenRouter env loaded from $RC_FILE (mode=${VEYRON_AI_MODE}, model=${VEYRON_AI_MODEL})" >&2
 }
 
 remote_kubectl() {
@@ -45,10 +45,10 @@ apply_remote() {
 
   echo "Updating secret ${SECRET} in ${NS} on ${user}@${host}…" >&2
   remote_kubectl "$host" "$user" delete secret "$SECRET" --ignore-not-found
-  scp -q -o BatchMode=yes "$tmp" "${user}@${host}:/tmp/veyron-zeus-openrouter.env"
+  scp -q -o BatchMode=yes "$tmp" "${user}@${host}:/tmp/veyron-zyra-openrouter.env"
   remote_kubectl "$host" "$user" create secret generic "$SECRET" \
-    --from-env-file=/tmp/veyron-zeus-openrouter.env
-  ssh -o BatchMode=yes "${user}@${host}" "rm -f /tmp/veyron-zeus-openrouter.env"
+    --from-env-file=/tmp/veyron-zyra-openrouter.env
+  ssh -o BatchMode=yes "${user}@${host}" "rm -f /tmp/veyron-zyra-openrouter.env"
   rm -f "$tmp"
   remote_kubectl "$host" "$user" rollout restart deployment/veyron-api
   remote_kubectl "$host" "$user" rollout status deployment/veyron-api --timeout=180s

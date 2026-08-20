@@ -3,7 +3,7 @@
 //! Optional OpenAI-compatible LLM layer for Copilot.
 //!
 //! `VEYRON_AI_URL`, `VEYRON_AI_API_KEY`, `VEYRON_AI_MODEL` (default `gpt-4o-mini`).
-//! OpenRouter (Zeus): also accepts `OPENROUTER_API_KEY`, `ANTHROPIC_AUTH_TOKEN` (`sk-or-v1-…`),
+//! OpenRouter (Zyra): also accepts `OPENROUTER_API_KEY`, `ANTHROPIC_AUTH_TOKEN` (`sk-or-v1-…`),
 //! `ANTHROPIC_BASE_URL` / `OPENROUTER_API_URL`, and `ANTHROPIC_MODEL` / `OPENROUTER_MODEL`.
 //! `VEYRON_AI_MODE`: `off` | `paraphrase` | `routing` | `agent`.
 

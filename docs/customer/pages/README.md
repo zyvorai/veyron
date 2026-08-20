@@ -4,11 +4,11 @@ Each guide follows: Purpose → When to use it → How to get there → What you
 
 Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 
-## Ask Zeus
+## Ask Zyra
 
 | Page | What it covers |
 |------|----------------|
-| [Ask Zeus](ask-zeus/ask-zeus.md) | Ask Zeus — AI assistant grounded on this cluster. |
+| [Ask Zyra](ask-zyra/ask-zyra.md) | Ask Zyra — AI assistant grounded on this cluster. |
 
 ## Compute
 
