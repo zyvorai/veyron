@@ -75,7 +75,7 @@ veyron ai recommend "I need a VM for PostgreSQL"
 
 - **Ask Zyra** — dock ✦ button, ⌘J, Finder section, Control Center tile → modal → `POST /experience/copilot/ask`
 - VM context menu **Ask Zyra** scopes queries to the selected VM
-- Mission Control **Zeus briefing** chips from `GET /experience/home` → `copilot_briefing`
+- Mission Control **Zyra briefing** chips from `GET /experience/home` → `copilot_briefing`
 - Existing **Fix-it** modal still uses `/experience/errors/translate` (same rules as Error Explainer)
 
 See [CLOUDOS_VISION.md](./CLOUDOS_VISION.md) for shell layout, tiers, and themes.
