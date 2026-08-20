@@ -43,7 +43,7 @@ Output lands in [`pdf/`](pdf/):
 | VMs | `/dashboard#vms` |
 | Consoles | `/dashboard#console-hub` |
 | Templates / blueprints | `/dashboard#app-store`, `/dashboard#blueprint-studio` |
-| Ask Zeus | `/dashboard#ask-zeus` |
+| Ask Zyra | `/dashboard#ask-zyra` |
 | Settings | `/dashboard#settings` |
 
 ---

@@ -17,7 +17,7 @@ This is the customer-facing onboarding guide — how to access the product, your
 4. [Migration & High Availability](#4-migration-high-availability)
 5. [Storage & Disks](#5-storage-disks)
 6. [Networking](#6-networking)
-7. [AI Copilot — Ask Zeus](#7-ai-copilot-—-ask-zeus)
+7. [AI Copilot — Ask Zyra](#7-ai-copilot-—-ask-zyra)
 8. [Security & Compliance](#8-security-compliance)
 9. [Cost & FinOps](#9-cost-finops)
 10. [Observability & Monitoring](#10-observability-monitoring)
@@ -155,18 +155,18 @@ _Per-VM connectivity, policy enforcement, and network intelligence._
 - **Cilium & PacketWolf** — View Cilium agent status and policies, with an optional PacketWolf network-intelligence integration. — _Deeper network visibility for clusters running Cilium or the PacketWolf brain._
   - **How:** CLI: `veyron cilium`. Web: Cilium / Network Intel pages. Enable PacketWolf via `VEYRON_PACKETWOLF_*` env.
 
-## 7. AI Copilot — Ask Zeus
+## 7. AI Copilot — Ask Zyra
 
 _Plain-language diagnosis with cluster evidence and one-click fixes._
 
-- **Ask Zeus Assistant** — Ask VM questions in natural language (⌘J) and get root cause, cluster evidence, and recommended actions. — _Skip the stack traces — describe the problem and get a grounded answer._
-  - **How:** Web: Ask Zeus page (`⌘J`). Works deterministically without an LLM; connect an OpenAI-compatible model via `VEYRON_AI_*` for richer conversation.
+- **Ask Zyra Assistant** — Ask VM questions in natural language (⌘J) and get root cause, cluster evidence, and recommended actions. — _Skip the stack traces — describe the problem and get a grounded answer._
+  - **How:** Web: Ask Zyra page (`⌘J`). Works deterministically without an LLM; connect an OpenAI-compatible model via `VEYRON_AI_*` for richer conversation.
 - **Veyron Doctor** — Generate a per-VM health score with prioritized issues drawn from live KubeVirt/Kubernetes state. — _A quick triage read on any VM before you dig into it manually._
   - **How:** CLI: `veyron doctor` (fleet) or `veyron health my-vm --detailed`. Web: Insights page. API: `GET /api/v1/vms/:ns/:name/guest/doctor`.
 - **Scheduling Explainer** — Translate a Pending or Unschedulable VM into a human-readable reason and fix. — _Understand why a VM won't start without decoding scheduler events yourself._
-  - **How:** Web: Scheduling page / Ask Zeus. CLI: surfaced through `veyron doctor` and `veyron placement my-vm --strategy leastloaded`.
+  - **How:** Web: Scheduling page / Ask Zyra. CLI: surfaced through `veyron doctor` and `veyron placement my-vm --strategy leastloaded`.
 - **Error Explainer & YAML Builder** — Turn cryptic K8s/KubeVirt errors into plain English and generate cluster-validated VirtualMachine YAML. — _Get unblocked on obscure errors and hand off valid manifests in one step._
-  - **How:** Web: Ask Zeus. CLI: generate validated YAML with `veyron generate my-vm --template fedora-40 --kubevirt` and check it with `veyron validate examples/basic-vm.yaml`.
+  - **How:** Web: Ask Zyra. CLI: generate validated YAML with `veyron generate my-vm --template fedora-40 --kubevirt` and check it with `veyron validate examples/basic-vm.yaml`.
 - **Lens Advisors** — Purpose-built advisors — Network Lens, Storage Doctor, Backup Advisor, Cost Advisor, Security Sentinel — inspect a VM or the whole fleet. — _Domain-specific expertise on connectivity, bloat, coverage gaps, spend, and exposure._
   - **How:** CLI: `veyron insights-generate my-vm`, `veyron recommendations --category cost --with-savings`. Web: Insights page.
 

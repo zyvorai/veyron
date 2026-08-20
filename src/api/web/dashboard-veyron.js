@@ -203,10 +203,10 @@
     var copilotIn = document.getElementById('veyron-copilot-input');
     if (copilotIn) {
       copilotIn.addEventListener('click', function () {
-        if (typeof openAskZeus === 'function') openAskZeus();
+        if (typeof openAskZyra === 'function') openAskZyra();
       });
       copilotIn.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' && typeof openAskZeus === 'function') openAskZeus();
+        if (e.key === 'Enter' && typeof openAskZyra === 'function') openAskZyra();
       });
     }
 
@@ -400,7 +400,7 @@
     window.__iwCcTips = [
       'Tip: ⌘K opens Spotlight anywhere.',
       'Tip: double-click the fleet orb for a pulse.',
-      'Tip: Ask Zeus when the board gets noisy.',
+      'Tip: Ask Zyra when the board gets noisy.',
       'Tip: Enter Orbit for a spatial fleet view.',
       'Tip: Zen mode clears chrome so the bridge breathes.',
       'Tip: ⌘N creates a VM from anywhere.'
@@ -622,7 +622,7 @@
         { label: 'Template Foundry', fn: "navigate('app-store')", min: 'normal' },
         { label: 'View Snapshots', fn: "navigate('snapshots')", min: 'power' },
         { label: 'Run Health Scan', fn: "navigate('stack-health')", min: 'power' },
-        { label: 'Ask Zeus', fn: 'openAskZeus()', min: 'normal' }
+        { label: 'Ask Zyra', fn: 'openAskZyra()', min: 'normal' }
       ];
       qa.innerHTML = quickActions.filter(function (a) {
         return rank(tier) >= rank(a.min);
@@ -713,7 +713,7 @@
     } else {
       var intro = 'Zeus recommendations for your fleet.';
       if (items.length && items[0].title === 'Fleet looks healthy') intro = items[0].detail || intro;
-      else if (items.length && items[0].severity === 'warning') intro = 'Action suggested — tap a row or Ask Zeus for details.';
+      else if (items.length && items[0].severity === 'warning') intro = 'Action suggested — tap a row or Ask Zyra for details.';
       html = '<p style="font-size:.84rem;color:var(--muted);margin:0 0 10px">' + esc(intro) + '</p><ol class="vmr-copilot-list">';
       items.slice(0, 4).forEach(function (item, i) {
         html += '<li><button type="button" class="vmr-copilot-rec" onclick="runCopilotBriefing(' + i + ',\'vmr\')">' +
@@ -723,8 +723,8 @@
     }
     html += '<div class="vmr-copilot-actions">' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">View All Recommendations</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>' +
-      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Suggest auto-fixes for fleet issues\')">Auto Fix</button></div>';
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra()">Ask Zyra</button>' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZyra(\'Suggest auto-fixes for fleet issues\')">Auto Fix</button></div>';
     el.innerHTML = html;
     window._vmrCopilotDisplayCache = items;
   };
@@ -775,7 +775,7 @@
         '<div class="vmr-alert-title">' + esc(reason) + '</div>' +
         '<div class="vmr-alert-meta">' + esc(obj) + (a.namespace ? ' · ' + esc(a.namespace) : '') + '</div>' +
         '<div class="vmr-alert-foot"><span class="vmr-alert-sev">' + esc(sevCls) + '</span>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrAlertMsgCache&&openAskZeus(window._vmrAlertMsgCache[' + _aIdx + '])') + '>Fix</button></div></div>';
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrAlertMsgCache&&openAskZyra(window._vmrAlertMsgCache[' + _aIdx + '])') + '>Fix</button></div></div>';
     }).join('');
   };
 
@@ -852,7 +852,7 @@
       '<div style="font-size:.78rem;color:var(--orange)">Impact: ' + esc(impact) + '</div>' + fixes +
       '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">Open events</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrMcMsgCache&&openAskZeus(window._vmrMcMsgCache[' + _mIdx + '])') + '>Ask Zeus</button></div></div>';
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrMcMsgCache&&openAskZyra(window._vmrMcMsgCache[' + _mIdx + '])') + '>Ask Zyra</button></div></div>';
   };
 
   window.setVmrFleetView = function setVmrFleetView(mode) {
@@ -1226,7 +1226,7 @@
       passed + ' / ' + checks.length + ' — ' + (allOk ? 'All Systems Operational' : (checks.length - passed) + ' issue(s) detected'),
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openPlatformInstallModal()">Install Stack</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStackHealth(true)">Recheck</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Diagnose KubeVirt stack issues\')">Ask Zeus</button>',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra(\'Diagnose KubeVirt stack issues\')">Ask Zyra</button>',
       'stack-health');
     var ringCls = allOk ? '' : passed >= 2 ? ' warn' : ' bad';
     el.innerHTML =
@@ -1266,9 +1266,9 @@
           '<div class="vmr-stack-check-line"><span class="vmr-stack-check-label">Impact</span><span>' + esc(c.impact) + '</span></div>' +
           '<div class="vmr-stack-check-line"><span class="vmr-stack-check-label">Root cause</span><span>' + esc(c.rootCause) + '</span></div>' +
           '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
-            '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Fix: ' + c.problem) + ')') + '>Fix with Veyron</button>' +
+            '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('Fix: ' + c.problem) + ')') + '>Fix with Veyron</button>' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs(c.cmd) + ')') + '>Copy command</button>' +
-            '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Show logs for ' + c.label) + ')') + '>Open logs</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('Show logs for ' + c.label) + ')') + '>Open logs</button>' +
           '</div>' +
           '</div>';
       }).join('') +
@@ -1866,7 +1866,7 @@
   // hero+metrics strip (fetchNodes() already wrote a *different* one into
   // the same #vmr-nodes-hero, same double-render bug as the VMs page had)
   // plus a "VM Placement by Node" table whose Drain/Cordon buttons only
-  // opened Ask Zeus with a canned prompt — never real actions. Real
+  // opened Ask Zyra with a canned prompt — never real actions. Real
   // cordon/uncordon now lives on every roster row and in the node rail.
   window.renderNodesDeviationBar = function renderNodesDeviationBar() {
     var hero = document.getElementById('vmr-nodes-hero');
@@ -2217,7 +2217,7 @@
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setVmrEventMode(window._vmrEventMode===\'cards\'?\'timeline\':\'cards\')" id="vmr-event-mode-btn">' +
       (window._vmrEventMode === 'timeline' ? 'Card View' : 'Timeline') + '</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchEvents(true)">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra()">Ask Zyra</button>',
       'events');
     var filterBar = document.getElementById('vmr-events-filter-bar');
     if (filterBar) {
@@ -2334,10 +2334,10 @@
       (rootCause ? '<div style="font-size:.78rem;margin-bottom:8px"><span style="color:var(--muted,#a6b0bc);font-weight:600">Root cause: </span><span style="color:var(--muted)">' + esc(rootCause) + '</span></div>' : '') +
       (fixes.length ? '<ol style="margin:0 0 10px 18px;font-size:.78rem;color:var(--muted)">' + fixes.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ol>' : '') +
       '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('window._vmrEventMsgCache&&openAskZeus(window._vmrEventMsgCache[' + _eIdx + '].fix)') + '>Fix with Veyron</button>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('window._vmrEventMsgCache&&openAskZyra(window._vmrEventMsgCache[' + _eIdx + '].fix)') + '>Fix with Veyron</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs('kubectl get events -n ' + (ev.namespace || 'default') + ' --sort-by=.lastTimestamp') + ')') + '>Copy kubectl</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">Open Events</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrEventMsgCache&&openAskZeus(window._vmrEventMsgCache[' + _eIdx + '].ask)') + '>Ask AI</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrEventMsgCache&&openAskZyra(window._vmrEventMsgCache[' + _eIdx + '].ask)') + '>Ask AI</button>' +
       '</div></div>';
   };
 
@@ -2490,7 +2490,7 @@
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof openSnapModalFor==="function"?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate("snapshots")') + '>Snapshot</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof migrateVM==="function"&&migrateVM(' + jsArgs(ns, vm.name) + ')') + '>Migrate</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof cloneVM==="function"&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('VM ' + vm.name) + ')') + '>Ask Zeus</button>'
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('VM ' + vm.name) + ')') + '>Ask Zyra</button>'
       : (isPaused
           ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('typeof unpauseVM==="function"&&unpauseVM(' + jsArgs(ns, vm.name) + ')') + '>Unpause</button>'
           : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>') +
@@ -2571,8 +2571,8 @@
                   '</ul>';
               })() +
               '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">' +
-                '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Auto-fix security issues for VM ' + vm.name) + ')') + '>Fix Automatically</button>' +
-                '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Explain security risks for VM ' + vm.name) + ')') + '>Explain Risk</button>' +
+                '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('Auto-fix security issues for VM ' + vm.name) + ')') + '>Fix Automatically</button>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('Explain security risks for VM ' + vm.name) + ')') + '>Explain Risk</button>' +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -2597,7 +2597,7 @@
                 ? '<div class="vmr-health-row"><span>CPU Allocation</span><span>' + esc(vm.cpu || '—') + '</span></div>' +
                   '<div class="vmr-health-row"><span>Memory Allocation</span><span>' + esc(vm.memory || '—') + '</span></div>' +
                   '<div class="vmr-health-row"><span>Status</span><span style="color:var(--green)">Running</span></div>' +
-                  '<div style="margin-top:12px"><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Show real-time CPU and memory metrics for VM ' + vm.name) + ')') + '>Live Metrics</button></div>'
+                  '<div style="margin-top:12px"><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('Show real-time CPU and memory metrics for VM ' + vm.name) + ')') + '>Live Metrics</button></div>'
                 : '<p style="font-size:.84rem;color:var(--muted)">VM is not running — start it to see live metrics.</p>' +
                   '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start VM</button>') +
             '</div></div>',
@@ -2823,7 +2823,7 @@
     renderVmrPageHero('vmr-network-intel-hero', 'Veyron Network Intelligence',
       'VM traffic, flows, policies, and live network behavior.',
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkIntelData()">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Analyze network flows\')">Ask Zeus</button>',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra(\'Analyze network flows\')">Ask Zyra</button>',
       'network-intel');
     renderVmrMetricsStrip('vmr-network-intel-metrics', [
       { label: 'Live Flows', value: '…' },
@@ -2841,7 +2841,7 @@
           '<div class="vmr-panel-title">Flow Table</div>' +
           '<div style="display:flex;gap:8px">' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'cilium\')">Cilium Policies</button>' +
-            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Generate NetworkPolicy for all VMs\')">Generate Network Policy</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra(\'Generate NetworkPolicy for all VMs\')">Generate Network Policy</button>' +
           '</div>' +
         '</div>' +
         '<div class="vmr-network-flow-wrap"><div style="overflow-x:auto"><table class="table vmr-network-flow-table" style="min-width:800px"><thead><tr>' +
@@ -2924,7 +2924,7 @@
         return '<tr><td>' + esc(srcLabel) + '</td><td>' + esc(src.namespace || '—') + '</td>' +
           '<td>' + esc(dstLabel) + '</td><td>' + esc(f.protocol || '—') + '</td><td>' + esc(f.port != null ? String(f.port) : '—') + '</td>' +
           '<td><span style="color:' + tone + '">' + esc(verdict) + '</span></td><td>' + esc(f.policy || '—') + '</td>' +
-          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Explain flow ' + srcLabel + ' → ' + dstLabel) + ')') + '>Explain</button></td></tr>';
+          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('Explain flow ' + srcLabel + ' → ' + dstLabel) + ')') + '>Explain</button></td></tr>';
       }).join('');
     } catch (e) {
       if (banner) {
@@ -3190,7 +3190,7 @@
           { type: 'hint', text: 'Cluster API keys are configured on the Veyron API deployment. Values here are local notes only.' },
           { label: 'API key (masked)', type: 'text', password: true, placeholder: '••••••••', id: 'set-api-key' },
           { label: 'Multi-key RBAC (admin:k1,write:k2,readonly:k3)', type: 'text', placeholder: 'VEYRON_API_KEYS', id: 'set-api-keys-rbac' },
-          { type: 'action', label: 'Rotate API key', btn: 'Ask Zeus', onclick: 'openAskZeus(\'Rotate the Veyron API key\')' }
+          { type: 'action', label: 'Rotate API key', btn: 'Ask Zyra', onclick: 'openAskZyra(\'Rotate the Veyron API key\')' }
         ]),
         section('RBAC', [
           { label: 'Read-only mode (disable writes)', type: 'checkbox', id: 'set-readonly' },
@@ -3328,7 +3328,7 @@
         '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('forgeFromTemplate(' + jsArgs(tpl.id || tpl.title) + ')') + '>Forge VM</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Customize</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(window._vmrFoundryYamlCache||&apos;&apos;)">Export YAML</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Tell me about the ' + (tpl.title || tpl.id) + ' template') + ')') + '>Ask Zeus</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('Tell me about the ' + (tpl.title || tpl.id) + ' template') + ')') + '>Ask Zyra</button>' +
       '</div>';
     drawer.style.display = 'flex';
     drawer.removeAttribute('aria-hidden');
@@ -3382,7 +3382,7 @@
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     renderVmrPageHero('vmr-security-hero', 'Veyron Security Posture',
       'Fleet hardening, compliance, and risk visibility · ' + vms.length + ' VMs audited',
-      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Auto-fix all security findings\')">Fix All Issues</button>' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZyra(\'Auto-fix all security findings\')">Fix All Issues</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchSecurityVmr===\'function\'&&fetchSecurityVmr()">Refresh</button>',
       'security');
     renderVmrMetricsStrip('vmr-security-metrics', [
@@ -3406,7 +3406,7 @@
     renderVmrPageHero('vmr-snapshots-hero', 'Veyron Snapshots & Backups',
       'Protect, restore, and replicate virtual machines.',
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof openSnapModalPick===\'function\'&&openSnapModalPick()">+ Create Snapshot</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Create backup policy for all VMs\')">+ Backup Policy</button>',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra(\'Create backup policy for all VMs\')">+ Backup Policy</button>',
       'snapshots');
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var snaps = typeof window.lastSnapshots !== 'undefined' ? window.lastSnapshots : null;
@@ -3466,7 +3466,7 @@
           '<div><label class="form-label">Pre-hook</label><input type="text" class="form-input" placeholder="optional script"></div>' +
           '<div><label class="form-label">Post-hook</label><input type="text" class="form-input" placeholder="optional script"></div>' +
         '</div><div style="margin-top:16px">' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Create KubeVirt VolumeSnapshot policy with these settings\')">Create Policy</button>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZyra(\'Create KubeVirt VolumeSnapshot policy with these settings\')">Create Policy</button>' +
         '</div></div>';
   };
 
@@ -3477,7 +3477,7 @@
       'Fleet infrastructure cost · Est. ' + cost + ' / month',
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof runCostAdvisor===\'function\'&&runCostAdvisor()">Cost Advisor</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchCosts===\'function\'&&fetchCosts()">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Optimize my VM infrastructure costs\')">Ask Zeus</button>',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra(\'Optimize my VM infrastructure costs\')">Ask Zyra</button>',
       'costs');
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var billed = (typeof window.lastCostVmCount === 'number') ? window.lastCostVmCount : vms.length;
@@ -3558,7 +3558,7 @@
           '<td><strong>' + esc(f.title || '—') + '</strong></td>' +
           '<td><code style="font-size:.82rem">' + esc(f.resource || '—') + '</code></td>' +
           '<td style="font-size:.82rem;color:var(--muted)">' + esc(f.recommendation || '—') + '</td>' +
-          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Fix: ' + (f.title || '')) + ')') + '>Fix</button></td></tr>';
+          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('Fix: ' + (f.title || '')) + ')') + '>Fix</button></td></tr>';
       }).join('');
       el.innerHTML = '<div class="vmr-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
         '<div class="vmr-panel-title">Security Findings (' + findings.length + ')</div></div>' +

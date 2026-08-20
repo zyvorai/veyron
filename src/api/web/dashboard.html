@@ -1858,7 +1858,7 @@ button.glass-stat-pill.clickable-stat:hover,
 .vm-metrics-sparkline canvas{width:100%;height:100%}
 .glass-details-ai{border-color:rgba(139,92,246,.25)}
 /* ═══ Veyron VM-First UX ═══ */
-/* Ask Zeus: single entry on dock — legacy bottom AI bar removed */
+/* Ask Zyra: single entry on dock — legacy bottom AI bar removed */
 .zeus-ai-bar,.zeus-ai-results{display:none!important}
 body.vm-focus-active .vm-list-pane{display:none}
 body.vm-focus-active .vm-workspace{grid-template-columns:1fr}
@@ -3868,7 +3868,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .id-tpl .id-specs{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:var(--ink-3);display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .id-tpl .id-specs span{background:var(--panel-2);border:1px solid var(--hairline);padding:2px 8px;border-radius:6px;color:var(--ink-2)}
 
-/* Ask Zeus panel */
+/* Ask Zyra panel */
 .id-zeus{background:linear-gradient(135deg,rgba(59,130,246,.10),rgba(37,99,235,.04));border:1px solid var(--plasma-line);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
 .id-zeus::before{content:"";position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:var(--plasma-glow);filter:blur(40px);pointer-events:none}
 .id-zeus .id-zh{display:flex;align-items:center;gap:9px;margin-bottom:12px}
@@ -4226,7 +4226,7 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window::before{dis
 .ssh-popover,
 .mac-menu-panel,
 .launchpad-panel,
-.ask-zeus-drawer,
+.ask-zyra-drawer,
 .zeus-drawer{
   background-color:var(--zs-forged,#1E2531)!important;
   background-image:var(--zs-sheen)!important;
@@ -4479,7 +4479,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
           <button type="button" class="mac-menu-item" role="menuitem" data-go-page="app-store" onclick="finderNavigate('app-store');closeMacMenus()">Template Foundry</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-go-page="stack-health" onclick="finderNavigate('stack-health');closeMacMenus()">Stack Health</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-go-page="snapshots" onclick="finderNavigate('snapshots');closeMacMenus()">Snapshots &amp; Backups</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZeus();closeMacMenus()">Ask Zeus… <span class="mac-menu-shortcut">⌘J</span></button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZyra();closeMacMenus()">Ask Zyra… <span class="mac-menu-shortcut">⌘J</span></button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="toggleClassicNav();closeMacMenus()">Browse all pages… <span class="mac-menu-shortcut">⌘⇧B</span></button>
         </div>
       </div>
@@ -4556,11 +4556,11 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
           </div>
         </div>
         <div class="mac-menu-wrap">
-          <button type="button" class="mac-nav-icon-btn mac-nav-icon-ai" id="mac-menu-nav-ai-btn" data-nav-section="ai" onclick="toggleMacMenu('nav-ai')" aria-haspopup="true" aria-expanded="false" title="Ask Zeus" aria-label="Ask Zeus menu">
+          <button type="button" class="mac-nav-icon-btn mac-nav-icon-ai" id="mac-menu-nav-ai-btn" data-nav-section="ai" onclick="toggleMacMenu('nav-ai')" aria-haspopup="true" aria-expanded="false" title="Ask Zyra" aria-label="Ask Zyra menu">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M5 19l.8 2.2L8 22l-2.2.8L5 25l-.8-2.2L2 22l2.2-.8L5 19z"/></svg>
           </button>
           <div class="mac-menu-panel mac-menu-panel-icons" id="mac-menu-nav-ai" role="menu">
-            <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZeus();closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg></span>Ask Zeus… <span class="mac-menu-shortcut">⌘J</span></button>
+            <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZyra();closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg></span>Ask Zyra… <span class="mac-menu-shortcut">⌘J</span></button>
             <button type="button" class="mac-menu-item" role="menuitem" onclick="finderRunCopilotQuick('Show all unhealthy VMs');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span>Unhealthy VMs</button>
             <button type="button" class="mac-menu-item" role="menuitem" onclick="finderBackupAdvisor();closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></span>Backup Advisor</button>
             <button type="button" class="mac-menu-item" role="menuitem" onclick="finderRunCopilotQuick('Which PVCs are almost full?');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>Storage Doctor</button>
@@ -4584,7 +4584,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
       <div class="mac-quick-nav" role="group" aria-label="Quick navigation">
         <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-home" onclick="navigate('dashboard')">Home</button>
         <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-monitor" onclick="navigate('stack-health')">Monitor</button>
-        <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-ask" onclick="openAskZeus()">Ask Zeus</button>
+        <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-ask" onclick="openAskZyra()">Ask Zyra</button>
       </div>
     </div>
     <div class="mac-dynamic-island-wrap">
@@ -4602,7 +4602,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
           <div class="mac-island-actions">
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();navigate('dashboard')">Home</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();navigate('monitoring')">Monitor</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus()">Ask Zeus</button>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZyra()">Ask Zyra</button>
           </div>
         </div>
       </button>
@@ -4721,7 +4721,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <div class="mac-cc-section-title">Quick actions</div>
     <div class="mac-cc-tiles">
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();toggleClassicNav()"><span class="mac-cc-tile-icon">⋯</span>Browse</button>
-      <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openAskZeus()"><span class="mac-cc-tile-icon">✦</span>Ask Zeus</button>
+      <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openAskZyra()"><span class="mac-cc-tile-icon">✦</span>Ask Zyra</button>
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openSpotlight()"><span class="mac-cc-tile-icon">⌘</span>Spotlight</button>
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openMissionControlOverlay()"><span class="mac-cc-tile-icon">◫</span>Overview</button>
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openLaunchpad()"><span class="mac-cc-tile-icon">⬡</span>Launchpad</button>
@@ -4907,7 +4907,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
   <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
     <div class="finder-section-label">AI</div>
     <div class="finder-section-body" id="finder-ai">
-      <button type="button" class="cloudos-finder-item" data-page="ask-zeus" onclick="finderNavigate('ask-zeus')"><span class="fi-icon"><i data-lucide="sparkles"></i></span><span class="fi-label">Ask Zeus</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="ask-zyra" onclick="finderNavigate('ask-zyra')"><span class="fi-icon"><i data-lucide="sparkles"></i></span><span class="fi-label">Ask Zyra</span></button>
       <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon"><i data-lucide="heart-pulse"></i></span><span class="fi-label">Unhealthy VMs</span></button>
       <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon"><i data-lucide="archive"></i></span><span class="fi-label">Backup Advisor</span></button>
       <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon"><i data-lucide="hard-drive"></i></span><span class="fi-label">Storage Doctor</span></button>
@@ -5033,7 +5033,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     </div>
     <div class="mac-shortcuts-grid">
       <div><kbd>⌘K</kbd><span>Spotlight</span></div>
-      <div><kbd>⌘J</kbd><span>Ask Zeus</span></div>
+      <div><kbd>⌘J</kbd><span>Ask Zyra</span></div>
       <div><kbd>⌘N</kbd><span>Create VM</span></div>
       <div><kbd>⌘,</kbd><span>System Settings</span></div>
       <div><kbd>⌘⇧O</kbd><span>Toggle Orbit</span></div>
@@ -5061,11 +5061,11 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
   <div class="console-drawer-panel copilot-drawer-panel copilot-panel mac-copilot-sheet" tabindex="-1" onclick="event.stopPropagation()">
     <div class="mac-sheet-titlebar">
       <div class="mac-window-traffic" aria-label="Window controls">
-        <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeCopilot()" aria-label="Close Ask Zeus"></button>
+        <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeCopilot()" aria-label="Close Ask Zyra"></button>
         <span class="mac-traffic-btn mac-traffic-min" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
         <span class="mac-traffic-btn mac-traffic-full" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
       </div>
-      <div class="mac-sheet-title" id="copilot-title">Ask Zeus</div>
+      <div class="mac-sheet-title" id="copilot-title">Ask Zyra</div>
       <div class="console-drawer-toolbar" style="border:none;padding:0;background:transparent;flex-shrink:0">
         <span id="copilot-mode-badge" class="copilot-module-badge" style="display:none"></span>
         <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runCopilotAsk()">Send</button>
@@ -5075,7 +5075,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <div class="copilot-drawer-body">
     <div id="copilot-context-banner" class="copilot-context-banner"></div>
     <div id="copilot-thread" class="copilot-thread" aria-live="polite"></div>
-    <textarea class="form-input" id="copilot-input" rows="2" placeholder="Ask Zeus… fleet health, storage, security — or &quot;spin up 3 ubuntu web servers, 4 cores, 8Gi&quot;" aria-label="Ask Zeus" style="width:100%;font-size:.9rem"></textarea>
+    <textarea class="form-input" id="copilot-input" rows="2" placeholder="Ask Zyra… fleet health, storage, security — or &quot;spin up 3 ubuntu web servers, 4 cores, 8Gi&quot;" aria-label="Ask Zyra" style="width:100%;font-size:.9rem"></textarea>
     <div class="copilot-chip-group"><div class="copilot-chip-label">Fleet</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px">
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs have no backups?')">Backups</button>
@@ -5124,11 +5124,11 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <div class="modal-overlay" id="spotlight-modal" role="dialog" aria-modal="true" aria-label="Spotlight search">
   <div class="spotlight-panel zeus-spotlight zeus-glass" onclick="event.stopPropagation()">
     <div class="spotlight-input-wrap">
-      <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Search VMs, pages, actions… or type to ask Zeus" autocomplete="off" spellcheck="false">
+      <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Search VMs, pages, actions… or type to ask Zyra" autocomplete="off" spellcheck="false">
     </div>
     <div class="spotlight-results" id="spotlight-results"></div>
     <div class="spotlight-footer" id="spotlight-footer">
-      <span>⌘J Ask Zeus · ↑↓ navigate · ↵ open · Esc close</span>
+      <span>⌘J Ask Zyra · ↑↓ navigate · ↵ open · Esc close</span>
       <span id="spotlight-recents-hint"></span>
     </div>
   </div>
@@ -5205,7 +5205,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
   <div id="orbit-hud-bar">
     <button type="button" class="orbit-hud-btn" onclick="openSpotlight()" title="Search · ⌘K"><span class="orbit-hud-key">⌘K</span> Search</button>
     <div id="orbit-breadcrumb" class="orbit-breadcrumb"><span class="orbit-crumb cur">Cluster</span></div>
-    <button type="button" class="orbit-hud-btn" onclick="openAskZeus('')" title="Ask Zeus · ⌘J">Ask Zeus <span class="orbit-hud-key">⌘J</span></button>
+    <button type="button" class="orbit-hud-btn" onclick="openAskZyra('')" title="Ask Zyra · ⌘J">Ask Zyra <span class="orbit-hud-key">⌘J</span></button>
     <button type="button" class="orbit-hud-btn orbit-hud-forge" onclick="if(typeof openQuickForge==='function'){openQuickForge()}else if(typeof openCreateModal==='function'){openCreateModal()}" title="Forge a new VM · ⌘N">＋ Forge</button>
     <div class="orbit-hud-stat" id="orbit-hud-stat"></div>
     <div class="orbit-hud-health" id="orbit-hud-health" title="Fleet health">—</div>
@@ -5270,7 +5270,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
       <div class="iw-home-actions iw-cc-channels" id="iw-home-actions" role="group" aria-label="Command channels">
         <button type="button" class="iw-home-action iw-home-action-primary" onclick="openCreateModal()"><span class="iw-cc-act-ico" aria-hidden="true">＋</span> Create VM <kbd class="iw-cc-kbd">⌘N</kbd></button>
         <button type="button" class="iw-home-action" onclick="navigate('vms')"><span class="iw-cc-act-ico" aria-hidden="true">▦</span> Fleet Command</button>
-        <button type="button" class="iw-home-action" onclick="openAskZeus()"><span class="iw-cc-act-ico" aria-hidden="true">✦</span> Ask Zeus <kbd class="iw-cc-kbd">⌘J</kbd></button>
+        <button type="button" class="iw-home-action" onclick="openAskZyra()"><span class="iw-cc-act-ico" aria-hidden="true">✦</span> Ask Zyra <kbd class="iw-cc-kbd">⌘J</kbd></button>
         <button type="button" class="iw-home-action" onclick="setShell('orbit')"><span class="iw-cc-act-ico" aria-hidden="true">◎</span> Enter Orbit <kbd class="iw-cc-kbd">⌘⇧O</kbd></button>
       </div>
     </div>
@@ -5306,7 +5306,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
         <div id="vmr-fleet-health"></div>
       </div>
       <div class="vmr-panel vmr-copilot-panel-main">
-        <div class="vmr-panel-title">Ask Zeus <span class="vmr-beta-tag">BETA</span></div>
+        <div class="vmr-panel-title">Ask Zyra <span class="vmr-beta-tag">BETA</span></div>
         <div id="vmr-copilot-recommendations"></div>
       </div>
       <div class="vmr-panel">
@@ -5629,7 +5629,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSnapshots()">&#8635; Refresh</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSnapshotsData()" title="Export snapshot list as JSON">&#8595; Export</button>
     <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create Snapshot</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Create backup policy for all VMs')">+ Backup Policy</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Create backup policy for all VMs')">+ Backup Policy</button>
   </div></div>
   <!-- VM Protection summary -->
   <div class="vmr-metrics-strip" style="margin-bottom:8px">
@@ -5784,11 +5784,11 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-blueprint-studio" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VeyronBlueprint CRDs saved from Ask Zeus or created here</p></div>
+  <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VeyronBlueprint CRDs saved from Ask Zyra or created here</p></div>
     <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchBlueprintStudio()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div></div>
     <div id="blueprint-summary" class="grid-4 page-glass-stats"></div>
 
-  <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Ask Zeus YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
+  <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Ask Zyra YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
   <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span><span id="blueprint-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="blueprint-search" class="form-input" placeholder="Filter blueprints…" oninput="filterBlueprintsView(this.value)" style="width:160px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportBlueprintsCsv()" title="Export blueprints as CSV" style="margin-left:8px">&#8595; CSV</button></div>
       <table class="table" id="blueprint-studio-table"><thead><tr><th>Name</th><th>NS</th><th>VMs</th><th>Phase</th></tr></thead><tbody id="blueprint-studio-body"></tbody></table>
@@ -5874,19 +5874,19 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:0.9rem;background:rgba(239,159,39,.08);border:none;border-inline-start:2px solid var(--caution)">
           <div><strong style="font-size:.84rem">Downsize idle VMs</strong><div style="font-size:.78rem;color:var(--muted)">VMs with sustained low CPU may be over-provisioned</div></div>
-          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find idle VMs to downsize')">Analyze</button>
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Find idle VMs to downsize')">Analyze</button>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:0.9rem;background:rgba(239,159,39,.08);border:none;border-inline-start:2px solid var(--caution)">
           <div><strong style="font-size:.84rem">Delete orphaned PVCs</strong><div style="font-size:.78rem;color:var(--muted)">Unbound PersistentVolumeClaims accumulate storage costs</div></div>
-          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find orphaned PVCs')">Find PVCs</button>
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Find orphaned PVCs')">Find PVCs</button>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:0.9rem;background:rgba(239,159,39,.08);border:none;border-inline-start:2px solid var(--caution)">
           <div><strong style="font-size:.84rem">Schedule-based shutdown</strong><div style="font-size:.78rem;color:var(--muted)">Stop dev/test VMs outside business hours</div></div>
-          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Create shutdown schedule for dev VMs')">Configure</button>
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Create shutdown schedule for dev VMs')">Configure</button>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:0.9rem;background:rgba(239,159,39,.08);border:none;border-inline-start:2px solid var(--caution)">
           <div><strong style="font-size:.84rem">Move to cheaper storage class</strong><div style="font-size:.78rem;color:var(--muted)">Cold workloads can use HDD or object storage tiers</div></div>
-          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Suggest cheaper storage classes for VMs')">Suggest</button>
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Suggest cheaper storage classes for VMs')">Suggest</button>
         </div>
       </div>
     </div>
@@ -5925,7 +5925,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <div class="page-header"><div><h1>Veyron Security Posture</h1><p>Hardening, compliance, and risk visibility for virtual machines.</p></div>
   <div class="page-header-right">
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSecurityFindingsCsv()" title="Export findings as CSV">&#8595; CSV</button>
-    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus('Auto-fix all security findings')">Fix All Issues</button>
+    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZyra('Auto-fix all security findings')">Fix All Issues</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSecurityPage()">Refresh</button>
   </div>
 </div>
@@ -5948,12 +5948,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
       <span style="padding:6px 14px;border-radius:8px;border:1px solid var(--line);font-size:.78rem;font-weight:600;color:var(--muted)">GDPR</span>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Enable TPM on all VMs')">Enable TPM</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Enable Secure Boot on all VMs')">Enable Secure Boot</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Enable TPM on all VMs')">Enable TPM</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Enable Secure Boot on all VMs')">Enable Secure Boot</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('snapshots')">Add Backup Policy</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('network-policies')">Apply Network Policy</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Add resource limits to all VMs')">Add Resource Limits</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Restrict console access')">Restrict Console Access</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Add resource limits to all VMs')">Add Resource Limits</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Restrict console access')">Restrict Console Access</button>
     </div>
   </div>
 
@@ -6037,8 +6037,8 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
   <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">Active Alerts</span><span id="alerts-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
     <div style="display:flex;gap:8px;flex:1;min-width:240px;justify-content:flex-end">
       <input type="search" class="form-input" id="alerts-search" placeholder="Filter alerts…" oninput="filterAlertsView()" style="max-width:200px;min-width:120px;font-size:.82rem">
-      <input type="search" class="form-input" id="alerts-copilot-input" placeholder="Ask Zeus about alerts…" style="max-width:240px;min-width:140px" onkeydown="if(event.key==='Enter'){event.preventDefault();pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')}">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')">Ask Zeus</button>
+      <input type="search" class="form-input" id="alerts-copilot-input" placeholder="Ask Zyra about alerts…" style="max-width:240px;min-width:140px" onkeydown="if(event.key==='Enter'){event.preventDefault();pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')}">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')">Ask Zyra</button>
     </div></div>
     <div style="padding:8px 16px 0;display:flex;gap:6px;flex-wrap:wrap">
       <button type="button" class="vmr-chip vmr-chip-active" data-alertfilter="all" onclick="setAlertFilter(this,'all')">All</button>
@@ -6597,14 +6597,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 </div>
 </div>
 
-<div class="page section-shell" id="page-ask-zeus" data-section="ai">
+<div class="page section-shell" id="page-ask-zyra" data-section="ai">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Ask Zeus</h1><p>AI fleet intelligence — VMs, storage, security, costs, and more</p></div>
+  <div class="page-header"><div><h1>Ask Zyra</h1><p>AI fleet intelligence — VMs, storage, security, costs, and more</p></div>
     <div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azNewChat()">New chat</button></div></div>
   <div class="card glass-card" style="max-width:860px">
     <div id="az-thread" class="copilot-thread" style="min-height:280px;max-height:460px;overflow-y:auto;padding:16px"></div>
     <div style="padding:12px 16px;border-top:1px solid var(--glass-border);display:flex;flex-direction:column;gap:8px">
-      <textarea class="form-input" id="az-input" rows="2" placeholder="Ask Zeus… fleet health, VMs, storage, security" style="width:100%;font-size:.9rem" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){event.preventDefault();azSend();}"></textarea>
+      <textarea class="form-input" id="az-input" rows="2" placeholder="Ask Zyra… fleet health, VMs, storage, security" style="width:100%;font-size:.9rem" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){event.preventDefault();azSend();}"></textarea>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <button type="button" class="glass-btn-primary glass-btn-sm" onclick="azSend()">Send</button>
         <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Show all unhealthy VMs')">Unhealthy VMs</button>
@@ -7489,8 +7489,8 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
       <div class="gw-sub"><b id="gw-h-run">0</b> running · <b id="gw-h-tot">0</b> total · <b id="gw-h-nodes">0</b> nodes · vitality <b id="gw-h-vit" style="color:var(--gw-ok)">—</b></div>
     </div>
     <div class="gw-headact">
-      <button type="button" class="gw-btn gw-ai" onclick="openAskZeus()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Ask Zeus
+      <button type="button" class="gw-btn gw-ai" onclick="openAskZyra()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Ask Zyra
       </button>
       <button type="button" class="gw-btn gw-primary" onclick="navigate('vms')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Fleet Command
@@ -7522,7 +7522,7 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
       <div class="gw-tt" id="gw-ib-title">VMs need attention</div>
       <div class="gw-ss" id="gw-ib-sub"></div>
     </div>
-    <button type="button" class="gw-btn gw-ai" style="margin-left:auto;flex:none" onclick="openAskZeus('Which VMs need attention and what should I do?')">
+    <button type="button" class="gw-btn gw-ai" style="margin-left:auto;flex:none" onclick="openAskZyra('Which VMs need attention and what should I do?')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3"/></svg>Review fix
     </button>
   </div>
@@ -7902,8 +7902,8 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
       <button type="button" class="glass-btn-secondary" onclick="forgeWizardPrev()">Back</button>
       <button type="button" class="glass-btn-secondary" onclick="closeForgeWizard()">Cancel</button>
       <button type="button" class="glass-btn-secondary" id="forge-wiz-next" onclick="forgeWizardNext()">Next</button>
-      <button type="button" class="glass-btn-secondary" id="forge-wiz-export-yaml" style="display:none" onclick="renderForgeWizardReview&&renderForgeWizardReview();openAskZeus('Export YAML for the VM I just configured in the wizard')">Export YAML</button>
-      <button type="button" class="glass-btn-secondary" id="forge-wiz-save-blueprint" style="display:none" onclick="openAskZeus('Save this VM configuration as a Veyron Blueprint')">Save as Blueprint</button>
+      <button type="button" class="glass-btn-secondary" id="forge-wiz-export-yaml" style="display:none" onclick="renderForgeWizardReview&&renderForgeWizardReview();openAskZyra('Export YAML for the VM I just configured in the wizard')">Export YAML</button>
+      <button type="button" class="glass-btn-secondary" id="forge-wiz-save-blueprint" style="display:none" onclick="openAskZyra('Save this VM configuration as a Veyron Blueprint')">Save as Blueprint</button>
       <button type="button" class="glass-btn-primary" id="forge-wiz-submit" style="display:none" onclick="submitForgeWizard()">Forge VM</button>
       <button type="button" class="glass-btn-primary" id="forge-wiz-submit-start" style="display:none" onclick="submitForgeWizard(true)">Forge + Start</button>
     </div>
@@ -8661,7 +8661,7 @@ const PAGE_META = {
   forecasting: {kicker:'FinOps', title:'Short-horizon cost and capacity forecasting', tags:['Trend view','Confidence','Breaches']},
   operators: {kicker:'Platform', title:'Operators, CRDs, and platform control', tags:['Cluster services','Custom resources','Automation hooks']},
   crds: {kicker:'Platform', title:'Operator-managed Veyron resources', tags:['Custom resources','Templates','Spec state']},
-  'blueprint-studio': {kicker:'Platform', title:'Edit VeyronBlueprint multi-VM designs', tags:['Ask Zeus save','JSON spec','Operator reconcile']},
+  'blueprint-studio': {kicker:'Platform', title:'Edit VeyronBlueprint multi-VM designs', tags:['Ask Zyra save','JSON spec','Operator reconcile']},
   helm: {kicker:'Platform', title:'Helm release inventory and version posture', tags:['Releases','Chart versions','Namespaces']},
   'custom-resources': {kicker:'Platform', title:'Installed CRDs and live resource inventory', tags:['Kinds','Scope','Instance counts']},
   gitops: {kicker:'Platform', title:'Sync status and drift across GitOps sources', tags:['Drift','Branch','Sync state']},
@@ -9661,7 +9661,7 @@ function loadPageData(page, opts) {
     else renderComingSoon('vmr-stack-hero', 'Stack Health', 'KubeVirt, CDI, and operator health diagnostics — rolling out soon.', '⬡');
   }
   if (page === 'tenants') fetchTenants();
-  if (page === 'ask-zeus') loadAskZeusPage();
+  if (page === 'ask-zyra') loadAskZyraPage();
   if (page === 'settings') {
     if (typeof renderSettingsVmr === 'function') renderSettingsVmr();
   }
@@ -11239,7 +11239,7 @@ const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Remote Desktop (RDP)', subtitle: 'Windows NodePort RDP expose', action: 'navigate:vms', keys: ['rdp', 'remote', 'desktop', 'windows', '3389'] },
   { kind: 'action', title: 'Forge a new VM', subtitle: 'Create from template', action: 'forge_vm', keys: ['forge', 'create', 'new vm'] },
   { kind: 'action', title: 'Forge VM (Wizard)', subtitle: '6-step guided wizard', action: 'forge_vm_wizard', keys: ['forge wizard', 'wizard', 'guided', 'step'] },
-  { kind: 'action', title: 'Ask Zeus', subtitle: 'Ask Zeus fleet assistant (⌘J)', action: 'mac:ask_zeus', keys: ['ask', 'zeus', 'ai', 'copilot', 'assistant'] },
+  { kind: 'action', title: 'Ask Zyra', subtitle: 'Ask Zyra fleet assistant (⌘J)', action: 'mac:ask_zyra', keys: ['ask', 'zyra', 'ai', 'copilot', 'assistant'] },
   { kind: 'page', title: 'Settings', subtitle: 'Platform preferences & integrations', action: 'navigate:settings', keys: ['settings', 'preferences', 'config', 'api key'] },
   { kind: 'page', title: 'Workloads', subtitle: 'Pods, VMIs, virt-launcher, CDI', action: 'navigate:workloads', keys: ['workloads', 'pods', 'virt-launcher', 'cdi'] },
   { kind: 'action', title: 'Veyron Preferences', subtitle: 'Theme, wallpaper, desktop tier', action: 'mac:preferences', keys: ['preferences', 'system'] }
@@ -11675,7 +11675,7 @@ function renderCloudOsDock() {
   html += '<div class="mac-dock-divider" aria-hidden="true"></div>';
   html += '<div class="mac-dock-utils">';
   html += '<button type="button" class="mac-dock-spotlight mac-dock-magnify-target" title="Launchpad" aria-label="Launchpad" onclick="openLaunchpad()"><span class="mac-dock-icon"><i data-lucide="grid-2x2"></i></span></button>';
-  html += '<button type="button" class="mac-dock-spotlight mac-dock-ask mac-dock-magnify-target" aria-label="Ask Zeus (⌘J)" onclick="openAskZeus()"><span class="mac-dock-icon"><i data-lucide="sparkles"></i></span><span class="mac-dock-tooltip">Ask Zeus <kbd>⌘J</kbd></span></button>';
+  html += '<button type="button" class="mac-dock-spotlight mac-dock-ask mac-dock-magnify-target" aria-label="Ask Zyra (⌘J)" onclick="openAskZyra()"><span class="mac-dock-icon"><i data-lucide="sparkles"></i></span><span class="mac-dock-tooltip">Ask Zyra <kbd>⌘J</kbd></span></button>';
   html += '<button type="button" class="mac-dock-spotlight mac-dock-magnify-target" aria-label="Spotlight (⌘K)" onclick="openSpotlight()"><span class="mac-dock-icon"><i data-lucide="search"></i></span><span class="mac-dock-tooltip">Spotlight <kbd>⌘K</kbd></span></button>';
   html += '</div>';
   inner.innerHTML = html;
@@ -12456,7 +12456,7 @@ async function openLaunchpad() {
       { icon: '◫', label: 'Home', action: () => { closeLaunchpad(); navigate('dashboard'); } },
       { icon: '▣', label: navPageLabel('vms'), action: () => { closeLaunchpad(); navigate('vms'); } },
       { icon: '⬡', label: navPageLabel('app-store'), action: () => { closeLaunchpad(); navigate('app-store'); } },
-      { icon: '✦', label: 'Ask Zeus', action: () => { closeLaunchpad(); openAskZeus(); } },
+      { icon: '✦', label: 'Ask Zyra', action: () => { closeLaunchpad(); openAskZyra(); } },
     ];
     templates.slice(0, 24).forEach(t => {
       launchpadApps.push({
@@ -14357,7 +14357,7 @@ function renderSettingsVmr() {
   const shortcuts = [
     ['⌘K',   'Spotlight — jump to any page or VM'],
     ['⌘N',   'Quick Forge — launch a VM from anywhere'],
-    ['⌘J',   'Ask Zeus AI assistant'],
+    ['⌘J',   'Ask Zyra AI assistant'],
     ['F3 / ⌘↑', 'Mission Control — dashboard overview'],
     ['/',    'Focus VM search (VMs page)'],
     ['?',    'Show this shortcuts reference'],
@@ -14422,8 +14422,8 @@ function renderSettingsVmr() {
     '</div>';
 }
 
-/** Primary AI entry — dock “Ask Zeus”, ⌘J, and menus call this. */
-function openAskZeus(prefill) {
+/** Primary AI entry — dock “Ask Zyra”, ⌘J, and menus call this. */
+function openAskZyra(prefill) {
   try {
     if (selectedVmNs && selectedVmName && !(prefill || '').trim()) {
       openCopilotWithVm('', selectedVmNs, selectedVmName);
@@ -14839,7 +14839,7 @@ function showVmContextMenu(x, y, ns, name) {
     html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();vmAction(' + jsArgs(ns, name, 'start') + ',event)">Start VM</button><div class="mac-context-sep"></div>';
   }
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(ns, name) + ');},200)">Show in VMs</button>';
-  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')">Ask Zeus</button>';
+  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')">Ask Zyra</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotDoctor(' + jsArgs(ns, name) + ')">Diagnose</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openSnapModalFor(' + jsArgs(ns, name) + ')">Snapshot</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();navigate(\'snapshots\')">View Snapshots</button>';
@@ -15962,7 +15962,7 @@ function fetchSecurityVmr(opts) {
             idSig(f.severity) + '</div>' +
             '<div style="font-size:.78rem;color:var(--text-dim);margin-top:4px">' + esc(f.recommendation || '') + '</div>' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:6px;font-size:.72rem" ' +
-            onHandler('openAskZeus(' + jsArgs('Fix: ' + (f.title || '')).replace(/'/g, '&#39;') + ')') + '>Ask Zeus to fix</button></div>';
+            onHandler('openAskZyra(' + jsArgs('Fix: ' + (f.title || '')).replace(/'/g, '&#39;') + ')') + '>Ask Zyra to fix</button></div>';
         }).join('') + '</div>';
     } else {
       findingsEl.innerHTML = '<div class="vmr-panel" style="border-left:3px solid var(--success)">' +
@@ -16820,7 +16820,7 @@ function runCopilotBriefing(idx, source) {
 
 function handleCopilotAction(action) {
   if (!action) return false;
-  if (action === 'open_copilot') { openAskZeus(''); return true; }
+  if (action === 'open_copilot') { openAskZyra(''); return true; }
   const quickAsk = {
     'copilot:backup': 'Which VMs have no backups?',
     'copilot:unhealthy': 'Show all unhealthy VMs',
@@ -16965,7 +16965,7 @@ function renderCopilotThread() {
     if (m.role === 'user') {
       return '<div class="copilot-msg-user"><span>' + esc(m.content) + '</span></div>';
     }
-    return '<div class="copilot-msg-assistant"><span class="copilot-module-badge">' + esc(m.module || 'Ask Zeus') + '</span><div>' + esc(m.content) + '</div></div>';
+    return '<div class="copilot-msg-assistant"><span class="copilot-module-badge">' + esc(m.module || 'Ask Zyra') + '</span><div>' + esc(m.content) + '</div></div>';
   }).join('');
   el.scrollTop = el.scrollHeight;
 }
@@ -16999,13 +16999,13 @@ function updateCopilotModeBadge(mode, llmConfigured, model) {
     const modelLabel = (model || '').trim();
     if (modelLabel && modelLabel.indexOf('openrouter') !== -1) {
       badge.textContent = 'OpenRouter · ' + modelLabel;
-      badge.title = 'Ask Zeus LLM: ' + modelLabel + ' (' + mode + ')';
+      badge.title = 'Ask Zyra LLM: ' + modelLabel + ' (' + mode + ')';
     } else if (modelLabel) {
       badge.textContent = 'AI · ' + modelLabel + ' (' + mode + ')';
-      badge.title = 'Ask Zeus LLM: ' + modelLabel;
+      badge.title = 'Ask Zyra LLM: ' + modelLabel;
     } else {
       badge.textContent = 'AI · ' + mode;
-      badge.title = 'Ask Zeus LLM mode: ' + mode;
+      badge.title = 'Ask Zyra LLM mode: ' + mode;
     }
   } else {
     badge.textContent = 'Rule-based';
@@ -17031,7 +17031,7 @@ function renderCopilotToolTraceHtml(toolTrace, mode) {
   if (!trace.length && (!mode || mode === 'off' || mode === 'paraphrase')) return '';
   let html = '<div class="copilot-tool-trace">';
   html += '<div class="copilot-tool-trace-label">';
-  html += trace.length ? ('Agent invoked ' + trace.length + ' tool' + (trace.length === 1 ? '' : 's')) : 'Ask Zeus mode';
+  html += trace.length ? ('Agent invoked ' + trace.length + ' tool' + (trace.length === 1 ? '' : 's')) : 'Ask Zyra mode';
   if (mode && mode !== 'off') html += ' · ' + esc(mode);
   html += '</div>';
   if (trace.length) {
@@ -17453,10 +17453,10 @@ function renderCopilotResultInto(el, data, meta) {
     const ringCls = data.health_score >= 85 ? 'good' : data.health_score >= 65 ? 'fair' : 'bad';
     html += '<div class="copilot-result-header">';
     html += '<span class="copilot-health-ring ' + ringCls + '" title="Health score">' + data.health_score + '</span>';
-    html += '<div><span class="copilot-module-badge">' + esc(data.module || 'Ask Zeus') + '</span>';
+    html += '<div><span class="copilot-module-badge">' + esc(data.module || 'Ask Zyra') + '</span>';
     html += '<div style="font-weight:600;margin-top:4px">' + esc(data.title || '') + '</div></div></div>';
   } else {
-    html += '<span class="copilot-module-badge">' + esc(data.module || 'Ask Zeus') + '</span>';
+    html += '<span class="copilot-module-badge">' + esc(data.module || 'Ask Zyra') + '</span>';
     html += '<div style="font-weight:600;margin:8px 0">' + esc(data.title || '') + '</div>';
   }
   if (data.summary) html += '<p style="font-size:.88rem;line-height:1.5;color:var(--text-muted)">' + esc(data.summary) + '</p>';
@@ -17552,7 +17552,7 @@ async function copilotSaveBlueprint() {
 async function copilotExportGitOps() {
   const yaml = window._copilotLastYaml;
   if (!yaml) {
-    toast('No YAML preview — Ask Zeus to build a VM manifest first', 'error');
+    toast('No YAML preview — Ask Zyra to build a VM manifest first', 'error');
     return;
   }
   openGlassPrompt({
@@ -17641,7 +17641,7 @@ function spotlightKindIcon(kind, action) {
   if (kind === 'recent') return '↺';
   if (action && action.indexOf('navigate:console') === 0) return '▶';
   if (action && action.indexOf('open_console') === 0) return '▶';
-  if (action === 'mac:ask_zeus') return '✦';
+  if (action === 'mac:ask_zyra') return '✦';
   if (action === 'mac:launchpad') return '⬡';
   if (action === 'forge_vm') return '◈';
   return '⌘';
@@ -17653,7 +17653,7 @@ function spotlightQuickPicksHtml() {
     { label: 'Fleet Command', action: 'navigate:vms' },
     { label: 'Workloads', action: 'navigate:workloads' },
     { label: 'Settings', action: 'navigate:settings' },
-    { label: 'Ask Zeus', action: 'mac:ask_zeus' }
+    { label: 'Ask Zyra', action: 'mac:ask_zyra' }
   ];
   return '<div class="spotlight-quick-picks">' + picks.map(function(p) {
     return '<button type="button" class="spotlight-quick-pick" ' +
@@ -17811,7 +17811,7 @@ function runMacShellAction(action) {
   if (action === 'mac:control_center') { toggleControlCenter(); return true; }
   if (action === 'mac:notifications') { toggleNotificationCenter(); return true; }
   if (action === 'mac:preferences') { openMacPreferences(); return true; }
-  if (action === 'mac:ask_zeus') { openAskZeus(''); return true; }
+  if (action === 'mac:ask_zyra') { openAskZyra(''); return true; }
   if (action === 'mac:toggle_shell') { setShell(shellMode === 'orbit' ? 'desktop' : 'orbit'); return true; }
   return false;
 }
@@ -18743,7 +18743,7 @@ function filterCostsView(query) {
     const sym = cur === 'USD' ? '$' : cur + ' ';
     return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(c.namespace) + ',' + jsArgs(c.vm_name) + ')') + ' title="Open VM detail">' +
       '<td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.vm_name) + ')') + '>' + esc(c.vm_name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.namespace) + '</td><td>' + sym + cpu.toFixed(2) + '</td><td>' + sym + mem.toFixed(2) + '</td><td>' + sym + stor.toFixed(2) + '</td><td>' + sym + net.toFixed(2) + '</td><td><strong>' + sym + tot.toFixed(2) + '</strong></td>' +
-      '<td style="color:var(--muted)">—</td><td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus(' + jsArgs('Optimize cost for VM ' + c.vm_name) + ')">Analyze</button></td></tr>';
+      '<td style="color:var(--muted)">—</td><td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZyra(' + jsArgs('Optimize cost for VM ' + c.vm_name) + ')">Analyze</button></td></tr>';
   }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-dim)">No matching VMs</td></tr>';
 }
 
@@ -19331,7 +19331,7 @@ function filterComplianceView(query) {
   const complianceCountEl = document.getElementById('compliance-filter-count');
   if (complianceCountEl) complianceCountEl.textContent = fSt.length === statuses.length ? statuses.length + ' frameworks' : fSt.length + ' of ' + statuses.length + ' frameworks';
   if (stBody) stBody.innerHTML = fSt.map(function(s) {
-    return '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Zeus about ' + esc(s.framework) + '">' +
+    return '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Zyra about ' + esc(s.framework) + '">' +
       '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.total_controls ?? ((s.passing_controls ?? 0) + (s.failing_controls ?? 0))) + '</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
       '<td>' + idSig(s.compliant ? 'running' : 'error', s.compliant ? 'yes' : 'no') + '</td>' +
       '<td>' + fmtTime(s.last_checked) + '</td></tr>';
@@ -19651,7 +19651,7 @@ function renderAboutShortcuts() {
   const fallback = [
     { keys: '⌘K', label: 'Spotlight search' },
     { keys: '⌘N', label: 'Quick Forge — launch a VM from anywhere' },
-    { keys: '⌘J', label: 'Ask Zeus AI assistant' },
+    { keys: '⌘J', label: 'Ask Zyra AI assistant' },
     { keys: 'F3 / ⌃↑', label: 'Mission Control (cluster overview)' },
     { keys: '⌘⇧B', label: 'Browse all pages' },
     { keys: '⌘R', label: 'Refresh current page' },
@@ -20100,7 +20100,7 @@ document.addEventListener('keydown', e => {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
       e.preventDefault();
-      openAskZeus('');
+      openAskZyra('');
       return;
     }
   }
@@ -20717,7 +20717,7 @@ function renderVmHero(vm, ns, name, vmi, extras) {
   rail += '</div></details>';
   const links = '<div class="vm-hero-links">' +
     '<button type="button" class="vm-hero-link" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>' +
-    '<button type="button" class="vm-hero-link" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Zeus</button>' +
+    '<button type="button" class="vm-hero-link" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Zyra</button>' +
     '<button type="button" class="vm-hero-link" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>' +
     '<button type="button" class="vm-hero-link" ' + onStopHandler('openVmCliSheet(' + jsArgs(ns, name) + ')') + '>CLI</button>' +
     '<button type="button" class="vm-hero-link" ' + onStopHandler('copyVmJsonToClipboard(' + jsArgs(ns, name) + ')') + '>JSON</button></div>';
@@ -20848,7 +20848,7 @@ function renderVmRail(vm, ns, name, vmi) {
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Capsule</button>' +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>' +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Edit hardware</button>' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openCopilotWithVm(' + jsArgs('', ns, name) + ')') + '>Ask Zeus</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openCopilotWithVm(' + jsArgs('', ns, name) + ')') + '>Ask Zyra</button>' +
   '</div>';
 
   var secondary;
@@ -21683,16 +21683,16 @@ function closeSshPopover() {
 function updateZeusAiPlaceholder() {
   const inp = document.getElementById('copilot-input');
   if (!inp) return;
-  if (selectedVmName) inp.placeholder = 'Ask Zeus about ' + selectedVmName + '…';
-  else inp.placeholder = 'Ask Zeus… fleet health, VMs, storage, security';
+  if (selectedVmName) inp.placeholder = 'Ask Zyra about ' + selectedVmName + '…';
+  else inp.placeholder = 'Ask Zyra… fleet health, VMs, storage, security';
 }
 
 function runZeusAiBar() {
-  openAskZeus('');
+  openAskZyra('');
 }
 
 function focusZeusAiDrawer() {
-  openAskZeus('');
+  openAskZyra('');
 }
 
 async function fetchMissionControl() {
@@ -25906,7 +25906,7 @@ async function resizePvc(ns, name, currentSize) {
 
 let _azHistory = [];
 
-function loadAskZeusPage() {
+function loadAskZyraPage() {
   if (!_azHistory.length) renderAzThread();
   const inp = document.getElementById('az-input');
   if (inp) setTimeout(function() { inp.focus(); }, 120);
@@ -25959,7 +25959,7 @@ function renderAzThread() {
   const thinking = document.getElementById('az-thinking');
   if (thinking) thinking.remove();
   if (!_azHistory.length) {
-    el.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px;font-size:.9rem">Ask Zeus anything about your Veyron fleet…<br><span style="font-size:.8rem;opacity:.6">Try: "Show all unhealthy VMs" or "Which PVCs are almost full?"</span></div>';
+    el.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px;font-size:.9rem">Ask Zyra anything about your Veyron fleet…<br><span style="font-size:.8rem;opacity:.6">Try: "Show all unhealthy VMs" or "Which PVCs are almost full?"</span></div>';
     return;
   }
   el.innerHTML = _azHistory.map(function(m) {
@@ -26822,7 +26822,7 @@ async function fetchPerformance() {
           '<div class="glass-stat-pill"><div class="gsl">Profiles</div><div class="gsv">' + items.length + '</div></div>' +
           '<div class="glass-stat-pill' + (avgCpu >= 85 ? ' warn' : '') + '"><div class="gsl">Avg CPU P95</div><div class="gsv">' + avgCpu.toFixed(1) + '%</div></div>' +
           '<div class="glass-stat-pill' + (avgMem >= 85 ? ' warn' : '') + '"><div class="gsl">Avg mem P95</div><div class="gsv">' + avgMem.toFixed(1) + '%</div></div>' +
-          '<button type="button" class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="performanceCopilotChip(\'Which VMs have high CPU or memory?\')" title="Ask Zeus"><div class="gsl">Hot VMs</div><div class="gsv">' + hot + '</div></button>';
+          '<button type="button" class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="performanceCopilotChip(\'Which VMs have high CPU or memory?\')" title="Ask Zyra"><div class="gsl">Hot VMs</div><div class="gsv">' + hot + '</div></button>';
       }
     }
     if (tb) {
@@ -27130,7 +27130,7 @@ async function fetchHeatmap() {
           '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'nodes\')" title="View nodes"><div class="gsl">Nodes</div><div class="gsv">' + nodes.length + '</div></button>' +
           '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'vms\')" title="View VMs"><div class="gsl">VMs on nodes</div><div class="gsv">' + vms + '</div></button>' +
           '<div class="glass-stat-pill' + (avgHeat >= 0.75 ? ' warn' : '') + '"><div class="gsl">Avg heat</div><div class="gsv">' + avgHeat.toFixed(2) + '</div></div>' +
-          '<button type="button" class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="heatmapCopilotChip(\'Which nodes are running hot?\')" title="Ask Zeus"><div class="gsl">Hot nodes</div><div class="gsv">' + hot + '</div></button>';
+          '<button type="button" class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="heatmapCopilotChip(\'Which nodes are running hot?\')" title="Ask Zyra"><div class="gsl">Hot nodes</div><div class="gsv">' + hot + '</div></button>';
       }
     }
     if (!tb) return;
@@ -28898,7 +28898,7 @@ function closeMacShortcuts() {
   <button type="button" data-mobile-nav="dashboard" onclick="navigate('dashboard')">Home</button>
   <button type="button" data-mobile-nav="browse" onclick="toggleClassicNav()">Browse</button>
   <button type="button" data-mobile-nav="spotlight" onclick="openSpotlight()">Search</button>
-  <button type="button" data-mobile-nav="copilot" onclick="openAskZeus()">Ask Zeus</button>
+  <button type="button" data-mobile-nav="copilot" onclick="openAskZyra()">Ask Zyra</button>
 </nav>
 
 <!-- EVENT TICKER -->

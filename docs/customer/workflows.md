@@ -16,7 +16,7 @@
 
 1. [Mission Control](pages/favorites/dashboard.md)
 2. [Alerts](pages/observe/alerts.md) / [Incidents](pages/observe/incidents.md)
-3. [Ask Zeus](pages/ask-zeus/ask-zeus.md)
+3. [Ask Zyra](pages/ask-zyra/ask-zyra.md)
 
 ## Related
 

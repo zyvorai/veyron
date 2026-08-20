@@ -99,7 +99,7 @@ Configure variables in [optional-integrations.env.example.yaml](../deploy/k8s/op
 curl -sk -H "X-API-Key: $VEYRON_API_KEY" https://HOST:30151/api/v1/soc/export/status
 ```
 
-**OpenRouter / Ask Zeus:** `./scripts/configure-zeus-openrouter.sh HOST USER` reads `~/.zshrc` and patches `veyron-integrations` — see [VEYRON_AI.md](VEYRON_AI.md).
+**OpenRouter / Ask Zyra:** `./scripts/configure-zyra-openrouter.sh HOST USER` reads `~/.zshrc` and patches `veyron-integrations` — see [VEYRON_AI.md](VEYRON_AI.md).
 
 ## GitOps controllers
 

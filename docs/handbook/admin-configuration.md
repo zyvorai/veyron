@@ -159,7 +159,7 @@ integrations. All are read from `std::env`; unset means the feature is disabled.
 
 See [OIDC/SSO](../OIDC_SSO.md) for the full SSO setup.
 
-### AI (Ask Zeus / copilots)
+### AI (Ask Zyra / copilots)
 
 | Variable | Purpose |
 |----------|---------|

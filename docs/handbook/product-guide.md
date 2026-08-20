@@ -126,7 +126,7 @@ Studio, Policies, Insights, Actions, Costs, Security, Monitoring, Workloads,
 Alerts, Audit, SOC, Notifications, Helm, Operators, Custom Resources, SLO, Chaos,
 RBAC, Quotas, Ingress, HPA, Backups, Catalog, App Store, Console Hub, Stack Health,
 VM Capsule, Network Intel, Mission Control, Topology, Dependencies, Autoscaler,
-Forecasting, GitOps, **Ask Zeus** (AI), Scheduling, Cilium, Observability,
+Forecasting, GitOps, **Ask Zyra** (AI), Scheduling, Cilium, Observability,
 Performance, Webhooks, Compliance, DR, Heatmap, Custom Dashboards, Integrations,
 Metrics, and Settings.
 
@@ -177,8 +177,8 @@ Cilium integration, and optional `packetwolf` network-intelligence wiring
 enforces guardrails (CEL-style deny rules). A Terraform provider
 (`terraform-provider-veyron/`) is also included.
 
-### AI — Ask Zeus & copilots
-An LLM assistant ("Ask Zeus") plus per-domain copilots (`src/copilot/`) for
+### AI — Ask Zyra & copilots
+An LLM assistant ("Ask Zyra") plus per-domain copilots (`src/copilot/`) for
 forecasting, GitOps, security sentinel, performance, observability, alerts, and
 storage doctor advice. Fully configurable and optional via `VEYRON_AI_*` and the
 observability integration URLs. See [Veyron AI](../VEYRON_AI.md).

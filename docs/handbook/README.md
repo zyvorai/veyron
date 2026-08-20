@@ -84,7 +84,7 @@ See [admin-configuration.md](admin-configuration.md#deployment-models) for the
 
 The handbook links to, rather than duplicates, the existing topic guides:
 [OIDC/SSO](../OIDC_SSO.md) ·
-[Ask Zeus / AI](../VEYRON_AI.md) ·
+[Ask Zyra / AI](../VEYRON_AI.md) ·
 [Snapshots](../SNAPSHOTS.md) ·
 [Network management](../NETWORK_MANAGEMENT.md) ·
 [Disk management](../DISK_MANAGEMENT.md) ·

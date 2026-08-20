@@ -157,7 +157,7 @@ When an API key is set (`VEYRON_AI_API_KEY`, `OPENROUTER_API_KEY`, or `ANTHROPIC
 | `VEYRON_AI_MODEL` | Model id (`openrouter/free` default for OpenRouter keys) |
 | `VEYRON_AI_APP_TITLE` | Optional OpenRouter `X-Title` (e.g. **ZeusOS**) |
 
-**OpenRouter from `~/.zshrc`:** `./scripts/configure-zeus-openrouter.sh --print-env` or `./scripts/configure-zeus-openrouter.sh HOST USER` to patch `veyron-integrations` and restart the API.
+**OpenRouter from `~/.zshrc`:** `./scripts/configure-zyra-openrouter.sh --print-env` or `./scripts/configure-zyra-openrouter.sh HOST USER` to patch `veyron-integrations` and restart the API.
 
 | Env | Purpose |
 |-----|---------|

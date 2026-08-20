@@ -126,7 +126,7 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
   - **Data/DR**: `POST /dr/failback` (`handlers/dr.rs`); `app_consistent` flag on `POST /snapshots`; `GET`/`DELETE /storage/orphans` (reclaim, dry-run unless `?confirm=true`); `POST /velero/{backups,restores}` (`handlers/velero.rs`, `VELERO_NAMESPACE`); `POST /vms/:ns/:name/disks/:volume/migrate` (storage-class migration via KubeVirt `updateVolumesStrategy: Migration`, dry-run default).
   - **Platform** (`handlers/operators.rs`): `GET /platform/versions` (KubeVirt/CDI installed versions), `POST /platform/upgrade` (patch CR `imageTag`, dry-run default, needs `kubevirts: patch` RBAC); `GET /capacity/headroom` (`handlers/capacity.rs`), `GET /disks/conversion/capabilities`.
   - Regression gate: **`./scripts/dashboard-console-check.sh --host HOST`** (headless Chrome console-error sweep) caught the routing/500 bugs in these — run after dashboard edits.
-- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS / ZeusOS shell**: macOS 26 Tahoe density (`body.mac-desktop-root`), SF system typography, 40px menubar, glass **dock**, **mac-page-toolbar** (Normal/Power hide `.page-header`), `.mac-page-window` content panes, desktop tiers Normal/Power/Advanced, Finder sidebar, **Ask Zeus** assistant (⌘J). VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `veyron_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
+- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS / ZeusOS shell**: macOS 26 Tahoe density (`body.mac-desktop-root`), SF system typography, 40px menubar, glass **dock**, **mac-page-toolbar** (Normal/Power hide `.page-header`), `.mac-page-window` content panes, desktop tiers Normal/Power/Advanced, Finder sidebar, **Ask Zyra** assistant (⌘J). VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `veyron_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
 
 **SharedState pattern** used by every handler:
 ```rust
@@ -302,7 +302,7 @@ Never use a flat colored badge, colored background div, or colored text alone to
 - **Cards/panels**: float on hover (`translateY(-4px)` + plasma bloom) — reuse `.card`/`.id-tile`/`.id-vmcard`/`.vmr-panel`.
 - **Running VMs**: glowing pulse on the status orb (built into `.id-sig-ok`).
 - **KPI tiles**: soft plasma bloom via `.id-tile::after` (built in).
-- **New pages**: always wire `openCopilotWithVm()` on VM-level click actions for Ask Zeus integration.
+- **New pages**: always wire `openCopilotWithVm()` on VM-level click actions for Ask Zyra integration.
 
 > `tahoe` (Carbon, dark default), `light`, and `holo` (Zeus, orange/navy glass) ship today. `THEME_PRESETS`/`VALID_THEMES` are these three; every other legacy theme id remaps onto `tahoe` via `LEGACY_THEME_ALIASES` in `dashboard.html`.
 
@@ -333,7 +333,7 @@ IronWolf applies globally via the `tahoe`/`light` theme blocks in `dashboard-iro
 Work pages in this order (each batch is a single commit+push; never skip the build + console-check gate between batches):
 
 - **Batch 0** (done) — token foundation; legacy scaffold/CSS cleanup (dead `web/src/components/instrument` React library removed, unused `dashboard-packetwolf-themes.css` removed)
-- **Batch A** — Signature surfaces: Home/Signal Desk, Reactor Core, Topology, Fleet Constellation, Ask Zeus (these get 3D/WebGL treatment for the fleet visualizations; every other page stays vanilla canvas/CSS)
+- **Batch A** — Signature surfaces: Home/Signal Desk, Reactor Core, Topology, Fleet Constellation, Ask Zyra (these get 3D/WebGL treatment for the fleet visualizations; every other page stays vanilla canvas/CSS)
 - **Batch B** — Compute pages: vms, nodes, pods, workloads, scheduling, hpa, autoscaler, vm-capsule, console-hub, gallery-wall, vcentre
 - **Batch C** — Observe pages: monitoring, metrics, alerts, events, slo, performance, heatmap, custom-dashboards, observability, insights, traces, logs, incidents, dependencies
 - **Batch D** — Storage + Network: snapshots, storage, images, backups, ingress, network-policies, cilium, network-intel

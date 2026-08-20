@@ -311,7 +311,7 @@ fn keyboard_shortcuts_catalog() -> Vec<KeyboardShortcutItem> {
         },
         KeyboardShortcutItem {
             keys: "⌘J".into(),
-            label: "Ask Zeus".into(),
+            label: "Ask Zyra".into(),
         },
         KeyboardShortcutItem {
             keys: "F3".into(),
@@ -831,7 +831,7 @@ async fn experience_home(
         },
         HomeActionCard {
             id: "copilot".to_string(),
-            title: "Ask Zeus".to_string(),
+            title: "Ask Zyra".to_string(),
             subtitle: "Doctor, YAML, backups, network".to_string(),
             icon: "copilot".to_string(),
             action: "open_copilot".to_string(),
@@ -1104,7 +1104,7 @@ async fn experience_search(
         results.push(SearchResultItem {
             kind: "action".to_string(),
             id: "copilot".to_string(),
-            title: "Ask Zeus".to_string(),
+            title: "Ask Zyra".to_string(),
             subtitle: "Ask about VM health, YAML, errors".to_string(),
             action: "open_copilot".to_string(),
         });
