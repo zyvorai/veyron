@@ -2,7 +2,7 @@
 
 Every primary navigable dashboard route.
 
-_Generated: 2026-07-26 · 65 routes_
+_Generated: 2026-08-22 · 65 routes_
 
 Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 
@@ -115,11 +115,11 @@ Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 | Actions | `actions` | Queued / recent operator actions. | [Open](pages/ops/actions.md) |
 | Notifications | `notifications` | Notification channels and delivery preferences. | [Open](pages/ops/notifications.md) |
 
-## Ask Zyra
+## Ask Zeus
 
 | Page | Route | Purpose | Guide |
 |------|-------|---------|-------|
-| Ask Zyra | `ask-zyra` | Ask Zyra — AI assistant grounded on this cluster. | [Open](pages/ask-zyra/ask-zyra.md) |
+| Ask Zeus | `ask-zeus` | Ask Zeus — AI assistant grounded on this cluster. | [Open](pages/ask-zeus/ask-zeus.md) |
 
 ## Related
 
