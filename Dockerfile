@@ -3,7 +3,9 @@
 # Run scripts/prepare-guestkit-docker.sh before docker build (copies ../guestkit -> ./guestkit).
 FROM docker.io/library/rust:1.94-slim-bookworm AS builder
 
-ARG VIRTCTL_VERSION=v1.4.0
+# Keep in lockstep with KUBEVIRT_VERSION in scripts/cluster/versions.env — virtctl
+# is released alongside KubeVirt itself and this was 4 minor versions behind it.
+ARG VIRTCTL_VERSION=v1.8.4
 
 RUN apt-get update && apt-get install -y musl-tools curl && rm -rf /var/lib/apt/lists/*
 RUN rustup target add x86_64-unknown-linux-musl
