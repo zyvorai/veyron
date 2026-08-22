@@ -16,6 +16,32 @@
 - WebSocket consoles use one-shot tickets: `POST /api/v1/ws/ticket`.
 - Shell HTML (`/`, `/dashboard`, `/assets/*`) and health/OIDC bootstrap paths are auth-exempt.
 
+### Default credentials
+
+On first install, if you don't set `auth.apiKey` / `auth.adminPassword`, the chart's
+`veyron-api-key` Secret defaults both to **`Admin@321`** — **change these before any
+internet-facing or production install.**
+
+`auth.jwtSecret` is different: it's the token *signing* key, not a login credential — a
+predictable default there would let anyone forge a valid session token, not just guess a
+password. It's auto-generated (random, 64 chars) on first install and preserved across
+upgrades; never set it to a fixed value checked into source control.
+
+Retrieve the generated values:
+
+```bash
+kubectl -n veyron get secret veyron-api-key -o jsonpath='{.data.api-key}' | base64 -d; echo
+kubectl -n veyron get secret veyron-api-key -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
+
+Set your own at install time:
+
+```bash
+helm upgrade --install veyron charts/veyron -n veyron \
+  --set auth.apiKey="a-real-key" --set auth.adminPassword="a-real-password"
+# jwtSecret: leave unset to keep the auto-generated value, or override explicitly if needed
+```
+
 ## Install sketch
 
 ```bash
@@ -25,6 +51,23 @@ veyron api-serve   # or: veyron serve
 # Helm (example)
 helm upgrade --install veyron charts/veyron -n veyron --create-namespace
 ```
+
+### From a binary bundle (no git clone, no build tools)
+
+If you received a `veyron-<version>-linux-amd64.tar.gz` bundle (built via
+`scripts/package-binary-remote.sh`), it ships the Helm chart plus a script that builds a
+runtime image from the bundle's own binaries — no source tree, no cargo:
+
+```bash
+tar xzf veyron-*-linux-amd64.tar.gz && cd veyron-*-linux-amd64
+./install-cluster.sh                                       # KubeVirt/CDI/Cilium prereqs
+./install-to-kubernetes.sh --registry <your-registry>/veyron --push
+./apply-cluster-network.sh
+```
+
+`install-to-kubernetes.sh --help` shows namespace/release/dry-run options, and a local
+single-node cluster (kind/k3s/minikube) sharing the build daemon's image store can skip
+`--push` entirely.
 
 OpenAPI: `/api/openapi.json`. Route dump: `veyron api-routes`.
 
