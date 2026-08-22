@@ -35,7 +35,11 @@ auth:
   apiKey: "Admin@321"
   adminUser: "admin"
   adminPassword: "Admin@321"
-  jwtSecret: "veyron-dev-jwt-secret-change-me"
+  # Empty = auto-generated (random, 64 chars) on first install, preserved across upgrades.
+  # A hardcoded default here would be a full auth-bypass vector (anyone who reads this
+  # file could forge a valid token) — unlike apiKey/adminPassword, never set a fixed
+  # fallback for this.
+  jwtSecret: ""
   jwtIssuer: "veyron"
   bootstrapAdminSync: "1"
   additionalKeys: ""
