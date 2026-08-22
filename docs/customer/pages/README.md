@@ -4,6 +4,12 @@ Each guide follows: Purpose → When to use it → How to get there → What you
 
 Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 
+## Ask Zeus
+
+| Page | What it covers |
+|------|----------------|
+| [Ask Zeus](ask-zeus/ask-zeus.md) | Ask Zeus — AI assistant grounded on this cluster. |
+
 ## Ask Zyra
 
 | Page | What it covers |
@@ -121,4 +127,4 @@ Every route is also listed in the [complete page index](../PAGE_INDEX.md).
 
 ---
 
-65 guides. Regenerate: `node scripts/customer-docs/generate-guide-index.mjs`.
+66 guides. Regenerate: `node scripts/customer-docs/generate-guide-index.mjs`.
