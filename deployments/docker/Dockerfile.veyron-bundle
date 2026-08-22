@@ -1,0 +1,39 @@
+# Build a container image directly from the customer binary bundle produced by
+# scripts/package-binary-remote.sh (see docs/PACKAGE_BINARY_REMOTE.md) — for customers
+# who received a veyron-<version>-linux-amd64.tar.gz bundle and want to run Veyron as
+# Kubernetes pods (via the bundled Helm chart) instead of, or in addition to, the
+# standalone `./veyron api-serve` process the bundle already supports directly.
+#
+# No source tree, no cargo toolchain, and no internet access required at build time —
+# every binary this COPYs already exists in the extracted bundle; this only repackages it.
+#
+# The `veyron` binary is statically linked (musl, +crt-static — see the root Dockerfile's
+# builder stage), so unlike packetwolf/zeus-os there's no glibc-version match constraint
+# on the runtime base image; alpine (matching the root Dockerfile's runtime stage) is used
+# for consistency, not because it's required.
+#
+# Build context: the EXTRACTED bundle directory itself. `virtctl` and `guestkit` are
+# optional in the bundle — `touch` empty placeholders first if yours doesn't include them
+# (COPY needs the files to exist; empty placeholders are harmless unless you use virtctl
+# console passthrough or in-guest agent auto-install):
+#
+#   tar xzf veyron-1.0.0-linux-amd64.tar.gz && cd veyron-1.0.0-linux-amd64
+#   touch -a virtctl guestkit   # only if your bundle didn't already include them
+#   docker build -f ../deployments/docker/Dockerfile.veyron-bundle -t <your-registry>/veyron:1.0.0 .
+#   docker push <your-registry>/veyron:1.0.0
+#   helm upgrade --install veyron charts/veyron \
+#     --set image.repository=<your-registry>/veyron --set image.tag=1.0.0
+FROM docker.io/library/alpine:3.20
+
+RUN apk add --no-cache ca-certificates
+
+COPY veyron /usr/local/bin/veyron
+COPY virtctl /usr/local/bin/virtctl
+COPY guestkit /usr/local/bin/guestkit
+RUN chmod +x /usr/local/bin/veyron /usr/local/bin/virtctl /usr/local/bin/guestkit && \
+    ln -sf /usr/local/bin/veyron /usr/local/bin/vmrogue
+
+USER 10001
+
+ENTRYPOINT ["veyron"]
+CMD ["api-serve", "--port", "5151", "--host", "0.0.0.0"]
