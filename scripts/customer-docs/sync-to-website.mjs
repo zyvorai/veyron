@@ -108,7 +108,7 @@ for (const file of walk(CUSTOMER)) {
 
 writeFileSync(
   join(TARGET, 'pages/_category_.json'),
-  JSON.stringify({ label: 'Page-by-page guides', position: 6, collapsed: true, key: `${MANUAL_DIR || SLUG + '-manual'}-pages` }, null, 2) + '\n',
+  JSON.stringify({ label: 'Page-by-page guides', position: 6, collapsed: true, key: `${SLUG}-manual-pages` }, null, 2) + '\n',
 )
 
 const pagesDir = join(TARGET, 'pages')
