@@ -180,7 +180,17 @@ if [[ "\${INCLUDE_VIRTCTL}" == "true" ]]; then
   \${CTR} cp veyron-package-extract:/usr/local/bin/virtctl "\${OUT_DIR}/\${ARTIFACT}/virtctl" 2>/dev/null || true
   chmod +x "\${OUT_DIR}/\${ARTIFACT}/virtctl" 2>/dev/null || true
 fi
+# In-guest agent binary (per-VM auto-install) — the image has it at /usr/local/bin/guestkit
+# alongside veyron/virtctl, but nothing extracted it into the bundle until now.
+\${CTR} cp veyron-package-extract:/usr/local/bin/guestkit "\${OUT_DIR}/\${ARTIFACT}/guestkit" 2>/dev/null || true
+chmod +x "\${OUT_DIR}/\${ARTIFACT}/guestkit" 2>/dev/null || true
 \${CTR} rm -f veyron-package-extract >/dev/null
+
+# Kubernetes deploy path: bundled Helm chart + a runtime-only Dockerfile that repackages
+# the binaries already staged above (no source tree, no cargo at customer install time)
+# + install-to-kubernetes.sh (customer-facing wrapper, staged below with the other scripts).
+cp -a "\${BUILD_DIR}/charts/veyron" "\${OUT_DIR}/\${ARTIFACT}/chart"
+cp "\${BUILD_DIR}/deployments/docker/Dockerfile.veyron-bundle" "\${OUT_DIR}/\${ARTIFACT}/Dockerfile"
 
 cat > "\${OUT_DIR}/\${ARTIFACT}/veyron.env.example" <<'ENV_EOF'
 # Copy to veyron.env and adjust before starting the API.
@@ -193,12 +203,14 @@ VEYRON_SCHEDULER_LEASE_DISABLED=1
 ENV_EOF
 
 LIB="\${BUILD_DIR}/scripts/lib"
-for f in package-install.sh package-client-install.sh package-client-test.sh; do
+for f in package-install.sh package-client-install.sh package-client-test.sh package-client-k8s-install.sh; do
   test -f "\${LIB}/\${f}" || { echo "missing \${LIB}/\${f}" >&2; exit 1; }
 done
 cp "\${LIB}/package-install.sh" "\${OUT_DIR}/\${ARTIFACT}/install.sh"
 cp "\${LIB}/package-client-install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-client-deps.sh"
 cp "\${LIB}/package-client-test.sh" "\${OUT_DIR}/\${ARTIFACT}/test-package.sh"
+cp "\${LIB}/package-client-k8s-install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-to-kubernetes.sh"
+chmod +x "\${OUT_DIR}/\${ARTIFACT}/install-to-kubernetes.sh"
 mkdir -p "\${OUT_DIR}/\${ARTIFACT}/.package-lib"
 cp "\${LIB}/package-ui.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
 cp "\${LIB}/package-auth-bootstrap.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
@@ -246,7 +258,9 @@ Veyron — install guide
 CLUSTER FIRST (once per cluster — needs kubectl + admin kubeconfig)
   export KUBECONFIG=/path/to/kubeconfig
   ./install-cluster.sh              # Cilium + KubeVirt + CDI (see CLUSTER_SETUP.txt for flags)
-  # Deploy Veyron in-cluster (Helm/k8s from source repo)
+  # Deploy Veyron in-cluster (builds an image from this bundle's own binaries — no
+  # source tree, no compile step — then helm upgrade --install ./chart):
+  ./install-to-kubernetes.sh --registry <your-registry>/veyron --push
   ./apply-cluster-network.sh        # Cilium egress (skip: VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1)
   ./test-cluster.sh
 
@@ -274,9 +288,10 @@ Veyron ${VERSION} — Linux amd64 client bundle
 START: cat START_HERE.txt  |  full help: cat HELP.txt
 
 WHAT IS IN THIS ARCHIVE
-  veyron, virtctl (optional)
+  veyron, virtctl (optional), guestkit (optional in-guest agent)
   install.sh / uninstall.sh     Client on this machine
   install-cluster.sh            Cluster: Cilium + KubeVirt + CDI (kubectl admin)
+  chart/, Dockerfile, install-to-kubernetes.sh   Kubernetes deploy path
   apply-cluster-network.sh      Cilium egress bootstrap
   test-cluster.sh / test-package.sh
   CLUSTER_SETUP.txt             All flags and order of operations
@@ -287,10 +302,12 @@ WHAT MUST EXIST (read PREREQUISITES.txt)
   - Kubernetes + KubeVirt (Deployed) + kubeconfig with VM RBAC
   - CDI recommended (DataVolumes); skip with VEYRON_SKIP_CDI=1
   - Cilium: only if your CNI is Cilium — then run apply-cluster-network.sh
-  - Veyron deployed IN the cluster (Helm/k8s — separate from this tarball)
+  - Veyron deployed IN the cluster — via install-to-kubernetes.sh (this tarball), or
+    the standalone client process below
+  - Kubernetes deploy also needs: docker or podman, Helm 3.12+
 
-ORDER: install-cluster.sh → deploy Veyron in cluster → apply-cluster-network.sh
-      → install.sh → veyron.env → test-cluster.sh → api-serve
+ORDER: install-cluster.sh → install-to-kubernetes.sh → apply-cluster-network.sh
+      (standalone alternative: install.sh → veyron.env → test-cluster.sh → api-serve)
 
 CLUSTER FLAGS (also V9S_* aliases — see CLUSTER_SETUP.txt)
   VEYRON_SKIP_CILIUM=1  VEYRON_SKIP_CDI=1  VEYRON_SKIP_KUBEVIRT=1
@@ -308,7 +325,7 @@ chmod +x "\${LIB}/finalize-customer-bundle.sh"
 "\${LIB}/finalize-customer-bundle.sh" "\${OUT_DIR}/\${ARTIFACT}" "\${BUILD_DIR}" "Veyron" "\${VERSION}"
 for req in LICENSE LEGAL-INDEX.txt install.sh uninstall.sh HELP.txt START_HERE.txt README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
   install-cluster.sh apply-cluster-network.sh test-cluster.sh test-package.sh \
-  install-client-deps.sh veyron veyron.env.example; do
+  install-client-deps.sh veyron veyron.env.example chart Dockerfile install-to-kubernetes.sh; do
   test -e "\${OUT_DIR}/\${ARTIFACT}/\${req}" || { echo "bundle missing \${req}" >&2; exit 1; }
 done
 echo "Customer bundle OK (install.sh, README, QUICKSTART, test scripts, binary)"
