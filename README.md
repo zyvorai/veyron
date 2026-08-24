@@ -75,7 +75,7 @@ cargo build --release
 | Operator deploy | `charts/veyron-operator/` |
 | Remote deploy | `./scripts/deploy-remote.sh` |
 | GuestKit integration | `guestkit/` submodule · [`veyron agent deploy`](docs/GUESTKIT_AGENT.md) |
-| **Evaluation / trial** | Signed `trial.token` in customer tarballs — [docs/LICENSING.md](docs/LICENSING.md) · current release [`v0.2.0-trial`](https://github.com/ssahani/Veyron/releases/tag/v0.2.0-trial) |
+| **Evaluation / trial** | Signed `trial.token` in customer tarballs — [docs/LICENSING.md](docs/LICENSING.md) · current release [`v0.2.1-trial`](https://github.com/ssahani/Veyron/releases/tag/v0.2.1-trial) |
 
 ---
 
