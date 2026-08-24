@@ -17,6 +17,11 @@ rust-version = "1.85"
 name = "veyron"
 path = "src/main.rs"
 
+[[bin]]
+name = "trial-tool"
+path = "src/bin/trial-tool.rs"
+required-features = ["trial"]
+
 [lib]
 name = "veyron"
 path = "src/lib.rs"
@@ -45,6 +50,9 @@ zeroize = "1.8"
 argon2 = "0.5"
 base64 = "0.22"
 http = "1.1"
+# Ed25519 keygen for src/bin/trial-tool.rs (verification goes through jsonwebtoken,
+# which already depends on ring internally — this just exposes keygen directly).
+ring = { version = "0.17", optional = true }
 guestkit-agent-protocol = { path = "guestkit/crates/guestkit-agent-protocol" }
 guestkit = { path = "guestkit", default-features = false, features = ["guest-inspect"] }
 once_cell = "1.19"
@@ -83,6 +91,10 @@ web = [
     "jsonwebtoken",
 ]
 experimental = []
+# 30-day evaluation build for the standalone client tarball (package-binary-remote.sh
+# --trial). Never enabled for in-cluster Helm/deploy-remote.sh builds. See src/trial.rs
+# and src/bin/trial-tool.rs (keygen/issue — requires this feature to build/run).
+trial = ["web", "dep:ring"]
 
 [dev-dependencies]
 tempfile = "3.8"
