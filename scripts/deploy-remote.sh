@@ -12,6 +12,8 @@
 #   user            SSH user   (required, or set $DEPLOY_USER)
 #   --quick         Skip image build and import (manifests only)
 #   --no-preflight  Skip SSH connectivity check before starting
+#   --with-oidc     Deploy enterprise SSO config from VEYRON_OIDC_* env vars
+#                   (see contrib/veyron-oidc-keycloak.env.example)
 #
 # Environment:
 #   DEPLOY_HOST / DEPLOY_USER     Defaults when host/user omitted

@@ -178,10 +178,58 @@ spec:
             - name: VEYRON_AI_RATE_LIMIT_PER_MIN
               value: {{ .Values.ai.rateLimitPerMin | quote }}
             {{- end }}
-          {{- if .Values.integrations.existingSecret }}
+            {{- if not .Values.oidc.existingSecret }}
+            {{- with .Values.oidc.issuer }}
+            - name: VEYRON_OIDC_ISSUER
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.oidc.clientId }}
+            - name: VEYRON_OIDC_CLIENT_ID
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.oidc.clientSecret }}
+            - name: VEYRON_OIDC_CLIENT_SECRET
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.oidc.authorizationUrl }}
+            - name: VEYRON_OIDC_AUTHORIZATION_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.oidc.tokenUrl }}
+            - name: VEYRON_OIDC_TOKEN_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.oidc.jwksUrl }}
+            - name: VEYRON_OIDC_JWKS_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.oidc.redirectUri }}
+            - name: VEYRON_OIDC_REDIRECT_URI
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.oidc.roleClaim }}
+            - name: VEYRON_OIDC_ROLE_CLAIM
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.oidc.groupAdmin }}
+            - name: VEYRON_OIDC_GROUP_ADMIN
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.oidc.groupWrite }}
+            - name: VEYRON_OIDC_GROUP_WRITE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+          {{- if or .Values.integrations.existingSecret .Values.oidc.existingSecret }}
           envFrom:
+          {{- if .Values.integrations.existingSecret }}
             - secretRef:
                 name: {{ .Values.integrations.existingSecret }}
+          {{- end }}
+          {{- if .Values.oidc.existingSecret }}
+            - secretRef:
+                name: {{ .Values.oidc.existingSecret }}
+          {{- end }}
           {{- end }}
           ports:
             - name: https

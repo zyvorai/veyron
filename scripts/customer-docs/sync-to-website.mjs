@@ -22,7 +22,8 @@ const TOP_LEVEL_POSITION = {
   'using-the-dashboard.md': 3,
   'workflows.md': 4,
   'admin-basics.md': 5,
-  'page-index.md': 7,
+  'sso-setup.md': 6,
+  'page-index.md': 8,
 }
 
 const REPO_ONLY = new RegExp(
@@ -108,7 +109,7 @@ for (const file of walk(CUSTOMER)) {
 
 writeFileSync(
   join(TARGET, 'pages/_category_.json'),
-  JSON.stringify({ label: 'Page-by-page guides', position: 6, collapsed: true, key: `${SLUG}-manual-pages` }, null, 2) + '\n',
+  JSON.stringify({ label: 'Page-by-page guides', position: 7, collapsed: true, key: `${SLUG}-manual-pages` }, null, 2) + '\n',
 )
 
 const pagesDir = join(TARGET, 'pages')

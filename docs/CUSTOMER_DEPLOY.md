@@ -101,7 +101,13 @@ RBAC lives in three synced places — see CLAUDE.md § "API service account and 
 
 - **API key**: never ship the default `CHANGE_ME`. Set a strong key via the
   `veyron-api-key` Secret / `VEYRON_API_KEY`, or multi-key RBAC `VEYRON_API_KEYS`
-  (`name:key:role`). Consider OIDC (`VEYRON_OIDC_*`) for SSO.
+  (`name:key:role`). Consider OIDC (`VEYRON_OIDC_*`) for SSO against a real IdP
+  (Keycloak/Auth0/Okta) — deploy with `./scripts/deploy-remote.sh <host> <user> --with-oidc`
+  (writes a dedicated `veyron-oidc` Secret, keeps the client secret out of `--set`/shell
+  history) or the Helm chart's `oidc.*` values. Full walkthrough with a worked Keycloak
+  example: [OIDC_SSO.md](OIDC_SSO.md). **Confidential IdP clients (Keycloak's default) need
+  `VEYRON_OIDC_CLIENT_SECRET` set** — PKCE alone is not sufficient for a confidential client
+  and the login will silently fail without it.
 - **TLS**: the pod's init container generates a **self-signed** cert. Replace with
   a real cert for anything customer-facing.
 - **RBAC**: the API `ClusterRole` is intentionally broad (KubeVirt/CDI/Cilium/

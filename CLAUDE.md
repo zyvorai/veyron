@@ -214,6 +214,62 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 | `VEYRON_ATLAS_TENANT` | Optional tenant id recorded on Atlas-provisioned volumes/backups (default `global`) |
 | `VEYRON_VGPU_LIVE_MIGRATION` | Set to `1` ONLY after verifying the licensed NVIDIA vGPU host stack + KubeVirt actually live-migrate mdev VMIs (Phase 2 attestation). Relaxes the migration gate for vGPU-only VMs and enables `day2_ops.vgpu_live_migration` (when mdev resources are present). Upstream KubeVirt ≤1.8 does NOT support this — never set on plain passthrough clusters. |
 | `VEYRON_ALLOW_PUBLIC_RDP` | Set to `1` to permit `PUT /rdp-expose` with `service_type: NodePort`/`LoadBalancer`. **Default: refused with 403** — a bare 3389 NodePort puts Windows auth on the network with no gateway/MFA/TLS. Prefer `ClusterIP` + VPN/zero-trust gateway or `kubectl port-forward`. |
+| `VEYRON_OIDC_ISSUER`, `VEYRON_OIDC_CLIENT_ID`, `VEYRON_OIDC_CLIENT_SECRET`, `VEYRON_OIDC_AUTHORIZATION_URL`, `VEYRON_OIDC_TOKEN_URL`, `VEYRON_OIDC_JWKS_URL`, `VEYRON_OIDC_REDIRECT_URI`, `VEYRON_OIDC_ROLE_CLAIM` | Enterprise SSO against a real IdP (Keycloak/Auth0/Okta) — `src/api/oidc.rs`. `oidc_configured()` requires `CLIENT_ID` + (`AUTHORIZATION_URL` or `ISSUER`). Frontend does PKCE + the authorization-code redirect itself (`dashboard.html`, `startOidcLogin`/`handleOidcCallback`); the backend only exchanges the code (`POST /api/v1/auth/oidc/token`, no server-side OAuth `redirect_uri` route) and validates bearer JWTs via JWKS RS256 (falls back to `VEYRON_OIDC_JWKS_URL`-less userinfo lookup) — see `oidc_role_from_bearer`. |
+| `VEYRON_OIDC_GROUP_ADMIN` / `VEYRON_OIDC_GROUP_WRITE` | Comma-separated, case-insensitive IdP group names mapped to `admin`/`write` roles (exact match, checked before the substring-based `admin`/`write` heuristic in `normalize_role`). Defaults: `veyron-admins,cluster-admins` / `veyron-write,veyron-editors`. Deploy without leaking secrets through `--set`/CLI history: `./scripts/deploy-remote.sh HOST USER --with-oidc` (writes a `veyron-oidc` Secret from `VEYRON_OIDC_*` env vars, wired into `deploy/k8s.yaml` via `envFrom` `optional: true` — absent unless that Secret exists; Helm chart equivalent: `oidc.*` values or `oidc.existingSecret`). See `contrib/veyron-oidc-keycloak.env.example` for a worked Keycloak example. |
+
+### Real OIDC IdP wiring: confidential clients need `client_secret` at the token endpoint
+
+Verified end-to-end live against a real Keycloak realm on HOST (2026-08-24, realm
+`veyron` at `HOST:30180`): a real bug surfaced that a code review wouldn't have
+caught, only a live PKCE round-trip against a confidential client did. `exchange_oidc_authorization_code`
+(`src/api/oidc.rs`) built the `POST {token_url}` form with `code` + `code_verifier` but never
+included `client_secret` — fine for a *public* client (PKCE alone is sufficient there), but
+Keycloak's default `publicClient: false` (and most real-world confidential-client setups)
+reject the exchange with `{"error":"unauthorized_client","error_description":"Invalid client
+or Invalid client credentials"}` even with a valid PKCE verifier, because confidential clients
+must authenticate themselves at the token endpoint too. Fixed by appending `client_secret` to
+the form whenever `VEYRON_OIDC_CLIENT_SECRET` is set (a public client just omits it and the
+request goes through unchanged). This class of bug is easy to miss because the failure is
+*silent* end-to-end from the browser's perspective in Chrome automation specifically — the
+Keycloak login and redirect-back both complete looking successful, and the frontend's
+`catch`-and-`toast` in `handleOidcCallback` doesn't `console.error`, so nothing shows up in
+page console or DOM inspection; confirming it required driving the full authorization_code +
+PKCE flow by hand (`urllib` against Keycloak directly, then `POST /api/v1/auth/oidc/token`) to
+see the raw 400 from the IdP. Reusable for future IdP-wiring sessions: this hand-rolled
+verification script is the reliable way to test the token exchange in isolation.
+
+A **second**, independent bug surfaced right after the first fix: the token exchange started
+succeeding (200, valid `access_token` with the right `groups` claim), but every subsequent API
+call with that bearer token still got `401 Invalid or missing API key`. Root cause in
+`oidc_role_from_bearer` (`src/api/oidc.rs`): `jsonwebtoken::Validation::new(RS256)` defaults
+`validate_aud: true` with no `validation.aud` configured — since Keycloak access tokens carry
+an `aud` claim (`"account"` by default, unrelated to the client_id), `jsonwebtoken::decode()`
+fails with `InvalidAudience` and the `if let Ok(data) = ...` silently swallows it, falling
+through to the (unconfigured) userinfo fallback and resolving to no role at all — no log line,
+no error surfaced anywhere. Fixed with an explicit `validation.validate_aud = false;` (issuer +
+RS256 signature + expiry are the actual trust boundary for role-mapping here; audience was
+never part of it). Lesson for any future `jsonwebtoken` `Validation` construction against a
+real IdP: its "secure by default" audience check needs an explicit off-switch or an explicit
+`.aud` set — don't assume `Validation::new(alg)` alone is a complete, working validator.
+
+A **third** bug — the actual blocker for every browser-driven SSO attempt, found only after the
+first two backend fixes still left real Chrome logins failing while a hand-rolled curl script
+of the identical flow succeeded — was in `dashboard.html`'s very first inline `<script>`
+(before line 20). It's a synchronous cache-busting redirect: if `location.search` doesn't
+already contain `dash=<rev>`, it unconditionally did
+`location.replace(location.pathname + '?' + revParam + location.hash)` — **discarding the
+entire existing query string**, including a fresh OIDC redirect's `?code=&state=&session_state=`,
+before any application JS (`handleOidcCallback`) ever ran. Every login attempt landing back on
+`/dashboard?code=...` got its authorization code silently vaporized on the very first line of
+page load. Fixed by preserving `location.search` and appending the rev param instead of
+replacing wholesale (same fix applied to the analogous rev-bump reload later in the file, `window.__VEYRON_DASH_REV`).
+This is the class of bug that automated Chrome testing looked "successful" for at every
+individual step (Keycloak login rendered, credentials submitted, browser redirected back to
+the right URL, `200 OK`) while still failing end-to-end — worth remembering: a redirect landing
+on the right URL with a `200` is not proof the app actually consumed the query string it
+arrived with. Any future full-page-reload OAuth/SSO callback route needs to be checked against
+this same "does something upstream of app boot rewrite the URL" question, not just "did the
+redirect happen."
 
 ### GuestKit (Linux guest runtime)
 

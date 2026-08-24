@@ -153,11 +153,13 @@ integrations. All are read from `std::env`; unset means the feature is disabled.
 | Variable | Purpose |
 |----------|---------|
 | `VEYRON_OIDC_ISSUER` / `VEYRON_OIDC_CLIENT_ID` | OIDC provider + client. |
+| `VEYRON_OIDC_CLIENT_SECRET` | **Required for confidential IdP clients** (Keycloak's default). Sent in the server-side token exchange; omit for a public/PKCE-only client. Missing it makes login fail silently — the browser-side redirect looks fine, the token exchange doesn't. |
 | `VEYRON_OIDC_AUTHORIZATION_URL` / `VEYRON_OIDC_TOKEN_URL` / `VEYRON_OIDC_USERINFO_URL` / `VEYRON_OIDC_JWKS_URL` | OIDC endpoints. |
 | `VEYRON_OIDC_REDIRECT_URI` / `VEYRON_OIDC_ROLE_CLAIM` | Redirect + role-claim mapping. |
+| `VEYRON_OIDC_GROUP_ADMIN` / `VEYRON_OIDC_GROUP_WRITE` | Comma-separated, case-insensitive IdP group names mapped to `admin`/`write` (exact match). Defaults: `veyron-admins,cluster-admins` / `veyron-write,veyron-editors`. |
 | `VEYRON_JWT_SECRET` / `VEYRON_JWT_ISSUER` / `VEYRON_JWT_ROLE_CLAIM` | JWT bearer verification. |
 
-See [OIDC/SSO](../OIDC_SSO.md) for the full SSO setup.
+Deploy without leaking secrets through `--set`/CLI history: `./scripts/deploy-remote.sh <host> <user> --with-oidc` (writes a `veyron-oidc` Secret from the `VEYRON_OIDC_*` env vars in your shell). See [OIDC/SSO](../OIDC_SSO.md) for the full SSO setup, including a worked Keycloak walkthrough and the gotchas found live-testing against a real IdP (confidential-client secret, `sslRequired`, exact redirect URI, scope requests).
 
 ### AI (Ask Zyra / copilots)
 

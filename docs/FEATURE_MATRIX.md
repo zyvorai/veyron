@@ -161,7 +161,7 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | Veyron Scheduling Explainer | Working | `GET /experience/copilot/scheduling/:ns/:name` |
 | Velero on backups | Working | `GET /api/v1/velero/status` section on `page-backups` |
 | Multi-cluster bar | Working | `GET/POST /api/v1/clusters` when kubeconfig has multiple contexts |
-| OIDC / SSO | Partial | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VEYRON_OIDC_*` set |
+| OIDC / SSO | Working | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VEYRON_OIDC_*` set. Verified end-to-end 2026-08-24 against a real Keycloak realm (group→role mapping, confidential client, local-admin fallback all confirmed live) — see [OIDC_SSO.md](OIDC_SSO.md). No SAML SP (use an IdP's OIDC app, or Keycloak as a SAML broker). |
 
 ## Immediate Next Steps
 
