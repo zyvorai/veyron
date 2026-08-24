@@ -75,6 +75,7 @@ cargo build --release
 | Operator deploy | `charts/veyron-operator/` |
 | Remote deploy | `./scripts/deploy-remote.sh` |
 | GuestKit integration | `guestkit/` submodule · [`veyron agent deploy`](docs/GUESTKIT_AGENT.md) |
+| **Evaluation / trial** | Signed `trial.token` in customer tarballs — [docs/LICENSING.md](docs/LICENSING.md) |
 
 ---
 
@@ -95,6 +96,7 @@ flowchart LR
 | Goal | Document |
 |------|----------|
 | Docs index | [docs/README.md](docs/README.md) |
+| Licensing & trial | [docs/LICENSING.md](docs/LICENSING.md) |
 | User stories | [docs/USER_STORIES.md](docs/USER_STORIES.md) |
 | GPU cloud roadmap (passthrough → vGPU) | [docs/NEO_CLOUD_GPU_ROADMAP.md](docs/NEO_CLOUD_GPU_ROADMAP.md) |
 | OpenAPI | Embedded in API server |

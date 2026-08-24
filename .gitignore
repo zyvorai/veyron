@@ -59,3 +59,4 @@ trial.token
 
 # Trial signing private keys (never ship)
 secrets/
+dist/
