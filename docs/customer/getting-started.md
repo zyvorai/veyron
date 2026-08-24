@@ -19,7 +19,7 @@
 | Mode | What you do |
 |------|-------------|
 | API key | Bearer / `X-API-Key` from `VEYRON_API_KEY` (or named keys with roles) |
-| OIDC | PKCE browser login when `VEYRON_OIDC_*` is configured |
+| OIDC | Click **Sign in with SSO** for a PKCE browser login when `VEYRON_OIDC_*` is configured — see [Setting Up SSO](sso-setup.md) |
 | Local lab | Auth may be `none` on :8080 — do not expose publicly |
 
 ## 3. Orient yourself

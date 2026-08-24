@@ -88,6 +88,26 @@ integrations:
   packetwolfApiKey: ""
   existingSecret: ""
 
+oidc:
+  # Enterprise SSO against a real IdP (Keycloak/Auth0/Okta). See
+  # contrib/veyron-oidc-keycloak.env.example for a worked Keycloak example.
+  issuer: ""
+  clientId: ""
+  clientSecret: ""
+  authorizationUrl: ""
+  tokenUrl: ""
+  jwksUrl: ""
+  redirectUri: ""
+  roleClaim: ""
+  ## Comma-separated group names -> admin role (default in code: veyron-admins,cluster-admins)
+  groupAdmin: ""
+  ## Comma-separated group names -> write role (default in code: veyron-write,veyron-editors)
+  groupWrite: ""
+  # Set to source the above from an existing Secret's keys (VEYRON_OIDC_*)
+  # instead of plaintext values.yaml — e.g. the veyron-oidc Secret written by
+  # `deploy-all-remote.sh --with-oidc`.
+  existingSecret: ""
+
 ai:
   url: ""
   apiKey: ""

@@ -79,15 +79,28 @@ pub async fn exchange_oidc_authorization_code(
         .await
         .map_err(|e| format!("HTTP client: {e}"))?;
 
+    // Confidential clients (the normal case for a server-brokered PKCE exchange —
+    // Keycloak's default `publicClient: false`) require client authentication at
+    // the token endpoint even with a valid PKCE verifier, or the IdP rejects the
+    // exchange with `unauthorized_client`. Public clients simply leave the secret
+    // unset, in which case Keycloak accepts the request without it.
+    let mut form = vec![
+        ("grant_type", "authorization_code"),
+        ("code", code),
+        ("redirect_uri", redirect_uri),
+        ("client_id", client_id.as_str()),
+        ("code_verifier", code_verifier),
+    ];
+    let client_secret = crate::api::integrations::env_var("VEYRON_OIDC_CLIENT_SECRET");
+    if let Some(ref secret) = client_secret {
+        if !secret.is_empty() {
+            form.push(("client_secret", secret.as_str()));
+        }
+    }
+
     let resp = client
         .post(&token_url)
-        .form(&[
-            ("grant_type", "authorization_code"),
-            ("code", code),
-            ("redirect_uri", redirect_uri),
-            ("client_id", client_id.as_str()),
-            ("code_verifier", code_verifier),
-        ])
+        .form(&form)
         .send()
         .await
         .map_err(|e| format!("token request failed: {e}"))?;
@@ -210,11 +223,50 @@ fn decode_jwt_header(token: &str) -> Option<serde_json::Value> {
     serde_json::from_slice(&bytes).ok()
 }
 
+/// Comma-separated, case-insensitive group name list from an env var.
+#[cfg(feature = "web")]
+fn configured_groups(var: &str, default: &str) -> Vec<String> {
+    crate::api::integrations::env_var(var)
+        .unwrap_or_else(|| default.to_string())
+        .split(',')
+        .map(|s| s.trim().to_lowercase())
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
+/// Exact-match group -> role mapping via `VEYRON_OIDC_GROUP_ADMIN` /
+/// `VEYRON_OIDC_GROUP_WRITE` (comma-separated group names), checked before the
+/// substring-based `normalize_role` fallback below. Mirrors zeus-os's
+/// `ZEUS_OS_OIDC_GROUP_ADMIN`/`GROUP_EDITOR` so IdP group names that don't
+/// happen to contain "admin"/"write" can still be mapped explicitly.
+#[cfg(feature = "web")]
+fn map_groups_to_role(groups: &[&str]) -> Option<String> {
+    let admin_groups = configured_groups("VEYRON_OIDC_GROUP_ADMIN", "veyron-admins,cluster-admins");
+    let write_groups = configured_groups("VEYRON_OIDC_GROUP_WRITE", "veyron-write,veyron-editors");
+    let lower_groups: Vec<String> = groups.iter().map(|g| g.to_lowercase()).collect();
+    if lower_groups.iter().any(|g| admin_groups.contains(g)) {
+        Some("admin".to_string())
+    } else if lower_groups.iter().any(|g| write_groups.contains(g)) {
+        Some("write".to_string())
+    } else {
+        None
+    }
+}
+
 #[cfg(feature = "web")]
 fn map_role_claim(value: &serde_json::Value) -> String {
     let claim = crate::api::integrations::env_var("VEYRON_OIDC_ROLE_CLAIM")
         .unwrap_or_else(|| "groups".to_string());
+    if let Some(arr) = value.get(&claim).and_then(|v| v.as_array()) {
+        let groups: Vec<&str> = arr.iter().filter_map(|v| v.as_str()).collect();
+        if let Some(role) = map_groups_to_role(&groups) {
+            return role;
+        }
+    }
     if let Some(s) = value.get(&claim).and_then(|v| v.as_str()) {
+        if let Some(role) = map_groups_to_role(&[s]) {
+            return role;
+        }
         return normalize_role(s);
     }
     if let Some(arr) = value.get(&claim).and_then(|v| v.as_array()) {
@@ -296,6 +348,16 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
                             }
                         }
                         validation.validate_exp = true;
+                        // jsonwebtoken defaults validate_aud=true with no expected
+                        // audience configured — since the token carries an `aud`
+                        // claim (Keycloak defaults to "account", unrelated to our
+                        // client_id), decode() would otherwise fail with
+                        // InvalidAudience and this whole branch would silently
+                        // fall through to the (unconfigured) userinfo fallback,
+                        // resolving every OIDC bearer to no role. We already trust
+                        // issuer + RS256 signature + expiry; audience isn't part
+                        // of our role-mapping trust boundary.
+                        validation.validate_aud = false;
                         if let Ok(data) = jsonwebtoken::decode::<serde_json::Value>(
                             token,
                             &decoding_key,

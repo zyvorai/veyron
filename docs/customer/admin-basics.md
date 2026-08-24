@@ -12,7 +12,10 @@
 ## Auth
 
 - `VEYRON_API_KEY` (admin) or `VEYRON_API_KEYS="name:key:role,..."`.
-- OIDC PKCE via `VEYRON_OIDC_*`; groups `veyron-admin` / `veyron-write`.
+- OIDC PKCE via `VEYRON_OIDC_*` (Keycloak/Auth0/Okta) — set `VEYRON_OIDC_GROUP_ADMIN` /
+  `VEYRON_OIDC_GROUP_WRITE` to your IdP's group names (defaults: `veyron-admins,cluster-admins`
+  / `veyron-write,veyron-editors`). Confidential IdP clients (Keycloak's default) also need
+  `VEYRON_OIDC_CLIENT_SECRET`. Full walkthrough: [Setting Up SSO](sso-setup.md).
 - WebSocket consoles use one-shot tickets: `POST /api/v1/ws/ticket`.
 - Shell HTML (`/`, `/dashboard`, `/assets/*`) and health/OIDC bootstrap paths are auth-exempt.
 

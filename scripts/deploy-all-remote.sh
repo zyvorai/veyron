@@ -59,13 +59,17 @@ stream_local_rsync() {
 }
 
 QUICK=false
+DEPLOY_WITH_OIDC=false
 POSITIONAL=()
 for arg in "$@"; do
     case "$arg" in
         --quick) QUICK=true ;;
+        --with-oidc) DEPLOY_WITH_OIDC=true ;;
         --help|-h)
-            echo "Usage: $0 [host] [user] [--quick]"
-            echo "  --quick  Skip image builds (redeploy manifests only)"
+            echo "Usage: $0 [host] [user] [--quick] [--with-oidc]"
+            echo "  --quick      Skip image builds (redeploy manifests only)"
+            echo "  --with-oidc  Deploy enterprise SSO config from VEYRON_OIDC_* env vars"
+            echo "               (see contrib/veyron-oidc-keycloak.env.example)"
             exit 0
             ;;
         *) POSITIONAL+=("$arg") ;;
@@ -479,6 +483,30 @@ deploy_ssh "${REMOTE}" "
         --from-literal=jwt-issuer='${JWT_ISSUER}' \
         --from-literal=admin-password='${ADMIN_PASSWORD}'
 " 2>&1
+
+# Enterprise SSO (Keycloak/Auth0/Okta) — only touched when --with-oidc is passed,
+# so a plain redeploy never disturbs an OIDC config set up by an earlier run.
+# Values go through `create secret --from-literal` (not `--set` on a chart) since
+# a client secret can contain characters a templating engine's --set mishandles.
+# See contrib/veyron-oidc-keycloak.env.example.
+if [ "${DEPLOY_WITH_OIDC}" = true ]; then
+    if [ -z "${VEYRON_OIDC_ISSUER:-}" ] || [ -z "${VEYRON_OIDC_CLIENT_ID:-}" ]; then
+        pkg_fail "--with-oidc requires VEYRON_OIDC_ISSUER and VEYRON_OIDC_CLIENT_ID in the environment"
+        exit 1
+    fi
+    deploy_substep "🔐 Wiring OIDC SSO Secret (veyron-oidc)…"
+    deploy_ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} delete secret veyron-oidc --ignore-not-found --wait=false" 2>&1
+    OIDC_LITERALS="--from-literal=VEYRON_OIDC_ISSUER='${VEYRON_OIDC_ISSUER}' --from-literal=VEYRON_OIDC_CLIENT_ID='${VEYRON_OIDC_CLIENT_ID}'"
+    [ -n "${VEYRON_OIDC_CLIENT_SECRET:-}" ] && OIDC_LITERALS="${OIDC_LITERALS} --from-literal=VEYRON_OIDC_CLIENT_SECRET='${VEYRON_OIDC_CLIENT_SECRET}'"
+    [ -n "${VEYRON_OIDC_AUTHORIZATION_URL:-}" ] && OIDC_LITERALS="${OIDC_LITERALS} --from-literal=VEYRON_OIDC_AUTHORIZATION_URL='${VEYRON_OIDC_AUTHORIZATION_URL}'"
+    [ -n "${VEYRON_OIDC_TOKEN_URL:-}" ] && OIDC_LITERALS="${OIDC_LITERALS} --from-literal=VEYRON_OIDC_TOKEN_URL='${VEYRON_OIDC_TOKEN_URL}'"
+    [ -n "${VEYRON_OIDC_JWKS_URL:-}" ] && OIDC_LITERALS="${OIDC_LITERALS} --from-literal=VEYRON_OIDC_JWKS_URL='${VEYRON_OIDC_JWKS_URL}'"
+    [ -n "${VEYRON_OIDC_REDIRECT_URI:-}" ] && OIDC_LITERALS="${OIDC_LITERALS} --from-literal=VEYRON_OIDC_REDIRECT_URI='${VEYRON_OIDC_REDIRECT_URI}'"
+    [ -n "${VEYRON_OIDC_ROLE_CLAIM:-}" ] && OIDC_LITERALS="${OIDC_LITERALS} --from-literal=VEYRON_OIDC_ROLE_CLAIM='${VEYRON_OIDC_ROLE_CLAIM}'"
+    [ -n "${VEYRON_OIDC_GROUP_ADMIN:-}" ] && OIDC_LITERALS="${OIDC_LITERALS} --from-literal=VEYRON_OIDC_GROUP_ADMIN='${VEYRON_OIDC_GROUP_ADMIN}'"
+    [ -n "${VEYRON_OIDC_GROUP_WRITE:-}" ] && OIDC_LITERALS="${OIDC_LITERALS} --from-literal=VEYRON_OIDC_GROUP_WRITE='${VEYRON_OIDC_GROUP_WRITE}'"
+    deploy_ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} create secret generic veyron-oidc ${OIDC_LITERALS}" 2>&1
+fi
 
 # Apply Veyron API deployment
 deploy_ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1

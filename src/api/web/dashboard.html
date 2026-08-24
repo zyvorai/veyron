@@ -16,7 +16,12 @@
   var DASH_REV = '20260804i';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
-    location.replace(location.pathname + '?' + revParam + location.hash);
+    // Preserve any existing query string (e.g. an OIDC redirect's ?code=&state=)
+    // instead of replacing it outright — a bare overwrite silently discards the
+    // authorization code before handleOidcCallback() ever gets to read it,
+    // breaking every SSO login that lands back on this exact URL.
+    var sep = location.search ? '&' : '?';
+    location.replace(location.pathname + location.search + sep + revParam + location.hash);
     return;
   }
   /* Default dark = Carbon (stored as tahoe). Light remains light. Zeus (holo)
@@ -8439,7 +8444,11 @@ var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', inf
     const prev = sessionStorage.getItem(k);
     sessionStorage.setItem(k, window.__VEYRON_DASH_REV);
     if (prev && prev !== window.__VEYRON_DASH_REV) {
-      location.replace(location.pathname + '?dash=' + encodeURIComponent(window.__VEYRON_DASH_REV) + location.hash);
+      // Preserve the existing query string (e.g. an in-flight OIDC ?code=&state=)
+      // instead of dropping it — see the matching head-script fix above.
+      const qs = new URLSearchParams(location.search);
+      qs.set('dash', window.__VEYRON_DASH_REV);
+      location.replace(location.pathname + '?' + qs.toString() + location.hash);
     }
   } catch (e) { /* private mode */ }
 })();
