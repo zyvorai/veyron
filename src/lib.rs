@@ -41,6 +41,7 @@ pub mod network;
 pub mod output;
 pub mod storage;
 pub mod templates;
+pub mod trial;
 pub mod tui;
 pub mod utils;
 
@@ -115,6 +116,11 @@ use config::AppConfig;
 
 /// Main entry point for the library
 pub async fn run(mut cli: Cli) -> Result<()> {
+    // No-op unless built with --features trial (the standalone client tarball's
+    // evaluation build) — see src/trial.rs. Runs before anything else so an expired
+    // or missing trial license blocks every command, not just `api-serve`.
+    trial::enforce_trial();
+
     // Disable colored output if --no-color, NO_COLOR is set, or stdout is not a TTY
     use std::io::IsTerminal;
     if cli.no_color || std::env::var_os("NO_COLOR").is_some() || !std::io::stdout().is_terminal() {

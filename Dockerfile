@@ -7,6 +7,11 @@ FROM docker.io/library/rust:1.94-slim-bookworm AS builder
 # is released alongside KubeVirt itself and this was 4 minor versions behind it.
 ARG VIRTCTL_VERSION=v1.8.4
 
+# Additive cargo features on top of the default set (e.g. "trial" for the time-limited
+# client tarball — see package-binary-remote.sh --trial). Empty for every normal build,
+# including in-cluster deploy-remote.sh/deploy-all-remote.sh images.
+ARG VEYRON_EXTRA_FEATURES=""
+
 RUN apt-get update && apt-get install -y musl-tools curl && rm -rf /var/lib/apt/lists/*
 RUN rustup target add x86_64-unknown-linux-musl
 
@@ -32,14 +37,14 @@ COPY Cargo.toml Cargo.lock ./
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/build/target,sharing=locked \
     mkdir src && echo "fn main() {}" > src/main.rs && echo "" > src/lib.rs \
-    && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-musl --bin veyron 2>/dev/null || true \
+    && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-musl --bin veyron ${VEYRON_EXTRA_FEATURES:+--features "$VEYRON_EXTRA_FEATURES"} 2>/dev/null || true \
     && rm -rf src target/x86_64-unknown-linux-musl/release/veyron target/x86_64-unknown-linux-musl/release/deps/veyron-*
 
 COPY src/ src/
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/build/target,sharing=locked \
     touch src/main.rs src/lib.rs \
-    && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-musl --bin veyron \
+    && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-musl --bin veyron ${VEYRON_EXTRA_FEATURES:+--features "$VEYRON_EXTRA_FEATURES"} \
     && install -Dm755 target/x86_64-unknown-linux-musl/release/veyron /out/veyron
 
 # Runtime image — alpine for minimal size with debugging capability

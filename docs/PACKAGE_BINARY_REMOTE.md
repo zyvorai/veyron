@@ -13,6 +13,7 @@ After `./scripts/package-binary-remote.sh` completes, the **tar.gz** contains ev
 ```
 veyron-0.2.0-linux-amd64/
   veyron                  # binary
+  trial.token             # signed evaluation token (trial builds)
   virtctl                  # optional
   install.sh               # client on this machine
   install-cluster.sh       # Cilium + KubeVirt + CDI (cluster admin)
@@ -46,10 +47,14 @@ export KUBECONFIG=/path/to/kubeconfig
 
 ```bash
 tar xzf veyron-*-linux-amd64.tar.gz && cd veyron-*-linux-amd64
+ls -l trial.token          # required for evaluation builds
 ./install.sh
 nano veyron.env   # KUBECONFIG + API key
+# optional: export VEYRON_TRIAL_TOKEN="$(cat trial.token)"
 ./test-package.sh
 ```
+
+After the signed token expires: **sales@zyvor.dev** — see [LICENSING.md](LICENSING.md).
 
 ### Customer uninstall
 

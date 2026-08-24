@@ -12,6 +12,13 @@
 #   --fetch        Copy the tarball to ./dist/ on your laptop after build
 #   --reuse-image  Skip podman build if the package image tag already exists
 #   --no-virtctl   Omit virtctl from the tarball (smaller)
+#   --trial        30-day evaluation build (--features trial) with a bundled signed
+#                  trial.token — see docs/LICENSING.md. Produces a distinctly named
+#                  veyron-<ver>-trial-linux-amd64.tar.gz, never overwrites the regular
+#                  customer tarball. Requires a token minted with trial-tool first:
+#                    cargo run --features trial --bin trial-tool -- issue \
+#                      --who "..." --days 30 -o dist/trial.token
+#   --trial-token=<path>  Token file to bundle (default: dist/trial.token)
 #
 # Environment:
 #   DEPLOY_HOST / DEPLOY_USER     Defaults when host/user omitted
@@ -39,6 +46,8 @@ FETCH=false
 REUSE_IMAGE=false
 INCLUDE_VIRTCTL=true
 SKIP_DEPS=false
+TRIAL_BUILD=false
+TRIAL_TOKEN_FILE=""
 POSITIONAL=()
 
 for arg in "$@"; do
@@ -47,6 +56,8 @@ for arg in "$@"; do
         --reuse-image) REUSE_IMAGE=true ;;
         --no-virtctl) INCLUDE_VIRTCTL=false ;;
         --skip-deps) SKIP_DEPS=true ;;
+        --trial) TRIAL_BUILD=true ;;
+        --trial-token=*) TRIAL_TOKEN_FILE="${arg#--trial-token=}" ;;
         -h|--help)
             sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
@@ -66,6 +77,15 @@ fi
 
 [ -f "${REPO_DIR}/Cargo.toml" ] || { echo "Not in veyron repo (missing Cargo.toml)" >&2; exit 1; }
 
+if $TRIAL_BUILD; then
+    TRIAL_TOKEN_FILE="${TRIAL_TOKEN_FILE:-${REPO_DIR}/dist/trial.token}"
+    if [[ ! -f "${TRIAL_TOKEN_FILE}" ]]; then
+        echo "Error: --trial requires a signed token at ${TRIAL_TOKEN_FILE} (or --trial-token=<path>)." >&2
+        echo "  Mint one first: cargo run --features trial --bin trial-tool -- issue --who \"...\" --days 30 -o dist/trial.token" >&2
+        exit 1
+    fi
+fi
+
 VERSION="${VEYRON_PACKAGE_VERSION:-$(sed -n 's/^version = "\(.*\)"/\1/p' "${REPO_DIR}/Cargo.toml" | head -1)}"
 VERSION="${VERSION:-0.0.0}"
 ARCH="linux-amd64"
@@ -73,8 +93,13 @@ REMOTE="${USER}@${HOST}"
 REMOTE_HOME=$(deploy_ssh "${REMOTE}" 'echo "$HOME"')
 BUILD_DIR="${REMOTE_HOME}/.deployment/veyron-package"
 OUT_DIR="${VEYRON_PACKAGE_DIR:-${REMOTE_HOME}/veyron-dist}"
-IMAGE_TAG="veyron-package:${VERSION}"
-ARTIFACT="veyron-${VERSION}-${ARCH}"
+if $TRIAL_BUILD; then
+    IMAGE_TAG="veyron-package:${VERSION}-trial"
+    ARTIFACT="veyron-${VERSION}-trial-${ARCH}"
+else
+    IMAGE_TAG="veyron-package:${VERSION}"
+    ARTIFACT="veyron-${VERSION}-${ARCH}"
+fi
 TARBALL="${ARTIFACT}.tar.gz"
 CHECKSUM="${TARBALL}.sha256"
 LOCAL_DIST="${REPO_DIR}/dist"
@@ -150,9 +175,11 @@ if $REUSE_IMAGE; then
 fi
 
 if $BUILD_NEEDED; then
-    BUILD_CMD="cd '${BUILD_DIR}' && ${CTR_BUILD} build -t '${IMAGE_TAG}' ."
+    BUILD_ARGS=""
+    $TRIAL_BUILD && BUILD_ARGS="--build-arg VEYRON_EXTRA_FEATURES=trial"
+    BUILD_CMD="cd '${BUILD_DIR}' && ${CTR_BUILD} build ${BUILD_ARGS} -t '${IMAGE_TAG}' ."
     if [[ "${CTR_BUILD}" = "docker" ]]; then
-        BUILD_CMD="cd '${BUILD_DIR}' && DOCKER_BUILDKIT=1 docker build --progress=plain -t '${IMAGE_TAG}' ."
+        BUILD_CMD="cd '${BUILD_DIR}' && DOCKER_BUILDKIT=1 docker build ${BUILD_ARGS} --progress=plain -t '${IMAGE_TAG}' ."
     fi
     pkg_info "First build often takes 10–15 minutes…"
     deploy_ssh "${REMOTE}" "${BUILD_CMD}" 2>&1 | sed 's/^/  [build] /'
@@ -329,15 +356,42 @@ for req in LICENSE LEGAL-INDEX.txt install.sh uninstall.sh HELP.txt START_HERE.t
   test -e "\${OUT_DIR}/\${ARTIFACT}/\${req}" || { echo "bundle missing \${req}" >&2; exit 1; }
 done
 echo "Customer bundle OK (install.sh, README, QUICKSTART, test scripts, binary)"
-
-cd "\${OUT_DIR}"
-rm -f "\${ARTIFACT}.tar.gz" "\${ARTIFACT}.tar.gz.sha256"
-tar czf "\${ARTIFACT}.tar.gz" "\${ARTIFACT}"
-sha256sum "\${ARTIFACT}.tar.gz" | tee "\${ARTIFACT}.tar.gz.sha256"
-ls -lh "\${ARTIFACT}.tar.gz" "\${ARTIFACT}/veyron"
-file "\${ARTIFACT}/veyron"
-"\${OUT_DIR}/\${ARTIFACT}/veyron" --help | head -3
 REMOTE_PACK
+
+if $TRIAL_BUILD; then
+    pkg_remote_phase "Bundle signed trial token"
+    scp -o StrictHostKeyChecking=no "${TRIAL_TOKEN_FILE}" "${REMOTE}:${OUT_DIR}/${ARTIFACT}/trial.token"
+    deploy_ssh "${REMOTE}" bash -s <<REMOTE_TRIAL_NOTICE
+set -euo pipefail
+D='${OUT_DIR}/${ARTIFACT}'
+test -f "\${D}/trial.token" || { echo "trial.token missing after scp" >&2; exit 1; }
+for f in README.txt QUICKSTART.txt; do
+  [ -f "\${D}/\${f}" ] || continue
+  { printf '%s\n' \
+      '=== 30-DAY EVALUATION BUILD ===' \
+      'This bundle includes a signed trial.token (next to the veyron binary).' \
+      'Keep it in place, or: export VEYRON_TRIAL_TOKEN="\$(cat trial.token)"' \
+      'After expiry, contact sales@zyvor.dev for a renewed token.' \
+      ''; \
+    cat "\${D}/\${f}"; \
+  } > "\${D}/\${f}.new"
+  mv "\${D}/\${f}.new" "\${D}/\${f}"
+done
+echo "Trial notice prepended to README.txt / QUICKSTART.txt"
+REMOTE_TRIAL_NOTICE
+    pkg_ok "trial.token bundled (30-day evaluation build)"
+fi
+
+deploy_ssh "${REMOTE}" bash -s <<REMOTE_TAR
+set -euo pipefail
+cd "${OUT_DIR}"
+rm -f "${ARTIFACT}.tar.gz" "${ARTIFACT}.tar.gz.sha256"
+tar czf "${ARTIFACT}.tar.gz" "${ARTIFACT}"
+sha256sum "${ARTIFACT}.tar.gz" | tee "${ARTIFACT}.tar.gz.sha256"
+ls -lh "${ARTIFACT}.tar.gz" "${ARTIFACT}/veyron"
+file "${ARTIFACT}/veyron"
+"${OUT_DIR}/${ARTIFACT}/veyron" --help | head -3
+REMOTE_TAR
 
 REMOTE_TARBALL="${OUT_DIR}/${TARBALL}"
 REMOTE_CHECKSUM="${OUT_DIR}/${CHECKSUM}"
