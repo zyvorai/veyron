@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 /// by `trial-tool issue`. Regenerate with `cargo run --bin trial-tool -- keygen` and
 /// replace this constant when rotating the signing key — doing so invalidates every
 /// previously issued token, so reissue any trials still active.
-pub const TRIAL_PUBLIC_KEY_B64: &str = "yudOl5bIDNWlhmjPtLvTxy26AJPUIevk22muk4gWQ4c=";
+pub const TRIAL_PUBLIC_KEY_B64: &str = "Zo2596K+cFrC3r0lvodqfBvU/LJGr8RU43KEAbAFqW0=";
 
 pub const SALES_CONTACT: &str = "sales@zyvor.dev";
 
