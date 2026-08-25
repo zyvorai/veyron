@@ -72,6 +72,12 @@ tar xzf veyron-*-linux-amd64.tar.gz && cd veyron-*-linux-amd64
 single-node cluster (kind/k3s/minikube) sharing the build daemon's image store can skip
 `--push` entirely.
 
+### Just evaluating? Grab the 30-day trial bundle
+
+Same tarball, plus a signed `trial.token` next to the binary — no purchase needed to try
+it. After 30 days the binary stops starting until you
+[contact sales@zyvor.dev](mailto:sales@zyvor.dev) for a full or renewed license.
+
 OpenAPI: `/api/openapi.json`. Route dump: `veyron api-routes`.
 
 ## Related

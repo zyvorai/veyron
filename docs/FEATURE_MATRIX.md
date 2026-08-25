@@ -162,6 +162,7 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | Velero on backups | Working | `GET /api/v1/velero/status` section on `page-backups` |
 | Multi-cluster bar | Working | `GET/POST /api/v1/clusters` when kubeconfig has multiple contexts |
 | OIDC / SSO | Working | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VEYRON_OIDC_*` set. Verified end-to-end 2026-08-24 against a real Keycloak realm (group→role mapping, confidential client, local-admin fallback all confirmed live) — see [OIDC_SSO.md](OIDC_SSO.md). No SAML SP (use an IdP's OIDC app, or Keycloak as a SAML broker). |
+| 30-day trial licensing | Working | Signed Ed25519/EdDSA `trial.token` gates the standalone client tarball only (`--features trial`, `scripts/package-binary-remote.sh --trial`) — in-cluster/Helm builds are never time-limited. Verified end-to-end 2026-08-24 (valid/missing/expired/tampered tokens, install + `api-serve` against a real cluster) — see [LICENSING.md](LICENSING.md). |
 
 ## Immediate Next Steps
 

@@ -4,6 +4,11 @@
 Turns "works in our lab" into "works at the customer." Follow top to bottom; the
 **acceptance gate** at the end must pass before sign-off.
 
+For a prospect who just wants to try Veyron before this go-live process, hand them the
+30-day evaluation tarball instead — see [LICENSING.md](LICENSING.md) and
+[PACKAGE_BINARY_REMOTE.md](PACKAGE_BINARY_REMOTE.md). This runbook covers the
+unrestricted production/in-cluster deployment, never time-limited.
+
 ## 0. Prerequisites (verify on the customer cluster)
 
 The tested baseline lives in **`scripts/cluster/versions.env`** — the single source of
