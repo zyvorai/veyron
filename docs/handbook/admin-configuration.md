@@ -161,6 +161,14 @@ integrations. All are read from `std::env`; unset means the feature is disabled.
 
 Deploy without leaking secrets through `--set`/CLI history: `./scripts/deploy-remote.sh <host> <user> --with-oidc` (writes a `veyron-oidc` Secret from the `VEYRON_OIDC_*` env vars in your shell). See [OIDC/SSO](../OIDC_SSO.md) for the full SSO setup, including a worked Keycloak walkthrough and the gotchas found live-testing against a real IdP (confidential-client secret, `sslRequired`, exact redirect URI, scope requests).
 
+### Trial licensing (evaluation builds only)
+
+| Variable | Purpose |
+|----------|---------|
+| `VEYRON_TRIAL_TOKEN` | Only read on `--features trial` builds (the standalone evaluation tarball, not this admin deployment path). Overrides the `trial.token` file lookup. |
+
+This only applies to `scripts/package-binary-remote.sh --trial` client tarballs handed to prospects — the deployment covered by the rest of this page is never time-limited. See [LICENSING.md](../LICENSING.md).
+
 ### AI (Ask Zyra / copilots)
 
 | Variable | Purpose |

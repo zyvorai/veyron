@@ -169,6 +169,7 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 | `src/handlers/` | CLI command implementations (vm, backup, cost, gitops, crds, infra…) |
 | `src/operator_crds/` | Veyron CRD types under `veyron.io/v1alpha1` |
 | `src/soc/` | Security operations: `SecurityEvent`, ConfigMap event/detection store, collectors, detection rules, SIEM export (`export/elastic`, `splunk`, `sentinel`, `qradar`), hunts, ASM, SOAR webhooks — API `handlers/soc.rs`, dashboard **Security → SOC**. See `docs/SOC.md`. |
+| `src/trial.rs`, `src/bin/trial-tool.rs` | 30-day evaluation licensing for the standalone client tarball, feature-gated (`trial`) so it never affects in-cluster/production builds. See `docs/LICENSING.md`. |
 
 **Windows templates in code** (`windows*` in `src/templates/mod.rs`): Hyper-V feature set, `windows_clock()`, UEFI, virtio driver CDROM, blank SATA disk, virtio NIC, RNG, USB tablet, IO threads, TPM on 2022/11. **No** embedded Cloudbase-Init config or `cloudInitConfigDrive` userData (guest image / your YAML). See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md` (includes **automation**: Packer/CDI/GitOps; `cloud_init` in `converter.rs` emits **NoCloud** only—patch YAML or extend schema for Windows config-drive).
 
@@ -176,9 +177,18 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 
 - `default = ["web"]` — enables axum, rustls, TLS, dashboard, WebSockets
 - `experimental` — placeholder
+- `trial` — 30-day evaluation build for the standalone client tarball only (`scripts/package-binary-remote.sh --trial`); pulls in `web` + `ring` for Ed25519 token verification. **Never** enabled for in-cluster Helm/`deploy-remote.sh` images — see `docs/LICENSING.md`.
 - Build CLI-only: `cargo build --no-default-features`
 
 All web-only code is gated with `#[cfg(feature = "web")]`.
+
+### Trial licensing (`src/trial.rs`)
+
+The standalone client tarball can be built as a time-limited 30-day evaluation instead of the normal unrestricted binary — signed Ed25519/EdDSA tokens (`jsonwebtoken` + `ring`, both already dependencies), not a locally-writable timestamp file, so deleting local state can't reset or extend a trial. `veyron::run()` calls `trial::enforce_trial()` as its very first action (before config load, before any command dispatch); with the `trial` feature off it's a no-op, so ordinary builds are never time-limited.
+
+- **Enforcement** (`src/trial.rs`, `#[cfg(feature = "trial")]`): looks for a token via `VEYRON_TRIAL_TOKEN` env var, then `trial.token` next to the running binary (how the tarball ships it), then `~/.config/veyron/trial.token`. Verifies the EdDSA signature against the embedded `TRIAL_PUBLIC_KEY_B64` constant, checks `exp`. Missing/invalid/expired → hard block (`std::process::exit(1)`) with a message pointing to **sales@zyvor.dev**; valid with ≤7 days left → a one-line stderr countdown; otherwise silent. `trial_status_json()` (always compiled, `{"trial":false}` when the feature is off) returns the same status as JSON — not currently wired to an API route, available for a future dashboard status check.
+- **Issuance** (`src/bin/trial-tool.rs`, requires `--features trial` to build/run — `required-features` in `Cargo.toml` so a plain `cargo build`/CI never touches it): `keygen` generates the Ed25519 keypair (private key never committed — `secrets/`, `*.pkcs8*`, `trial.token` are all gitignored); `issue --who <licensee> --days 30 -o trial.token` mints a signed token. The private key is ZyvorAI-internal only — rotating it invalidates every previously issued token, so any trial still active needs reissuing after a rotation.
+- **Packaging**: `./scripts/package-binary-remote.sh <host> <user> --trial --fetch` builds with `--features trial` (Dockerfile `VEYRON_EXTRA_FEATURES` build arg) and bundles a pre-minted `trial.token` next to the binary, under a distinct `veyron-<ver>-trial-linux-amd64.tar.gz` name that never collides with the regular customer tarball.
 
 ## Key conventions
 
@@ -214,6 +224,7 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 | `VEYRON_ATLAS_TENANT` | Optional tenant id recorded on Atlas-provisioned volumes/backups (default `global`) |
 | `VEYRON_VGPU_LIVE_MIGRATION` | Set to `1` ONLY after verifying the licensed NVIDIA vGPU host stack + KubeVirt actually live-migrate mdev VMIs (Phase 2 attestation). Relaxes the migration gate for vGPU-only VMs and enables `day2_ops.vgpu_live_migration` (when mdev resources are present). Upstream KubeVirt ≤1.8 does NOT support this — never set on plain passthrough clusters. |
 | `VEYRON_ALLOW_PUBLIC_RDP` | Set to `1` to permit `PUT /rdp-expose` with `service_type: NodePort`/`LoadBalancer`. **Default: refused with 403** — a bare 3389 NodePort puts Windows auth on the network with no gateway/MFA/TLS. Prefer `ClusterIP` + VPN/zero-trust gateway or `kubectl port-forward`. |
+| `VEYRON_TRIAL_TOKEN` | Only read on `--features trial` builds (the evaluation client tarball). Overrides the `trial.token` file lookup (next to the binary, then `~/.config/veyron/trial.token`) — set to the token's contents. See `docs/LICENSING.md`. |
 | `VEYRON_OIDC_ISSUER`, `VEYRON_OIDC_CLIENT_ID`, `VEYRON_OIDC_CLIENT_SECRET`, `VEYRON_OIDC_AUTHORIZATION_URL`, `VEYRON_OIDC_TOKEN_URL`, `VEYRON_OIDC_JWKS_URL`, `VEYRON_OIDC_REDIRECT_URI`, `VEYRON_OIDC_ROLE_CLAIM` | Enterprise SSO against a real IdP (Keycloak/Auth0/Okta) — `src/api/oidc.rs`. `oidc_configured()` requires `CLIENT_ID` + (`AUTHORIZATION_URL` or `ISSUER`). Frontend does PKCE + the authorization-code redirect itself (`dashboard.html`, `startOidcLogin`/`handleOidcCallback`); the backend only exchanges the code (`POST /api/v1/auth/oidc/token`, no server-side OAuth `redirect_uri` route) and validates bearer JWTs via JWKS RS256 (falls back to `VEYRON_OIDC_JWKS_URL`-less userinfo lookup) — see `oidc_role_from_bearer`. |
 | `VEYRON_OIDC_GROUP_ADMIN` / `VEYRON_OIDC_GROUP_WRITE` | Comma-separated, case-insensitive IdP group names mapped to `admin`/`write` roles (exact match, checked before the substring-based `admin`/`write` heuristic in `normalize_role`). Defaults: `veyron-admins,cluster-admins` / `veyron-write,veyron-editors`. Deploy without leaking secrets through `--set`/CLI history: `./scripts/deploy-remote.sh HOST USER --with-oidc` (writes a `veyron-oidc` Secret from `VEYRON_OIDC_*` env vars, wired into `deploy/k8s.yaml` via `envFrom` `optional: true` — absent unless that Secret exists; Helm chart equivalent: `oidc.*` values or `oidc.existingSecret`). See `contrib/veyron-oidc-keycloak.env.example` for a worked Keycloak example. |
 
