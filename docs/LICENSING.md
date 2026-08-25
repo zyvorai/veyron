@@ -6,7 +6,7 @@ enforcement) use a **signed trial token** — the same design as Ragnarok / Auro
 
 ## Customer install
 
-**Current evaluation release:** [`v0.2.1-trial`](https://github.com/ssahani/Veyron/releases/tag/v0.2.1-trial) (tarball includes `trial.token`).
+Downloads live in the **public** [hypersdk/veyron-releases](https://github.com/hypersdk/veyron-releases) repo, not this source repo (which is private — customers can't reach releases published here). **Current evaluation release:** [`v0.2.1-trial`](https://github.com/hypersdk/veyron-releases/releases/tag/v0.2.1-trial) (tarball includes `trial.token`).
 
 1. Extract the tarball. It should include **`trial.token`** next to `veyron`.
 2. Keep that file beside the binary (or copy to `~/.config/veyron/trial.token`).
