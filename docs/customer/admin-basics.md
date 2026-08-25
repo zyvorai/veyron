@@ -57,9 +57,10 @@ helm upgrade --install veyron charts/veyron -n veyron --create-namespace
 
 ### From a binary bundle (no git clone, no build tools)
 
-If you received a `veyron-<version>-linux-amd64.tar.gz` bundle (built via
-`scripts/package-binary-remote.sh`), it ships the Helm chart plus a script that builds a
-runtime image from the bundle's own binaries — no source tree, no cargo:
+Download **`veyron-<version>-linux-amd64.tar.gz`** from
+**[github.com/hypersdk/veyron-releases](https://github.com/hypersdk/veyron-releases/releases)**
+(or if you received it directly from us). It ships the Helm chart plus a script that
+builds a runtime image from the bundle's own binaries — no source tree, no cargo:
 
 ```bash
 tar xzf veyron-*-linux-amd64.tar.gz && cd veyron-*-linux-amd64
@@ -74,9 +75,11 @@ single-node cluster (kind/k3s/minikube) sharing the build daemon's image store c
 
 ### Just evaluating? Grab the 30-day trial bundle
 
-Same tarball, plus a signed `trial.token` next to the binary — no purchase needed to try
+Download from **[github.com/hypersdk/veyron-releases](https://github.com/hypersdk/veyron-releases/releases)**
+— same tarball, plus a signed `trial.token` next to the binary, no purchase needed to try
 it. After 30 days the binary stops starting until you
-[contact sales@zyvor.dev](mailto:sales@zyvor.dev) for a full or renewed license.
+[contact sales@zyvor.dev](mailto:sales@zyvor.dev) for a full or renewed license. The same
+page also has the full, unrestricted release if you're ready to install for real.
 
 OpenAPI: `/api/openapi.json`. Route dump: `veyron api-routes`.
 

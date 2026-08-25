@@ -128,9 +128,16 @@ sha256sum -c veyron-0.2.0-linux-amd64.tar.gz.sha256
 
 ## Give the package to a client
 
+**Option A — direct hand-off:**
+
 1. Send **`veyron-<version>-linux-amd64.tar.gz`** and the **`.sha256`** file (or verify before sending).
 2. Include a **kubeconfig** (or instructions to use their own) with rights to manage KubeVirt VMs.
 3. Point them to the **Client install** section below.
+
+**Option B — public download link:** `./scripts/publish-customer-release.sh [--trial]` uploads the
+tarball to the **public** [hypersdk/veyron-releases](https://github.com/hypersdk/veyron-releases)
+repo (this source repo is private — a release published *here* is unreachable by customers).
+Add `--trial` to publish the 30-day evaluation build instead — see `docs/LICENSING.md`.
 
 Do **not** rely on deploy scripts for client installs unless you are also operating their cluster.
 
