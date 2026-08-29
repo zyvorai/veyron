@@ -113,7 +113,7 @@ First run typically takes **10–15 minutes** (Rust compile inside the container
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `DEPLOY_HOST` / `DEPLOY_USER` | — / `sus` | When host/user omitted |
+| `DEPLOY_HOST` / `DEPLOY_USER` | — / `operator` | When host/user omitted |
 | `VEYRON_PACKAGE_DIR` | `~/veyron-dist` | Remote output directory |
 | `VEYRON_PACKAGE_VERSION` | from `Cargo.toml` | Archive name version |
 | `VEYRON_REMOTE_SKIP_SSH_CHECK=1` | off | Skip SSH preflight |
