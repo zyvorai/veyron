@@ -25,7 +25,7 @@ METAEOF
 }
 
 # Handled in repo already: Veyron, machina
-for r in v9s guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge; do
+for r in v9s guestkit transiva- h2kvm- packetwolf ragnarok Axiom IronWolf forge; do
   f="${TT}/${r}/scripts/package-binary-remote.sh"
   [[ -f "${f}" ]] || continue
   grep -q 'install-everything.sh' "${f}" && { echo "ok ${r}"; continue; }

@@ -44,7 +44,7 @@ fn is_linux_vm(vm: &Value) -> bool {
         return true;
     }
 
-    if let Some(distro) = hyper2kvm_os_distro(vm) {
+    if let Some(distro) = h2kvm_os_distro(vm) {
         if looks_like_linux_distro(&distro) && !looks_like_windows_distro(&distro) {
             return true;
         }
@@ -98,7 +98,7 @@ fn guest_os_label(vm: &Value, family: &str) -> bool {
     for key in [
         "v9s.io/guest-os",
         "veyron.io/guest-os",
-        "hyper2kvm.io/guest-os",
+        "h2kvm.io/guest-os",
     ] {
         if metadata_str(vm, "labels", key).is_some_and(|v| v.eq_ignore_ascii_case(family)) {
             return true;
@@ -118,8 +118,8 @@ fn metadata_str(vm: &Value, section: &str, key: &str) -> Option<String> {
         .map(str::to_string)
 }
 
-fn hyper2kvm_os_distro(vm: &Value) -> Option<String> {
-    metadata_str(vm, "labels", "hyper2kvm.io/os-distro")
+fn h2kvm_os_distro(vm: &Value) -> Option<String> {
+    metadata_str(vm, "labels", "h2kvm.io/os-distro")
 }
 
 fn kubevirt_os_template_variant(vm: &Value) -> Option<String> {
@@ -137,8 +137,8 @@ fn kubevirt_os_template_variant(vm: &Value) -> Option<String> {
             return Some(s.to_string());
         }
     }
-    metadata_str(vm, "labels", "hyper2kvm.io/os-variant")
-        .or_else(|| metadata_str(vm, "annotations", "hyper2kvm.io/os-variant"))
+    metadata_str(vm, "labels", "h2kvm.io/os-variant")
+        .or_else(|| metadata_str(vm, "annotations", "h2kvm.io/os-variant"))
 }
 
 fn vm_has_linux_cloud_init(vm: &Value) -> bool {

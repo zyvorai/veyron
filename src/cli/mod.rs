@@ -2849,10 +2849,10 @@ pub enum Commands {
     ClustersDiscover,
 
     // ========== IMPORT ==========
-    /// Import a KubeVirt VirtualMachine YAML (not hypervisor migration — see HyperSDK)
+    /// Import a KubeVirt VirtualMachine YAML (not hypervisor migration — see Transiva)
     #[command(
         name = "import",
-        after_help = "Hypervisor migration (VMware/Hyper-V) is provided by HyperSDK: https://zyvor.dev/hypersdk"
+        after_help = "Hypervisor migration (VMware/Hyper-V) is provided by Transiva: https://zyvor.dev/zyvor-ai-platform"
     )]
     Import {
         /// Path to YAML/JSON file

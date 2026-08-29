@@ -355,7 +355,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         ),
         Span::styled(": Cancel | ", Style::default().fg(Color::Gray)),
         Span::styled(
-            "VMware/Hyper-V import: HyperSDK",
+            "VMware/Hyper-V import: Transiva",
             Style::default().fg(Color::Gray),
         ),
     ]))

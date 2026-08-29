@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
 )
 
 func kubevirtVMGVK() schema.GroupVersionKind {

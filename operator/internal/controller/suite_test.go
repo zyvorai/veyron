@@ -9,7 +9,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
 )
 
 // newScheme returns a runtime.Scheme with the core Kubernetes types and the

@@ -2,7 +2,7 @@
 
 Use this flow when you want to **ship a client deliverable** (tarball with `veyron` + optional `virtctl`) without giving them Kubernetes deploy scripts or container manifests.
 
-**Policy:** customer tarballs are **binaries/artifacts only** — no git clone on the install host. See **`docs/CLIENT_BUNDLE_POLICY.md`** for all products (Rust/Go static vs Python `venv` bundles for hyper2kvm/forge).
+**Policy:** customer tarballs are **binaries/artifacts only** — no git clone on the install host. See **`docs/CLIENT_BUNDLE_POLICY.md`** for all products (Rust/Go static vs Python `venv` bundles for h2kvm/forge).
 
 The build runs on a **Linux amd64 machine** you control (build server, k3s node, CI runner). You download the archive and hand it to the client.
 
@@ -135,7 +135,7 @@ sha256sum -c veyron-0.2.0-linux-amd64.tar.gz.sha256
 3. Point them to the **Client install** section below.
 
 **Option B — public download link:** `./scripts/publish-customer-release.sh [--trial]` uploads the
-tarball to the **public** [hypersdk/veyron-releases](https://github.com/hypersdk/veyron-releases)
+tarball to the **public** [zyvorai/veyron-releases](https://github.com/zyvorai/veyron-releases)
 repo (this source repo is private — a release published *here* is unreachable by customers).
 Add `--trial` to publish the 30-day evaluation build instead — see `docs/LICENSING.md`.
 

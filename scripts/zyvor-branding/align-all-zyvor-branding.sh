@@ -3,7 +3,7 @@
 set -euo pipefail
 KIT="$(cd "$(dirname "$0")" && pwd)"
 TT="$(cd "${KIT}/../../.." && pwd)"
-BRAND='zyvor.dev · HyperSDK · © 2026'
+BRAND='zyvor.dev · Zyvor · © 2026'
 
 echo "==> Propagate ZyvorBrand.tsx + bundle scripts"
 "${KIT}/apply-zyvor-branding-ui.sh"
@@ -12,29 +12,29 @@ echo "==> Global text replace (@zyvor → standard line)"
 while IFS= read -r -d '' f; do
   grep -qE '@zyvor|© @zyvor' "${f}" 2>/dev/null || continue
   sed -i '' \
-    -e 's|https://zyvor.dev · HyperSDK · © 2026|zyvor.dev · HyperSDK · © 2026|g' \
-    -e 's|zyvor.dev · HyperSDK · © 2026|zyvor.dev · HyperSDK · © 2026|g' \
-    -e "s|© @zyvor 2026 · HyperSDK|HyperSDK · © 2026|g" \
-    -e "s|© @zyvor 2026 · <a href=\"https://zyvor.dev\"|zyvor.dev · HyperSDK · © 2026 · <a href=\"https://zyvor.dev\"|g" \
+    -e 's|https://zyvor.dev · Zyvor · © 2026|zyvor.dev · Zyvor · © 2026|g' \
+    -e 's|zyvor.dev · Zyvor · © 2026|zyvor.dev · Zyvor · © 2026|g' \
+    -e "s|© @zyvor 2026 · Transiva|Transiva · © 2026|g" \
+    -e "s|© @zyvor 2026 · <a href=\"https://zyvor.dev\"|zyvor.dev · Zyvor · © 2026 · <a href=\"https://zyvor.dev\"|g" \
     -e 's|© @zyvor 2026|© 2026|g' \
     "${f}" 2>/dev/null || sed -i \
-    -e 's|https://zyvor.dev · HyperSDK · © 2026|zyvor.dev · HyperSDK · © 2026|g' \
-    -e 's|zyvor.dev · HyperSDK · © 2026|zyvor.dev · HyperSDK · © 2026|g' \
-    -e "s|© @zyvor 2026 · HyperSDK|HyperSDK · © 2026|g" \
+    -e 's|https://zyvor.dev · Zyvor · © 2026|zyvor.dev · Zyvor · © 2026|g' \
+    -e 's|zyvor.dev · Zyvor · © 2026|zyvor.dev · Zyvor · © 2026|g' \
+    -e "s|© @zyvor 2026 · Transiva|Transiva · © 2026|g" \
     -e 's|© @zyvor 2026|© 2026|g' \
     "${f}"
 done < <(find "${TT}" -type f \( -name '*.txt' -o -name '*.sh' -o -name '*.tsx' -o -name '*.ts' -o -name '*.json' -o -name '*.html' \) \
   ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.git/*' ! -path '*/target/*' ! -name 'align-all-zyvor-branding.sh' -print0 2>/dev/null)
 
-echo "==> hypersdk (tt/hypersdk) web Footer"
-HS="${TT}/tt/hypersdk"
+echo "==> transiva (tt/transiva) web Footer"
+HS="${TT}/tt/transiva"
 if [[ -d "${HS}/web/dashboard-react/src/components" ]]; then
   cp -f "${KIT}/ZyvorBrand.tsx" "${HS}/web/dashboard-react/src/components/ZyvorBrand.tsx"
   cp -f "${KIT}/ZyvorBrand.tsx" "${HS}/scripts/zyvor-branding/ZyvorBrand.tsx"
   perl -i -pe '
-    s/\{\x27 · \x27\}© @zyvor 2026 · HyperSDK/ · HyperSDK · © 2026/g;
-    s/© @zyvor 2026 · <a href="https:\/\/zyvor.dev"[^>]*>zyvor.dev<\/a> · HyperSDK/
-      <a href="https:\/\/zyvor.dev" target="_blank" rel="noopener noreferrer" style={{ color: '\''#f0583a'\'', textDecoration: '\''none'\'' }}>zyvor.dev<\/a> · HyperSDK · © 2026/g;
+    s/\{\x27 · \x27\}© @zyvor 2026 · Transiva/ · Transiva · © 2026/g;
+    s/© @zyvor 2026 · <a href="https:\/\/zyvor.dev"[^>]*>zyvor.dev<\/a> · Transiva/
+      <a href="https:\/\/zyvor.dev" target="_blank" rel="noopener noreferrer" style={{ color: '\''#f0583a'\'', textDecoration: '\''none'\'' }}>zyvor.dev<\/a> · Transiva · © 2026/g;
   ' "${HS}/web/dashboard-react/src/components/Footer.tsx" 2>/dev/null || true
 fi
 
@@ -64,15 +64,15 @@ add_footer() {
 
 add_footer "${TT}/machina/web/src/App.tsx" './components/ZyvorBrand'
 add_footer "${TT}/vmspawn/.web/src/App.tsx" './components/ZyvorBrand'
-add_footer "${TT}/hypersdk-/web/dashboard-react/src/App.tsx" './components/ZyvorBrand'
-add_footer "${TT}/hyper2kvm-/web/dashboard/src/components/Layout.tsx" './ZyvorBrand'
+add_footer "${TT}/transiva-/web/dashboard-react/src/App.tsx" './components/ZyvorBrand'
+add_footer "${TT}/h2kvm-/web/dashboard/src/components/Layout.tsx" './ZyvorBrand'
 
 echo "Done."
 
-# hypersdk-web i18n footers
-for f in "${TT}/hypersdk-web/i18n"/*/docusaurus-theme-classic/footer.json; do
+# zyvor-web i18n footers
+for f in "${TT}/zyvor-web/i18n"/*/docusaurus-theme-classic/footer.json; do
   [[ -f "${f}" ]] || continue
-  perl -i -pe 's|© @zyvor 2026 · HyperSDK Platform|HyperSDK · © 2026|g' "${f}" 2>/dev/null || true
+  perl -i -pe 's|© @zyvor 2026 · Zyvor Platform|Transiva · © 2026|g' "${f}" 2>/dev/null || true
 done
 
 echo "==> Done. Standard line: ${BRAND}"

@@ -53,7 +53,7 @@ Rogue VM management for **KubeVirt** — forged in Rust. Declarative VM builder,
 ## Quick Start
 
 ```bash
-git clone https://github.com/ssahani/Veyron.git && cd Veyron
+git clone https://github.com/zyvorai/veyron.git && cd Veyron
 cargo build --release
 
 # Create VM from template
@@ -75,7 +75,7 @@ cargo build --release
 | Operator deploy | `charts/veyron-operator/` |
 | Remote deploy | `./scripts/deploy-remote.sh` |
 | GuestKit integration | `guestkit/` submodule · [`veyron agent deploy`](docs/GUESTKIT_AGENT.md) |
-| **Evaluation / trial** | Signed `trial.token` in customer tarballs — [docs/LICENSING.md](docs/LICENSING.md) · download from [hypersdk/veyron-releases](https://github.com/hypersdk/veyron-releases/releases) (public; this source repo is private) |
+| **Evaluation / trial** | Signed `trial.token` in customer tarballs — [docs/LICENSING.md](docs/LICENSING.md) · download from [zyvorai/veyron-releases](https://github.com/zyvorai/veyron-releases/releases) (public; this source repo is private) |
 
 ---
 
@@ -110,10 +110,10 @@ flowchart LR
 | **zeus-os** | Cloud / KubeVirt control plane |
 | **hermes** | Application layer for Kubernetes |
 | **forge** | AI infrastructure on Kubernetes |
-| **hypersdk / hyper2kvm** | Multi-cloud VM migration |
+| **transiva / h2kvm** | Multi-cloud VM migration |
 | **guestkit** | Offline VM migration assurance |
 | **packetwolf** | Kernel-native network intelligence |
-| **Aether** | Universal runtime portability |
+| **Axiom** | Universal runtime portability |
 | **Veyron** | KubeVirt VM command center |
 | **IronWolf** | Metal3 bare-metal automation |
 | **zyvor-fabric** | systemd-native private cloud |

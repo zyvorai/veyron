@@ -24,10 +24,10 @@ use crate::config::VMConfigBuilder;
 use crate::kube::kubevirt_subresources::{vmi_guest_exec, wait_guest_exec};
 use crate::kube::{self, KubeClient};
 
-/// Published GuestKit release (see github.com/hypersdk/guestkit/releases).
+/// Published GuestKit release (see github.com/zyvorai/guestkit/releases).
 const GUESTKIT_RELEASE_TAG: &str = "guestkit-agent-v0.3.14";
 const GUESTKIT_RELEASE_BASE: &str =
-    "https://github.com/hypersdk/guestkit/releases/download/guestkit-agent-v0.3.14";
+    "https://github.com/zyvorai/guestkit/releases/download/guestkit-agent-v0.3.14";
 
 fn default_linux_bundle_url() -> String {
     format!("{GUESTKIT_RELEASE_BASE}/guestkitd")

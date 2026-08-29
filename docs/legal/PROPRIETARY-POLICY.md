@@ -2,7 +2,7 @@
 
 ## Position
 
-ZyvorAI Labs does **not** distribute product source or binaries under Apache 2.0, MIT, LGPL, or other open-source licenses. This applies to **PacketWolf**, **Ragnarok**, **Aether**, **GuestKit**, **HyperSDK**, and related commercial extensions.
+ZyvorAI Labs does **not** distribute product source or binaries under Apache 2.0, MIT, LGPL, or other open-source licenses. This applies to **PacketWolf**, **Ragnarok**, **Axiom**, **GuestKit**, and related commercial extensions.
 
 ## Third-party dependencies
 

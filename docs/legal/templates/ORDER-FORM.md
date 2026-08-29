@@ -20,7 +20,7 @@
 |---------|---------|------------|
 | PacketWolf / NetPredator | ☐ Enterprise | ☐ Self-hosted ☐ Hosted |
 | Ragnarok | ☐ Enterprise | ☐ Self-hosted |
-| Aether | ☐ Enterprise | ☐ Self-hosted |
+| Axiom | ☐ Enterprise | ☐ Self-hosted |
 | GuestKit | ☐ Enterprise | ☐ Self-hosted |
 
 **Tier:** ☐ Professional  ☐ Enterprise  ☐ Sovereign  ☐ Hyperscale (custom)

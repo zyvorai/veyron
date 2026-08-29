@@ -3,7 +3,7 @@
 set -euo pipefail
 TT="$(cd "$(dirname "$0")/../../.." && pwd)"
 MSG="$(cat <<'EOF'
-chore(ui): align Zyvor branding — footer-only zyvor.dev · HyperSDK · © 2026
+chore(ui): align Zyvor branding — footer-only zyvor.dev · Zyvor · © 2026
 
 Remove redundant product name from headers; copyright only in footer.
 Sync ZyvorBrand.tsx and client bundle script strings.
@@ -11,7 +11,7 @@ EOF
 )"
 
 REPOS=(
-  Aether cockpit forge guestkit hyper2kvm- hypercluster hypersdk- hypersdk-web
+  Axiom cockpit forge guestkit h2kvm- hypercluster transiva- zyvor-web
   IronWolf machina mkosi-kernel nightforge packetwolf pixie ragnarok tetragon v9s Veyron vmspawn
 )
 

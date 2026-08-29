@@ -48,7 +48,7 @@ Persona-based journeys with acceptance criteria: **[USER_STORIES.md](USER_STORIE
 
 ## Ecosystem
 
-Part of the [Zyvor / HyperSDK platform stack](https://zyvor.dev):
+Part of the [Zyvor platform stack](https://zyvor.dev):
 
 | Product | Role |
 |---------|------|
@@ -56,10 +56,10 @@ Part of the [Zyvor / HyperSDK platform stack](https://zyvor.dev):
 | **machina** | Bare-metal hypervisor OS |
 | **zeus-os (v9s)** | Cloud / KubeVirt control plane |
 | **forge** | AI infrastructure on K8s |
-| **hypersdk / hyper2kvm** | VM migration |
+| **transiva / h2kvm** | VM migration |
 | **guestkit** | Offline VM assurance |
 | **packetwolf** | Network intelligence |
-| **Aether** | Runtime portability |
+| **Axiom** | Runtime portability |
 | **hermes** | Application layer for K8s |
 
 See also: [../README.md](../README.md)

@@ -102,8 +102,8 @@ pkg_env_bootstrap_auth_for_file() {
         ironwolf)
             pkg_env_ensure_var "${env_file}" "IRONWOLF_API_KEY" "Admin@321"
             ;;
-        aether)
-            pkg_env_ensure_var "${env_file}" "AETHER_API_KEY" "Admin@321"
+        axiom)
+            pkg_env_ensure_var "${env_file}" "AXIOM_API_KEY" "Admin@321"
             ;;
         ragnarok)
             pkg_env_ensure_jwt_secret "${env_file}" "JWT_SECRET"
@@ -116,11 +116,11 @@ pkg_env_bootstrap_auth_for_file() {
                 pkg_warn "Install htpasswd or python3+bcrypt to seed admin — see backend docs"
             fi
             ;;
-        hypersdk)
-            pkg_env_ensure_var "${env_file}" "HYPERSDK_API_KEY" "Admin@321"
+        transiva)
+            pkg_env_ensure_var "${env_file}" "ZYVOR_API_KEY" "Admin@321"
             ;;
-        hyper2kvm)
-            pkg_env_ensure_var "${env_file}" "HYPER2KVM_API_KEY" "Admin@321"
+        h2kvm)
+            pkg_env_ensure_var "${env_file}" "H2KVM_API_KEY" "Admin@321"
             ;;
         *)
             if [[ -n "${PKG_AUTH_API_KEY_VAR:-}" ]]; then

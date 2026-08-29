@@ -8,8 +8,8 @@ env:
   CARGO_TERM_COLOR: always
   RUST_MIN_STACK: 8388608
   REGISTRY: ghcr.io
-  IMAGE_NAME: ssahani/veyron
-  CHARTS_REPO: ghcr.io/ssahani/charts
+  IMAGE_NAME: zyvorai/veyron
+  CHARTS_REPO: ghcr.io/zyvorai/charts
 
 permissions:
   contents: write

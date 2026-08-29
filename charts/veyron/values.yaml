@@ -4,7 +4,7 @@ replicaCount: 1
 fullnameOverride: "veyron-api"
 
 image:
-  repository: ghcr.io/ssahani/veyron
+  repository: ghcr.io/zyvorai/veyron
   tag: "latest"  # or pin to a specific version e.g. "0.3.1"
   pullPolicy: IfNotPresent
 

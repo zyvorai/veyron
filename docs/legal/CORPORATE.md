@@ -8,9 +8,9 @@ Licensor for PacketWolf and the zyvor.dev product suite. See [LICENSE](../../LIC
 ZyvorAI Labs Private Limited
     ├── PacketWolf / NetPredator
     ├── Ragnarok Enterprise
-    ├── Aether Enterprise
+    ├── Axiom Enterprise
     ├── GuestKit Enterprise
-    └── HyperSDK Platform
+    └── Zyvor Platform
 ```
 
 All products are **proprietary** (no Apache/MIT/LGPL distribution). Trademarks are not granted by the software license—see [TRADEMARK-NOTICE.md](TRADEMARK-NOTICE.md) and [PROPRIETARY-POLICY.md](PROPRIETARY-POLICY.md).

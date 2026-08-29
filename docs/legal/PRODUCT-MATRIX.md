@@ -6,9 +6,9 @@
 |---------|---------|-------------|-----------|
 | **PacketWolf / NetPredator** | Proprietary EULA / ELA | Optional | PacketWolf, NetPredator |
 | **Ragnarok** | Proprietary EULA / ELA | Optional | Ragnarok |
-| **Aether** | Proprietary EULA / ELA | Optional | Aether |
+| **Axiom** | Proprietary EULA / ELA | Optional | Axiom |
 | **GuestKit** | Proprietary EULA / ELA | Optional | GuestKit |
-| **HyperSDK** | Proprietary EULA / ELA | N/A | HyperSDK |
+| **Transiva** | Proprietary EULA / ELA | N/A | Transiva |
 | **Zyvor brand** | N/A | zyvor.dev | Zyvor |
 
 **Trademarks** are not granted by the proprietary license—see [TRADEMARK-NOTICE.md](TRADEMARK-NOTICE.md).

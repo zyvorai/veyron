@@ -25,7 +25,7 @@ We welcome feature suggestions! Please create an issue with:
 
 1. **Fork the repository**
    ```bash
-   git clone git@github.com:ssahani/Veyron.git
+   git clone git@github.com:zyvorai/veyron.git
    cd Veyron
    ```
 
@@ -284,7 +284,7 @@ Looking for where to start? Check out issues labeled:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone repository
-git clone git@github.com:ssahani/Veyron.git
+git clone git@github.com:zyvorai/veyron.git
 cd Veyron
 
 # Build and test

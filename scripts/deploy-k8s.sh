@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-REPO="${VEYRON_REGISTRY:-ghcr.io/ssahani/veyron}"
+REPO="${VEYRON_REGISTRY:-ghcr.io/zyvorai/veyron}"
 VERSION="${VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
 IMAGE="${REPO}:${VERSION}"
 IMAGE_LATEST="${REPO}:latest"
@@ -355,7 +355,7 @@ cmd_help() {
     echo ""
     echo "Environment:"
     echo "  VERSION            Override version (default: from Cargo.toml)"
-    echo "  VEYRON_REGISTRY   Override registry (default: ghcr.io/ssahani/veyron)"
+    echo "  VEYRON_REGISTRY   Override registry (default: ghcr.io/zyvorai/veyron)"
     echo "  CONTAINER_RUNTIME  Override runtime (default: auto-detect docker/podman/nerdctl)"
     echo "  K8S_DISTRO         Override distro  (default: auto-detect k8s/k3s/kind/minikube)"
     echo "  KUBECTL            Override kubectl binary (default: auto-detect)"

@@ -9,7 +9,7 @@ CANONICAL_ROOT="$(zyvor_canonical_root "${SCRIPT_DIR}")"
 PARENT="$(cd "${CANONICAL_ROOT}/.." && pwd)"
 
 REPOS=(
-  Aether cockpit forge hyper2kvm- hypercluster hypersdk- hypersdk-web
+  Axiom cockpit forge h2kvm- hypercluster transiva- zyvor-web
   IronWolf machina mkosi-kernel nightforge ragnarok v9s Veyron vmspawn
 )
 

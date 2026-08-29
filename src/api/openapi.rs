@@ -154,7 +154,7 @@ impl OpenApiSpec {
                 version: "1.0.0".to_string(),
                 contact: Some(ContactInfo {
                     name: "Veyron".to_string(),
-                    url: Some("https://github.com/ssahani/Veyron".to_string()),
+                    url: Some("https://github.com/zyvorai/veyron".to_string()),
                     email: None,
                 }),
                 license: Some(LicenseInfo {

@@ -1,6 +1,6 @@
 # Veyron Operator Makefile
 
-IMG ?= ghcr.io/ssahani/veyron-operator:latest
+IMG ?= ghcr.io/zyvorai/veyron-operator:latest
 
 .PHONY: all
 all: build

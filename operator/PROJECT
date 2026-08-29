@@ -2,7 +2,7 @@ domain: veyron.io
 layout:
 - go.kubebuilder.io/v4
 projectName: veyron-operator
-repo: github.com/ssahani/veyron/operator
+repo: github.com/zyvorai/veyron/operator
 version: "3"
 resources:
 - api:
@@ -12,7 +12,7 @@ resources:
   domain: veyron.io
   group: veyron
   kind: VeyronVM
-  path: github.com/ssahani/veyron/operator/api/v1alpha1
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -21,7 +21,7 @@ resources:
   domain: veyron.io
   group: veyron
   kind: VeyronBlueprint
-  path: github.com/ssahani/veyron/operator/api/v1alpha1
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -30,7 +30,7 @@ resources:
   domain: veyron.io
   group: veyron
   kind: VeyronPolicy
-  path: github.com/ssahani/veyron/operator/api/v1alpha1
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -39,7 +39,7 @@ resources:
   domain: veyron.io
   group: veyron
   kind: VeyronInsight
-  path: github.com/ssahani/veyron/operator/api/v1alpha1
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -48,5 +48,5 @@ resources:
   domain: veyron.io
   group: veyron
   kind: VeyronAction
-  path: github.com/ssahani/veyron/operator/api/v1alpha1
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
   version: v1alpha1

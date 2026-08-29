@@ -125,7 +125,7 @@ No. It appears in `scripts/deploy-k8s.sh` for convenience only — always overri
 --set auth.apiKey=<key>`, then browse `https://<node>:30151/dashboard`.
 
 **26. What container image is used?**
-`ghcr.io/ssahani/veyron` (tag `latest` by default; pin a version in production).
+`ghcr.io/zyvorai/veyron` (tag `latest` by default; pin a version in production).
 
 **27. Where does config come from?**
 Layered: compiled defaults → `/etc/veyron/config.toml` → `~/.config/veyron/config.toml`

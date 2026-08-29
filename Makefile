@@ -121,7 +121,7 @@ operator-vet: ## Run go vet on operator
 	cd operator && go vet ./...
 
 operator-docker: ## Build operator Docker image
-	docker build -t ghcr.io/ssahani/veyron-operator:latest -f operator/Dockerfile operator/
+	docker build -t ghcr.io/zyvorai/veyron-operator:latest -f operator/Dockerfile operator/
 
 operator-install: ## Install CRDs into cluster
 	kubectl apply -f operator/config/crd/bases/

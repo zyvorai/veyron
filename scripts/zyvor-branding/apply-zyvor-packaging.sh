@@ -5,23 +5,23 @@ KIT="$(cd "$(dirname "$0")" && pwd)"
 TT="$(cd "${KIT}/../../.." && pwd)"  # …/Veyron/scripts/zyvor-branding → repo root's parent (tt)
 
 REPOS=(
-  v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge
-  vmspawn nightforge hypersdk-web hypercluster
+  v9s machina guestkit transiva- h2kvm- packetwolf ragnarok Axiom IronWolf forge
+  vmspawn nightforge zyvor-web hypercluster
 )
 
 # repo → "public_dir:components_dir" (either may be empty)
 declare -A WEB_PUBLIC=(
   [v9s]="ui/public:ui/src/components"
   [machina]="web/public:web/src/components"
-  [hypersdk-]="web/dashboard-react/public:web/dashboard-react/src/components"
-  [hyper2kvm-]="web/dashboard/public:web/dashboard/src/components"
+  [transiva-]="web/dashboard-react/public:web/dashboard-react/src/components"
+  [h2kvm-]="web/dashboard/public:web/dashboard/src/components"
   [packetwolf]="web-ui/public:web-ui/src/components"
   [ragnarok]="frontend/public:frontend/src/components"
-  [Aether]="web/dashboard/public:web/dashboard/src/components"
+  [Axiom]="web/dashboard/public:web/dashboard/src/components"
   [IronWolf]="web/dashboard/public:web/dashboard/src/components"
   [forge]="web-ui/public:web-ui/src/components"
   [vmspawn]=".web/public:.web/src/components"
-  [hypersdk-web]="static/img:"
+  [zyvor-web]="static/img:"
   [hypercluster]=":"
   [guestkit]=":"
   [nightforge]=":"
@@ -65,7 +65,7 @@ for repo in "${REPOS[@]}"; do
   echo "assets → ${repo}"
 done
 
-ZYVOR_STEP='  "zyvor.dev · HyperSDK · © 2026" \'
+ZYVOR_STEP='  "zyvor.dev · Zyvor · © 2026" \'
 for repo in "${REPOS[@]}"; do
   f="${TT}/${repo}/scripts/lib/package-install.sh"
   [[ -f "${f}" ]] || continue
@@ -73,12 +73,12 @@ for repo in "${REPOS[@]}"; do
     continue
   fi
   # shellcheck disable=SC2016
-  perl -i -pe 'if (/^pkg_next_steps \\$/ && !$seen++) { $_ .= "  \"zyvor.dev · HyperSDK · © 2026\" \\\n" }' "${f}"
+  perl -i -pe 'if (/^pkg_next_steps \\$/ && !$seen++) { $_ .= "  \"zyvor.dev · Zyvor · © 2026\" \\\n" }' "${f}"
   echo "install → ${repo}"
 done
 
 INSTALL_CP=$'cp "\\${BUILD_DIR}/scripts/zyvor-branding/ZYVOR_INSTALL.txt" "\\${STAGE}/ZYVOR_INSTALL.txt" 2>/dev/null || true'
-ZYVOR_QS=$'\nPackaged by Zyvor — zyvor.dev · HyperSDK · © 2026'
+ZYVOR_QS=$'\nPackaged by Zyvor — zyvor.dev · Zyvor · © 2026'
 for repo in "${REPOS[@]}"; do
   f="${TT}/${repo}/scripts/package-binary-remote.sh"
   [[ -f "${f}" ]] || continue
@@ -96,7 +96,7 @@ done
 SCRIPTS_SRC="${KIT}/.."
 for script in rebuild-all-customer-tarballs-remote.sh test-customer-e2e-remote.sh test-packages-remote-only.sh; do
   [[ -f "${SCRIPTS_SRC}/${script}" ]] || continue
-  for repo in Veyron v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge; do
+  for repo in Veyron v9s machina guestkit transiva- h2kvm- packetwolf ragnarok Axiom IronWolf forge; do
     root="${TT}/${repo}"
     [[ -d "${root}/scripts" ]] || continue
     cp -f "${SCRIPTS_SRC}/${script}" "${root}/scripts/${script}"
