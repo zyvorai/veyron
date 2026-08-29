@@ -2,7 +2,7 @@
 
 Every primary navigable dashboard route.
 
-_Generated: 2026-08-22 · 65 routes_
+_Generated: 2026-08-29 · 65 routes_
 
 Regenerate: `node scripts/customer-docs/generate-page-index.mjs`
 
