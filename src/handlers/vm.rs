@@ -1611,7 +1611,7 @@ pub async fn handle_export(
 ) -> Result<()> {
     if !kubevirt {
         eprintln!(
-            "Note: Cross-hypervisor export belongs in HyperSDK (https://zyvor.dev/hypersdk). \
+            "Note: Cross-hypervisor export belongs in Transiva (https://zyvor.dev/zyvor-ai-platform). \
              Exporting Veyron VMConfig YAML for GitOps only."
         );
     }
@@ -2579,7 +2579,7 @@ pub async fn handle_import(
     eprintln!(
         "{}",
         color::warning(
-            "Note: Hypervisor-to-KubeVirt migration belongs in HyperSDK (https://zyvor.dev/hypersdk). \
+            "Note: Hypervisor-to-KubeVirt migration belongs in Transiva (https://zyvor.dev/zyvor-ai-platform). \
              This command imports KubeVirt VirtualMachine YAML only."
         )
     );

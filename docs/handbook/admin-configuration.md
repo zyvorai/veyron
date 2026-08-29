@@ -32,7 +32,7 @@ helm upgrade --install veyron charts/veyron \
 ```
 
 Key chart defaults (`charts/veyron/values.yaml`): image
-`ghcr.io/ssahani/veyron:latest`; resource names `veyron-api` (Deployment/Service),
+`ghcr.io/zyvorai/veyron:latest`; resource names `veyron-api` (Deployment/Service),
 `veyron` (ServiceAccount/ClusterRole); `service.type=NodePort`, `service.port=5151`,
 `service.nodePort=30151`; `api.host=0.0.0.0`, `api.port=5151`,
 `api.namespace=default`; `tls.enabled=true` with `tls.autoGenerate=true`;
@@ -43,7 +43,7 @@ a NetworkPolicy enabled; RBAC ClusterRole `veyron`.
 
 `scripts/deploy-k8s.sh` auto-detects the container runtime (docker/podman/nerdctl)
 and K8s distro (k8s/k3s/kind/minikube), builds the image, and applies
-`deploy/k8s.yaml`. Defaults: registry `ghcr.io/ssahani/veyron`, version from
+`deploy/k8s.yaml`. Defaults: registry `ghcr.io/zyvorai/veyron`, version from
 `Cargo.toml`, namespace `veyron-system`.
 
 ```bash
@@ -298,7 +298,7 @@ Veyron manages KubeVirt objects and needs:
 Requires Rust ≥ 1.85 (edition 2024). GuestKit is a vendored submodule.
 
 ```bash
-git clone https://github.com/ssahani/Veyron.git && cd Veyron
+git clone https://github.com/zyvorai/veyron.git && cd Veyron
 git submodule update --init --recursive     # brings in guestkit/
 cargo build --release                        # default `web` feature on
 ./target/release/veyron --version
@@ -307,7 +307,7 @@ cargo build --release                        # default `web` feature on
 cargo build --release --no-default-features
 
 # Container image
-docker build -t ghcr.io/ssahani/veyron:dev .
+docker build -t ghcr.io/zyvorai/veyron:dev .
 ```
 
 The Go operator builds separately under `operator/` (see its `Makefile`).

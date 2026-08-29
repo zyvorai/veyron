@@ -1,12 +1,12 @@
 # Licensing model (draft)
 
-**All Zyvor product code is proprietary.** There is no open-source (Apache, MIT, LGPL, or similar) distribution of PacketWolf, Ragnarok, Aether, HyperSDK, or GuestKit. Access is by written agreement or the deploy EULA in [LICENSE](../../LICENSE).
+**All Zyvor product code is proprietary.** There is no open-source (Apache, MIT, LGPL, or similar) distribution of PacketWolf, Ragnarok, Axiom, Transiva, or GuestKit. Access is by written agreement or the deploy EULA in [LICENSE](../../LICENSE).
 
 ## License types
 
 | Layer | License | Products |
 |-------|---------|----------|
-| Self-hosted / binaries | Proprietary EULA | PacketWolf, Ragnarok, Aether, GuestKit, HyperSDK tooling |
+| Self-hosted / binaries | Proprietary EULA | PacketWolf, Ragnarok, Axiom, GuestKit, Transiva tooling |
 | Enterprise subscription | MSA + ELA + Order Form | Full feature set per tier |
 | Hosted SaaS (if offered) | Proprietary + MSA | zyvor.dev cloud |
 | Branding | Trademark policy | All product names |

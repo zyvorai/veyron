@@ -108,7 +108,7 @@ class BrandedPDF(FPDF):
         self.cell(
             0,
             6,
-            _safe(f"Zyvor · zyvor.dev · HyperSDK · © 2026 · page {self.page_no()}"),
+            _safe(f"Zyvor · zyvor.dev · Zyvor · © 2026 · page {self.page_no()}"),
             align="C",
         )
 
@@ -259,7 +259,7 @@ def welcome_pdf(pdf_path: Path, logo_path: Path, product: str, version: str) -> 
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(*SLATE_400)
     pdf.cell(0, 5, "Open docs/welcome.html in your browser  ·  or docs/pdf/WELCOME.pdf", align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    pdf.cell(0, 5, "zyvor.dev · HyperSDK · © 2026", align="C")
+    pdf.cell(0, 5, "zyvor.dev · Zyvor · © 2026", align="C")
 
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
     pdf.output(str(pdf_path))
@@ -450,7 +450,7 @@ def welcome_html(
     </div>
 
     <footer>
-      <p><a href="https://zyvor.dev" target="_blank" rel="noopener">zyvor.dev</a> · HyperSDK · © 2026</p>
+      <p><a href="https://zyvor.dev" target="_blank" rel="noopener">zyvor.dev</a> · Transiva · © 2026</p>
       <p style="margin-top:.35rem">Packaged for enterprise deployment — support your vendor for updates.</p>
     </footer>
   </div>
@@ -487,7 +487,7 @@ def write_open_first(stage: Path, product: str) -> None:
         "    cat START_HERE.txt",
         "    ls docs/pdf/",
         "",
-        "  zyvor.dev · HyperSDK · © 2026",
+        "  zyvor.dev · Zyvor · © 2026",
         "",
     ]
     # Pad product line in box - keep simple
@@ -519,7 +519,7 @@ def write_index(out_dir: Path, names: list[str], product: str) -> None:
             "",
             "  🎨  Branding: docs/zyvor-logo.png",
             "",
-            "  zyvor.dev · HyperSDK · © 2026",
+            "  zyvor.dev · Zyvor · © 2026",
             "",
         ]
     )

@@ -7,7 +7,7 @@ package catalog
 import (
 	"testing"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
 )
 
 func TestResolveWindows2022WithProdProfile(t *testing.T) {

@@ -1,4 +1,4 @@
-module github.com/ssahani/Veyron/operator
+module github.com/zyvorai/veyron/operator
 
 go 1.26.0
 

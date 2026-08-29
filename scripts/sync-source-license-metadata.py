@@ -12,13 +12,13 @@ import sys
 from pathlib import Path
 
 REPOS = [
-    "Aether",
+    "Axiom",
     "cockpit",
     "forge",
-    "hyper2kvm-",
+    "h2kvm-",
     "hypercluster",
-    "hypersdk-",
-    "hypersdk-web",
+    "transiva-",
+    "zyvor-web",
     "IronWolf",
     "machina",
     "mkosi-kernel",
@@ -34,9 +34,9 @@ REPOS = [
 OPEN_SOURCE_REPO_PATHS = {
     "guestkit",
     "tt/cloud-netconfig",
-    "tt/hyper2kvm",
-    "tt/hypersdk",
-    "tt/hypersdk-org-profile",
+    "tt/h2kvm",
+    "tt/transiva",
+    "tt/transiva-org-profile",
     "tt/netctl",
     "tt/netevd",
 }

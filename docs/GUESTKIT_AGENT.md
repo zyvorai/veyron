@@ -1,6 +1,6 @@
 # GuestKit Agent Deployment (`veyron agent`)
 
-Deploy the [Zyvor GuestKit](https://github.com/hypersdk/guestkit) in-guest agent
+Deploy the [Zyvor GuestKit](https://github.com/zyvorai/guestkit) in-guest agent
 into Veyron-spawned VMs and verify it — Linux and Windows.
 
 On KubeVirt the agent rides the QEMU guest-agent channel
@@ -74,7 +74,7 @@ unit. The VM needs egress (Veyron's internet policy is applied automatically).
 ```console
 $ veyron agent deploy gk-linux --spawn --os linux --wait
 ==> Creating VM 'gk-linux' with GuestKit agent (guestkit-agent-v0.3.14)
-    agent source: https://github.com/hypersdk/guestkit/releases/download/guestkit-agent-v0.3.14/guestkitd
+    agent source: https://github.com/zyvorai/guestkit/releases/download/guestkit-agent-v0.3.14/guestkitd
 ==> VM 'gk-linux' created and starting
 ==> Waiting for the GuestKit agent to connect (KubeVirt AgentConnected)…
     ✓ AgentConnected — GuestKit is answering the QGA channel

@@ -5,14 +5,14 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const CUSTOMER = resolve(ROOT, 'docs/customer')
-const SITE = resolve(process.argv[2] ?? resolve(ROOT, '../hypersdk-web'))
+const SITE = resolve(process.argv[2] ?? resolve(ROOT, '../zyvor-web'))
 const PRODUCT = process.env.CUSTOMER_DOCS_PRODUCT || 'Veyron'
 const SLUG = PRODUCT.toLowerCase()
 const TARGET = join(SITE, `docs/${SLUG}-manual`)
 const PDF_TARGET = join(SITE, `static/downloads/${SLUG}-docs`)
 
 if (!existsSync(join(SITE, 'docusaurus.config.ts'))) {
-  console.error(`ERROR: ${SITE} is not hypersdk-web`)
+  console.error(`ERROR: ${SITE} is not zyvor-web`)
   process.exit(1)
 }
 

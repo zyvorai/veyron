@@ -6,10 +6,10 @@ Customer tarballs from `scripts/package-binary-remote.sh` must **never** require
 
 | Type | Products | What ships | Customer runs |
 |------|----------|------------|---------------|
-| **A — Native binary** | Veyron, v9s, machina, guestkit, hypersdk, packetwolf, ragnarok, Aether, IronWolf | Single executable(s), optional `web/dist` or `frontend/dist`, env example | `./install.sh` → `./binary` or systemd via `install-full.sh` (machina) |
+| **A — Native binary** | Veyron, v9s, machina, guestkit, transiva, packetwolf, ragnarok, Axiom, IronWolf | Single executable(s), optional `web/dist` or `frontend/dist`, env example | `./install.sh` → `./binary` or systemd via `install-full.sh` (machina) |
 | **B — Container extract** | Veyron, v9s | Binary + UI from OCI image build (still type A at install time) | Same as A |
-| **C — Python venv bundle** | **hyper2kvm**, **forge** | `venv/` with `pip install` already done, wrapper scripts in `bin/`, static UI | `./install.sh`; run `./bin/*` (uses bundled `venv/`) |
-| **D — Go multi-binary** | hypersdk | `bin/hypervisord`, `hyperctl`, … + `dashboard/` | `./bin/hypervisord` |
+| **C — Python venv bundle** | **h2kvm**, **forge** | `venv/` with `pip install` already done, wrapper scripts in `bin/`, static UI | `./install.sh`; run `./bin/*` (uses bundled `venv/`) |
+| **D — Go multi-binary** | transiva | `bin/hypervisord`, `hyperctl`, … + `dashboard/` | `./bin/hypervisord` |
 | **E — K8s cluster add-on** | Veyron, v9s only | `cluster/` YAML + `install-cluster.sh` (not app source) | Cluster admin scripts; app still type A/B |
 
 ## What must NOT be in customer tarballs
@@ -18,16 +18,16 @@ Customer tarballs from `scripts/package-binary-remote.sh` must **never** require
 - `target/`, `node_modules/`, `.git/`
 - Installers that call `cargo build`, `npm run build`, or `git clone` on the customer host
 
-## Python products (hyper2kvm, forge) — distribute differently
+## Python products (h2kvm, forge) — distribute differently
 
 These are **not** shipped as one static ELF like Rust/Go tools.
 
 1. **Remote build** creates `.pkg-venv` on the pack host (`pip install .` or `requirements.txt`).
 2. **Tarball** contains the whole **`venv/`** directory (relocated paths; customer path is fixed at extract dir).
-3. **`bin/hyper2kvm`** (and similar) are **wrappers** that exec `venv/bin/python -m …`.
+3. **`bin/h2kvm`** (and similar) are **wrappers** that exec `venv/bin/python -m …`.
 4. Customer needs **Python 3.10+ system libs** (libvirt, openssl) via `install-client-deps.sh`; they do **not** need to run `pip install` again unless recreating the venv.
 
-hyper2kvm additionally bundles **Go `h2kweb`** as a native binary; dashboard is static files under `web/dashboard/`.
+h2kvm additionally bundles **Go `h2kweb`** as a native binary; dashboard is static files under `web/dashboard/`.
 
 forge bundles **minimal** `services/api-gateway/` (entry module) + full **venv** + `ui/dist/`.
 
@@ -39,11 +39,11 @@ forge bundles **minimal** `services/api-gateway/` (entry module) + full **venv**
 | v9s | B→A | No | `v9s-web` + `ui/dist` |
 | machina | A | No | `machina-daemon`, TUI, `web/dist`; `install-full.sh` = bundle-aware host install |
 | guestkit | A | No | `guestkit` binary only |
-| hypersdk | D | No | `bin/*` + `dashboard/` |
-| hyper2kvm | C + Go | No app source | **`venv/` required**; not a single static binary |
+| transiva | D | No | `bin/*` + `dashboard/` |
+| h2kvm | C + Go | No app source | **`venv/` required**; not a single static binary |
 | packetwolf | A | No | `packetwolf-api` + `ui/` |
 | ragnarok | A | No | `ragnarok` + `frontend/dist` |
-| Aether | A | No | `aether` (embedded UI) |
+| Axiom | A | No | `axiom` (embedded UI) |
 | IronWolf | A | No | `ironwolf-web` + `dashboard/dist` |
 | forge | C | No full tree | **`venv/`** + thin API tree + `ui/dist` |
 

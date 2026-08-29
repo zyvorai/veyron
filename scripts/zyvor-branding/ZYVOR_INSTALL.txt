@@ -18,7 +18,7 @@ Same steps manually
   ./install.sh
   ./test-package.sh
 
-Kubernetes products (VMRogue, v9s, Ragnarok, Aether, IronWolf, PacketWolf)
+Kubernetes products (VMRogue, v9s, Ragnarok, Axiom, IronWolf, PacketWolf)
   install auto-detects kubeconfig: $KUBECONFIG, ~/.kube/config, k3s, kubeadm, MicroK8s
   override: ./install.sh --kubeconfig /path/to/config
   or: ZYVOR_KUBECONFIG=/path/to/config ./install-everything.sh
@@ -29,4 +29,4 @@ Or: sudo ./install-full.sh --open-firewall
 
 Open the URL printed at the end (uses this server's LAN IP, not localhost).
 
-Branding: zyvor.dev · HyperSDK · © 2026
+Branding: zyvor.dev · Zyvor · © 2026

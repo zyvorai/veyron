@@ -10,12 +10,12 @@ LEGAL_SRC="${CANONICAL_ROOT}/docs/legal"
 PARENT="$(cd "${CANONICAL_ROOT}/.." && pwd)"
 
 PROJECTS=(
-  Aether cockpit forge hyper2kvm- hypercluster hypersdk- hypersdk-web
+  Axiom cockpit forge h2kvm- hypercluster transiva- zyvor-web
   IronWolf machina mkosi-kernel nightforge ragnarok v9s Veyron vmspawn
 )
 # Excluded (keep OSS licenses + their own legal docs):
-# guestkit (LGPL), tt/cloud-netconfig, tt/hyper2kvm, tt/hypersdk,
-# tt/hypersdk-org-profile, tt/netctl, tt/netevd
+# guestkit (LGPL), tt/cloud-netconfig, tt/h2kvm, tt/transiva,
+# tt/transiva-org-profile, tt/netctl, tt/netevd
 
 if [[ ! -d "${LEGAL_SRC}" ]]; then
   echo "ERROR: missing ${LEGAL_SRC}" >&2
@@ -24,7 +24,7 @@ fi
 
 echo "Sync legal framework from ${LEGAL_SRC}"
 echo "Parent: ${PARENT}"
-echo "Excluded: guestkit + tt/{cloud-netconfig,hyper2kvm,hypersdk,hypersdk-org-profile,netctl,netevd}"
+echo "Excluded: guestkit + tt/{cloud-netconfig,h2kvm,transiva,transiva-org-profile,netctl,netevd}"
 echo ""
 
 for name in "${PROJECTS[@]}"; do

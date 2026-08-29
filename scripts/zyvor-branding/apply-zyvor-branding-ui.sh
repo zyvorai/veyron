@@ -5,24 +5,24 @@ KIT="$(cd "$(dirname "$0")" && pwd)"
 TT="$(cd "${KIT}/../../.." && pwd)"
 
 REPOS=(
-  v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge
-  vmspawn nightforge hypersdk-web hypercluster
+  v9s machina guestkit transiva- h2kvm- packetwolf ragnarok Axiom IronWolf forge
+  vmspawn nightforge zyvor-web hypercluster
 )
 
 declare -A WEB_COMP=(
   [v9s]="ui/src/components"
   [machina]="web/src/components"
-  [hypersdk-]="web/dashboard-react/src/components"
-  [hyper2kvm-]="web/dashboard/src/components"
+  [transiva-]="web/dashboard-react/src/components"
+  [h2kvm-]="web/dashboard/src/components"
   [packetwolf]="web-ui/src/components"
   [ragnarok]="frontend/src/components"
-  [Aether]="web/dashboard/src/components"
+  [Axiom]="web/dashboard/src/components"
   [IronWolf]="web/dashboard/src/components"
   [forge]="web-ui/src/components"
   [vmspawn]=".web/src/components"
 )
 
-BRAND_LINE='zyvor.dev · HyperSDK · © 2026'
+BRAND_LINE='zyvor.dev · Zyvor · © 2026'
 OLD_PAT='zyvor\.dev · © 2026'
 
 for repo in "${REPOS[@]}"; do
@@ -51,23 +51,23 @@ for repo in "${REPOS[@]}"; do
   [[ -d "${root}/scripts/lib" ]] || continue
   while IFS= read -r -d '' f; do
     if grep -q '@zyvor' "${f}" 2>/dev/null || grep -q '© @zyvor' "${f}" 2>/dev/null; then
-      sed -i '' "s|zyvor.dev · HyperSDK · © 2026|${BRAND_LINE}|g" "${f}" 2>/dev/null || \
-        sed -i "s|zyvor.dev · HyperSDK · © 2026|${BRAND_LINE}|g" "${f}"
+      sed -i '' "s|zyvor.dev · Zyvor · © 2026|${BRAND_LINE}|g" "${f}" 2>/dev/null || \
+        sed -i "s|zyvor.dev · Zyvor · © 2026|${BRAND_LINE}|g" "${f}"
       sed -i '' "s|${OLD_PAT}|${BRAND_LINE}|g" "${f}" 2>/dev/null || \
         sed -i "s|${OLD_PAT}|${BRAND_LINE}|g" "${f}"
     fi
   done < <(find "${root}/scripts" -type f \( -name '*.sh' -o -name '*.txt' \) -print0 2>/dev/null)
 done
 
-# hypersdk-web docusaurus footer
-for f in "${TT}/hypersdk-web/i18n"/*/docusaurus-theme-classic/footer.json; do
+# zyvor-web docusaurus footer
+for f in "${TT}/zyvor-web/i18n"/*/docusaurus-theme-classic/footer.json; do
   [[ -f "${f}" ]] || continue
-  sed -i '' 's|HyperSDK · © 2026 Platform|HyperSDK · © 2026|g' "${f}" 2>/dev/null || \
-    sed -i 's|HyperSDK · © 2026 Platform|HyperSDK · © 2026|g' "${f}"
+  sed -i '' 's|Transiva · © 2026 Platform|Transiva · © 2026|g' "${f}" 2>/dev/null || \
+    sed -i 's|Transiva · © 2026 Platform|Transiva · © 2026|g' "${f}"
 done
-if [[ -f "${TT}/hypersdk-web/docusaurus.config.ts" ]]; then
-  sed -i '' 's|HyperSDK · © 2026 Platform|HyperSDK · © 2026|g' "${TT}/hypersdk-web/docusaurus.config.ts" 2>/dev/null || \
-    sed -i 's|HyperSDK · © 2026 Platform|HyperSDK · © 2026|g' "${TT}/hypersdk-web/docusaurus.config.ts"
+if [[ -f "${TT}/zyvor-web/docusaurus.config.ts" ]]; then
+  sed -i '' 's|Transiva · © 2026 Platform|Transiva · © 2026|g' "${TT}/zyvor-web/docusaurus.config.ts" 2>/dev/null || \
+    sed -i 's|Transiva · © 2026 Platform|Transiva · © 2026|g' "${TT}/zyvor-web/docusaurus.config.ts"
 fi
 
 # TSX: strip header ZyvorInline (with product), remove empty wrapper divs
@@ -114,8 +114,8 @@ done
 
 # Update apply-zyvor-packaging.sh branding strings
 if [[ -f "${KIT}/apply-zyvor-packaging.sh" ]]; then
-  sed -i '' 's|zyvor.dev · HyperSDK · © 2026|zyvor.dev · HyperSDK · © 2026|g' "${KIT}/apply-zyvor-packaging.sh" 2>/dev/null || \
-    sed -i 's|zyvor.dev · HyperSDK · © 2026|zyvor.dev · HyperSDK · © 2026|g' "${KIT}/apply-zyvor-packaging.sh"
+  sed -i '' 's|zyvor.dev · Zyvor · © 2026|zyvor.dev · Zyvor · © 2026|g' "${KIT}/apply-zyvor-packaging.sh" 2>/dev/null || \
+    sed -i 's|zyvor.dev · Zyvor · © 2026|zyvor.dev · Zyvor · © 2026|g' "${KIT}/apply-zyvor-packaging.sh"
 fi
 
 echo "Done — UI branding applied under ${TT}"

@@ -19,9 +19,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
-	"github.com/ssahani/Veyron/operator/internal/catalog"
-	"github.com/ssahani/Veyron/operator/internal/eventbus"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
+	"github.com/zyvorai/veyron/operator/internal/catalog"
+	"github.com/zyvorai/veyron/operator/internal/eventbus"
 )
 
 const (

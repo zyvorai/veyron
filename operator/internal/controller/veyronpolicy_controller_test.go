@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
 )
 
 // Regression test for commit 42dd9bdf: an invalid spec.selector must set an

@@ -16,9 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
-	"github.com/ssahani/Veyron/operator/internal/controller"
-	"github.com/ssahani/Veyron/operator/internal/eventbus"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
+	"github.com/zyvorai/veyron/operator/internal/controller"
+	"github.com/zyvorai/veyron/operator/internal/eventbus"
 )
 
 var (

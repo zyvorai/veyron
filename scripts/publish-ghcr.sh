@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publish Docker image + Helm charts to ghcr.io/ssahani from the remote build server.
+# Publish Docker image + Helm charts to ghcr.io/zyvorai from the remote build server.
 # The remote already has the built image from the last deploy — no rebuild needed.
 #
 # Usage:

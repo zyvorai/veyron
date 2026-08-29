@@ -949,7 +949,7 @@ pub fn guestkit_binary_urls() -> Vec<String> {
     urls.push(
         "https://veyron-api.veyron-system.svc.cluster.local/api/v1/platform/guestkit/binary".into(),
     );
-    // Public GuestKit release (github.com/hypersdk/guestkit) — authoritative
+    // Public GuestKit release (github.com/zyvorai/guestkit) — authoritative
     // last-resort source of the static `guestkitd` agent when the in-cluster
     // endpoint is unavailable. Also the default for `veyron agent deploy`.
     urls.push(GUESTKIT_RELEASE_LINUX_BINARY_URL.into());
@@ -957,14 +957,14 @@ pub fn guestkit_binary_urls() -> Vec<String> {
     urls
 }
 
-/// Published GuestKit release tag (github.com/hypersdk/guestkit/releases).
+/// Published GuestKit release tag (github.com/zyvorai/guestkit/releases).
 pub const GUESTKIT_RELEASE_TAG: &str = "guestkit-agent-v0.3.14";
 /// Static Linux agent binary (`guestkitd`) in the published GuestKit release.
 pub const GUESTKIT_RELEASE_LINUX_BINARY_URL: &str =
-    "https://github.com/hypersdk/guestkit/releases/download/guestkit-agent-v0.3.14/guestkitd";
+    "https://github.com/zyvorai/guestkit/releases/download/guestkit-agent-v0.3.14/guestkitd";
 /// Windows agent bundle ISO in the published GuestKit release.
 pub const GUESTKIT_RELEASE_WINDOWS_ISO_URL: &str =
-    "https://github.com/hypersdk/guestkit/releases/download/guestkit-agent-v0.3.14/guestkit-agent-0.3.14.iso";
+    "https://github.com/zyvorai/guestkit/releases/download/guestkit-agent-v0.3.14/guestkit-agent-0.3.14.iso";
 
 fn guestkit_resolv_conf_yaml() -> String {
     let dns = std::env::var("VEYRON_CLUSTER_DNS").unwrap_or_else(|_| "10.43.0.10".into());

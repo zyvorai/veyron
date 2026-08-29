@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
 )
 
 func TestVeyronActionReconcileStartVMSucceeds(t *testing.T) {

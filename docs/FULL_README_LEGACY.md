@@ -1,6 +1,6 @@
 # Veyron (Veyron)
 
-[![CI](https://github.com/ssahani/Veyron/workflows/CI/badge.svg)](https://github.com/ssahani/Veyron/actions)
+[![CI](https://github.com/zyvorai/veyron/workflows/CI/badge.svg)](https://github.com/zyvorai/veyron/actions)
 [![Rust](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](https://www.rust-lang.org/)
 
 > **Veyron** by Zyvor — Kubernetes-native VM command center. Rogue VM management for KubeVirt — forged in Rust.
@@ -68,7 +68,7 @@ cargo install --path .
 Or build from source:
 
 ```bash
-git clone https://github.com/ssahani/Veyron.git
+git clone https://github.com/zyvorai/veyron.git
 cd Veyron
 cargo build --release
 ```
@@ -691,7 +691,7 @@ fn main() -> anyhow::Result<()> {
 
 ### Product boundary
 
-Veyron operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cross-hypervisor migration** (VMware, Hyper-V, virt-v2v) belongs in [HyperSDK](https://zyvor.dev/hypersdk). See [docs/VEYRON_HYPERSDK_BOUNDARY.md](docs/VEYRON_HYPERSDK_BOUNDARY.md).
+Veyron operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cross-hypervisor migration** (VMware, Hyper-V, virt-v2v) belongs in [Transiva](https://zyvor.dev/zyvor-ai-platform). See [docs/VEYRON_TRANSIVA_BOUNDARY.md](docs/VEYRON_TRANSIVA_BOUNDARY.md).
 
 ### Future Enhancements
 

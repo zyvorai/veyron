@@ -21,8 +21,8 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
-	"github.com/ssahani/Veyron/operator/internal/eventbus"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
+	"github.com/zyvorai/veyron/operator/internal/eventbus"
 )
 
 // VeyronPolicyReconciler reconciles a VeyronPolicy object.

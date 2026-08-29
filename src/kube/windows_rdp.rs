@@ -134,7 +134,7 @@ pub fn is_windows_vm(vm: &Value) -> bool {
         }
 
         if labels
-            .get("hyper2kvm.io/migrated")
+            .get("h2kvm.io/migrated")
             .and_then(|v| v.as_str())
             .is_some_and(|v| v == "true" || v.eq_ignore_ascii_case("yes"))
         {
@@ -577,11 +577,11 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn detects_hyper2kvm_migrated_legacy_vm() {
+    fn detects_h2kvm_migrated_legacy_vm() {
         let vm = json!({
             "metadata": {
                 "name": "2025legacy-67790c6f",
-                "labels": { "hyper2kvm.io/migrated": "true" }
+                "labels": { "h2kvm.io/migrated": "true" }
             },
             "spec": { "template": { "spec": {
                 "domain": { "devices": {

@@ -56,7 +56,7 @@ should_skip() {
 install_timeout_for() {
   local name="$1"
   case "${name,,}" in
-    machina|veyron|v9s|ragnarok|aether|ironwolf|packetwolf) echo 900 ;;
+    machina|veyron|v9s|ragnarok|axiom|ironwolf|packetwolf) echo 900 ;;
     *) echo "${ZYVOR_E2E_TIMEOUT_SECS:-600}" ;;
   esac
 }
@@ -232,11 +232,11 @@ declare -a JOBS=(
   "machina|$(pick_latest "${HOME}/machina-dist")"
   "v9s|$(pick_latest "${HOME}/v9s-dist")"
   "guestkit|$(pick_latest "${HOME}/guestkit-dist")"
-  "hypersdk|$(pick_latest "${HOME}/hypersdk-dist")"
-  "hyper2kvm|$(pick_latest "${HOME}/hyper2kvm-dist")"
+  "transiva|$(pick_latest "${HOME}/transiva-dist")"
+  "h2kvm|$(pick_latest "${HOME}/h2kvm-dist")"
   "packetwolf|$(pick_latest "${HOME}/packetwolf-dist")"
   "ragnarok|$(pick_latest "${HOME}/ragnarok-dist")"
-  "Aether|$(pick_latest "${HOME}/aether-dist")"
+  "Axiom|$(pick_latest "${HOME}/axiom-dist")"
   "IronWolf|$(pick_latest "${HOME}/ironwolf-dist")"
   "forge|$(pick_latest "${HOME}/forge-dist")"
 )

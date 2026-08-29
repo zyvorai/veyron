@@ -45,4 +45,4 @@
   cat HELP.txt          every script explained
   ./install-everything.sh --help
 
-  zyvor.dev · HyperSDK · © 2026
+  zyvor.dev · Zyvor · © 2026

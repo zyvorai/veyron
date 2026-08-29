@@ -22,7 +22,7 @@ We take the security of veyron seriously. If you have discovered a security vuln
 Instead, please report them via one of the following methods:
 
 1. **GitHub Security Advisories** (Preferred)
-   - Go to the [Security tab](https://github.com/ssahani/Veyron/security/advisories)
+   - Go to the [Security tab](https://github.com/zyvorai/veyron/security/advisories)
    - Click "Report a vulnerability"
    - Fill in the details
 

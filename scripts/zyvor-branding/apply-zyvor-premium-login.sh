@@ -5,17 +5,17 @@ KIT="$(cd "$(dirname "$0")" && pwd)"
 TT="$(cd "${KIT}/../../.." && pwd)"
 
 REPOS=(
-  v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge vmspawn
+  v9s machina guestkit transiva- h2kvm- packetwolf ragnarok Axiom IronWolf forge vmspawn
 )
 
 declare -A WEB_COMP=(
   [v9s]="ui/src/components"
   [machina]="web/src/components"
-  [hypersdk-]="web/dashboard-react/src/components"
-  [hyper2kvm-]="web/dashboard/src/components"
+  [transiva-]="web/dashboard-react/src/components"
+  [h2kvm-]="web/dashboard/src/components"
   [packetwolf]="web-ui/src/components"
   [ragnarok]="frontend/src/components"
-  [Aether]="web/dashboard/src/components"
+  [Axiom]="web/dashboard/src/components"
   [IronWolf]="web/dashboard/src/components"
   [forge]="web-ui/src/components"
   [vmspawn]=".web/src/components"
@@ -24,11 +24,11 @@ declare -A WEB_COMP=(
 declare -A CSS_ENTRY=(
   [v9s]="ui/src/index.css"
   [machina]="web/src/styles/main.css"
-  [hypersdk-]="web/dashboard-react/src/index.css"
-  [hyper2kvm-]="web/dashboard/src/index.css"
+  [transiva-]="web/dashboard-react/src/index.css"
+  [h2kvm-]="web/dashboard/src/index.css"
   [packetwolf]="web-ui/src/index.css"
   [ragnarok]="frontend/src/index.css"
-  [Aether]="web/dashboard/src/index.css"
+  [Axiom]="web/dashboard/src/index.css"
   [IronWolf]="web/dashboard/src/index.css"
   [forge]="web-ui/src/index.css"
   [vmspawn]=".web/src/index.css"
@@ -72,17 +72,17 @@ ${IMPORT_LINE}
   fi
 done
 
-# tt/hypersdk mirror
-if [[ -d "${TT}/tt/hypersdk/web/dashboard-react/src/components" ]]; then
-  cp -f "${KIT}/PremiumLoginShell.tsx" "${TT}/tt/hypersdk/web/dashboard-react/src/components/PremiumLoginShell.tsx"
-  cp -f "${KIT}/zyvor-premium-login.css" "${TT}/tt/hypersdk/web/dashboard-react/src/zyvor-premium-login.css"
-  css="${TT}/tt/hypersdk/web/dashboard-react/src/index.css"
+# tt/transiva mirror
+if [[ -d "${TT}/tt/zyvor-web/dashboard-react/src/components" ]]; then
+  cp -f "${KIT}/PremiumLoginShell.tsx" "${TT}/tt/zyvor-web/dashboard-react/src/components/PremiumLoginShell.tsx"
+  cp -f "${KIT}/zyvor-premium-login.css" "${TT}/tt/zyvor-web/dashboard-react/src/zyvor-premium-login.css"
+  css="${TT}/tt/zyvor-web/dashboard-react/src/index.css"
   if [[ -f "${css}" ]] && ! grep -q 'zyvor-premium-login.css' "${css}"; then
     sed -i '' "1i\\
 @import './zyvor-premium-login.css';
 " "${css}" 2>/dev/null || sed -i "1i @import './zyvor-premium-login.css';" "${css}"
   fi
-  echo "PremiumLoginShell → tt/hypersdk"
+  echo "PremiumLoginShell → tt/transiva"
 fi
 
 echo "Done — premium login kit under ${TT}"

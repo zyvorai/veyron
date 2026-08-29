@@ -25,12 +25,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
-	"github.com/ssahani/Veyron/operator/internal/catalog"
-	"github.com/ssahani/Veyron/operator/internal/converter"
-	"github.com/ssahani/Veyron/operator/internal/eventbus"
-	vmmetrics "github.com/ssahani/Veyron/operator/internal/metrics"
-	"github.com/ssahani/Veyron/operator/internal/network"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
+	"github.com/zyvorai/veyron/operator/internal/catalog"
+	"github.com/zyvorai/veyron/operator/internal/converter"
+	"github.com/zyvorai/veyron/operator/internal/eventbus"
+	vmmetrics "github.com/zyvorai/veyron/operator/internal/metrics"
+	"github.com/zyvorai/veyron/operator/internal/network"
 )
 
 const (

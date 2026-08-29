@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Upload the customer linux/amd64 tarball from dist/ to a GitHub release.
 #
-# Publishes to the PUBLIC hypersdk/veyron-releases repo by default — customers
-# can't download release assets from the private ssahani/Veyron source repo,
+# Publishes to the PUBLIC zyvorai/veyron-releases repo by default — customers
+# can't download release assets from the private zyvorai/veyron source repo,
 # so publishing there (the old default) produced links nobody outside the org
 # could actually use. Override with --repo or PUBLISH_REPO if you really mean
 # to publish somewhere else.
@@ -12,7 +12,7 @@
 #     tag           default: v$(Cargo.toml version), or v$(Cargo.toml version)-trial with --trial
 #     --trial       publish the trial tarball (veyron-<ver>-trial-linux-amd64.tar.gz)
 #                   instead of the regular one
-#     --repo        override the target repo (default: hypersdk/veyron-releases,
+#     --repo        override the target repo (default: zyvorai/veyron-releases,
 #                   or $PUBLISH_REPO if set)
 #
 # Prerequisites:
@@ -35,7 +35,7 @@ DIST="${REPO_DIR}/dist"
 
 TRIAL=false
 TAG=""
-TARGET_REPO="${PUBLISH_REPO:-hypersdk/veyron-releases}"
+TARGET_REPO="${PUBLISH_REPO:-zyvorai/veyron-releases}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --trial) TRIAL=true; shift ;;

@@ -15,7 +15,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-REPO="ghcr.io/ssahani/Veyron"
+REPO="ghcr.io/zyvorai/veyron"
 VERSION="${VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
 IMAGE="${REPO}:${VERSION}"
 IMAGE_LATEST="${REPO}:latest"

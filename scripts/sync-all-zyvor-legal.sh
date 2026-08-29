@@ -10,5 +10,5 @@ cd "${ROOT}"
 python3 ./scripts/sync-tt-zyvor-legal.py
 echo ""
 echo "All Zyvor legal sync steps complete."
-echo "OSS licenses preserved: guestkit + tt/cloud-netconfig, hyper2kvm, hypersdk,"
-echo "  hypersdk-org-profile, netctl, netevd."
+echo "OSS licenses preserved: guestkit + tt/cloud-netconfig, h2kvm, transiva,"
+echo "  transiva-org-profile, netctl, netevd."

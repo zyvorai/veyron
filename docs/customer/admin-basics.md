@@ -75,7 +75,7 @@ single-node cluster (kind/k3s/minikube) sharing the build daemon's image store c
 
 ### Just evaluating? Grab the 30-day trial bundle
 
-Download from **[github.com/hypersdk/veyron-releases](https://github.com/hypersdk/veyron-releases/releases)**
+Download from **[github.com/zyvorai/veyron-releases](https://github.com/zyvorai/veyron-releases/releases)**
 — same tarball, plus a signed `trial.token` next to the binary, no purchase needed to try
 it. After 30 days the binary stops starting until you
 [contact sales@zyvor.dev](mailto:sales@zyvor.dev) for a full, unrestricted license.

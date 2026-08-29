@@ -12,12 +12,12 @@
 ZyvorAI Labs Private Limited
     ├── PacketWolf / NetPredator (network intelligence, eBPF, K8s)
     ├── Ragnarok Enterprise (confidential infrastructure orchestration)
-    ├── Aether Enterprise (attestation, trust, workload identity)
+    ├── Axiom Enterprise (attestation, trust, workload identity)
     ├── GuestKit Enterprise (guest / VM access, hardening)
-    └── HyperSDK Platform (SDKs, tooling, integrations)
+    └── Zyvor Platform (SDKs, tooling, integrations)
 ```
 
-- **All product code is proprietary** — no Apache, MIT, or other OSS distribution (PacketWolf, Ragnarok, Aether, HyperSDK, netctl, netevd, etc.). **GuestKit** remains **LGPL-3.0-or-later** (open-source guest layer).
+- **All product code is proprietary** — no Apache, MIT, or other OSS distribution (PacketWolf, Ragnarok, Axiom, Transiva, netctl, netevd, etc.). **GuestKit** remains **LGPL-3.0-or-later** (open-source guest layer).
 - **Hosted SaaS**, AI rules, and sovereign features are **commercial** under MSA/ELA.
 - **Trademarks** are **not** granted by the software license—see [TRADEMARK-NOTICE.md](TRADEMARK-NOTICE.md).
 
@@ -64,7 +64,7 @@ Quick deploy / self-hosted tarball: [LICENSE](../../LICENSE) + install acceptanc
 
 ## Positioning (enterprise description)
 
-> ZyvorAI Labs provides sovereign-oriented infrastructure software: **PacketWolf** for kernel-native network intelligence on Kubernetes; **Ragnarok** for confidential infrastructure orchestration; **Aether** for attestation and trust orchestration; **GuestKit** for hardened guest and remote access. Commercial subscriptions include enterprise security, governance, optional AI operational tooling, and support—subject to executed agreements.
+> ZyvorAI Labs provides sovereign-oriented infrastructure software: **PacketWolf** for kernel-native network intelligence on Kubernetes; **Ragnarok** for confidential infrastructure orchestration; **Axiom** for attestation and trust orchestration; **GuestKit** for hardened guest and remote access. Commercial subscriptions include enterprise security, governance, optional AI operational tooling, and support—subject to executed agreements.
 
 ---
 

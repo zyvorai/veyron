@@ -20,9 +20,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
-	"github.com/ssahani/Veyron/operator/internal/eventbus"
-	vmmetrics "github.com/ssahani/Veyron/operator/internal/metrics"
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
+	"github.com/zyvorai/veyron/operator/internal/eventbus"
+	vmmetrics "github.com/zyvorai/veyron/operator/internal/metrics"
 )
 
 const restartPhaseAnnotation = "veyron.io/restart-phase"
