@@ -4,11 +4,20 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+try {
+  const envText = readFileSync(resolve(ROOT, 'scripts/customer-docs/product.env'), 'utf8')
+  for (const line of envText.split('\n')) {
+    const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
+    if (m) process.env[m[1]] = m[2].replace(/^['"]|['"]$/g, '')
+  }
+} catch {}
 const CUSTOMER = resolve(ROOT, 'docs/customer')
 const SITE = resolve(process.argv[2] ?? resolve(ROOT, '../zyvor-web'))
 const PRODUCT = process.env.CUSTOMER_DOCS_PRODUCT || 'Veyron'
-const SLUG = PRODUCT.toLowerCase()
-const TARGET = join(SITE, `docs/${SLUG}-manual`)
+const SLUG = (process.env.CUSTOMER_DOCS_SLUG || PRODUCT).toLowerCase().replace(/\s+/g, '-')
+const PDF_PREFIX = process.env.CUSTOMER_DOCS_PDF_PREFIX || PRODUCT.replace(/\s+/g, '-')
+const MANUAL_DIR = process.env.CUSTOMER_DOCS_MANUAL_DIR || `${SLUG}-manual`
+const TARGET = join(SITE, `docs/${MANUAL_DIR}`)
 const PDF_TARGET = join(SITE, `static/downloads/${SLUG}-docs`)
 
 if (!existsSync(join(SITE, 'docusaurus.config.ts'))) {
@@ -97,7 +106,7 @@ for (const file of walk(CUSTOMER)) {
   const targetName = renameTarget(rel)
   if (targetName === 'index.md') {
     body = rewriteIndexPdfSection(body)
-    body = frontMatter({ title: `${PRODUCT} Manual`, sidebar_position: 1, slug: `/${SLUG}-manual` }) + body
+    body = frontMatter({ title: `${PRODUCT} Manual`, sidebar_position: 1, slug: `/${MANUAL_DIR}` }) + body
   } else if (targetName === 'pages/index.md') {
     body = frontMatter({ title: 'Page-by-page guides', sidebar_position: 1 }) + body
   } else if (TOP_LEVEL_POSITION[targetName]) {
@@ -109,7 +118,7 @@ for (const file of walk(CUSTOMER)) {
 
 writeFileSync(
   join(TARGET, 'pages/_category_.json'),
-  JSON.stringify({ label: 'Page-by-page guides', position: 7, collapsed: true, key: `${SLUG}-manual-pages` }, null, 2) + '\n',
+  JSON.stringify({ label: 'Page-by-page guides', position: 7, collapsed: true, key: `${MANUAL_DIR}-pages` }, null, 2) + '\n',
 )
 
 const pagesDir = join(TARGET, 'pages')
@@ -119,7 +128,7 @@ if (existsSync(pagesDir)) {
     const full = join(pagesDir, dir)
     if (!statSync(full).isDirectory()) continue
     const label = dir.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-    writeFileSync(join(full, '_category_.json'), JSON.stringify({ label, position: i++, collapsed: true, key: `${SLUG}-manual-pages-${dir}` }, null, 2) + '\n')
+    writeFileSync(join(full, '_category_.json'), JSON.stringify({ label, position: i++, collapsed: true, key: `${MANUAL_DIR}-pages-${dir}` }, null, 2) + '\n')
   }
 }
 
