@@ -15,9 +15,9 @@ Dashboard, auth, and AI provider settings.
 - Route: `/dashboard#settings`
 - Nav: **Platform → Settings** (Browse mega-menu, Finder, or Spotlight `⌘K`)
 
-## What you can do
+## Operate from the console (UX)
 
-1. Open `/dashboard#settings` and wait for live API data from the Veyron server.
+1. Open `/dashboard#settings` and wait for live API data.
 2. Use filters (namespace, label, status) when the page provides them.
 3. Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).
 4. For mutating actions (create VM, migrate, apply policy): review impact and role gates first.

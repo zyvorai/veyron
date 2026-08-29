@@ -77,6 +77,14 @@ helm upgrade --install veyron charts/veyron -n veyron \
 | IdP rejects the whole login with an "invalid scope" error | A custom claim name (like `groups`) was added to the requested OAuth scopes — remove it. Group info doesn't need to be requested as a scope; the group mapper on the client's own scope already includes it in every token. |
 | Everyone lands as read-only regardless of their IdP group | Group names must match your **Admin groups** / **Write groups** settings exactly (case-insensitive) — check the exact group name in your IdP against what you configured. |
 
+## Operate from the console (UX)
+
+1. Open this route from the nav or command palette and wait for live API data.
+2. Use filters/search when present; drill into a row for detail.
+3. For mutating actions: confirm role gates and impact before applying.
+4. **Empty / fail:** Check service health, auth, and that required CRDs/backends for this domain are installed.
+5. **Success:** Live data loads; created/updated objects appear without error toasts.
+
 ## Related pages
 
 - [Admin Basics](admin-basics.md)
