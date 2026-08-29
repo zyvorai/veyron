@@ -24,7 +24,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
 <h1>Vey<span>ron</span></h1>
 <div class="sub">Admin Basics</div>
-<div class="badge">2026-07-26</div>
+<div class="badge">2026-08-29</div>
 <div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
 <main><h2>Ports</h2>
 <table>
@@ -54,10 +54,30 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <h2>Auth</h2>
 <ul>
 <li><code>VEYRON_API_KEY</code> (admin) or <code>VEYRON_API_KEYS=&quot;name:key:role,...&quot;</code>.</li>
-<li>OIDC PKCE via <code>VEYRON_OIDC_*</code>; groups <code>veyron-admin</code> / <code>veyron-write</code>.</li>
+<li>OIDC PKCE via <code>VEYRON_OIDC_*</code> (Keycloak/Auth0/Okta) — set <code>VEYRON_OIDC_GROUP_ADMIN</code> /
+<code>VEYRON_OIDC_GROUP_WRITE</code> to your IdP&#39;s group names (defaults: <code>veyron-admins,cluster-admins</code>
+/ <code>veyron-write,veyron-editors</code>). Confidential IdP clients (Keycloak&#39;s default) also need
+<code>VEYRON_OIDC_CLIENT_SECRET</code>. Full walkthrough: <a href="sso-setup.md">Setting Up SSO</a>.</li>
 <li>WebSocket consoles use one-shot tickets: <code>POST /api/v1/ws/ticket</code>.</li>
 <li>Shell HTML (<code>/</code>, <code>/dashboard</code>, <code>/assets/*</code>) and health/OIDC bootstrap paths are auth-exempt.</li>
 </ul>
+<h3>Default credentials</h3>
+<p>On first install, if you don&#39;t set <code>auth.apiKey</code> / <code>auth.adminPassword</code>, the chart&#39;s
+<code>veyron-api-key</code> Secret defaults both to <strong><code>Admin@321</code></strong> — <strong>change these before any
+internet-facing or production install.</strong></p>
+<p><code>auth.jwtSecret</code> is different: it&#39;s the token <em>signing</em> key, not a login credential — a
+predictable default there would let anyone forge a valid session token, not just guess a
+password. It&#39;s auto-generated (random, 64 chars) on first install and preserved across
+upgrades; never set it to a fixed value checked into source control.</p>
+<p>Retrieve the generated values:</p>
+<pre><code class="language-bash">kubectl -n veyron get secret veyron-api-key -o jsonpath=&#39;{.data.api-key}&#39; | base64 -d; echo
+kubectl -n veyron get secret veyron-api-key -o jsonpath=&#39;{.data.admin-password}&#39; | base64 -d; echo
+</code></pre>
+<p>Set your own at install time:</p>
+<pre><code class="language-bash">helm upgrade --install veyron charts/veyron -n veyron \
+  --set auth.apiKey=&quot;a-real-key&quot; --set auth.adminPassword=&quot;a-real-password&quot;
+# jwtSecret: leave unset to keep the auto-generated value, or override explicitly if needed
+</code></pre>
 <h2>Install sketch</h2>
 <pre><code class="language-bash"># Local
 veyron api-serve   # or: veyron serve
@@ -65,6 +85,24 @@ veyron api-serve   # or: veyron serve
 # Helm (example)
 helm upgrade --install veyron charts/veyron -n veyron --create-namespace
 </code></pre>
+<h3>From a binary bundle (no git clone, no build tools)</h3>
+<p>If you&#39;re a customer, you&#39;ll receive <strong><code>veyron-&lt;version&gt;-linux-amd64.tar.gz</code></strong> directly
+from us (email <strong><a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a></strong> if you need it re-sent). It ships the Helm chart plus
+a script that builds a runtime image from the bundle&#39;s own binaries — no source tree, no
+cargo:</p>
+<pre><code class="language-bash">tar xzf veyron-*-linux-amd64.tar.gz &amp;&amp; cd veyron-*-linux-amd64
+./install-cluster.sh                                       # KubeVirt/CDI/Cilium prereqs
+./install-to-kubernetes.sh --registry &lt;your-registry&gt;/veyron --push
+./apply-cluster-network.sh
+</code></pre>
+<p><code>install-to-kubernetes.sh --help</code> shows namespace/release/dry-run options, and a local
+single-node cluster (kind/k3s/minikube) sharing the build daemon&#39;s image store can skip
+<code>--push</code> entirely.</p>
+<h3>Just evaluating? Grab the 30-day trial bundle</h3>
+<p>Download from <strong><a href="https://github.com/zyvorai/veyron-releases/releases">github.com/zyvorai/veyron-releases</a></strong>
+— same tarball, plus a signed <code>trial.token</code> next to the binary, no purchase needed to try
+it. After 30 days the binary stops starting until you
+<a href="mailto:sales@zyvor.dev">contact sales@zyvor.dev</a> for a full, unrestricted license.</p>
 <p>OpenAPI: <code>/api/openapi.json</code>. Route dump: <code>veyron api-routes</code>.</p>
 <h2>Related</h2>
 <ul>

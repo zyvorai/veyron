@@ -24,11 +24,24 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
 <h1>Vey<span>ron</span></h1>
 <div class="sub">Page-by-Page Product Manual</div>
-<div class="badge">2026-07-26</div>
+<div class="badge">2026-08-29</div>
 <div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
 <main><h2>Page-by-page guides</h2>
 <p>Each guide follows: Purpose → When to use it → How to get there → What you can do → Related pages.</p>
 <p>Every route is also listed in the <a href="../PAGE_INDEX.md">complete page index</a>.</p>
+<h3>Ask Zeus</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="ask-zeus/ask-zeus.md">Ask Zeus</a></td>
+<td>Ask Zeus — AI assistant grounded on this cluster.</td>
+</tr>
+</tbody></table>
 <h3>Ask Zyra</h3>
 <table>
 <thead>
@@ -380,7 +393,37 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </tr>
 </tbody></table>
 <hr>
-<p>65 guides. Regenerate: <code>node scripts/customer-docs/generate-guide-index.mjs</code>.</p>
+<p>66 guides. Regenerate: <code>node scripts/customer-docs/generate-guide-index.mjs</code>.</p>
+<hr>
+<h2>Ask Zeus</h2>
+<h3>Purpose</h3>
+<p>Ask Zeus — AI assistant grounded on this cluster.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this page when the job matches the purpose above</li>
+<li>Prefer <strong>Mission Control</strong> (<code>/dashboard</code>) first if you are unsure where to start</li>
+<li>Confirm API auth and namespace scope if lists look empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route: <code>/dashboard#ask-zeus</code></li>
+<li>Nav: <strong>Ask Zeus → Ask Zeus</strong> (Browse mega-menu, Finder, or Spotlight <code>⌘K</code>)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>/dashboard#ask-zeus</code> and wait for live API data from the Veyron server.</li>
+<li>Use filters (namespace, label, status) when the page provides them.</li>
+<li>Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).</li>
+<li>For mutating actions (create VM, migrate, apply policy): review impact and role gates first.</li>
+</ol>
+<p>If the page stays empty, check API health, auth (<code>VEYRON_API_KEY</code> / OIDC), KubeVirt CRDs, and that the workload namespace is selected.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../favorites/dashboard.md">Mission Control</a></li>
+<li><a href="../compute/vms.md">VMs</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
 <hr>
 <h2>Ask Zyra</h2>
 <h3>Purpose</h3>
@@ -2334,7 +2377,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <hr>
 <h2>Veyron — Complete page index</h2>
 <p>Every primary navigable dashboard route.</p>
-<p><em>Generated: 2026-07-26 · 65 routes</em></p>
+<p><em>Generated: 2026-08-29 · 65 routes</em></p>
 <p>Regenerate: <code>node scripts/customer-docs/generate-page-index.mjs</code></p>
 <h3>Favorites</h3>
 <table>
@@ -2819,7 +2862,7 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 <td><a href="pages/ops/notifications.md">Open</a></td>
 </tr>
 </tbody></table>
-<h3>Ask Zyra</h3>
+<h3>Ask Zeus</h3>
 <table>
 <thead>
 <tr>
@@ -2830,10 +2873,10 @@ hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
 </tr>
 </thead>
 <tbody><tr>
-<td>Ask Zyra</td>
-<td><code>ask-zyra</code></td>
-<td>Ask Zyra — AI assistant grounded on this cluster.</td>
-<td><a href="pages/ask-zyra/ask-zyra.md">Open</a></td>
+<td>Ask Zeus</td>
+<td><code>ask-zeus</code></td>
+<td>Ask Zeus — AI assistant grounded on this cluster.</td>
+<td><a href="pages/ask-zeus/ask-zeus.md">Open</a></td>
 </tr>
 </tbody></table>
 <h3>Related</h3>
