@@ -1859,7 +1859,7 @@ body.mac-desktop-root #page-console-hub.active .vmr-console-hub-layout {
 .veyron-forge-titlebar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   padding: 14px 18px;
   border-bottom: 1px solid var(--line);
 }

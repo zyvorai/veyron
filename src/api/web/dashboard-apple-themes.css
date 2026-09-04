@@ -76,6 +76,11 @@ html.light-theme {
   --accent: #0071e3;
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.85);
+  --glass-border-strong: rgba(0, 0, 0, 0.14);
+  --panel-strong: rgba(232, 232, 237, 0.92);
+  --line-strong: rgba(0, 113, 227, 0.35);
+  --muted: #6e6e73;
   --mac-vibrancy: rgba(245, 245, 247, 0.88);
   --mac-border: rgba(0, 0, 0, 0.08);
   --ironwolf-glass-chrome-bg: rgba(255, 255, 255, 0.78);
@@ -157,6 +162,11 @@ html.theme-holo {
   --orange: #ff9f0a;
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-bg-elevated: rgba(25, 29, 37, 0.88);
+  --glass-border-strong: rgba(255, 255, 255, 0.1);
+  --panel-strong: rgba(44, 44, 46, 0.92);
+  --line-strong: rgba(41, 151, 255, 0.4);
+  --muted: #a1a1a6;
   --mac-vibrancy: rgba(0, 0, 0, 0.72);
   --mac-border: rgba(255, 255, 255, 0.1);
   --ironwolf-glass-chrome-bg: rgba(22, 22, 23, 0.82);
@@ -1260,6 +1270,12 @@ html[data-theme='dark'] .mac-sheet-modal,
 html[data-theme='tahoe'] .modal.glass-modal,
 html[data-theme='holo'] .modal.glass-modal {
   background: var(--panel, #1d1d1f) !important;
+}
+
+/* VNC/serial console chrome stays dark like Screen Sharing, regardless of theme */
+html[data-theme='light'] .mac-console-window.console-drawer-panel {
+  background: rgba(25, 29, 37, 0.88) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Seg controls → Apple chips */

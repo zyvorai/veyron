@@ -8239,8 +8239,12 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
 <div class="modal-overlay veyron-forge-overlay" id="forge-wizard-modal" role="dialog" aria-modal="true" aria-label="Create VM">
   <div class="veyron-forge-wizard" onclick="event.stopPropagation()">
     <div class="veyron-forge-titlebar">
+      <div class="mac-window-traffic" aria-label="Window controls">
+        <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeForgeWizard()" aria-label="Close"></button>
+        <span class="mac-traffic-btn mac-traffic-min" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+        <span class="mac-traffic-btn mac-traffic-full" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+      </div>
       <div><strong>Create VM</strong> <span class="vmr-beta-tag">Wizard</span></div>
-      <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeForgeWizard()" aria-label="Close"></button>
     </div>
     <div class="veyron-forge-steps" id="forge-wizard-steps">
       <button type="button" class="active" data-step="1">1 Template</button>
