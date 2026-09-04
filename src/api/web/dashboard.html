@@ -4,16 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260804i">
+<meta name="veyron-dashboard-rev" content="20260902b">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260804i';
+  var DASH_REV = '20260902b';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     // Preserve any existing query string (e.g. an OIDC redirect's ?code=&state=)
@@ -24,25 +24,17 @@
     location.replace(location.pathname + location.search + sep + revParam + location.hash);
     return;
   }
-  /* Default dark = Carbon (stored as tahoe). Light remains light. Zeus (holo)
-     is a 3rd explicit choice — must be recognized here or it flashes back to
-     Carbon on every boot before hydration re-applies it. */
+  /* Apple/Zeus Phase 1: Light (default) + Dark only. Legacy tahoe/holo → dark. */
   function parseStoredThemeEarly(raw) {
     if (raw === 'light' || raw === 'tahoe-light' || raw === 'daylight' || raw === 'frost') return 'light';
-    if (raw === 'holo') return 'holo';
-    return 'tahoe';
+    if (raw === 'dark' || raw === 'tahoe' || raw === 'holo' || raw === 'carbon') return 'dark';
+    return 'light';
   }
   try {
-    if (!localStorage.getItem('veyron_theme_carbon_v1')) {
+    if (!localStorage.getItem('veyron_theme_apple_v1')) {
       localStorage.setItem('veyron_theme', parseStoredThemeEarly(localStorage.getItem('veyron_theme')));
-      var wp = localStorage.getItem('veyron_wallpaper');
-      if (!wp || ['tahoe','aurora','midnight','ocean'].indexOf(wp) < 0) localStorage.setItem('veyron_wallpaper', 'tahoe');
+      localStorage.setItem('veyron_theme_apple_v1', '1');
       localStorage.setItem('veyron_theme_carbon_v1', '1');
-      localStorage.setItem('veyron_theme_ironwolf_v1', '1');
-    } else if (!localStorage.getItem('veyron_theme_ironwolf_v1')) {
-      localStorage.setItem('veyron_theme', parseStoredThemeEarly(localStorage.getItem('veyron_theme')));
-      var wp = localStorage.getItem('veyron_wallpaper');
-      if (!wp || ['tahoe','aurora','midnight','ocean'].indexOf(wp) < 0) localStorage.setItem('veyron_wallpaper', 'tahoe');
       localStorage.setItem('veyron_theme_ironwolf_v1', '1');
     }
     var savedTheme = parseStoredThemeEarly(localStorage.getItem('veyron_theme'));
@@ -54,7 +46,6 @@
     var wp = localStorage.getItem('veyron_wallpaper');
     if (['tahoe','aurora','midnight','ocean'].indexOf(wp) < 0) wp = 'tahoe';
     document.documentElement.setAttribute('data-wallpaper', wp);
-    // body may not exist yet; wallpaper also applied on DOM ready
     document.addEventListener('DOMContentLoaded', function(){
       try { document.body.setAttribute('data-wallpaper', wp); } catch (e2) {}
     });
@@ -104,8 +95,10 @@
   --glow-molten:0 0 20px rgba(199,208,219,.16),0 0 48px rgba(110,122,138,.08);
   --glow-spark:0 0 16px rgba(214,221,230,.15),0 0 40px rgba(214,221,230,.06);
   --glow-success:0 0 12px rgba(29,158,117,.2);
-  --font-sans:'Space Grotesk','Inter',system-ui,sans-serif;
-  --font-display:'Space Grotesk','Inter',system-ui,sans-serif;
+  --font-sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Helvetica,Arial,Inter,sans-serif;
+  --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Helvetica,Arial,Inter,sans-serif;
+  --font-hero:'SF Pro Display',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,Monaco,Consolas,monospace;
   --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --space-page:14px;
   --space-card:12px;
@@ -148,7 +141,7 @@
   --ink:         #E7EAF0;
   --ink-2:       #9CA3B2;
   --ink-3:       #626B7C;
-  --sans-deck:   'Space Grotesk','Inter',system-ui,sans-serif;
+  --sans-deck:   var(--font-hero);
   --mono-deck:   'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --r-sm:6px; --r-deck:10px; --r-lg-deck:14px;
   --gap-deck:16px;
@@ -264,15 +257,15 @@
   display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
 }
 .iw-home-kicker{
-  margin:0;font-size:.68rem;font-weight:650;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--accent-blue,#64a0dc);
+  margin:0;font-size:clamp(1.25rem,2.5vw,1.75rem);font-weight:600;letter-spacing:-0.03em;text-transform:none;
+  color:var(--ink,#1d1d1f);font-family:var(--font-hero);
 }
 .iw-home-title{
-  margin:6px 0 0;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Text",ui-sans-serif,system-ui,sans-serif;
-  font-size:16px;font-weight:650;letter-spacing:-.02em;line-height:1.25;
-  color:var(--text-primary,#e8e9ec);
+  margin:6px 0 0;font-family:var(--font-hero);
+  font-size:clamp(2rem,5vw,3.25rem);font-weight:600;letter-spacing:-.035em;line-height:1.05;
+  color:var(--ink,#1d1d1f);
 }
-.iw-home-desc{margin:8px 0 0;font-size:.95rem;color:var(--text-secondary,#9ca0ab);line-height:1.45}
+.iw-home-desc{margin:8px 0 0;font-size:clamp(1.05rem,2vw,1.25rem);color:var(--ink-2,#6e6e73);line-height:1.47;letter-spacing:-0.011em}
 .iw-home-meta{
   display:flex;align-items:center;gap:10px;font-size:.72rem;color:var(--text-muted,#6b7080);
   font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Text",ui-sans-serif,sans-serif;padding-top:6px;
@@ -281,18 +274,18 @@
 .iw-home-action{
   appearance:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
   padding:8px 14px;font-size:.84rem;font-weight:600;font-family:inherit;
-  border-radius:.65rem;border:1px solid var(--border-color,rgba(156,163,175,.12));
+  border-radius:980px;border:1px solid var(--border-color,rgba(156,163,175,.12));
   background:var(--bg-secondary,#1a1d24);color:var(--text-secondary,#9ca0ab);
   transition:background .15s,border-color .15s,color .15s;
 }
 .iw-home-action:hover{
-  color:var(--accent-steel-bright,#cbd5e1);border-color:rgba(148,163,184,.4);
-  background:var(--accent-steel-muted,rgba(148,163,184,.12));
+  color:var(--ink);border-color:rgba(0,113,227,.35);
+  background:rgba(0,113,227,.08);
 }
 .iw-home-action-primary{
-  background:linear-gradient(180deg,#7ab3e8,#64a0dc);color:#0a1220;border-color:rgba(100,160,220,.55);
+  background:var(--apple-action,#0071e3);color:#fff;border-color:transparent;
 }
-.iw-home-action-primary:hover{color:#061018;background:linear-gradient(180deg,#9ec8f0,#64a0dc)}
+.iw-home-action-primary:hover{color:#fff;background:#0066cc}
 .iw-home-stage{
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;
   padding:4px 0 8px;border-top:1px solid var(--border-color,rgba(156,163,175,.1));
@@ -3382,7 +3375,7 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border,
 }
 .mac-cc-tile:hover{background:rgba(59,130,246,.1);color:var(--primary);border-color:rgba(59,130,246,.25)}
 .mac-cc-tile-icon{display:block;font-size:1.1rem;margin-bottom:4px}
-/* Sign-in layout stubs — full premium styles in dashboard-ironwolf-login.css */
+/* Sign-in layout stubs — full styles in dashboard-apple-login.css */
 .modal-overlay.mac-signin-overlay{
   background:#070a10;backdrop-filter:none;-webkit-backdrop-filter:none;
   align-items:stretch;padding-top:0;flex-direction:row;
@@ -4629,8 +4622,8 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <button type="button" class="btn-spotlight" id="vmr-action-log-btn" onclick="toggleActionLog()" title="Session action log" style="position:relative" aria-label="Action log">◎<span id="vmr-action-log-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--caution);color:#000;border-radius:8px;font-size:.55rem;font-weight:700;min-width:14px;height:14px;line-height:14px;padding:0 3px;text-align:center"></span></button>
     <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select menubar-tier-collapsible" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
-      <option value="tahoe">Carbon</option>
       <option value="light">Light</option>
+      <option value="dark">Dark</option>
       <option value="auto">Auto · Day/Night</option>
     </select>
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
@@ -4665,15 +4658,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <div class="mac-cc-section-title">Appearance</div>
     <div class="mac-cc-row" style="flex-direction:column;align-items:stretch;gap:6px">
       <span>Theme</span>
-      <div class="theme-swatch-group-label">IronWolf</div>
-      <div class="theme-swatch-grid" id="cc-theme-swatch-grid-macos" role="radiogroup" aria-label="IronWolf themes">
-        <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Carbon</span></button>
+      <div class="theme-swatch-group-label">Appearance</div>
+      <div class="theme-swatch-grid" id="cc-theme-swatch-grid-macos" role="radiogroup" aria-label="Appearance">
         <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
-        <button type="button" class="theme-swatch" data-theme="holo" role="radio" onclick="setTheme('holo')"><span class="theme-swatch-preview holo"></span><span class="theme-swatch-label">Zeus</span></button>
-        <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Carbon by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
+        <button type="button" class="theme-swatch" data-theme="dark" role="radio" onclick="setTheme('dark')"><span class="theme-swatch-preview dark"></span><span class="theme-swatch-label">Dark</span></button>
+        <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Dark by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
       </div>
       <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
-        <option value="tahoe">Carbon</option><option value="light">Light</option><option value="holo">Zeus</option><option value="auto">Auto · Day/Night</option>
+        <option value="light">Light</option><option value="dark">Dark</option><option value="auto">Auto · Day/Night</option>
       </select>
     </div>
     <div class="mac-cc-row mac-cc-wallpaper-row" style="flex-direction:column;align-items:stretch;gap:8px">
@@ -4778,7 +4770,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
       <button type="button" class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
       <div class="nav-dropdown-sep"></div>
       <button type="button" class="nav-link" data-page="traces" onclick="navigate('traces')">Traces</button>
-      <button type="button" class="nav-link" data-page="logs" onclick="navigate('logs')">Logs</button>
+      <button type="button" class="nav-link" data-page="logs" onclick="navigate('logs')">Console</button>
       <button type="button" class="nav-link" data-page="incidents" onclick="navigate('incidents')">Incidents</button>
     </div>
   </div>
@@ -4944,7 +4936,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
       <button type="button" class="cloudos-finder-item" data-page="observability" onclick="finderNavigate('observability')"><span class="fi-icon"><i data-lucide="radar"></i></span><span class="fi-label">Overview</span></button>
       <button type="button" class="cloudos-finder-item" data-page="insights" onclick="finderNavigate('insights')"><span class="fi-icon"><i data-lucide="brain"></i></span><span class="fi-label">Insights</span></button>
       <button type="button" class="cloudos-finder-item" data-page="traces" onclick="finderNavigate('traces')"><span class="fi-icon"><i data-lucide="share-2"></i></span><span class="fi-label">Traces</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="logs" onclick="finderNavigate('logs')"><span class="fi-icon"><i data-lucide="file-text"></i></span><span class="fi-label">Logs</span></button>
+      <button type="button" class="cloudos-finder-item" data-page="logs" onclick="finderNavigate('logs')"><span class="fi-icon"><i data-lucide="terminal"></i></span><span class="fi-label">Console</span></button>
       <button type="button" class="cloudos-finder-item" data-page="incidents" onclick="finderNavigate('incidents')"><span class="fi-icon"><i data-lucide="heart-pulse"></i></span><span class="fi-label">Incidents</span></button>
     </div>
   </div>
@@ -5225,38 +5217,54 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="container">
 
-<!-- DASHBOARD PAGE — Command Centre -->
+<!-- DASHBOARD PAGE — Apple marketing home -->
 <div class="page active section-shell iw-home-page" id="page-dashboard" data-section="dashboard">
-<div class="space-y animate-fade-in iw-home iw-cc iw-cc-pro">
-  <div class="iw-cc-atmosphere" aria-hidden="true">
-    <span class="iw-cc-glow iw-cc-glow-a"></span>
-    <span class="iw-cc-glow iw-cc-glow-b"></span>
-    <span class="iw-cc-glow iw-cc-glow-c"></span>
-    <span class="iw-cc-grid"></span>
-    <span class="iw-cc-scan"></span>
-    <span class="iw-cc-stars"></span>
-  </div>
+<div class="space-y animate-fade-in iw-home iw-cc iw-apple-home">
+  <div class="iw-cc-atmosphere" aria-hidden="true" style="display:none"></div>
 
-  <header class="iw-home-hero iw-cc-banner" id="iw-cc-banner">
-    <div class="iw-home-hero-text">
-      <p class="iw-home-kicker"><span class="iw-cc-pulse"></span> <span id="iw-cc-kicker-text">Veyron · Carbon</span></p>
-      <h1 class="iw-home-title">Command Centre</h1>
-      <p class="iw-home-desc" id="iw-home-desc">Liquid Glass ops bridge — posture, pulse, and only the signals that matter.</p>
-      <p class="iw-cc-surprise-tip" id="iw-cc-surprise-tip" hidden></p>
+  <!-- Chapter 1: one composition — brand, headline, lede, CTAs only -->
+  <header class="apple-home-hero" id="iw-cc-banner">
+    <p class="apple-chapter-kicker" id="iw-cc-kicker-text">Veyron</p>
+    <h1 class="apple-chapter-title" id="iw-home-title">Your fleet.<br>One console.</h1>
+    <p class="apple-chapter-lede" id="iw-home-desc">KubeVirt-native private cloud — provision, monitor, and operate virtual machines from one place.</p>
+    <p class="iw-cc-surprise-tip" id="iw-cc-surprise-tip" hidden></p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-primary" onclick="openCreateModal()">Create a VM</button>
+      <button type="button" class="apple-btn-secondary" onclick="navigate('vms')">Learn more</button>
     </div>
-    <div class="iw-home-meta iw-cc-meta">
-      <span class="mission-live-badge">Live</span>
-      <span class="iw-cc-meta-chip" id="iw-cc-cluster-chip">Cluster linked</span>
-      <span class="iw-cc-meta-chip iw-cc-mood" id="iw-cc-mood" title="Fleet mood">—</span>
-      <span id="mission-last-refresh">Last refresh: —</span>
-    </div>
+    <p class="apple-home-footnote">KubeVirt · Kubernetes · Snapshots · DR</p>
   </header>
 
-  <div class="iw-home-stage iw-cc-console iw-cc-bridge">
+  <!-- Chapter 2: quiet metrics (below the fold) -->
+  <section class="apple-home-vitals" aria-label="Fleet vitals">
+    <div class="apple-home-vitals-inner" id="iw-home-stats">
+      <div class="apple-vital">
+        <p class="apple-vital-value iw-home-stat-value tone-ok" id="iw-stat-running" data-stat="running">—</p>
+        <p class="apple-vital-label">Online</p>
+      </div>
+      <div class="apple-vital">
+        <p class="apple-vital-value iw-home-stat-value" id="iw-stat-total" data-stat="total">—</p>
+        <p class="apple-vital-label">Fleet</p>
+      </div>
+      <div class="apple-vital">
+        <p class="apple-vital-value iw-home-stat-value" id="iw-stat-alerts" data-stat="alerts">—</p>
+        <p class="apple-vital-label">Alerts</p>
+      </div>
+    </div>
+    <div class="apple-home-meta" aria-live="polite">
+      <span class="mission-live-badge">Live</span>
+      <span id="iw-cc-cluster-chip">Cluster linked</span>
+      <span id="iw-cc-mood" title="Fleet mood">—</span>
+      <span id="mission-last-refresh">Last refresh: —</span>
+    </div>
+  </section>
+
+  <!-- Keep orb + channels for JS, off the marketing surface -->
+  <div class="iw-home-stage iw-cc-console iw-cc-bridge apple-home-ops-hidden" hidden aria-hidden="true">
     <div class="iw-cc-orb-stage">
       <div class="iw-cc-orb-halo" aria-hidden="true"></div>
       <div class="iw-cc-orb-ring" aria-hidden="true"></div>
-      <div id="holo-fleet-orb" class="holo-orb-wrap iw-home-orb iw-cc-orb" title="Fleet pulse — double-click for a surprise" ondblclick="typeof iwCcOrbSurprise==='function'&&iwCcOrbSurprise()">
+      <div id="holo-fleet-orb" class="holo-orb-wrap iw-home-orb iw-cc-orb" title="Fleet pulse" ondblclick="typeof iwCcOrbSurprise==='function'&&iwCcOrbSurprise()">
         <canvas id="holo-fleet-canvas"></canvas>
         <div class="holo-orb-center">
           <div class="holo-orb-pct" id="holo-orb-pct">—</div>
@@ -5267,26 +5275,24 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
       </div>
     </div>
     <div class="iw-cc-side">
-      <div class="iw-home-stats iw-cc-readouts" id="iw-home-stats" aria-label="Fleet readouts">
-        <div class="iw-home-stat"><p class="iw-home-stat-label">Online</p><p class="iw-home-stat-value tone-ok" id="iw-stat-running" data-stat="running">—</p><p class="iw-home-stat-sub">ready to serve</p></div>
-        <div class="iw-home-stat"><p class="iw-home-stat-label">Fleet</p><p class="iw-home-stat-value" id="iw-stat-total" data-stat="total">—</p><p class="iw-home-stat-sub">total VMs</p></div>
-        <div class="iw-home-stat"><p class="iw-home-stat-label">Alerts</p><p class="iw-home-stat-value" id="iw-stat-alerts" data-stat="alerts">—</p><p class="iw-home-stat-sub">need eyes</p></div>
-      </div>
       <div class="iw-home-actions iw-cc-channels" id="iw-home-actions" role="group" aria-label="Command channels">
-        <button type="button" class="iw-home-action iw-home-action-primary" onclick="openCreateModal()"><span class="iw-cc-act-ico" aria-hidden="true">＋</span> Create VM <kbd class="iw-cc-kbd">⌘N</kbd></button>
-        <button type="button" class="iw-home-action" onclick="navigate('vms')"><span class="iw-cc-act-ico" aria-hidden="true">▦</span> Fleet Command</button>
-        <button type="button" class="iw-home-action" onclick="openAskZyra()"><span class="iw-cc-act-ico" aria-hidden="true">✦</span> Ask Zyra <kbd class="iw-cc-kbd">⌘J</kbd></button>
-        <button type="button" class="iw-home-action" onclick="setShell('orbit')"><span class="iw-cc-act-ico" aria-hidden="true">◎</span> Enter Orbit <kbd class="iw-cc-kbd">⌘⇧O</kbd></button>
+        <button type="button" class="iw-home-action iw-home-action-primary" onclick="openCreateModal()">Create VM</button>
+        <button type="button" class="iw-home-action" onclick="navigate('vms')">Fleet Command</button>
+        <button type="button" class="iw-home-action" onclick="openAskZyra()">Ask Zyra</button>
+        <button type="button" class="iw-home-action" onclick="setShell('orbit')">Enter Orbit</button>
       </div>
     </div>
   </div>
 
-  <section class="iw-signal-strip iw-cc-board" aria-label="Attention board">
-    <div class="iw-cc-board-head">
+  <!-- Chapter 3: attention only when needed -->
+  <section class="apple-home-attention iw-signal-strip iw-cc-board" aria-label="Attention">
+    <h2 class="apple-home-section-title">Attention</h2>
+    <p class="apple-home-section-lede">Only the signals that matter.</p>
+    <div class="iw-cc-board-head" hidden>
       <span class="iw-cc-board-label">Attention board <span class="iw-cc-board-count" id="iw-cc-board-count" hidden>0</span></span>
       <span class="iw-cc-board-hint">signals only · not the full fleet</span>
     </div>
-    <p class="forge-briefing" id="forge-briefing">Listening for the fleet…</p>
+    <p class="forge-briefing" id="forge-briefing">All quiet.</p>
     <div class="forge-signal-rail" id="forge-signal-rail" role="list" aria-label="VMs that need attention"></div>
     <div class="forge-fav-chips" id="forge-fav-chips" hidden></div>
   </section>
@@ -5303,7 +5309,8 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <div id="dc-action-grid"></div><div id="dc-today-stats"></div>
   </div>
 
-  <details class="operator-details iw-operator" id="operator-details">
+  <details class="operator-details iw-operator apple-home-operator" id="operator-details">
+
     <summary>Operator instruments</summary>
     <div class="vmr-mission-grid">
       <div class="vmr-panel vmr-fleet-health-panel">
@@ -5360,11 +5367,21 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <div class="page section-shell" id="page-vms" data-section="compute" data-shell-region="page">
 <div class="space-y animate-fade-in" data-shell-region="page-stack">
   <div data-shell-region="page-header">
-  <div id="vmr-fleet-hero"></div>
-  <div id="vmr-fleet-metrics" class="grid-4 page-glass-stats vmr-fleet-kpis"></div>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Virtual Machines</p>
+    <h1 class="apple-chapter-title">Your fleet.</h1>
+    <p class="apple-chapter-lede">Provision, inspect, and operate every virtual machine from one roster.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-primary" onclick="openCreateModal()">Create a VM</button>
+      <button type="button" class="apple-btn-secondary" onclick="exportVmsCsv()" title="Export the fleet roster as CSV">Export</button>
+      <button type="button" class="apple-btn-secondary" onclick="snapshotAllRunning()" title="Snapshot every currently-Running VM at once">Snapshot all</button>
+    </div>
+  </header>
+  <div id="vmr-fleet-hero" hidden aria-hidden="true"></div>
+  <div id="vmr-fleet-metrics" class="grid-4 page-glass-stats vmr-fleet-kpis apple-benefit"></div>
   <div id="vmr-ns-overview" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:2px 0 4px;scrollbar-width:none"></div>
   <div id="vmr-recent-strip" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0 6px;scrollbar-width:none"></div>
-  <div class="vmr-fleet-toolbar vmr-roster-filter-row">
+  <div class="vmr-fleet-toolbar vmr-roster-filter-row apple-chips">
     <div style="position:relative;display:inline-flex;align-items:center" id="vm-search-wrap">
       <input type="text" class="form-input vmr-roster-search" id="vm-search" placeholder="Search name · node · namespace" oninput="filterVMsDebounced()" autocomplete="off" style="min-width:220px;padding-right:28px">
       <button type="button" id="vm-search-clear" onclick="document.getElementById('vm-search').value='';filterVMs()" aria-label="Clear search" title="Clear search" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;padding:0 2px;opacity:.7">×</button>
@@ -5379,9 +5396,6 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     </div>
     <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
     <div class="vmr-roster-filter-sp"></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="snapshotAllRunning()" title="Snapshot every currently-Running VM at once">Snapshot all</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export the fleet roster as CSV">Export</button>
-    <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">Forge VM</button>
   </div>
   <div id="vm-search-node-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
@@ -5627,15 +5641,20 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <!-- SNAPSHOTS PAGE -->
 <div class="page section-shell" id="page-snapshots" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div id="vmr-snapshots-hero"></div>
-  <div id="vmr-snapshots-metrics"></div>
-  <div id="vmr-snapshots-protection"></div>
-  <div class="page-header"><div><h1>Veyron Snapshots &amp; Backups</h1><p>Protect, restore, and replicate virtual machines.</p></div><div class="page-header-right">
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSnapshots()">&#8635; Refresh</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSnapshotsData()" title="Export snapshot list as JSON">&#8595; Export</button>
-    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create Snapshot</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZyra('Create backup policy for all VMs')">+ Backup Policy</button>
-  </div></div>
+  <div id="vmr-snapshots-hero" hidden aria-hidden="true"></div>
+  <div id="vmr-snapshots-metrics" hidden aria-hidden="true"></div>
+  <div id="vmr-snapshots-protection" hidden aria-hidden="true"></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Snapshots</p>
+  <h1 class="apple-chapter-title">Snapshots &amp; Backups</h1>
+  <p class="apple-chapter-lede">Protect, restore, and replicate virtual machines.</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchSnapshots()">&#8635; Refresh</button>
+    <button type="button" class="apple-btn-secondary" onclick="exportSnapshotsData()" title="Export snapshot list as JSON">&#8595; Export</button>
+    <button type="button" class="apple-btn-primary" onclick="openSnapModalPick()">+ Create Snapshot</button>
+    <button type="button" class="apple-btn-secondary" onclick="openAskZyra('Create backup policy for all VMs')">+ Backup Policy</button>
+  </div>
+</header>
   <!-- VM Protection summary -->
   <div class="vmr-metrics-strip" style="margin-bottom:8px">
     <div class="vmr-metric"><div class="vmr-metric-label">Protected VMs</div><div class="vmr-metric-value ok" id="snap-protected-count">—</div></div>
@@ -5655,20 +5674,27 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <div class="page section-shell" id="page-nodes" data-section="compute" data-shell-region="page">
 <div class="space-y animate-fade-in" data-shell-region="page-stack">
   <div data-shell-region="page-header">
-  <div id="vmr-nodes-hero"></div>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Nodes</p>
+    <h1 class="apple-chapter-title">Every host. One view.</h1>
+    <p class="apple-chapter-lede">Capacity, roles, and health across the cluster — cordon, inspect, and plan placement.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-secondary" onclick="runNodeAdvisor()">Node Advisor</button>
+      <button type="button" class="apple-btn-secondary" onclick="navigate('heatmap')">Heatmap</button>
+      <button type="button" class="apple-btn-secondary" onclick="exportNodesCsv()" title="Export node list as CSV">Export</button>
+    </div>
+  </header>
+  <div id="vmr-nodes-hero" hidden aria-hidden="true"></div>
   <div id="node-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">Veyron Node Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('node-advisor-card')">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">Node Advisor</span><button type="button" class="apple-btn-secondary" onclick="dismissAdvisorCard('node-advisor-card')">Dismiss</button></div>
     <div id="node-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="vmr-fleet-toolbar vmr-roster-filter-row">
+  <div class="vmr-fleet-toolbar vmr-roster-filter-row apple-chips">
     <div style="position:relative;display:inline-flex;align-items:center">
       <input type="search" id="node-search" class="form-input vmr-roster-search" placeholder="Search name · status · OS" oninput="filterNodesView(this.value)" style="min-width:220px">
     </div>
     <span id="node-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
     <div class="vmr-roster-filter-sp"></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('heatmap')">Heatmap</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNodesCsv()" title="Export node list as CSV">Export</button>
   </div>
   </div>
   <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="node-workspace" data-shell-region="split" data-rail="open">
@@ -5715,8 +5741,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <!-- PODS PAGE -->
 <div class="page section-shell" id="page-pods" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Pods</h1><p>Namespace workloads</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><span id="pod-count"></span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPods()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Pods</p>
+  <h1 class="apple-chapter-title">Pods</h1>
+  <p class="apple-chapter-lede">Namespace workloads</p>
+  <div class="apple-chapter-cta">
+    <span id="pod-count"></span><button type="button" class="apple-btn-secondary" onclick="fetchPods()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="pods-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
     <div class="card-header"><span class="card-title">Pods</span><div style="display:flex;gap:6px;align-items:center;margin-left:auto"><button type="button" class="vmr-chip vmr-chip-active" data-podphase="all" onclick="setPodPhaseFilter('all',this)">All</button><button type="button" class="vmr-chip" data-podphase="Running" onclick="setPodPhaseFilter('Running',this)"><span class="vmr-chip-dot" style="background:var(--nominal)"></span>Running</button><button type="button" class="vmr-chip" data-podphase="Pending" onclick="setPodPhaseFilter('Pending',this)"><span class="vmr-chip-dot" style="background:var(--caution)"></span>Pending</button><button type="button" class="vmr-chip" data-podphase="Failed" onclick="setPodPhaseFilter('Failed',this)"><span class="vmr-chip-dot" style="background:var(--critical)"></span>Failed</button><input type="search" id="pod-search" class="form-input" placeholder="Filter pods…" oninput="filterPodsView(this.value)" style="width:170px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPodsCsv()" title="Export pod list as CSV">&#8595; CSV</button></div></div>
@@ -5733,8 +5765,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <!-- STORAGE PAGE -->
 <div class="page section-shell" id="page-storage" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Storage</h1><p>PVCs and storage classes</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStorage()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runStorageDoctor()">Storage Doctor</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Storage</p>
+  <h1 class="apple-chapter-title">Storage</h1>
+  <p class="apple-chapter-lede">PVCs and storage classes</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchStorage()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="runStorageDoctor()">Storage Doctor</button>
+  </div>
+</header>
     <div class="card glass-card" id="storage-doctor-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Storage Doctor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('storage-doctor-card')">Dismiss</button></div>
     <div id="storage-doctor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -5756,6 +5794,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <!-- EVENTS PAGE -->
 <div class="page section-shell" id="page-events" data-section="observe">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Events</p>
+    <h1 class="apple-chapter-title">Cluster signal.</h1>
+    <p class="apple-chapter-lede">Kubernetes events across the fleet — filter, follow, and act.</p>
+  </header>
+
   <div id="vmr-events-hero"></div>
   <div id="events-summary" class="grid-4 page-glass-stats"></div>
   <!-- Filter bar -->
@@ -5779,7 +5823,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <!-- CRD PAGES -->
 <div class="page section-shell" id="page-crds" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Veyron VMs</h1><p>Operator-managed virtual machines (veyron.io CRDs)</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCrdVmsCsv()" title="Export as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCRDs()">&#8635; Refresh</button><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VeyronVM</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Veyron VMs</p>
+  <h1 class="apple-chapter-title">VMs</h1>
+  <p class="apple-chapter-lede">Operator-managed virtual machines (veyron.io CRDs)</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportCrdVmsCsv()" title="Export as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchCRDs()">&#8635; Refresh</button><button type="button" class="apple-btn-primary" onclick="openCrdCreateModal()">+ Create VeyronVM</button>
+  </div>
+</header>
     <div id="crds-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">VeyronVM Resources</span><span id="crds-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="crds-search" class="form-input" placeholder="Filter by name, namespace, template…" oninput="filterCrdsView(this.value)" style="width:240px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
@@ -5789,8 +5840,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-blueprint-studio" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VeyronBlueprint CRDs saved from Ask Zyra or created here</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchBlueprintStudio()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Blueprints</p>
+  <h1 class="apple-chapter-title">Blueprint Studio</h1>
+  <p class="apple-chapter-lede">Edit VeyronBlueprint CRDs saved from Ask Zyra or created here</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchBlueprintStudio()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="blueprintStudioNew()">+ New Blueprint</button>
+  </div>
+</header>
     <div id="blueprint-summary" class="grid-4 page-glass-stats"></div>
 
   <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Ask Zyra YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
@@ -5815,7 +5872,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-policies" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Policies</h1><p>VeyronPolicy compliance enforcement</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPoliciesCsv()" title="Export policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPolicies()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Policies</p>
+  <h1 class="apple-chapter-title">Policies</h1>
+  <p class="apple-chapter-lede">VeyronPolicy compliance enforcement</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportPoliciesCsv()" title="Export policies as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchPolicies()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="policies-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span><span id="policies-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="policies-search" class="form-input" placeholder="Filter policies…" oninput="filterPoliciesView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="policies-table"><thead><tr><th>Name</th><th>Enforcement</th><th>Severity</th><th>Framework</th><th>Rules</th><th>Enabled</th><th>Matching</th><th>Violations</th></tr></thead><tbody id="policies-body"></tbody></table>
@@ -5825,7 +5889,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-insights" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Insights</h1><p>VeyronInsight observability data</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportInsightsCsv()" title="Export insights as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchInsights()">&#8635; Refresh</button></div></div>
+<header class="apple-chapter">
+  <p class="apple-chapter-kicker">Insights</p>
+  <h1 class="apple-chapter-title">Insights</h1>
+  <p class="apple-chapter-lede">VeyronInsight observability data</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportInsightsCsv()" title="Export insights as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchInsights()">&#8635; Refresh</button>
+  </div>
+</header>
     
     <div id="insights-summary" class="grid-4 page-glass-stats"></div>
 <div id="drift-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -5840,7 +5911,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-actions" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Actions</h1><p>VeyronAction autopilot proposals</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportActionsCsv()" title="Export actions as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchActions()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Actions</p>
+  <h1 class="apple-chapter-title">Actions</h1>
+  <p class="apple-chapter-lede">VeyronAction autopilot proposals</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportActionsCsv()" title="Export actions as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchActions()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="actions-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span><span id="actions-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="actions-search" class="form-input" placeholder="Filter actions…" oninput="filterActionsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th><th></th></tr></thead><tbody id="actions-body"></tbody></table>
@@ -5852,8 +5930,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <div class="space-y animate-fade-in">
   <div id="vmr-costs-hero"></div>
   <div id="vmr-costs-metrics"></div>
-  <div class="page-header"><div><h1>Veyron Cost Explorer</h1><p>Usage, cost, forecast, and optimization for VM infrastructure.</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCostsCsv()" title="Export VM costs as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCosts()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCostAdvisor()">Cost Advisor</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Costs</p>
+  <h1 class="apple-chapter-title">Cost Explorer</h1>
+  <p class="apple-chapter-lede">Usage, cost, forecast, and optimization for VM infrastructure.</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportCostsCsv()" title="Export VM costs as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchCosts()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="runCostAdvisor()">Cost Advisor</button>
+  </div>
+</header>
     <div id="cost-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Cost Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cost-advisor-card')">Dismiss</button></div>
     <div id="cost-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -5927,13 +6011,16 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <div class="space-y animate-fade-in">
   <div id="vmr-security-hero"></div>
   <div id="vmr-security-metrics"></div>
-<div class="page-header"><div><h1>Veyron Security Posture</h1><p>Hardening, compliance, and risk visibility for virtual machines.</p></div>
-  <div class="page-header-right">
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSecurityFindingsCsv()" title="Export findings as CSV">&#8595; CSV</button>
-    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZyra('Auto-fix all security findings')">Fix All Issues</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSecurityPage()">Refresh</button>
+<header class="apple-chapter">
+  <p class="apple-chapter-kicker">Security</p>
+  <h1 class="apple-chapter-title">Security Posture</h1>
+  <p class="apple-chapter-lede">Hardening, compliance, and risk visibility for virtual machines.</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportSecurityFindingsCsv()" title="Export findings as CSV">&#8595; CSV</button>
+    <button type="button" class="apple-btn-primary" onclick="openAskZyra('Auto-fix all security findings')">Fix All Issues</button>
+    <button type="button" class="apple-btn-secondary" onclick="fetchSecurityPage()">Refresh</button>
   </div>
-</div>
+</header>
 
   <div class="card glass-card" id="security-sentinel-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Security Sentinel</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('security-sentinel-card')">Dismiss</button></div>
@@ -5972,11 +6059,15 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-monitoring" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Monitoring</h1><p>Observability stack discovery, VM policy hints, and threshold-based workload anomalies — all scoped by the namespace selector in the header.</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;flex-wrap:wrap">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMonitoring()">↺ Refresh</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button>
-    </div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Monitoring</p>
+  <h1 class="apple-chapter-title">Monitoring</h1>
+  <p class="apple-chapter-lede">Observability stack discovery, VM policy hints, and threshold-based workload anomalies — all scoped by the namespace selector in the header.</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchMonitoring()">↺ Refresh</button>
+      <button type="button" class="apple-btn-secondary" onclick="runPerformanceAdvisor()">Performance Advisor</button>
+  </div>
+</header>
     <div id="performance-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('performance-advisor-card')">Dismiss</button></div>
     <div id="performance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -6013,6 +6104,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-workloads" data-section="compute">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Workloads</p>
+    <h1 class="apple-chapter-title">Pods and controllers.</h1>
+    <p class="apple-chapter-lede">Deployments, StatefulSets, and jobs that share the cluster with your VMs.</p>
+  </header>
+
   <div id="vmr-workloads-hero"></div>
   <div id="vmr-workloads-metrics"></div>
   <div id="workloads-summary" class="grid-4 page-glass-stats" style="display:none"></div>
@@ -6032,7 +6129,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-alerts" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="id-btn-plasma glass-btn-sm" onclick="openCreateAlertModal()" title="Create a new alert rule">+ Create Alert</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAlertsCsv()" title="Export alerts as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAlerts()">&#8635; Refresh</button></div></div>
+<header class="apple-chapter">
+  <p class="apple-chapter-kicker">Alerts</p>
+  <h1 class="apple-chapter-title">Alerts</h1>
+  <p class="apple-chapter-lede">Warning events and alert acknowledgements</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="id-btn-plasma " onclick="openCreateAlertModal()" title="Create a new alert rule">+ Create Alert</button><button type="button" class="apple-btn-secondary" onclick="exportAlertsCsv()" title="Export alerts as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchAlerts()">&#8635; Refresh</button>
+  </div>
+</header>
     
     <div id="alerts-summary" class="grid-4 page-glass-stats"></div>
 <div id="alert-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -6058,7 +6162,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-audit" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Audit</h1><p>Event-derived audit trail and summary</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAudit()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Audit</p>
+  <h1 class="apple-chapter-title">Audit</h1>
+  <p class="apple-chapter-lede">Event-derived audit trail and summary</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchAudit()">&#8635; Refresh</button>
+  </div>
+</header>
   
   <div id="audit-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Audit Trail</span><span id="audit-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="audit-search" class="form-input" placeholder="Filter by user, action, resource…" oninput="filterAuditView(this.value)" style="width:220px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAuditCsv()" title="Export audit trail as CSV">↓ CSV</button></div>
@@ -6069,13 +6180,15 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-soc" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header">
-    <div><h1>Security Operations</h1><p>Detections, event stream, SIEM export, and attack surface</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;flex-wrap:wrap">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSocPage(true)">Refresh</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('integrations')">Integrations</button>
-    </div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Security</p>
+  <h1 class="apple-chapter-title">Security Operations</h1>
+  <p class="apple-chapter-lede">Detections, event stream, SIEM export, and attack surface</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchSocPage(true)">Refresh</button>
+      <button type="button" class="apple-btn-secondary" onclick="navigate('integrations')">Integrations</button>
   </div>
+</header>
   <div id="soc-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div id="soc-export-strip" class="card glass-card" style="margin-bottom:16px;padding:12px 16px;font-size:.84rem"></div>
   <div class="card glass-card" style="margin-bottom:16px">
@@ -6132,7 +6245,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-notifications" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="sendTestNotification()" title="Send a test notification to configured channels">&#9654; Test</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNotificationsCsv()" title="Export notifications as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNotifications()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Notifications</p>
+  <h1 class="apple-chapter-title">Notifications</h1>
+  <p class="apple-chapter-lede">Unread cluster warnings and failures</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="sendTestNotification()" title="Send a test notification to configured channels">&#9654; Test</button><button type="button" class="apple-btn-secondary" onclick="exportNotificationsCsv()" title="Export notifications as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchNotifications()">&#8635; Refresh</button>
+  </div>
+</header>
   
   <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span><span id="notif-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="notif-search" class="form-input" placeholder="Filter notifications…" oninput="filterNotificationsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" id="notif-mark-read-btn" class="glass-btn-secondary glass-btn-sm" onclick="markAllNotificationsRead()" title="Mark all notifications as read" style="display:none">✓ Mark all read</button></div>
@@ -6143,7 +6263,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-helm" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHelm()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Helm</p>
+  <h1 class="apple-chapter-title">Helm</h1>
+  <p class="apple-chapter-lede">Cluster-discovered Helm releases</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchHelm()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="helm-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span><span id="helm-filter-count" style="font-size:.78rem;color:var(--ink-2);white-space:nowrap;padding:0 4px"></span><input type="search" id="helm-search" class="form-input" placeholder="Filter releases…" oninput="filterHelmView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHelmCsv()" title="Export Helm releases as CSV">&#8595; CSV</button></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Chart</th><th>App Version</th><th>Status</th><th>Revision</th></tr></thead><tbody id="helm-body"></tbody></table>
@@ -6153,7 +6280,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-operators" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportOperatorsCsv()" title="Export operators as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchOperators()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Operators</p>
+  <h1 class="apple-chapter-title">Operators</h1>
+  <p class="apple-chapter-lede">Detected controllers and operator deployments</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportOperatorsCsv()" title="Export operators as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchOperators()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="operators-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Operators</span><span id="operators-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="operators-search" class="form-input" placeholder="Filter operators…" oninput="filterOperatorsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Version</th><th>Status</th><th>Managed Resources</th><th>Installed</th></tr></thead><tbody id="operators-body"></tbody></table>
@@ -6163,7 +6297,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-custom-resources" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCustomResources()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Custom Resources</p>
+  <h1 class="apple-chapter-title">Custom Resources</h1>
+  <p class="apple-chapter-lede">Installed CRDs and live instance counts</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchCustomResources()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="custom-resources-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span><span id="custom-resources-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="custom-resources-search" class="form-input" placeholder="Filter by name, group, kind…" oninput="filterCustomResourcesView(this.value)" style="width:220px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCustomResourcesCsv()" title="Export CRDs as CSV">&#8595; CSV</button></div>
   <table class="table"><thead><tr><th>Name</th><th>Group</th><th>Version</th><th>Kind</th><th>Scope</th><th>Instances</th></tr></thead><tbody id="custom-resources-body"></tbody></table>
@@ -6173,8 +6314,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><span id="slo-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap"></span><input type="search" id="slo-search" class="form-input" placeholder="Filter SLOs…" oninput="filterSloView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSloCsv()" title="Export SLOs as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSlo()">&#8635; Refresh</button></div></div>
+<header class="apple-chapter">
+  <p class="apple-chapter-kicker">SLO</p>
+  <h1 class="apple-chapter-title">SLO</h1>
+  <p class="apple-chapter-lede">Availability objectives, error budgets, and burn rates</p>
+  <div class="apple-chapter-cta">
+    <span id="slo-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap"></span><input type="search" id="slo-search" class="form-input" placeholder="Filter SLOs…" oninput="filterSloView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="apple-btn-secondary" onclick="exportSloCsv()" title="Export SLOs as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchSlo()">&#8635; Refresh</button>
+  </div>
+</header>
     
   <div id="slo-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron SLO Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('slo-advisor-card')">Dismiss</button></div>
@@ -6196,7 +6343,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-chaos" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportChaosCsv()" title="Export experiments as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchChaos()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Chaos</p>
+  <h1 class="apple-chapter-title">Chaos</h1>
+  <p class="apple-chapter-lede">Detected chaos experiments across installed chaos CRDs</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportChaosCsv()" title="Export experiments as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchChaos()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="chaos-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span><span id="chaos-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="chaos-search" class="form-input" placeholder="Filter experiments…" oninput="filterChaosView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Type</th><th>Namespace</th><th>Target</th><th>Status</th><th>Duration</th><th>Created</th></tr></thead><tbody id="chaos-body"></tbody></table>
@@ -6206,8 +6360,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-rbac" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><span id="rbac-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap"></span><input type="search" id="rbac-search" class="form-input" placeholder="Filter roles and bindings…" oninput="filterRbacView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportRbacCsv()" title="Export RBAC as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchRbac()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">RBAC</p>
+  <h1 class="apple-chapter-title">RBAC</h1>
+  <p class="apple-chapter-lede">Cluster roles and bindings</p>
+  <div class="apple-chapter-cta">
+    <span id="rbac-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap"></span><input type="search" id="rbac-search" class="form-input" placeholder="Filter roles and bindings…" oninput="filterRbacView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="apple-btn-secondary" onclick="exportRbacCsv()" title="Export RBAC as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchRbac()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="rbac-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="grid-2">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Roles</span></div>
@@ -6220,8 +6380,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-quotas" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Quotas</h1><p>Namespace quota usage</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportQuotasCsv()" title="Export quotas as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchQuotas()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runQuotaAdvisor()">Quota Advisor</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Quotas</p>
+  <h1 class="apple-chapter-title">Quotas</h1>
+  <p class="apple-chapter-lede">Namespace quota usage</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportQuotasCsv()" title="Export quotas as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchQuotas()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="runQuotaAdvisor()">Quota Advisor</button>
+  </div>
+</header>
     <div id="quotas-summary" class="grid-4 page-glass-stats"></div>
   <div id="quota-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Quota Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('quota-advisor-card')">Dismiss</button></div>
@@ -6234,7 +6400,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-ingress" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportIngressCsv()" title="Export ingress as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIngress()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Ingress</p>
+  <h1 class="apple-chapter-title">Ingress</h1>
+  <p class="apple-chapter-lede">Published ingress routes and TLS state</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportIngressCsv()" title="Export ingress as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchIngress()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="ingress-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span><span id="ingress-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="ingress-search" class="form-input" placeholder="Filter by name, namespace, host…" oninput="filterIngressView(this.value)" style="width:230px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th><th>Created</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
@@ -6243,7 +6416,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-hpa" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHpasCsv()" title="Export HPAs as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHpa()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">HPA</p>
+  <h1 class="apple-chapter-title">HPA</h1>
+  <p class="apple-chapter-lede">Horizontal pod autoscaler targets</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportHpasCsv()" title="Export HPAs as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchHpa()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="hpa-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span><span id="hpa-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="hpa-search" class="form-input" placeholder="Filter HPAs…" oninput="filterHpaView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Desired</th><th>Max</th></tr></thead><tbody id="hpa-body"></tbody></table></div>
@@ -6252,7 +6432,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-backups" data-section="storage">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportBackupsCsv()" title="Export backups as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchBackups()">&#8635; Refresh</button></div></div>
+<header class="apple-chapter">
+  <p class="apple-chapter-kicker">Backups</p>
+  <h1 class="apple-chapter-title">Backups</h1>
+  <p class="apple-chapter-lede">Snapshot-backed backups and restore points</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportBackupsCsv()" title="Export backups as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchBackups()">&#8635; Refresh</button>
+  </div>
+</header>
     
     <div id="backups-summary" class="grid-4 page-glass-stats"></div>
 <div class="card glass-card" id="backup-advisor-card" style="display:none;margin-bottom:16px">
@@ -6274,19 +6461,18 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-catalog" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header">
-    <div><h1>Template catalog</h1><p>Cluster VMTemplate / VMProfile CRDs vs embedded library</p></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCatalog()">&#8635; Refresh</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCatalogAdvisor()">Catalog Advisor</button>
-      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="catalogSync()">Sync cluster catalog</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCatalogPublishTemplate()">+ Publish template</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCatalogPublishProfile()">+ Publish profile</button>
-    </div></div>
-    <div id="catalog-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">Veyron Catalog Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('catalog-advisor-card')">Dismiss</button></div>
-    <div id="catalog-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
-  </div>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Catalog</p>
+    <h1 class="apple-chapter-title">Template catalog.</h1>
+    <p class="apple-chapter-lede">Cluster VMTemplate / VMProfile CRDs vs embedded library.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-secondary" onclick="fetchCatalog()">Refresh</button>
+      <button type="button" class="apple-btn-secondary" onclick="runCatalogAdvisor()">Catalog Advisor</button>
+      <button type="button" class="apple-btn-primary" onclick="catalogSync()">Sync cluster</button>
+      <button type="button" class="apple-btn-secondary" onclick="catalogExport()">Export YAML</button>
+    </div>
+  </header>
+
   <div id="catalog-summary" class="grid-4 page-glass-stats" style="margin-bottom:12px"></div>
   <div id="catalog-status-banner"></div>
   <div class="card glass-card">
@@ -6312,6 +6498,15 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-app-store" data-section="platform">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter" style="padding-bottom:1.5rem">
+    <p class="apple-chapter-kicker">Template Foundry</p>
+    <h1 class="apple-chapter-title" style="font-size:clamp(2.25rem,5vw,3.5rem)">Start with the right image.</h1>
+    <p class="apple-chapter-lede">Curated OS templates with UEFI, cloud-init, and guest tooling — launch in one click.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-primary" onclick="fetchAppStore()">Browse templates</button>
+      <button type="button" class="apple-btn-secondary" onclick="navigate('images')">Golden images</button>
+    </div>
+  </header>
   <div id="vmr-foundry-hero"></div>
   <div id="app-store-summary"></div>
   <div id="app-store-cap-banner"></div>
@@ -6350,6 +6545,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-console-hub" data-section="compute">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Console</p>
+    <h1 class="apple-chapter-title">Connect in one place.</h1>
+    <p class="apple-chapter-lede">VNC, serial, and guest access for every running machine.</p>
+  </header>
+
   <div id="vmr-console-hero"></div>
   <div class="vmr-console-hub-layout" id="vmr-console-hub-layout">
     <aside class="vmr-console-sidebar">
@@ -6413,6 +6614,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-stack-health" data-section="platform">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Stack Health</p>
+    <h1 class="apple-chapter-title">Platform pulse.</h1>
+    <p class="apple-chapter-lede">KubeVirt, CDI, and control-plane readiness at a glance.</p>
+  </header>
+
   <div id="vmr-stack-hero"></div>
   <div id="vmr-stack-body"></div>
 </div>
@@ -6420,6 +6627,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-vm-capsule" data-section="compute">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">VM Capsule</p>
+    <h1 class="apple-chapter-title">Focused machine view.</h1>
+    <p class="apple-chapter-lede">A single-VM workspace for day-2 operations.</p>
+  </header>
+
   <div id="vmr-capsule-hero-slot"></div>
   <div id="vmr-capsule-body"><div class="vmr-panel"><p style="color:var(--muted)">Select a VM from Fleet Command to open its capsule.</p><button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="navigate('vms')">Open Fleet Command</button></div></div>
 </div>
@@ -6427,6 +6640,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-network-intel" data-section="network">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Network Intel</p>
+    <h1 class="apple-chapter-title">Flows and policy.</h1>
+    <p class="apple-chapter-lede">Traffic insight across the virtual network fabric.</p>
+  </header>
+
   <div id="vmr-network-intel-hero"></div>
   <div id="vmr-network-intel-metrics"></div>
   <div class="card glass-card">
@@ -6458,9 +6677,15 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-integrations" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Integrations</h1><p>Optional observability, FinOps, security, and GitOps backends</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runIntegrationsAdvisor()">Integrations Advisor</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIntegrations()">Refresh</button></div>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Integrations</p>
+    <h1 class="apple-chapter-title">Connected backends.</h1>
+    <p class="apple-chapter-lede">Optional observability, FinOps, security, and GitOps backends.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-secondary" onclick="runIntegrationsAdvisor()">Integrations Advisor</button>
+      <button type="button" class="apple-btn-secondary" onclick="fetchIntegrations()">Refresh</button>
+    </div>
+  </header>
   <div id="integrations-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Integrations Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('integrations-advisor-card')">Dismiss</button></div>
     <div id="integrations-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -6474,7 +6699,16 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-metrics" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Metrics</h1><p>Cluster capacity and VM runtime totals</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMetrics()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('heatmap')">Heat Map</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('monitoring')">Monitoring</button></div></div>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Metrics</p>
+    <h1 class="apple-chapter-title">Cluster capacity and runtime.</h1>
+    <p class="apple-chapter-lede">Cluster capacity and VM runtime totals.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-secondary" onclick="fetchMetrics()">Refresh</button>
+      <button type="button" class="apple-btn-secondary" onclick="navigate('heatmap')">Heat Map</button>
+      <button type="button" class="apple-btn-secondary" onclick="navigate('monitoring')">Monitoring</button>
+    </div>
+  </header>
 
   <div id="metrics-summary" class="grid-4 page-glass-stats"></div>
   <div class="grid-2" style="gap:16px">
@@ -6525,8 +6759,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-mission-control" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Mission Control</h1><p>Cluster relationships at a glance — hosts, VMs, networks, and storage</p></div>
-    <div style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMissionControl()">Refresh</button></div></div>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Mission Control</p>
+    <h1 class="apple-chapter-title">Cluster at a glance.</h1>
+    <p class="apple-chapter-lede">Hosts, VMs, networks, and storage — relationships in one place.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-secondary" onclick="fetchMissionControl()">Refresh</button>
+    </div>
+  </header>
   <div id="mission-wall" class="mission-wall"></div>
   <div class="card glass-card zeus-glass"><div class="card-header"><span class="card-title">Topology</span></div>
   <div id="mission-topology-body" style="padding:12px;font-size:.84rem;color:var(--text-muted)">Loading…</div></div>
@@ -6545,7 +6785,15 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 <div class="page section-shell" id="page-topology" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="holo-orb-wrap holo-orb-mini" title="Fleet health"><canvas></canvas><div class="holo-orb-center"><div class="holo-orb-pct">—</div><div class="holo-orb-cap">FLEET</div></div><div class="holo-orb-tip"></div></div>
-  <div class="page-header"><div><h1>Topology Surface</h1><p>Capacity map — hosts as columns, VMs as blocks sized by resource footprint · drag to migrate</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportTopologyCsv()" title="Export topology as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTopology();fetchTopologySurface()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Topology</p>
+    <h1 class="apple-chapter-title">See capacity at a glance.</h1>
+    <p class="apple-chapter-lede">Hosts as columns, VMs as blocks sized by resource footprint — drag to migrate.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-secondary" onclick="exportTopologyCsv()" title="Export topology as CSV">CSV</button>
+      <button type="button" class="apple-btn-secondary" onclick="fetchTopology();fetchTopologySurface()">Refresh</button>
+    </div>
+  </header>
     <div id="topology-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <!-- vCenter killer: host-capacity surface -->
   <div id="ts-surface" style="margin-bottom:16px"></div>
@@ -6558,7 +6806,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-dependencies" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportDepsCsv()" title="Export dependencies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchDependencies()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Dependencies</p>
+  <h1 class="apple-chapter-title">Dependencies</h1>
+  <p class="apple-chapter-lede">VM dependency graph from labels and annotations</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportDepsCsv()" title="Export dependencies as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchDependencies()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="dependencies-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Dependency Edges</span><span id="deps-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="deps-search" class="form-input" placeholder="Filter edges…" oninput="filterDepsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>From</th><th>Type</th><th>To</th></tr></thead><tbody id="dependencies-body"></tbody></table></div>
@@ -6567,7 +6822,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-autoscaler" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAutoscalerCsv()" title="Export autoscaler policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAutoscaler()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Autoscaler</p>
+  <h1 class="apple-chapter-title">Autoscaler</h1>
+  <p class="apple-chapter-lede">Autoscaler policies inferred from HPAs</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportAutoscalerCsv()" title="Export autoscaler policies as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchAutoscaler()">&#8635; Refresh</button>
+  </div>
+</header>
     <div id="autoscaler-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><span id="autoscaler-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="autoscaler-search" class="form-input" placeholder="Filter policies…" oninput="filterAutoscalerView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>CPU%</th><th>Mem%</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
@@ -6576,8 +6838,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-forecasting" data-section="finops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportForecastingCsv()" title="Export predictions as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchForecasting()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Forecasting</p>
+  <h1 class="apple-chapter-title">Forecasting</h1>
+  <p class="apple-chapter-lede">Short-horizon capacity forecasts</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportForecastingCsv()" title="Export predictions as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchForecasting()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="runForecastAdvisor()">Forecast Advisor</button>
+  </div>
+</header>
     <div id="forecast-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Forecast Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('forecast-advisor-card')">Dismiss</button></div>
     <div id="forecast-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -6590,8 +6858,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-gitops" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>GitOps</h1><p>Repository sync status and drift visibility</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchGitOps()">&#8635; Refresh</button><button type="button" id="gitops-sync-btn" class="glass-btn-primary glass-btn-sm" onclick="triggerGitOpsSync()">⟳ Sync</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runGitOpsAdvisor()">GitOps Advisor</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">GitOps</p>
+  <h1 class="apple-chapter-title">GitOps</h1>
+  <p class="apple-chapter-lede">Repository sync status and drift visibility</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchGitOps()">&#8635; Refresh</button><button type="button" id="gitops-sync-btn" class="apple-btn-primary" onclick="triggerGitOpsSync()">⟳ Sync</button><button type="button" class="apple-btn-secondary" onclick="runGitOpsAdvisor()">GitOps Advisor</button>
+  </div>
+</header>
     <div id="gitops-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron GitOps Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('gitops-advisor-card')">Dismiss</button></div>
     <div id="gitops-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -6604,20 +6878,26 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-ask-zyra" data-section="ai">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Ask Zyra</h1><p>AI fleet intelligence — VMs, storage, security, costs, and more</p></div>
-    <div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azNewChat()">New chat</button></div></div>
+  <header class="apple-chapter" style="padding-bottom:1.25rem">
+    <p class="apple-chapter-kicker">Ask Zyra</p>
+    <h1 class="apple-chapter-title" style="font-size:clamp(2.25rem,5vw,3.5rem)">Intelligence for every machine.</h1>
+    <p class="apple-chapter-lede">Ask about fleet health, storage, security, and cost — Zyra answers with live cluster context.</p>
+  </header>
+  <div class="apple-chapter-cta" style="padding-bottom:1rem">
+    <button type="button" class="apple-btn-secondary" onclick="azNewChat()">New chat</button>
+  </div>
   <div class="card glass-card" style="max-width:860px">
     <div id="az-thread" class="copilot-thread" style="min-height:280px;max-height:460px;overflow-y:auto;padding:16px"></div>
     <div style="padding:12px 16px;border-top:1px solid var(--glass-border);display:flex;flex-direction:column;gap:8px">
       <textarea class="form-input" id="az-input" rows="2" placeholder="Ask Zyra… fleet health, VMs, storage, security" style="width:100%;font-size:.9rem" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){event.preventDefault();azSend();}"></textarea>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <button type="button" class="glass-btn-primary glass-btn-sm" onclick="azSend()">Send</button>
-        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Show all unhealthy VMs')">Unhealthy VMs</button>
-        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Which VMs have no backups?')">Backups</button>
-        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Which PVCs are almost full?')">Storage</button>
-        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Node capacity and pressure')">Nodes</button>
-        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Security review for production VMs')">Security</button>
-        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Which VMs are most expensive?')">Costs</button>
+        <button type="button" class="apple-btn-primary" onclick="azSend()">Send</button>
+        <button type="button" class="apple-btn-secondary" onclick="azChip('Show all unhealthy VMs')">Unhealthy VMs</button>
+        <button type="button" class="apple-btn-secondary" onclick="azChip('Which VMs have no backups?')">Backups</button>
+        <button type="button" class="apple-btn-secondary" onclick="azChip('Which PVCs are almost full?')">Storage</button>
+        <button type="button" class="apple-btn-secondary" onclick="azChip('Node capacity and pressure')">Nodes</button>
+        <button type="button" class="apple-btn-secondary" onclick="azChip('Security review for production VMs')">Security</button>
+        <button type="button" class="apple-btn-secondary" onclick="azChip('Which VMs are most expensive?')">Costs</button>
       </div>
     </div>
   </div>
@@ -6626,7 +6906,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-scheduling" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchScheduling()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Scheduling</p>
+  <h1 class="apple-chapter-title">Scheduling</h1>
+  <p class="apple-chapter-lede">Pending workload pressure and node schedulability</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchScheduling()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button>
+  </div>
+</header>
     <div id="scheduling-fleet-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Scheduling Fleet</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('scheduling-fleet-advisor-card')">Dismiss</button></div>
     <div id="scheduling-fleet-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -6642,6 +6929,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-cilium" data-section="network">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Cilium</p>
+    <h1 class="apple-chapter-title">Network brain.</h1>
+    <p class="apple-chapter-lede">Cilium connectivity, policies, and PacketWolf status.</p>
+  </header>
+
   <div id="vmr-cilium-hero"></div>
   <div class="page-header vmr-legacy-page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC. Live Hubble intelligence: <strong>PacketWolf</strong> when <code>VEYRON_PACKETWOLF_URL</code> is wired.</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" id="cilium-packetwolf-open" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">Open PacketWolf</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCilium()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
   <div id="cilium-packetwolf-banner" class="veyron-cap-banner glass-banner vmr-cilium-pw-banner" style="display:none;margin-bottom:16px" role="status"></div>
@@ -6674,12 +6967,18 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-observability" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Observability</h1><p>Metrics, logs, and trace pipeline overview</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchObservability()">&#8635; Refresh</button></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runObservabilityAdvisor()">Observability Advisor</button></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Observability</p>
+  <h1 class="apple-chapter-title">Observability</h1>
+  <p class="apple-chapter-lede">Metrics, logs, and trace pipeline overview</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchObservability()">&#8635; Refresh</button></div>
+    <button type="button" class="apple-btn-secondary" onclick="runObservabilityAdvisor()">Observability Advisor</button></div>
     <div id="observability-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">Veyron Observability Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('observability-advisor-card')">Dismiss</button></div>
-    <div id="observability-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+    <div class="card-header"><span class="card-title">Veyron Observability Advisor</span><button type="button" class="apple-btn-secondary" onclick="dismissAdvisorCard('observability-advisor-card')">Dismiss</button></div>
+    <div id="observability-advisor-body" style="padding:12px 16px;font-size:.88rem">
   </div>
+</header>
   <div id="observability-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card" style="margin-top:16px">
     <div class="card-header"><span class="card-title">Pipeline Detail</span></div>
@@ -6690,8 +6989,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-performance" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Performance</h1><p>Live VM performance profiles and CPU flamegraphs</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPerformance()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Performance</p>
+  <h1 class="apple-chapter-title">Performance</h1>
+  <p class="apple-chapter-lede">Live VM performance profiles and CPU flamegraphs</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchPerformance()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="runPerformanceAdvisor()">Performance Advisor</button>
+  </div>
+</header>
     <div id="performance-page-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('performance-page-advisor-card')">Dismiss</button></div>
     <div id="performance-page-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -6717,7 +7022,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-webhooks" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportWebhooksCsv()" title="Export webhooks as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWebhooks()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Webhooks</p>
+  <h1 class="apple-chapter-title">Webhooks</h1>
+  <p class="apple-chapter-lede">Configured outbound automation hooks</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportWebhooksCsv()" title="Export webhooks as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchWebhooks()">&#8635; Refresh</button>
+  </div>
+</header>
   
   <div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span><span id="webhooks-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="webhooks-search" class="form-input" placeholder="Filter webhooks…" oninput="filterWebhooksView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Active</th><th>Secret</th><th>Failures</th></tr></thead><tbody id="webhooks-body"></tbody></table></div>
@@ -6726,14 +7038,18 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-compliance" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Compliance</h1><p>Framework scores from VM spec and cluster policy signals</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;align-items:center">
-      <input type="search" id="compliance-search" class="form-input" placeholder="Filter frameworks or reports…" oninput="filterComplianceView(this.value)" style="width:230px;font-size:.82rem">
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Compliance</p>
+  <h1 class="apple-chapter-title">Compliance</h1>
+  <p class="apple-chapter-lede">Framework scores from VM spec and cluster policy signals</p>
+  <div class="apple-chapter-cta">
+    <input type="search" id="compliance-search" class="form-input" placeholder="Filter frameworks or reports…" oninput="filterComplianceView(this.value)" style="width:230px;font-size:.82rem">
       <span id="compliance-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportComplianceCsv()" title="Export compliance as CSV">&#8595; CSV</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCompliance()">&#8635; Refresh</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runComplianceAdvisor()">Compliance Advisor</button>
-    </div></div>
+      <button type="button" class="apple-btn-secondary" onclick="exportComplianceCsv()" title="Export compliance as CSV">&#8595; CSV</button>
+      <button type="button" class="apple-btn-secondary" onclick="fetchCompliance()">&#8635; Refresh</button>
+      <button type="button" class="apple-btn-secondary" onclick="runComplianceAdvisor()">Compliance Advisor</button>
+  </div>
+</header>
     <div id="compliance-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Compliance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('compliance-advisor-card')">Dismiss</button></div>
     <div id="compliance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -6749,11 +7065,16 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-dr" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Disaster Recovery</h1><p>Export manifests and apply failover on this cluster</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;flex-wrap:wrap">
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVelero()">&#8635; Refresh</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runVeleroDrAdvisor()">Velero DR Advisor</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runMigrationAdvisor()">Migration Advisor</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Disaster Recovery</p>
+  <h1 class="apple-chapter-title">Disaster Recovery</h1>
+  <p class="apple-chapter-lede">Export manifests and apply failover on this cluster</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchVelero()">&#8635; Refresh</button>
+    <button type="button" class="apple-btn-secondary" onclick="runVeleroDrAdvisor()">Velero DR Advisor</button>
+    <button type="button" class="apple-btn-secondary" onclick="runMigrationAdvisor()">Migration Advisor</button>
+  </div>
+</header>
     <div id="velero-dr-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Velero DR Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('velero-dr-advisor-card')">Dismiss</button></div>
     <div id="velero-dr-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -6782,8 +7103,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-heatmap" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Resource Heatmap</h1><p>Per-node utilization heuristics from capacity vs VM density</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHeatmapCsv()" title="Export heatmap as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHeatmap()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Heatmap</p>
+  <h1 class="apple-chapter-title">Resource Heatmap</h1>
+  <p class="apple-chapter-lede">Per-node utilization heuristics from capacity vs VM density</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportHeatmapCsv()" title="Export heatmap as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchHeatmap()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="runNodeAdvisor()">Node Advisor</button>
+  </div>
+</header>
     <div id="heatmap-cap-banner"></div>
   <div id="heatmap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card" style="margin-bottom:10px">
@@ -6805,7 +7132,11 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-custom-dashboards" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Custom Dashboards</h1><p>ConfigMap-backed panel layouts (veyron.io/type=dashboard)</p></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Dashboards</p>
+  <h1 class="apple-chapter-title">Custom Dashboards</h1>
+  <p class="apple-chapter-lede">ConfigMap-backed panel layouts (veyron.io/type=dashboard)</p>
+</header>
     <div id="custom-dashboards-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Saved dashboards</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Description</th><th>Panels</th><th>Author</th><th>Updated</th></tr></thead><tbody id="custom-dashboards-body"></tbody></table></div>
@@ -6814,8 +7145,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-network-policies" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Network Policies</h1><p>Kubernetes NetworkPolicy inventory in namespace scope</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNetpolCsv()" title="Export policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkPolicies()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('cilium')">Open Cilium</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Network Policies</p>
+  <h1 class="apple-chapter-title">Network Policies</h1>
+  <p class="apple-chapter-lede">Kubernetes NetworkPolicy inventory in namespace scope</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportNetpolCsv()" title="Export policies as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchNetworkPolicies()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="navigate('cilium')">Open Cilium</button>
+  </div>
+</header>
     <div id="netpol-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><span id="netpol-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="netpol-search" class="form-input" placeholder="Filter policies…" oninput="filterNetpolView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Types</th><th>Ingress rules</th><th>Egress rules</th><th>Created</th></tr></thead><tbody id="netpol-body"></tbody></table></div>
@@ -6824,8 +7161,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-images" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Golden Images</h1><p>Import an OS image, publish it as a versioned golden image, clone VMs from it</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportImagesCsv()" title="Export images as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchImages();fetchDataSources()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openImageUploadModal()" title="Upload a local ISO/QCOW2 via CDI upload proxy">&#8593; Upload ISO</button><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImageImportModal()">+ Import DataVolume</button></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Images</p>
+  <h1 class="apple-chapter-title">Golden Images</h1>
+  <p class="apple-chapter-lede">Import an OS image, publish it as a versioned golden image, clone VMs from it</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportImagesCsv()" title="Export images as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchImages();fetchDataSources()">&#8635; Refresh</button><button type="button" class="apple-btn-secondary" onclick="openImageUploadModal()" title="Upload a local ISO/QCOW2 via CDI upload proxy">&#8593; Upload ISO</button><button type="button" class="apple-btn-primary" onclick="openImageImportModal()">+ Import DataVolume</button>
   </div>
+</header>
     <div id="images-cap-banner"></div>
   <div id="images-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Published golden images</span><span style="font-size:.78rem;color:var(--text-muted);padding:0 4px">DataSources — the stable handle VMs clone from</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchDataSources()">&#8635; Refresh</button></div>
@@ -6841,13 +7184,16 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-traces" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header">
-    <div><h1>Traces</h1><p>Cluster activity shaped as trace rows from Kubernetes Events (not a Jaeger/OTel backend)</p></div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input id="traces-search" class="toolbar-input" style="width:220px" placeholder="Trace ID, service, operation…" oninput="filterTraces()">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTraces()">&#8635; Refresh</button>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Traces</p>
+    <h1 class="apple-chapter-title">Activity as traces.</h1>
+    <p class="apple-chapter-lede">Cluster activity shaped as trace rows from Kubernetes Events.</p>
+    <div class="apple-chapter-cta">
+      <input id="traces-search" class="form-input" style="width:220px;min-height:2.75rem" placeholder="Trace ID, service, operation…" oninput="filterTraces()">
+      <button type="button" class="apple-btn-secondary" onclick="fetchTraces()">Refresh</button>
     </div>
-  </div>
+  </header>
+
     <div id="traces-cap-banner"></div>
   <div id="traces-stats" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
@@ -6863,33 +7209,42 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-logs" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header">
-    <div><h1>Log Explorer</h1><p>Virt-launcher pod logs (vm.kubevirt.io/name) — not a full cluster Loki/ELK view</p></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <select id="logs-level-filter" class="toolbar-input" onchange="fetchLogs()">
-        <option value="">All Levels</option>
-        <option value="error">Error</option>
-        <option value="warn">Warn</option>
-        <option value="info">Info</option>
-        <option value="debug">Debug</option>
-      </select>
-      <input id="logs-vm-filter" class="toolbar-input" style="width:140px" placeholder="VM name…">
-      <input id="logs-container-filter" class="toolbar-input" style="width:130px" placeholder="Container…">
-      <input id="logs-search" class="toolbar-input" style="width:200px" placeholder="Search logs…" oninput="fetchLogs()">
-      <input id="logs-tail-lines" class="toolbar-input" style="width:80px" placeholder="Lines" value="200">
-      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="queryLogs()">Query</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchLogs()">&#8635; Refresh</button>
-    </div>
-  </div>
-    <div id="logs-cap-banner"></div>
-  <div id="logs-stats" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card">
-    <div class="card-header">
-      <span class="card-title">Log Stream</span>
-      <span class="glass-badge running" style="font-size:.74rem">● LIVE</span>
-    </div>
-    <div id="logs-stream" style="font-family:var(--font-mono);font-size:.72em;max-height:480px;overflow-y:auto;padding:12px 18px;line-height:1.8;color:var(--text)">
-      <div style="color:var(--text-dim);text-align:center;padding:40px">Connect log aggregator or wire up VM serial console to stream logs</div>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Logs</p>
+    <h1 class="apple-chapter-title">Console.</h1>
+    <p class="apple-chapter-lede">macOS Console–style viewer for virt-launcher pod logs — filter, stream, and download.</p>
+  </header>
+  <div id="logs-cap-banner"></div>
+  <div class="console-app" id="console-app">
+    <aside class="console-sidebar" aria-label="Log sources">
+      <div class="console-sidebar-title">Sources</div>
+      <button type="button" class="console-source active" data-console-source="" onclick="selectConsoleSource(this)">All VMs</button>
+      <div id="console-source-list"></div>
+    </aside>
+    <div class="console-main">
+      <div class="console-toolbar">
+        <input id="logs-search" class="toolbar-input" style="flex:1;min-width:160px" placeholder="Search messages…" onkeydown="if(event.key==='Enter')queryLogs()">
+        <select id="logs-level-filter" class="toolbar-input" onchange="fetchLogs()">
+          <option value="">All Types</option>
+          <option value="error">Error / Fault</option>
+          <option value="warn">Warn</option>
+          <option value="info">Info</option>
+          <option value="debug">Debug</option>
+        </select>
+        <input type="hidden" id="logs-vm-filter" value="">
+        <input type="hidden" id="logs-container-filter" value="">
+        <input id="logs-tail-lines" class="toolbar-input" style="width:72px" title="Tail lines" value="200">
+        <button type="button" class="glass-btn-secondary glass-btn-sm" id="console-stream-btn" onclick="toggleConsoleStream()">Pause</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="clearConsoleStream()">Clear</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="downloadConsoleLogs()">Download</button>
+        <button type="button" class="glass-btn-primary glass-btn-sm" onclick="queryLogs()">Query</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchLogs()">Refresh</button>
+      </div>
+      <div id="logs-stats" style="display:none"></div>
+      <div id="logs-stream" class="console-stream console-tty" role="log" aria-live="polite">
+        <div class="console-empty">Select a source or press Refresh to load virt-launcher logs</div>
+      </div>
+      <div id="console-detail" class="console-detail" aria-live="polite">Select a message for details</div>
     </div>
   </div>
 </div>
@@ -6897,7 +7252,14 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-incidents" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Incidents</h1><p>Warning Events plus simple SLO hints — not Alertmanager or a ticketing queue</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportIncidentsCsv()" title="Export incidents as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIncidents()">&#8635; Refresh</button></div></div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Incidents</p>
+  <h1 class="apple-chapter-title">Incidents</h1>
+  <p class="apple-chapter-lede">Warning Events plus simple SLO hints — not Alertmanager or a ticketing queue</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="exportIncidentsCsv()" title="Export incidents as CSV">&#8595; CSV</button><button type="button" class="apple-btn-secondary" onclick="fetchIncidents()">&#8635; Refresh</button>
+  </div>
+</header>
   
   <div id="incidents-cap-banner"></div>
   <div id="incidents-stats" class="grid-4 page-glass-stats"></div>
@@ -6926,6 +7288,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-reactor" data-section="compute">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Reactor</p>
+    <h1 class="apple-chapter-title">Live compute core.</h1>
+    <p class="apple-chapter-lede">A three-dimensional view of fleet energy and load.</p>
+  </header>
+
   <h2 class="sr-only">Reactor Core — the fleet as one living instrument: orbital rings per node, VM particles by status, a core that breathes with fleet health.</h2>
   <div style="font-family:var(--font-sans);color:var(--text);padding:.5rem 0">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
@@ -6947,6 +7315,12 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-fleet-constellation" data-section="compute">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Fleet</p>
+    <h1 class="apple-chapter-title">Constellation.</h1>
+    <p class="apple-chapter-lede">Every machine as a point in the fleet sky.</p>
+  </header>
+
   <h2 class="sr-only">Spatial fleet view showing virtual machines as objects positioned by node, sized by load, with live telemetry.</h2>
   <div class="holo-orb-wrap holo-orb-mini" title="Fleet health"><canvas></canvas><div class="holo-orb-center"><div class="holo-orb-pct">—</div><div class="holo-orb-cap">FLEET</div></div><div class="holo-orb-tip"></div></div>
   <div style="font-family:var(--font-sans);color:var(--text);padding:.5rem 0">
@@ -7002,6 +7376,11 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-gallery-wall" data-section="compute">
 <div class="space-y animate-fade-in">
+  <header class="apple-chapter" style="padding-bottom:1rem">
+    <p class="apple-chapter-kicker">Gallery Wall</p>
+    <h1 class="apple-chapter-title" style="font-size:clamp(2.25rem,5vw,3.5rem)">See every machine at a glance.</h1>
+    <p class="apple-chapter-lede">A living wall of your fleet — health, console, and context without leaving the page.</p>
+  </header>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
 #page-gallery-wall{--gw-void:#05070d;--gw-abyss:#080b13;--gw-deep:#0b0f1a;--gw-panel:#0f1422;--gw-panel2:#141b2c;--gw-raised:#1a2336;--gw-raised2:#212c44;--gw-line:#1c2536;--gw-line2:#28344c;--gw-lineb:#37496c;--gw-ink:#eef3fb;--gw-ink2:#a3b3cd;--gw-ink3:#63749a;--gw-ink4:#3f4d6b;--gw-bolt:#4f8bff;--gw-bolt2:#7aa2ff;--gw-boltd:#2f5fd0;--gw-arc:#9a7cff;--gw-arc2:#b69dff;--gw-ok:#3ddc8f;--gw-ok-bg:rgba(61,220,143,.09);--gw-ok-ln:rgba(61,220,143,.3);--gw-warn:#ffb648;--gw-warn-bg:rgba(255,182,72,.1);--gw-warn-ln:rgba(255,182,72,.32);--gw-crit:#ff5d6c;--gw-crit-bg:rgba(255,93,108,.1);--gw-crit-ln:rgba(255,93,108,.34);--gw-idle:#63749a;--gw-ease:cubic-bezier(.2,.8,.2,1);--gw-ease-out:cubic-bezier(.16,1,.3,1)}
@@ -7972,195 +8351,79 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
   </div>
 </div>
 
-<!-- API KEY MODAL — Machina premium split-hero login -->
+<!-- API KEY MODAL — Apple Store chapter login (Veyron) -->
 <div class="modal-overlay mac-signin-overlay" id="apikey-modal">
-  <div class="login-page login-page-steel login-accent-steel">
-    <div class="login-aurora" aria-hidden="true"></div>
-    <div class="login-scanline" aria-hidden="true"></div>
-
-    <!-- ── Left hero panel ── -->
-    <aside class="login-hero">
-      <div class="login-hero-mesh" aria-hidden="true"></div>
-      <div class="login-spotlight" aria-hidden="true"></div>
-      <!-- orbs -->
-      <div class="login-orb login-orb-blue"   style="width:340px;height:340px;top:4%;left:6%;--login-delay:0s;--login-duration:11s"   aria-hidden="true"></div>
-      <div class="login-orb login-orb-violet" style="width:220px;height:220px;top:55%;left:12%;--login-delay:2.2s;--login-duration:13s" aria-hidden="true"></div>
-      <div class="login-orb login-orb-cyan"   style="width:180px;height:180px;top:18%;left:58%;--login-delay:0.8s;--login-duration:9s"  aria-hidden="true"></div>
-      <div class="login-orb login-orb-red"    style="width:400px;height:400px;top:58%;left:68%;--login-delay:3.2s;--login-duration:15s" aria-hidden="true"></div>
-      <!-- particles -->
-      <div class="login-particles" aria-hidden="true">
-        <span class="login-particle" style="left:7%;top:11%;width:2px;height:2px;animation-delay:0s"></span>
-        <span class="login-particle" style="left:24%;top:34%;width:3px;height:3px;animation-delay:0.45s"></span>
-        <span class="login-particle" style="left:41%;top:57%;width:4px;height:4px;animation-delay:0.9s"></span>
-        <span class="login-particle" style="left:58%;top:80%;width:2px;height:2px;animation-delay:1.35s"></span>
-        <span class="login-particle" style="left:75%;top:3%;width:3px;height:3px;animation-delay:1.8s"></span>
-        <span class="login-particle" style="left:92%;top:26%;width:4px;height:4px;animation-delay:2.25s"></span>
-        <span class="login-particle" style="left:9%;top:49%;width:2px;height:2px;animation-delay:2.7s"></span>
-        <span class="login-particle" style="left:26%;top:72%;width:3px;height:3px;animation-delay:0s"></span>
-        <span class="login-particle" style="left:43%;top:95%;width:4px;height:4px;animation-delay:0.45s"></span>
-        <span class="login-particle" style="left:60%;top:18%;width:2px;height:2px;animation-delay:0.9s"></span>
-        <span class="login-particle" style="left:77%;top:41%;width:3px;height:3px;animation-delay:1.35s"></span>
-        <span class="login-particle" style="left:94%;top:64%;width:4px;height:4px;animation-delay:1.8s"></span>
-        <span class="login-particle" style="left:11%;top:87%;width:2px;height:2px;animation-delay:2.25s"></span>
-        <span class="login-particle" style="left:28%;top:10%;width:3px;height:3px;animation-delay:2.7s"></span>
-        <span class="login-particle" style="left:45%;top:33%;width:4px;height:4px;animation-delay:0s"></span>
-        <span class="login-particle" style="left:62%;top:56%;width:2px;height:2px;animation-delay:0.45s"></span>
-        <span class="login-particle" style="left:79%;top:79%;width:3px;height:3px;animation-delay:0.9s"></span>
-        <span class="login-particle" style="left:96%;top:2%;width:4px;height:4px;animation-delay:1.35s"></span>
-        <span class="login-particle" style="left:13%;top:25%;width:2px;height:2px;animation-delay:1.8s"></span>
-        <span class="login-particle" style="left:30%;top:48%;width:3px;height:3px;animation-delay:2.25s"></span>
-        <span class="login-particle" style="left:47%;top:71%;width:4px;height:4px;animation-delay:2.7s"></span>
-        <span class="login-particle" style="left:64%;top:94%;width:2px;height:2px;animation-delay:0s"></span>
-        <span class="login-particle" style="left:81%;top:17%;width:3px;height:3px;animation-delay:0.45s"></span>
-        <span class="login-particle" style="left:98%;top:40%;width:4px;height:4px;animation-delay:0.9s"></span>
-        <span class="login-particle" style="left:15%;top:63%;width:2px;height:2px;animation-delay:1.35s"></span>
-        <span class="login-particle" style="left:32%;top:86%;width:3px;height:3px;animation-delay:1.8s"></span>
-        <span class="login-particle" style="left:49%;top:9%;width:4px;height:4px;animation-delay:2.25s"></span>
-        <span class="login-particle" style="left:66%;top:32%;width:2px;height:2px;animation-delay:2.7s"></span>
-      </div>
-
-      <!-- hero content: logo + headline + pills -->
-      <div style="position:relative;z-index:10">
-        <div class="login-fade-in" style="display:flex;align-items:center;gap:16px;margin-bottom:40px">
-          <div class="login-logo-ring login-logo-mark" style="width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:1.35rem;font-weight:800;color:#fff;flex-shrink:0">V</div>
-          <div>
-            <span class="login-brand-name text-white" style="color:#fff">Veyron</span>
-            <span class="login-brand-sub" style="margin-top:4px;display:block">VM command center</span>
+  <div class="login-page login-store-page">
+    <div class="login-store-scroll" id="login-store-scroll">
+      <section class="login-chapter login-chapter-hero" aria-label="Veyron">
+        <div class="login-chapter-inner">
+          <p class="login-wordmark">Veyron</p>
+          <h1 class="login-hero-title">Designed for your fleet.</h1>
+          <p class="login-tagline">KubeVirt-native private cloud — provision, monitor, secure, and operate virtual machines from one console.</p>
+          <div class="login-cta">
+            <button type="button" class="login-cta-primary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Sign in</button>
+            <button type="button" class="login-cta-secondary" onclick="navigate('dashboard'); document.getElementById('apikey-modal')?.classList.remove('open')">Learn more</button>
           </div>
+          <p class="login-chapter-note">KubeVirt · Kubernetes · Snapshots · DR</p>
         </div>
-        <h2 class="login-fade-in login-fade-in-d1 login-hero-headline" style="color:#fff;margin:0 0 16px;max-width:480px">
-          Your VM fleet,<br><span class="login-text-gradient">one pane of glass</span>
-        </h2>
-        <p class="login-fade-in login-fade-in-d2 login-hero-copy" style="max-width:440px;margin:0">
-          KubeVirt-native management — provision, monitor, secure, and operate virtual machines at cluster scale.
-        </p>
-        <div class="login-fade-in login-fade-in-d3" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:28px">
-          <span class="login-stat-pill login-stat-pill-glow">Signed-in access</span>
-          <span class="login-stat-pill">TLS secured</span>
-          <span class="login-stat-pill">KubeVirt · Snapshots · DR</span>
-        </div>
-      </div>
-
-      <!-- feature list -->
-      <div class="login-feature-list login-feature-scroll" style="position:relative;z-index:10;max-height:42vh;overflow-y:auto">
-        <div class="login-feature-row login-fade-in" style="display:flex;gap:14px;align-items:flex-start;padding:14px 0;animation-delay:.28s;opacity:0">
-          <div class="login-feature-icon" style="background:rgba(100,160,220,.2);color:#93c5fd;font-size:.65rem;font-weight:700">VM</div>
-          <div><div style="font-size:.875rem;font-weight:600;color:#fff">VM Fleet</div><p style="font-size:.75rem;margin:4px 0 0;color:rgba(255,255,255,.45);line-height:1.5">Provision, start/stop, resize, and live-migrate across namespaces</p></div>
-        </div>
-        <div class="login-feature-row login-fade-in" style="display:flex;gap:14px;align-items:flex-start;padding:14px 0;animation-delay:.34s;opacity:0">
-          <div class="login-feature-icon" style="background:rgba(78,173,138,.2);color:#6ee7b7;font-size:.65rem;font-weight:700">SNAP</div>
-          <div><div style="font-size:.875rem;font-weight:600;color:#fff">Snapshots &amp; Backup</div><p style="font-size:.75rem;margin:4px 0 0;color:rgba(255,255,255,.45);line-height:1.5">Point-in-time snapshots, retention, and one-click restore</p></div>
-        </div>
-        <div class="login-feature-row login-fade-in" style="display:flex;gap:14px;align-items:flex-start;padding:14px 0;animation-delay:.4s;opacity:0">
-          <div class="login-feature-icon" style="background:rgba(149,128,212,.2);color:#c4b5fd;font-size:.65rem;font-weight:700">SOC</div>
-          <div><div style="font-size:.875rem;font-weight:600;color:#fff">SOC &amp; Security</div><p style="font-size:.75rem;margin:4px 0 0;color:rgba(255,255,255,.45);line-height:1.5">Detection rules, SIEM export, and compliance timeline</p></div>
-        </div>
-        <div class="login-feature-row login-fade-in" style="display:flex;gap:14px;align-items:flex-start;padding:14px 0;animation-delay:.46s;opacity:0">
-          <div class="login-feature-icon" style="background:rgba(212,145,90,.2);color:#fdba74;font-size:.65rem;font-weight:700">$</div>
-          <div><div style="font-size:.875rem;font-weight:600;color:#fff">Cost &amp; Chargeback</div><p style="font-size:.75rem;margin:4px 0 0;color:rgba(255,255,255,.45);line-height:1.5">Per-namespace cost, budgets, and chargeback reports</p></div>
-        </div>
-      </div>
-
-      <!-- hero footer -->
-      <div class="login-fade-in login-fade-in-d4" style="display:flex;align-items:center;gap:24px;font-size:.75rem;color:rgba(255,255,255,.35);position:relative;z-index:10">
-        <span>Session secured</span>
-        <span style="width:1px;height:12px;background:rgba(255,255,255,.12)"></span>
-        <span>KubeVirt · Kubernetes</span>
-      </div>
-    </aside>
-
-    <!-- ── Animated beam divider ── -->
-    <div class="login-beam login-beam-w58" aria-hidden="true"></div>
-
-    <!-- ── Right form panel ── -->
-    <main class="login-panel" aria-label="Sign in to Veyron">
-      <div class="login-panel-grid" aria-hidden="true"></div>
-      <div class="login-panel-glow" aria-hidden="true"></div>
-      <div style="width:100%;max-width:420px;position:relative;z-index:10">
-        <div style="margin-bottom:32px">
-          <h2 class="login-panel-title" style="color:#fff;margin:0 0 6px">Sign in</h2>
-          <p class="login-panel-sub" style="margin:0" id="login-panel-sub">Sign in with your username and password</p>
-        </div>
-
-        <div class="login-glass login-glass-border">
-          <!-- auth mode badge -->
-          <div style="margin-bottom:20px">
-            <span id="login-mode-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4)">
-              Username &amp; password
-            </span>
-          </div>
-
-          <!-- inline error (shown on bad credentials) -->
-          <div id="apikey-error" role="alert" style="display:none;align-items:flex-start;gap:8px;background:var(--critical-bg);border:1px solid rgba(226,75,74,.4);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:.8rem;color:var(--critical);line-height:1.45">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span id="apikey-error-msg">Invalid username or password.</span>
-          </div>
-
-          <!-- SSO section (shown when OIDC configured) -->
-          <div id="oidc-login-section" style="display:none;margin-bottom:16px">
-            <button type="button" class="login-btn-secondary" style="width:100%;text-align:center" onclick="startOidcLogin()">Sign in with SSO</button>
-            <div class="auth-divider">or sign in below</div>
-          </div>
-
-          <!-- username field -->
-          <div style="margin-bottom:20px" id="login-username-row">
-            <label style="display:block;font-size:.875rem;font-weight:500;color:#cbd5e1;margin-bottom:8px" for="login-username-input">Username</label>
-            <div style="position:relative" class="group">
-              <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <input type="text" class="login-input" id="login-username-input" placeholder="e.g. jordan" autocomplete="username" autofocus>
+      </section>
+      <section class="login-chapter login-chapter-sign-in" id="login-chapter-signin" aria-label="Sign in to Veyron">
+        <div class="login-chapter-inner login-sign-in-inner">
+          <h2 class="login-form-heading">Sign in to Veyron</h2>
+          <div class="login-card" id="login-glass-card">
+            <div style="margin-bottom:16px">
+              <span id="login-mode-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6e6e73">Username &amp; password</span>
+              <p class="login-panel-sub" id="login-panel-sub" style="margin:6px 0 0;font-size:.84rem;color:#6e6e73">Sign in with your username and password</p>
             </div>
-          </div>
-
-          <!-- password / API key field (relabeled per login-mode) -->
-          <div style="margin-bottom:20px">
-            <label style="display:block;font-size:.875rem;font-weight:500;color:#cbd5e1;margin-bottom:8px" for="apikey-input" id="apikey-input-label">Password</label>
-            <div style="position:relative" class="group">
-              <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input type="password" class="login-input" id="apikey-input" placeholder="Enter your password" autocomplete="current-password">
-              <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide" aria-label="Show/hide password" style="right:14px;color:#64748b">&#128065;</button>
+            <div id="apikey-error" role="alert" style="display:none;align-items:flex-start;gap:8px;background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.35);border-radius:12px;padding:10px 12px;margin-bottom:16px;font-size:.8rem;color:#ff3b30;line-height:1.45">
+              <span id="apikey-error-msg">Invalid username or password.</span>
             </div>
+            <div id="oidc-login-section" style="display:none;margin-bottom:16px">
+              <button type="button" class="login-btn-secondary" style="width:100%;text-align:center" onclick="startOidcLogin()">Sign in with SSO</button>
+              <div class="auth-divider">or sign in below</div>
+            </div>
+            <div style="margin-bottom:16px" id="login-username-row">
+              <label for="login-username-input">Username</label>
+              <div style="position:relative">
+                <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <input type="text" class="login-input" id="login-username-input" placeholder="e.g. jordan" autocomplete="username" autofocus>
+              </div>
+            </div>
+            <div style="margin-bottom:12px">
+              <label for="apikey-input" id="apikey-input-label">Password</label>
+              <div style="position:relative">
+                <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input type="password" class="login-input" id="apikey-input" placeholder="Enter your password" autocomplete="current-password">
+                <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide" aria-label="Show/hide password">&#128065;</button>
+              </div>
+            </div>
+            <div class="remember-row">
+              <input type="checkbox" id="apikey-remember">
+              <label for="apikey-remember">Remember me on this device</label>
+            </div>
+            <button type="button" class="login-btn-primary" onclick="submitApiKey()">
+              <span id="login-submit-label">Sign in</span>
+            </button>
+            <p style="text-align:center;margin:16px 0 0">
+              <button type="button" id="login-mode-toggle" onclick="toggleLoginMode()" style="background:none;border:none;color:#6e6e73;font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0">Use an API key instead</button>
+            </p>
           </div>
-
-          <!-- remember me -->
-          <div class="remember-row" style="margin-top:0">
-            <input type="checkbox" id="apikey-remember">
-            <label for="apikey-remember">Remember me on this device</label>
-          </div>
-
-          <!-- connect button -->
-          <button type="button" class="login-btn-primary" onclick="submitApiKey()" style="margin-top:24px">
-            <span style="position:relative;z-index:1" id="login-submit-label">Sign in</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="position:relative;z-index:1" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
-
-          <!-- login mode toggle -->
-          <p style="text-align:center;margin:16px 0 0">
-            <button type="button" id="login-mode-toggle" onclick="toggleLoginMode()" style="background:none;border:none;color:#94a3b8;font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0">Use an API key instead</button>
-          </p>
+          <p class="login-hint" id="login-apikey-hint">Default key: <code style="font-family:var(--font-mono);font-size:.72rem">CHANGE_ME</code> — change after first sign-in.</p>
         </div>
-
-        <!-- hint -->
-        <p style="font-size:.72rem;text-align:center;margin-top:14px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.6;color:#475569" id="login-apikey-hint">
-          Default key: <code style="font-family:monospace;color:#94a3b8;font-size:.72rem">CHANGE_ME</code> — change after first sign-in.
-        </p>
-
-        <!-- theme picker (below glass card) -->
-        <div class="signin-theme-picker">
-          <div class="signin-theme-label">Appearance</div>
-          <div class="theme-swatch-grid signin-theme-grid" id="signin-theme-swatch-grid" role="radiogroup" aria-label="Theme">
-            <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Carbon</span></button>
-            <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
-            <button type="button" class="theme-swatch" data-theme="holo" role="radio" onclick="setTheme('holo')"><span class="theme-swatch-preview holo"></span><span class="theme-swatch-label">Zeus</span></button>
-          </div>
-        </div>
-      </div>
-    </main>
+      </section>
+    </div>
   </div>
 </div>
 
 <!-- vCentre page -->
 <div class="page section-shell" id="page-vcentre" data-section="compute">
 <div class="space-y animate-fade-in" style="padding:28px">
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">vCentre</p>
+    <h1 class="apple-chapter-title">Familiar ops.</h1>
+    <p class="apple-chapter-lede">A vSphere-style surface for inventory and day-2 actions.</p>
+  </header>
+
   <div class="vc-header">
     <div>
       <h1>vCentre</h1>
@@ -8409,13 +8672,15 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 <!-- TENANTS PAGE -->
 <div class="page section-shell" id="page-tenants" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header">
-    <div><h1>Tenants</h1><p>Multi-tenant workspace management — namespaces, quotas, and billing tags</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTenants()">&#8635; Refresh</button>
-      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="createTenantDialog()">+ New Tenant</button>
-    </div>
+  <header class="apple-chapter">
+  <p class="apple-chapter-kicker">Tenants</p>
+  <h1 class="apple-chapter-title">Tenants</h1>
+  <p class="apple-chapter-lede">Multi-tenant workspace management — namespaces, quotas, and billing tags</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchTenants()">&#8635; Refresh</button>
+      <button type="button" class="apple-btn-primary" onclick="createTenantDialog()">+ New Tenant</button>
   </div>
+</header>
   <div id="tenants-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
     <div class="card-header">
@@ -8435,7 +8700,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260804i';
+window.__VEYRON_DASH_REV = '20260902b';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
@@ -8483,32 +8748,30 @@ let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
 const THEME_KEY = 'veyron_theme';
-/* Appearance model — dark Carbon (id tahoe), Light, and Zeus (id holo, matched
-   to the zeus-os "zyvor-carbon" shell theme: orange accent on near-black navy). */
+/* Apple/Zeus Phase 1 — Light (default paper) + Dark companion; Action Blue only. */
 const THEME_PRESETS = [
-  { id: 'tahoe', label: 'Carbon', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#0B0F18 0%,#161C28 45%,#7F77DD 100%)' },
-  { id: 'light', label: 'Light', category: 'carbon', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#f7f8fa 0%,#dbeafe 50%,#2563eb 100%)' },
-  { id: 'holo', label: 'Zeus', category: 'glass', defaultWallpaper: 'tahoe', previewGradient: 'radial-gradient(120% 100% at 20% 0%,#F97316 0%,#7c2d12 42%,#0a0a0c 100%)' }
+  { id: 'light', label: 'Light', category: 'apple', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#ffffff 0%,#f5f5f7 40%,#0071e3 100%)' },
+  { id: 'dark', label: 'Dark', category: 'apple', defaultWallpaper: 'midnight', previewGradient: 'linear-gradient(135deg,#0b0b0c 0%,#1d1d1f 45%,#0071e3 100%)' }
 ];
 const VALID_THEMES = THEME_PRESETS.map(function(p) { return p.id; });
 const LEGACY_THEME_ALIASES = {
-  dark: 'tahoe', 'tahoe-light': 'light', daylight: 'light', frost: 'light',
-  slate: 'tahoe', steel: 'tahoe', zinc: 'tahoe', obsidian: 'tahoe', graphite: 'tahoe',
-  sonoma: 'tahoe', wolf: 'tahoe', forge: 'tahoe', carbon: 'tahoe', synthwave: 'tahoe',
-  aurora: 'tahoe', nord: 'tahoe', 'royal-gold': 'tahoe', matrix: 'tahoe',
-  nebula: 'tahoe', solaris: 'tahoe', biolume: 'tahoe', sakura: 'tahoe',
-  mono: 'tahoe', inferno: 'tahoe', voltage: 'tahoe', prism: 'tahoe', borealis: 'tahoe',
-  ember: 'tahoe', 'ember-glow': 'tahoe', forgesim: 'tahoe', zyvor: 'tahoe', neon: 'tahoe'
+  tahoe: 'dark', holo: 'dark', carbon: 'dark', 'tahoe-light': 'light', daylight: 'light', frost: 'light',
+  slate: 'dark', steel: 'dark', zinc: 'dark', obsidian: 'dark', graphite: 'dark',
+  sonoma: 'dark', wolf: 'dark', forge: 'dark', synthwave: 'dark',
+  aurora: 'dark', nord: 'dark', 'royal-gold': 'dark', matrix: 'dark',
+  nebula: 'dark', solaris: 'dark', biolume: 'dark', sakura: 'dark',
+  mono: 'dark', inferno: 'dark', voltage: 'dark', prism: 'dark', borealis: 'dark',
+  ember: 'dark', 'ember-glow': 'dark', forgesim: 'dark', zyvor: 'dark', neon: 'dark'
 };
 const THEME_WALLPAPER_PAIRING = {
-  tahoe: 'tahoe', light: 'tahoe', holo: 'tahoe'
+  light: 'tahoe', dark: 'midnight'
 };
 
 function parseStoredTheme(raw) {
   if (raw === 'light' || raw === 'tahoe-light' || raw === 'daylight' || raw === 'frost') return 'light';
   if (raw && VALID_THEMES.includes(raw)) return raw;
   if (raw && LEGACY_THEME_ALIASES[raw]) return LEGACY_THEME_ALIASES[raw];
-  return 'tahoe';
+  return 'light';
 }
 const NAV_PAGE_LABELS = {
   dashboard: 'Mission Control',
@@ -8546,6 +8809,7 @@ const NAV_PAGE_LABELS = {
   pods: 'Pods',
   alerts: 'Alerts',
   metrics: 'Metrics',
+  logs: 'Console',
   slo: 'SLO',
   chaos: 'Chaos',
   notifications: 'Notifications'
@@ -8689,7 +8953,7 @@ const PAGE_META = {
   observability: {kicker:'Observe', title:'Metrics, logs, and trace pipeline overview', tags:['Metric status','Log status','Series counts']},
   traces: {kicker:'Observe', title:'Trace-like activity view shaped from cluster events', tags:['Trace rows','Services','Durations']},
   slo: {kicker:'Observe', title:'Objectives, burn rate, and service health pressure', tags:['SLI/SLO','Error budgets','Burn rate']},
-  logs: {kicker:'Observe', title:'Virt-launcher log stream and severity view', tags:['Live stream','Searchable','Level filter']},
+  logs: {kicker:'Observe', title:'macOS Console–style virt-launcher log viewer', tags:['Live stream','Download','Sources']},
   hpa: {kicker:'Compute', title:'Horizontal autoscaler target and replica pressure', tags:['Desired replicas','Bounds','Targets']},
   autoscaler: {kicker:'Compute', title:'Autoscaler policy summary and scaling intent', tags:['Policies','Targets','Limits']},
   scheduling: {kicker:'Compute', title:'Scheduling pressure and unschedulable signals', tags:['Pending pods','Preemption','Node pressure']},
@@ -8771,7 +9035,7 @@ function applyTheme(theme, writeStorage) {
 }
 
 // ── Deck-cycle mode: slowly drift through the glass-deck family ──
-var DECK_CYCLE = ['tahoe','light'];
+var DECK_CYCLE = ['light','dark'];
 var _deckCycleTimer = null;
 function startDeckCycle() {
   if (_deckCycleTimer) { clearInterval(_deckCycleTimer); _deckCycleTimer = null; }
@@ -8834,7 +9098,7 @@ function _autoThemeTarget() {
   const h = new Date().getHours();
   const day = h >= 7 && h < 19;
   if (day) return 'light';
-  try { return localStorage.getItem('veyron_theme_dark') || 'tahoe'; } catch (e) { return 'tahoe'; }
+  try { return localStorage.getItem('veyron_theme_dark') || 'dark'; } catch (e) { return 'dark'; }
 }
 function _applyAutoNow() {
   const t = _autoThemeTarget();
@@ -14605,7 +14869,14 @@ function applyCloudOsSession() {
 async function fetchStackHealth() {
   const hero = document.getElementById('vmr-stack-hero');
   const body = document.getElementById('vmr-stack-body');
-  if (hero) hero.innerHTML = '<div class="page-header"><div><h1>Stack Health</h1><p>KubeVirt, CDI, and platform component status</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStackHealth()">↺ Refresh</button></div></div>';
+  if (hero) hero.innerHTML = '<header class="apple-chapter">
+  <p class="apple-chapter-kicker">Stack Health</p>
+  <h1 class="apple-chapter-title">Stack Health</h1>
+  <p class="apple-chapter-lede">KubeVirt, CDI, and platform component status</p>
+  <div class="apple-chapter-cta">
+    <button type="button" class="apple-btn-secondary" onclick="fetchStackHealth()">↺ Refresh</button>
+  </div>
+</header>';
   const stackHealthErrs = [];
   const [healthRes, operatorsRes, monRes] = await Promise.all([
     apiJson('/api/v1/health').catch(function() { stackHealthErrs.push('health'); return { status: 'unreachable', version: '—', uptime_seconds: 0 }; }),
@@ -26933,36 +27204,164 @@ function filterTraces() {
 }
 
 async function fetchLogs() {
-  const stats = document.getElementById('logs-stats');
   const stream = document.getElementById('logs-stream');
   try {
+    refreshConsoleSources();
     const level = document.getElementById('logs-level-filter')?.value || '';
     const q = document.getElementById('logs-search')?.value || '';
-    const params = nsParam() + (level ? '&level=' + level : '') + (q ? '&q=' + encodeURIComponent(q) : '');
+    const vm = document.getElementById('logs-vm-filter')?.value || '';
+    const params = nsParam() + (level ? '&level=' + level : '') + (q ? '&q=' + encodeURIComponent(q) : '') + (vm ? '&vm=' + encodeURIComponent(vm) : '');
     const data = await apiJson('/api/v1/logs' + params);
     setCapBanner('logs-cap-banner', data.veyron_context);
-    if (stats) stats.innerHTML =
-      '<button type="button" class="glass-stat-pill bad clickable-stat" onclick="setLogsLevelFilter(\'error\')" title="Show error logs"><div class="gsl">Errors</div><div class="gsv">' + (data.error_count || 0) + '</div></button>' +
-      '<button type="button" class="glass-stat-pill warn clickable-stat" onclick="setLogsLevelFilter(\'warn\')" title="Show warning logs"><div class="gsl">Warnings</div><div class="gsv">' + (data.warn_count || 0) + '</div></button>' +
-      '<button type="button" class="glass-stat-pill clickable-stat" onclick="setLogsLevelFilter(\'info\')" title="Show info logs"><div class="gsl">Info</div><div class="gsv">' + (data.info_count || 0) + '</div></button>' +
-      '<button type="button" class="glass-stat-pill clickable-stat" onclick="setLogsLevelFilter(\'\')" title="Show all logs"><div class="gsl">Total (1h)</div><div class="gsv">' + (data.total_1h || 0) + '</div></button>';
     if (!stream) return;
-    const lines = data.lines || [];
-    if (!lines.length) {
-      stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px">No virt-launcher pod logs in scope (pick a namespace with running VMs, or use <code>?vm=</code> via the query API)</div>';
-      return;
-    }
-    const lvlColor = {error:'var(--error)',warn:'var(--warning)',info:'var(--plasma)',debug:'var(--text-dim)'};
-    stream.innerHTML = lines.map(l => {
-      const c = lvlColor[l.level] || 'var(--text)';
-      return `<div><span style="color:var(--text-dim)">${fmtTime(l.ts)}</span> <span style="color:${c};font-weight:600">${esc(l.level?.toUpperCase().padEnd(5,' '))}</span> <span style="color:var(--text-muted)">${esc(l.source)}</span> ${esc(l.msg)}</div>`;
-    }).join('');
-    stream.scrollTop = stream.scrollHeight;
+    const lines = (data.lines || []).map(function(l) {
+      return { ts: l.ts, level: (l.level || 'info').toLowerCase(), source: l.source || 'virt-launcher', msg: l.msg || '' };
+    });
+    renderConsoleRows(lines);
+    if (_consoleStreaming) scheduleConsolePoll();
   } catch (e) {
     const msg = e.message || String(e);
-    if (stats) stats.innerHTML = summaryErrorHtml(msg);
-    if (stream) stream.innerHTML = '<div style="color:var(--error);text-align:center;padding:40px;line-height:1.45">' + esc(msg) + '<br><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchLogs()">&#8635; Retry</button></div>';
+    if (stream) stream.innerHTML = '<div class="console-empty" style="color:#ff6b6b">' + esc(msg) + '<br><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchLogs()">Retry</button></div>';
     console.error('Logs fetch error:', e);
+  }
+}
+
+var _consoleBuffer = [];
+var _consoleStreaming = true;
+var _consolePollTimer = null;
+
+function selectConsoleSource(btn) {
+  document.querySelectorAll('.console-source').forEach(function(el) { el.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var vm = (btn && btn.getAttribute('data-console-source')) || '';
+  var inp = document.getElementById('logs-vm-filter');
+  if (inp) inp.value = vm;
+  fetchLogs();
+}
+
+function refreshConsoleSources() {
+  var list = document.getElementById('console-source-list');
+  if (!list) return;
+  var vms = [];
+  try {
+    if (Array.isArray(window.lastVMs)) vms = window.lastVMs;
+    else if (Array.isArray(window.vmsCache)) vms = window.vmsCache;
+  } catch (e) {}
+  var current = (document.getElementById('logs-vm-filter') || {}).value || '';
+  var html = '';
+  var seen = {};
+  vms.slice(0, 80).forEach(function(v) {
+    var name = v.name || v.metadata?.name || '';
+    if (!name || seen[name]) return;
+    seen[name] = 1;
+    html += '<button type="button" class="console-source' + (current === name ? ' active' : '') + '" data-console-source="' + esc(name) + '" onclick="selectConsoleSource(this)">' + esc(name) + '</button>';
+  });
+  list.innerHTML = html || '<div style="padding:8px 16px;font-size:.75rem;color:var(--ink-3)">No VMs in cache — open Fleet to populate</div>';
+  if (!current) {
+    var allBtn = document.querySelector('.console-source[data-console-source=""]');
+    if (allBtn) allBtn.classList.add('active');
+  }
+}
+
+function renderConsoleRows(lines) {
+  var stream = document.getElementById('logs-stream');
+  if (!stream) return;
+  _consoleBuffer = lines || [];
+  if (!_consoleBuffer.length) {
+    stream.innerHTML = '<div class="console-empty">No virt-launcher pod logs in scope</div>';
+    return;
+  }
+  stream.innerHTML = _consoleBuffer.map(function(l, i) {
+    var lvl = (l.level || 'info').toLowerCase();
+    if (lvl === 'error' || lvl === 'err' || lvl === 'fault') lvl = 'error';
+    else if (lvl.indexOf('warn') === 0) lvl = 'warn';
+    else if (lvl === 'debug') lvl = 'debug';
+    else lvl = 'info';
+    var ts = l.ts ? (typeof fmtTime === 'function' ? fmtTime(l.ts) : String(l.ts)) : '—';
+    return '<div class="console-row" data-idx="' + i + '" onclick="selectConsoleRow(this,' + i + ')">' +
+      '<span class="c-time">' + esc(ts) + '</span>' +
+      '<span class="c-proc" title="' + esc(l.source || '') + '">' + esc(l.source || '—') + '</span>' +
+      '<span class="c-type ' + lvl + '">' + esc(lvl) + '</span>' +
+      '<span class="c-msg">' + esc(l.msg || '') + '</span></div>';
+  }).join('');
+  stream.scrollTop = stream.scrollHeight;
+}
+
+function selectConsoleRow(el, idx) {
+  document.querySelectorAll('.console-row').forEach(function(r) { r.classList.remove('selected'); });
+  if (el) el.classList.add('selected');
+  var detail = document.getElementById('console-detail');
+  var l = _consoleBuffer[idx];
+  if (detail && l) {
+    detail.textContent = (l.ts || '') + '  ' + (l.level || '') + '  ' + (l.source || '') + '\n' + (l.msg || '');
+  }
+}
+
+function clearConsoleStream() {
+  _consoleBuffer = [];
+  var stream = document.getElementById('logs-stream');
+  if (stream) stream.innerHTML = '<div class="console-empty">Cleared</div>';
+  var detail = document.getElementById('console-detail');
+  if (detail) detail.textContent = 'Select a message for details';
+}
+
+function toggleConsoleStream() {
+  _consoleStreaming = !_consoleStreaming;
+  var btn = document.getElementById('console-stream-btn');
+  if (btn) btn.textContent = _consoleStreaming ? 'Pause' : 'Start';
+  if (_consoleStreaming) scheduleConsolePoll();
+  else if (_consolePollTimer) { clearTimeout(_consolePollTimer); _consolePollTimer = null; }
+}
+
+function scheduleConsolePoll() {
+  if (_consolePollTimer) clearTimeout(_consolePollTimer);
+  if (!_consoleStreaming) return;
+  _consolePollTimer = setTimeout(function() {
+    if (document.getElementById('page-logs')?.classList.contains('active') || document.getElementById('page-logs')?.style.display !== 'none') {
+      fetchLogs();
+    }
+  }, 8000);
+}
+
+function downloadConsoleLogs() {
+  if (!_consoleBuffer.length) { toast('No log lines to download', 'warning'); return; }
+  var text = _consoleBuffer.map(function(l) {
+    return [l.ts || '', (l.level || '').toUpperCase(), l.source || '', l.msg || ''].join('\t');
+  }).join('\n') + '\n';
+  var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  var a = document.createElement('a');
+  var stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'veyron-console-' + stamp + '.log';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast('Downloaded ' + _consoleBuffer.length + ' lines', 'success');
+}
+
+async function queryLogs() {
+  const stream = document.getElementById('logs-stream');
+  const vm = (document.getElementById('logs-vm-filter') || {}).value || '';
+  const container = (document.getElementById('logs-container-filter') || {}).value || '';
+  const search = (document.getElementById('logs-search') || {}).value || '';
+  const level = (document.getElementById('logs-level-filter') || {}).value || '';
+  const tail = parseInt((document.getElementById('logs-tail-lines') || {}).value || '200', 10) || 200;
+  let params = nsParam();
+  if (vm) params += '&vm=' + encodeURIComponent(vm);
+  if (container) params += '&container=' + encodeURIComponent(container);
+  if (search) params += '&search=' + encodeURIComponent(search);
+  if (level) params += '&level=' + encodeURIComponent(level);
+  params += '&tail=' + tail;
+  if (stream) stream.innerHTML = '<div class="console-empty">Querying logs…</div>';
+  try {
+    const data = await apiJson('/api/v1/logs/query' + params);
+    setCapBanner('logs-cap-banner', data.veyron_context);
+    const entries = data.entries || [];
+    renderConsoleRows(entries.map(function(e) {
+      return { ts: e.timestamp, level: (e.level || 'INFO').toLowerCase(), source: e.source, msg: e.message };
+    }));
+  } catch (e) {
+    if (stream) stream.innerHTML = '<div class="console-empty" style="color:#ff6b6b">' + esc(e.message || String(e)) + '</div>';
   }
 }
 
@@ -28027,48 +28426,6 @@ async function expandDisk(diskName, currentSize) {
 }
 
 // ── Logs query ───────────────────────────────────────────────────────────────
-async function queryLogs() {
-  const stats = document.getElementById('logs-stats');
-  const stream = document.getElementById('logs-stream');
-  const vm = (document.getElementById('logs-vm-filter') || {}).value || '';
-  const container = (document.getElementById('logs-container-filter') || {}).value || '';
-  const search = (document.getElementById('logs-search') || {}).value || '';
-  const level = (document.getElementById('logs-level-filter') || {}).value || '';
-  const tail = parseInt((document.getElementById('logs-tail-lines') || {}).value || '200', 10) || 200;
-  let params = nsParam();
-  if (vm) params += '&vm=' + encodeURIComponent(vm);
-  if (container) params += '&container=' + encodeURIComponent(container);
-  if (search) params += '&search=' + encodeURIComponent(search);
-  if (level) params += '&level=' + encodeURIComponent(level);
-  params += '&tail=' + tail;
-  if (stream) stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:24px">Querying logs…</div>';
-  try {
-    const data = await apiJson('/api/v1/logs/query' + params);
-    setCapBanner('logs-cap-banner', data.veyron_context);
-    const entries = data.entries || [];
-    const errC = entries.filter(function(e) { return e.level === 'ERROR'; }).length;
-    const warnC = entries.filter(function(e) { return e.level === 'WARN'; }).length;
-    if (stats) stats.innerHTML =
-      '<button type="button" class="glass-stat-pill bad clickable-stat" onclick="setLogsLevelFilter(\'error\')"><div class="gsl">Errors</div><div class="gsv">' + errC + '</div></button>' +
-      '<button type="button" class="glass-stat-pill warn clickable-stat" onclick="setLogsLevelFilter(\'warn\')"><div class="gsl">Warnings</div><div class="gsv">' + warnC + '</div></button>' +
-      '<button type="button" class="glass-stat-pill"><div class="gsl">Total</div><div class="gsv">' + entries.length + '</div></button>' +
-      '<button type="button" class="glass-stat-pill clickable-stat" onclick="setLogsLevelFilter(\'\')"><div class="gsl">All</div><div class="gsv">↺</div></button>';
-    if (!stream) return;
-    if (!entries.length) {
-      stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px">No log entries matching query</div>';
-      return;
-    }
-    const lvlColor = { ERROR: 'var(--error)', WARN: 'var(--warning)', INFO: 'var(--spark)', DEBUG: 'var(--text-dim)' };
-    stream.innerHTML = entries.map(function(e) {
-      const c = lvlColor[e.level] || 'var(--text)';
-      return '<div><span style="color:var(--text-dim)">' + esc(e.timestamp || '-') + '</span> <span style="color:' + c + ';font-weight:600">' + esc((e.level || 'INFO').padEnd(5,' ')) + '</span> <span style="color:var(--text-muted)">' + esc(e.source) + '</span> ' + esc(e.message) + '</div>';
-    }).join('');
-    stream.scrollTop = stream.scrollHeight;
-  } catch (e) {
-    if (stream) stream.innerHTML = '<div style="color:var(--error);text-align:center;padding:40px">' + esc(e.message || String(e)) + '</div>';
-  }
-}
-
 // ── Network interfaces + bandwidth ───────────────────────────────────────────
 async function fetchNetworkInterfaces() {
   const tb = document.getElementById('net-ifaces-body');
@@ -28942,15 +29299,14 @@ function closeMacShortcuts() {
         <div class="mac-pref-section-title">Appearance</div>
         <div class="mac-cc-row" style="flex-direction:column;align-items:stretch;gap:6px">
           <span>Theme</span>
-          <div class="theme-swatch-group-label">IronWolf</div>
-          <div class="theme-swatch-grid" id="pref-theme-swatch-grid-macos" role="radiogroup" aria-label="IronWolf themes">
-            <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Carbon</span></button>
+          <div class="theme-swatch-group-label">Appearance</div>
+          <div class="theme-swatch-grid" id="pref-theme-swatch-grid-macos" role="radiogroup" aria-label="Appearance">
             <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
-            <button type="button" class="theme-swatch" data-theme="holo" role="radio" onclick="setTheme('holo')"><span class="theme-swatch-preview holo"></span><span class="theme-swatch-label">Zeus</span></button>
-            <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Carbon by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
+            <button type="button" class="theme-swatch" data-theme="dark" role="radio" onclick="setTheme('dark')"><span class="theme-swatch-preview dark"></span><span class="theme-swatch-label">Dark</span></button>
+            <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, Dark by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
           </div>
           <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
-            <option value="tahoe">Carbon</option><option value="light">Light</option><option value="holo">Zeus</option><option value="auto">Auto · Day/Night</option>
+            <option value="light">Light</option><option value="dark">Dark</option><option value="auto">Auto · Day/Night</option>
           </select>
         </div>
         <div class="mac-cc-row mac-cc-wallpaper-row" style="flex-direction:column;align-items:stretch;gap:8px">

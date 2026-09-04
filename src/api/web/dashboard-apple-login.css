@@ -1,0 +1,523 @@
+/* Apple Store chapter login — Veyron product identity (ported from zeus-os).
+   Brand → huge title → lede → Action Blue pills → parchment sign-in chapter. */
+
+@keyframes login-fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes login-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+/* Full-screen overlay hosts the store login */
+#apikey-modal.mac-signin-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  padding: 0;
+  margin: 0;
+  background: #fff;
+  align-items: stretch;
+  justify-content: stretch;
+}
+#apikey-modal.mac-signin-overlay.open {
+  display: flex !important;
+}
+#apikey-modal .signin-theme-picker { display: none !important; }
+
+.login-page {
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  color: hsl(240 6% 10%);
+  background: hsl(0 0% 100%);
+  font-family: var(--font-display, -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.login-store-page {
+  overflow: hidden;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+.login-store-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-store-scroll { scroll-snap-type: none; }
+}
+
+.login-chapter {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: clamp(2rem, 6vh, 4rem) clamp(1.25rem, 5vw, 3rem);
+}
+
+.login-chapter-hero {
+  background: hsl(0 0% 100%);
+  text-align: center;
+  animation: login-fade-in-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.login-chapter-sign-in {
+  background: hsl(240 5% 96%);
+  justify-content: center;
+}
+
+.login-chapter-inner {
+  width: 100%;
+  max-width: 44rem;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.login-sign-in-inner { max-width: 26rem; }
+
+.login-wordmark {
+  margin: 0;
+  font-family: var(--font-hero, 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: hsl(240 6% 10%);
+  text-wrap: balance;
+}
+
+.login-hero-title {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-hero, 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: clamp(2.75rem, 8vw, 5rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  color: hsl(240 6% 10%);
+  text-wrap: balance;
+}
+
+.login-tagline {
+  margin: 1rem auto 0;
+  max-width: 34rem;
+  color: hsl(240 3% 46%);
+  letter-spacing: -0.011em;
+  font-size: clamp(1.05rem, 2.1vw, 1.3125rem);
+  line-height: 1.47;
+  font-weight: 400;
+}
+
+.login-cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 2rem;
+}
+
+.login-cta-primary,
+.login-cta-secondary,
+a.login-cta-primary,
+a.login-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.35rem;
+  border-radius: 980px;
+  font-family: inherit;
+  font-size: 1.0625rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.login-cta-primary,
+a.login-cta-primary {
+  border: none;
+  background: hsl(211 100% 45%);
+  color: hsl(0 0% 100%);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.18) inset;
+}
+.login-cta-primary:hover,
+a.login-cta-primary:hover {
+  background: hsl(211 100% 40%);
+  color: hsl(0 0% 100%);
+}
+
+.login-cta-secondary,
+a.login-cta-secondary {
+  border: 1px solid hsl(211 100% 45%);
+  background: hsl(0 0% 100%);
+  color: hsl(211 100% 45%);
+}
+.login-cta-secondary:hover,
+a.login-cta-secondary:hover {
+  background: hsl(211 100% 45% / 0.06);
+  color: hsl(211 100% 40%);
+}
+
+.login-cta-primary:active,
+.login-cta-secondary:active {
+  transform: scale(0.98);
+}
+
+.login-chapter-note {
+  margin: 2.25rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: hsl(240 4% 62%);
+  line-height: 1.4;
+}
+
+.login-form-heading {
+  margin: 0 0 1rem;
+  text-align: center;
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  color: hsl(240 6% 10%);
+}
+
+.login-card {
+  width: 100%;
+  background: hsl(0 0% 100%);
+  border: 1px solid hsl(240 6% 10% / 0.08);
+  border-radius: 20px;
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  text-align: left;
+}
+@media (min-width: 640px) {
+  .login-card { padding: 2rem 1.75rem; }
+}
+
+.login-shake { animation: login-shake 0.45s ease-out; }
+
+.login-page .login-input,
+.login-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 2.5rem;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: hsl(240 6% 10%);
+  background: hsl(0 0% 100%);
+  border: 1px solid hsl(240 5% 84%);
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.login-input::placeholder { color: hsl(240 3% 46%); opacity: 0.85; }
+.login-input:focus {
+  outline: none;
+  border-color: hsl(211 100% 45%);
+  box-shadow: 0 0 0 3px hsl(211 100% 45% / 0.18);
+}
+
+.login-field-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.875rem;
+  height: 0.875rem;
+  color: hsl(240 3% 46%);
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.login-page .login-btn-primary,
+.login-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: 0.8125rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: hsl(0 0% 100%);
+  border-radius: 980px;
+  border: none;
+  background: hsl(211 100% 45%);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.18) inset;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+}
+.login-btn-primary:hover:not(:disabled) { background: hsl(211 100% 40%); filter: none; }
+.login-btn-primary:active:not(:disabled) { transform: scale(0.98); }
+.login-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.login-btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.8125rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: hsl(211 100% 45%);
+  border-radius: 980px;
+  border: 1px solid hsl(211 100% 45%);
+  background: hsl(0 0% 100%);
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.login-btn-secondary:hover { background: hsl(211 100% 45% / 0.06); }
+
+.login-hint {
+  color: hsl(240 3% 46%);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+  margin-top: 1.5rem;
+  max-width: 38ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.login-page label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(240 6% 10%);
+  margin-bottom: 0.5rem;
+}
+
+.login-page .remember-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  color: hsl(240 3% 46%);
+  font-size: 0.8125rem;
+}
+.login-page .remember-row label { margin: 0; font-weight: 400; color: inherit; }
+
+.login-page .auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  color: hsl(240 3% 46%);
+  font-size: 0.75rem;
+}
+.login-page .auth-divider::before,
+.login-page .auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: hsl(240 5% 84%);
+}
+
+.login-page .eye-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: hsl(240 3% 46%);
+  padding: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.login-aurora,
+.login-scanline,
+.login-hero-mesh,
+.login-spotlight,
+.login-orb,
+.login-particles,
+.login-beam,
+.login-panel-grid,
+.login-panel-glow,
+.login-feature-list,
+.login-stat-pill {
+  display: none !important;
+}
+
+.login-glass {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  animation: none;
+  padding: 0;
+}
+
+/* Kill old split-hero layout if leftover classes linger */
+.login-page.login-page-steel {
+  display: flex;
+  flex-direction: column;
+}
+.login-page .login-hero,
+.login-page .login-panel {
+  display: contents;
+}
+
+/* ---- macOS Console layout ---- */
+.console-app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 0;
+  min-height: calc(100vh - 8rem);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.console-sidebar {
+  border-right: 1px solid var(--hairline);
+  background: var(--panel-2);
+  padding: 0.75rem 0;
+  overflow-y: auto;
+  font-family: var(--font-display);
+}
+.console-sidebar-title {
+  padding: 0.35rem 1rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.console-source {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  padding: 0.45rem 1rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 0;
+}
+.console-source:hover { background: rgba(0, 113, 227, 0.08); }
+.console-source.active {
+  background: rgba(0, 113, 227, 0.14);
+  color: var(--apple-action, #0071e3);
+  font-weight: 600;
+}
+.console-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.console-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--panel);
+}
+.console-toolbar .toolbar-input,
+.console-toolbar input,
+.console-toolbar select {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0.4rem 0.65rem;
+}
+.console-toolbar .glass-btn-primary,
+.console-toolbar .glass-btn-secondary {
+  border-radius: 980px;
+  font-size: 0.78rem;
+}
+.console-stream {
+  flex: 1;
+  min-height: 420px;
+  max-height: calc(100vh - 16rem);
+  overflow: auto;
+  padding: 0;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+.console-row {
+  display: grid;
+  grid-template-columns: 9.5rem 7rem 4.5rem 1fr;
+  gap: 0.5rem;
+  padding: 0.28rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: default;
+}
+.console-row:hover { background: rgba(255, 255, 255, 0.04); }
+.console-row.selected { background: rgba(0, 113, 227, 0.22); }
+.console-row .c-time { color: #8b93a7; white-space: nowrap; }
+.console-row .c-proc { color: #a8c7fa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.console-row .c-type { font-weight: 600; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.04em; }
+.console-row .c-type.error,
+.console-row .c-type.fault { color: #ff6b6b; }
+.console-row .c-type.warn { color: #ffb020; }
+.console-row .c-type.info { color: #64d2ff; }
+.console-row .c-type.debug { color: #8b93a7; }
+.console-row .c-msg { color: var(--tty-fg, #c6ceda); word-break: break-word; }
+.console-detail {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  min-height: 3.5rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.console-empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #8b93a7;
+}
+
+@media (max-width: 900px) {
+  .console-app { grid-template-columns: 1fr; }
+  .console-sidebar { max-height: 160px; border-right: none; border-bottom: 1px solid var(--hairline); }
+  .console-row { grid-template-columns: 1fr; gap: 0.15rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-chapter-hero { animation: none !important; }
+  .login-shake { animation: none !important; }
+}
