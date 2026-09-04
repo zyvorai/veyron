@@ -4252,25 +4252,33 @@ form.card,
 /* Shell layout contract — late include wins over any leftover inline rules */
 /*__SHELL_LAYOUT__*/
 
-/* Late Carbon ground — wins over any leftover aurora / liquid-glass body rules */
+/* Late Carbon ground — dark themes only (Apple light stays paper) */
+html[data-theme='dark'] body.mac-desktop-root,
 html[data-theme='tahoe'] body.mac-desktop-root,
 html[data-theme='carbon'] body.mac-desktop-root,
-body.mac-desktop-root[data-shell-layout="root"] {
-  background: var(--zs-void, #0B0F18) !important;
+html[data-theme='holo'] body.mac-desktop-root {
+  background: var(--hull, #111113) !important;
 }
+html[data-theme='light'] body.mac-desktop-root,
+html.light-theme body.mac-desktop-root {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%) !important;
+}
+html[data-theme='dark'] body.mac-desktop-root::before,
 html[data-theme='tahoe'] body.mac-desktop-root::before,
 html[data-theme='carbon'] body.mac-desktop-root::before,
-body.mac-desktop-root[data-shell-layout="root"]::before {
+html[data-theme='holo'] body.mac-desktop-root::before {
   content: "" !important;
   position: fixed !important;
   inset: 0 !important;
   pointer-events: none !important;
   z-index: 0 !important;
-  background-image: var(--zs-forge), var(--zs-grain) !important;
-  background-size: 480px 480px, 120px 120px !important;
-  opacity: 0.055 !important;
-  mix-blend-mode: overlay !important;
+  background-image: none !important;
+  opacity: 0 !important;
   animation: none !important;
+}
+html[data-theme='light'] body.mac-desktop-root::before,
+html.light-theme body.mac-desktop-root::before {
+  display: none !important;
 }
 
 /* ── Fleet Command: fill + color ─────────────────────────────── */
@@ -5203,7 +5211,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <button type="button" class="orbit-hud-btn" onclick="openSpotlight()" title="Search · ⌘K"><span class="orbit-hud-key">⌘K</span> Search</button>
     <div id="orbit-breadcrumb" class="orbit-breadcrumb"><span class="orbit-crumb cur">Cluster</span></div>
     <button type="button" class="orbit-hud-btn" onclick="openAskZyra('')" title="Ask Zyra · ⌘J">Ask Zyra <span class="orbit-hud-key">⌘J</span></button>
-    <button type="button" class="orbit-hud-btn orbit-hud-forge" onclick="if(typeof openQuickForge==='function'){openQuickForge()}else if(typeof openCreateModal==='function'){openCreateModal()}" title="Forge a new VM · ⌘N">＋ Forge</button>
+    <button type="button" class="orbit-hud-btn orbit-hud-forge" onclick="if(typeof openQuickForge==='function'){openQuickForge()}else if(typeof openCreateModal==='function'){openCreateModal()}" title="Forge a new VM · ⌘N">＋ Create</button>
     <div class="orbit-hud-stat" id="orbit-hud-stat"></div>
     <div class="orbit-hud-health" id="orbit-hud-health" title="Fleet health">—</div>
     <button type="button" class="orbit-hud-btn" onclick="setShell('desktop')" title="Switch to Desktop shell · ⌘⇧O">Desktop</button>
@@ -5550,7 +5558,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
   <div class="modal glass-modal" style="width:min(480px,96vw);padding:0;border-radius:16px;overflow:hidden">
     <div style="padding:18px 20px 6px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)">
       <span style="font-size:1.1rem;color:var(--cyan)">⚡</span>
-      <span style="font-size:.9rem;font-weight:600;letter-spacing:.03em">Quick Forge VM</span>
+      <span style="font-size:.9rem;font-weight:600;letter-spacing:.03em">Quick Create VM</span>
       <span style="margin-left:auto;font-size:.72rem;color:var(--text-dim)">⌘N</span>
     </div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px">
@@ -5655,18 +5663,33 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <button type="button" class="apple-btn-secondary" onclick="openAskZyra('Create backup policy for all VMs')">+ Backup Policy</button>
   </div>
 </header>
-  <!-- VM Protection summary -->
-  <div class="vmr-metrics-strip" style="margin-bottom:8px">
-    <div class="vmr-metric"><div class="vmr-metric-label">Protected VMs</div><div class="vmr-metric-value ok" id="snap-protected-count">—</div></div>
-    <div class="vmr-metric"><div class="vmr-metric-label">Unprotected</div><div class="vmr-metric-value warn" id="snap-unprotected-count">—</div></div>
-    <div class="vmr-metric"><div class="vmr-metric-label">Backup Policies</div><div class="vmr-metric-value" id="snap-policy-count">—</div></div>
-    <div class="vmr-metric"><div class="vmr-metric-label">Failed Backups</div><div class="vmr-metric-value" id="snap-failed-count">—</div></div>
-  </div>
+  <section class="apple-band apple-band-paper" aria-label="Protection">
+    <div class="apple-band-inner">
+      <div class="apple-section-head">
+        <h2 class="apple-section-title">In the spotlight.</h2>
+        <p class="apple-section-lede">Protection coverage across the fleet.</p>
+      </div>
+      <div class="apple-benefit">
+        <div class="apple-benefit-item"><p class="apple-benefit-value" id="snap-protected-count">—</p><p class="apple-benefit-label">Protected VMs</p></div>
+        <div class="apple-benefit-item"><p class="apple-benefit-value tone-warn" id="snap-unprotected-count">—</p><p class="apple-benefit-label">Unprotected</p></div>
+        <div class="apple-benefit-item"><p class="apple-benefit-value" id="snap-policy-count">—</p><p class="apple-benefit-label">Backup Policies</p></div>
+        <div class="apple-benefit-item"><p class="apple-benefit-value" id="snap-failed-count">—</p><p class="apple-benefit-label">Failed Backups</p></div>
+      </div>
+    </div>
+  </section>
     <div id="snap-cap-banner"></div>
   <div id="atlas-ceph-section"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
-  <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">All Snapshots</span><span id="snap-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><div style="display:flex;gap:6px;margin-left:auto;align-items:center"><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:190px;font-size:.82rem"><select class="form-select" id="snap-sort" onchange="filterSnapshots(document.getElementById('snap-search').value)" style="font-size:.82rem;width:auto"><option value="name">Sort: Name</option><option value="age">Sort: Age</option><option value="ready">Sort: Ready</option></select><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSnapshotsCsv()" title="Export snapshots as CSV">&#8595; CSV</button></div></div><div id="snap-list"></div></div>
+  <section class="apple-band" aria-label="Snapshots">
+    <div class="apple-band-inner">
+      <div class="apple-section-head apple-section-left">
+        <h2 class="apple-section-title">Schedules &amp; inventory.</h2>
+        <p class="apple-section-lede">Protect on a cadence, then browse every snapshot.</p>
+      </div>
+      <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="apple-btn-secondary" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
+      <div class="card glass-card" style="margin-top:1rem"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">All Snapshots</span><span id="snap-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><div style="display:flex;gap:6px;margin-left:auto;align-items:center"><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:190px;font-size:.82rem"><select class="form-select" id="snap-sort" onchange="filterSnapshots(document.getElementById('snap-search').value)" style="font-size:.82rem;width:auto"><option value="name">Sort: Name</option><option value="age">Sort: Age</option><option value="ready">Sort: Ready</option></select><button type="button" class="apple-btn-secondary" onclick="exportSnapshotsCsv()" title="Export snapshots as CSV">CSV</button></div></div><div id="snap-list"></div></div>
+    </div>
+  </section>
 </div>
 </div>
 
@@ -5800,7 +5823,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <p class="apple-chapter-lede">Kubernetes events across the fleet — filter, follow, and act.</p>
   </header>
 
-  <div id="vmr-events-hero"></div>
+  <div id="vmr-events-hero" hidden aria-hidden="true"></div>
   <div id="events-summary" class="grid-4 page-glass-stats"></div>
   <!-- Filter bar -->
   <div class="vmr-foundry-filters" id="vmr-events-filter-bar" style="margin-bottom:4px"></div>
@@ -5928,7 +5951,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-costs" data-section="finops">
 <div class="space-y animate-fade-in">
-  <div id="vmr-costs-hero"></div>
+  <div id="vmr-costs-hero" hidden aria-hidden="true"></div>
   <div id="vmr-costs-metrics"></div>
   <header class="apple-chapter">
   <p class="apple-chapter-kicker">Costs</p>
@@ -6009,7 +6032,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-security" data-section="security">
 <div class="space-y animate-fade-in">
-  <div id="vmr-security-hero"></div>
+  <div id="vmr-security-hero" hidden aria-hidden="true"></div>
   <div id="vmr-security-metrics"></div>
 <header class="apple-chapter">
   <p class="apple-chapter-kicker">Security</p>
@@ -6072,12 +6095,20 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <div class="card-header"><span class="card-title">Veyron Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('performance-advisor-card')">Dismiss</button></div>
     <div id="performance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="monitor-capabilities">
-    <div class="monitor-cap glass-card"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code class="inline-scope-code">monitoring</code>, <code class="inline-scope-code">prometheus</code>, <code class="inline-scope-code">observability</code>, and the active namespace.</p></div></div>
-    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(239,159,39,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
-    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--critical-bg);border-color:rgba(226,75,74,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
-    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--nominal-bg);border-color:rgba(29,158,117,.2);color:var(--nominal)">&#8866;</div><div><h3>Also in Veyron</h3><p>Per-VM live charts on the VM detail view, Alerts and Notifications pages, SLO / cost signals — use the nav to explore the full forge.</p></div></div>
-  </div>
+  <section class="apple-band" aria-label="Monitoring capabilities">
+    <div class="apple-band-inner">
+      <div class="apple-section-head">
+        <h2 class="apple-section-title">Top finds that speak volumes.</h2>
+        <p class="apple-section-lede">What this console watches for you.</p>
+      </div>
+      <div class="apple-shelf apple-shelf-2">
+        <article class="apple-tile"><p class="apple-tile-kicker">Discovery</p><h3 class="apple-tile-title">Stack discovery</h3><p class="apple-tile-lede">Detects Prometheus, Grafana, and Alertmanager across monitoring namespaces.</p></article>
+        <article class="apple-tile"><p class="apple-tile-kicker">Advice</p><h3 class="apple-tile-title">Recommendations</h3><p class="apple-tile-lede">Heuristic checks on KubeVirt VM specs: limits, virtio RNG, eviction strategy.</p></article>
+        <article class="apple-tile"><p class="apple-tile-kicker">Signals</p><h3 class="apple-tile-title">Anomaly detection</h3><p class="apple-tile-lede">Sustained CPU or memory above 85% / 95%. Needs metrics-server.</p></article>
+        <article class="apple-tile"><p class="apple-tile-kicker">More</p><h3 class="apple-tile-title">Also in Veyron</h3><p class="apple-tile-lede">Per-VM charts, Alerts, Notifications, SLO and cost signals.</p></article>
+      </div>
+    </div>
+  </section>
   <div id="monitoring-status" class="monitor-overview"></div>
   <div class="grid-2">
     <div class="card glass-card">
@@ -6110,7 +6141,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <p class="apple-chapter-lede">Deployments, StatefulSets, and jobs that share the cluster with your VMs.</p>
   </header>
 
-  <div id="vmr-workloads-hero"></div>
+  <div id="vmr-workloads-hero" hidden aria-hidden="true"></div>
   <div id="vmr-workloads-metrics"></div>
   <div id="workloads-summary" class="grid-4 page-glass-stats" style="display:none"></div>
   <div class="card glass-card vmr-workloads-table-card">
@@ -6507,7 +6538,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
       <button type="button" class="apple-btn-secondary" onclick="navigate('images')">Golden images</button>
     </div>
   </header>
-  <div id="vmr-foundry-hero"></div>
+  <div id="vmr-foundry-hero" hidden aria-hidden="true"></div>
   <div id="app-store-summary"></div>
   <div id="app-store-cap-banner"></div>
   <div class="vmr-foundry-layout">
@@ -6551,7 +6582,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <p class="apple-chapter-lede">VNC, serial, and guest access for every running machine.</p>
   </header>
 
-  <div id="vmr-console-hero"></div>
+  <div id="vmr-console-hero" hidden aria-hidden="true"></div>
   <div class="vmr-console-hub-layout" id="vmr-console-hub-layout">
     <aside class="vmr-console-sidebar">
       <div class="vmr-console-sidebar-head">
@@ -6620,7 +6651,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <p class="apple-chapter-lede">KubeVirt, CDI, and control-plane readiness at a glance.</p>
   </header>
 
-  <div id="vmr-stack-hero"></div>
+  <div id="vmr-stack-hero" hidden aria-hidden="true"></div>
   <div id="vmr-stack-body"></div>
 </div>
 </div>
@@ -6646,7 +6677,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <p class="apple-chapter-lede">Traffic insight across the virtual network fabric.</p>
   </header>
 
-  <div id="vmr-network-intel-hero"></div>
+  <div id="vmr-network-intel-hero" hidden aria-hidden="true"></div>
   <div id="vmr-network-intel-metrics"></div>
   <div class="card glass-card">
     <div class="card-header"><span class="card-title">VM Network Interfaces</span><span id="net-ifaces-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchNetworkInterfaces()">&#8635;</button></div>
@@ -6670,8 +6701,15 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
 
 <div class="page section-shell" id="page-settings" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div id="vmr-settings-hero"></div>
-  <div id="vmr-settings-body"></div>
+  <header class="apple-chapter">
+    <p class="apple-chapter-kicker">Settings</p>
+    <h1 class="apple-chapter-title">Preferences.</h1>
+    <p class="apple-chapter-lede">Theme, desktop tier, and cluster defaults for this console.</p>
+  </header>
+  <div id="vmr-settings-hero" hidden aria-hidden="true"></div>
+  <div class="apple-band apple-band-paper">
+    <div class="apple-band-inner" id="vmr-settings-body"></div>
+  </div>
 </div>
 </div>
 
@@ -6935,7 +6973,7 @@ body.mac-desktop-root[data-shell-layout="root"]::before {
     <p class="apple-chapter-lede">Cilium connectivity, policies, and PacketWolf status.</p>
   </header>
 
-  <div id="vmr-cilium-hero"></div>
+  <div id="vmr-cilium-hero" hidden aria-hidden="true"></div>
   <div class="page-header vmr-legacy-page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC. Live Hubble intelligence: <strong>PacketWolf</strong> when <code>VEYRON_PACKETWOLF_URL</code> is wired.</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" id="cilium-packetwolf-open" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">Open PacketWolf</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCilium()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
   <div id="cilium-packetwolf-banner" class="veyron-cap-banner glass-banner vmr-cilium-pw-banner" style="display:none;margin-bottom:16px" role="status"></div>
     <div id="cilium-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -8101,7 +8139,7 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
   </div>
 </div>
 
-<!-- CREATE VM MODAL (legacy sheet — Forge Wizard preferred) -->
+<!-- CREATE VM MODAL (legacy sheet — Create Wizard preferred) -->
 <div class="modal-overlay" id="create-modal">
   <div class="modal glass-modal mac-sheet-modal">
     <div class="mac-sheet-titlebar">
@@ -8110,7 +8148,7 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
         <span class="mac-traffic-btn mac-traffic-min" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
         <span class="mac-traffic-btn mac-traffic-full" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
       </div>
-      <div class="mac-sheet-title">Forge New VM</div>
+      <div class="mac-sheet-title">Create New VM</div>
     </div>
     <div class="modal-body">
       <div id="vmr-forge-recents" style="display:none;margin-bottom:14px"></div>
@@ -8195,16 +8233,16 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
     </div>
     <div class="modal-footer">
       <button type="button" class="glass-btn-secondary" onclick="closeCreateModal()">Cancel</button>
-      <button type="button" class="glass-btn-primary" id="btn-forge-vm" onclick="forgeVM()">Forge VM</button>
+      <button type="button" class="glass-btn-primary" id="btn-forge-vm" onclick="forgeVM()">Create VM</button>
     </div>
   </div>
 </div>
 
 <!-- FORGE VM WIZARD (fullscreen) -->
-<div class="modal-overlay veyron-forge-overlay" id="forge-wizard-modal" role="dialog" aria-modal="true" aria-label="Forge VM">
+<div class="modal-overlay veyron-forge-overlay" id="forge-wizard-modal" role="dialog" aria-modal="true" aria-label="Create VM">
   <div class="veyron-forge-wizard" onclick="event.stopPropagation()">
     <div class="veyron-forge-titlebar">
-      <div><strong>Forge VM</strong> <span class="vmr-beta-tag">Wizard</span></div>
+      <div><strong>Create VM</strong> <span class="vmr-beta-tag">Wizard</span></div>
       <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeForgeWizard()" aria-label="Close"></button>
     </div>
     <div class="veyron-forge-steps" id="forge-wizard-steps">
@@ -8278,7 +8316,7 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
         <label style="display:flex;gap:10px;align-items:center;margin-top:12px;font-size:.88rem"><input type="checkbox" id="forge-wiz-autostart"> Start VM immediately after forge</label>
       </div>
       <div class="forge-step-pane" data-step="6">
-        <h3>Review &amp; Forge</h3>
+        <h3>Review &amp; Create</h3>
         <div id="forge-wiz-review" class="vmr-panel" style="margin-top:12px;padding:16px;font-size:.84rem;color:var(--muted)"></div>
       </div>
     </div>
@@ -8288,8 +8326,8 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
       <button type="button" class="glass-btn-secondary" id="forge-wiz-next" onclick="forgeWizardNext()">Next</button>
       <button type="button" class="glass-btn-secondary" id="forge-wiz-export-yaml" style="display:none" onclick="renderForgeWizardReview&&renderForgeWizardReview();openAskZyra('Export YAML for the VM I just configured in the wizard')">Export YAML</button>
       <button type="button" class="glass-btn-secondary" id="forge-wiz-save-blueprint" style="display:none" onclick="openAskZyra('Save this VM configuration as a Veyron Blueprint')">Save as Blueprint</button>
-      <button type="button" class="glass-btn-primary" id="forge-wiz-submit" style="display:none" onclick="submitForgeWizard()">Forge VM</button>
-      <button type="button" class="glass-btn-primary" id="forge-wiz-submit-start" style="display:none" onclick="submitForgeWizard(true)">Forge + Start</button>
+      <button type="button" class="glass-btn-primary" id="forge-wiz-submit" style="display:none" onclick="submitForgeWizard()">Create VM</button>
+      <button type="button" class="glass-btn-primary" id="forge-wiz-submit-start" style="display:none" onclick="submitForgeWizard(true)">Create + Start</button>
     </div>
   </div>
 </div>
@@ -8357,19 +8395,28 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
     <div class="login-store-scroll" id="login-store-scroll">
       <section class="login-chapter login-chapter-hero" aria-label="Veyron">
         <div class="login-chapter-inner">
+          <p class="login-product-eyebrow">Zyvor</p>
           <p class="login-wordmark">Veyron</p>
-          <h1 class="login-hero-title">Designed for your fleet.</h1>
-          <p class="login-tagline">KubeVirt-native private cloud — provision, monitor, secure, and operate virtual machines from one console.</p>
-          <div class="login-cta">
-            <button type="button" class="login-cta-primary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Sign in</button>
-            <button type="button" class="login-cta-secondary" onclick="navigate('dashboard'); document.getElementById('apikey-modal')?.classList.remove('open')">Learn more</button>
+          <h1 class="login-hero-title">Private cloud.<br>One console.</h1>
+          <p class="login-tagline">You are signing in to <strong>Veyron</strong> — the KubeVirt control plane for virtual machines, snapshots, networking, and day-2 ops.</p>
+          <div class="login-product-pills" aria-label="Product capabilities">
+            <span class="login-product-pill">Virtual Machines</span>
+            <span class="login-product-pill">Snapshots &amp; DR</span>
+            <span class="login-product-pill">RDP &amp; Console</span>
+            <span class="login-product-pill">Ask Zyra</span>
           </div>
-          <p class="login-chapter-note">KubeVirt · Kubernetes · Snapshots · DR</p>
+          <div class="login-cta">
+            <button type="button" class="login-cta-primary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Sign in to Veyron</button>
+            <button type="button" class="login-cta-secondary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Learn more</button>
+          </div>
+          <p class="login-chapter-note">KubeVirt · Kubernetes · Cilium · CDI</p>
         </div>
       </section>
       <section class="login-chapter login-chapter-sign-in" id="login-chapter-signin" aria-label="Sign in to Veyron">
         <div class="login-chapter-inner login-sign-in-inner">
+          <p class="login-product-eyebrow">Veyron</p>
           <h2 class="login-form-heading">Sign in to Veyron</h2>
+          <p class="login-form-sub">Continue to your private cloud console.</p>
           <div class="login-card" id="login-glass-card">
             <div style="margin-bottom:16px">
               <span id="login-mode-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6e6e73">Username &amp; password</span>
@@ -8402,7 +8449,7 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
               <label for="apikey-remember">Remember me on this device</label>
             </div>
             <button type="button" class="login-btn-primary" onclick="submitApiKey()">
-              <span id="login-submit-label">Sign in</span>
+              <span id="login-submit-label">Sign in to Veyron</span>
             </button>
             <p style="text-align:center;margin:16px 0 0">
               <button type="button" id="login-mode-toggle" onclick="toggleLoginMode()" style="background:none;border:none;color:#6e6e73;font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0">Use an API key instead</button>
@@ -8915,7 +8962,7 @@ const PAGE_META = {
   dashboard: {kicker:'VEYRON ///', title:'Mission Control', tags:['Live cluster','KubeVirt control','Realtime refresh']},
   vms: {kicker:'VEYRON ///', title:'Fleet Command', tags:['Start stop resize','SSH and VNC','Bulk actions']},
   'console-hub': {kicker:'VEYRON ///', title:'ConsoleHub', tags:['VNC','Serial','RDP','SSH']},
-  'stack-health': {kicker:'VEYRON ///', title:'Stack Health', tags:['KubeVirt','CDI','Forge VM']},
+  'stack-health': {kicker:'VEYRON ///', title:'Stack Health', tags:['KubeVirt','CDI','Create VM']},
   monitoring: {kicker:'VEYRON ///', title:'Stack health, anomalies, and recommendations', tags:['Metrics aware','Prometheus hints','Namespace scoped']},
   workloads: {kicker:'Compute', title:'Deployments, stateful services, and daemon workloads', tags:['Replica health','Workload types','Namespace view']},
   alerts: {kicker:'Observe', title:'Active alerts and warning acknowledgement flow', tags:['Severity','Source tracking','Live signal']},
@@ -8975,8 +9022,8 @@ const PAGE_META = {
 
 /** Toolbar actions when page-header is hidden (Normal/Power). */
 const PAGE_TOOLBAR_ACTIONS = {
-  dashboard: [{ label: '+ Forge VM', onclick: 'openCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
-  vms: [{ label: '+ Forge VM', onclick: 'openCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
+  dashboard: [{ label: '+ Create VM', onclick: 'openCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
+  vms: [{ label: '+ Create VM', onclick: 'openCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
   soc: [
     { label: 'Refresh', onclick: 'fetchSocPage(true)', className: 'glass-btn-secondary glass-btn-sm' },
     { label: 'Integrations', onclick: "navigate('integrations')", className: 'glass-btn-secondary glass-btn-sm' }
@@ -8984,7 +9031,7 @@ const PAGE_TOOLBAR_ACTIONS = {
   snapshots: [{ label: '+ Snapshot', onclick: 'openSnapModalPick()', className: 'glass-btn-primary glass-btn-sm' }],
   crds: [{ label: '+ VeyronVM', onclick: 'openCrdCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
   catalog: [{ label: 'Sync catalog', onclick: 'catalogSync()', className: 'glass-btn-secondary glass-btn-sm' }],
-  'app-store': [{ label: 'Forge VM', onclick: "navigate('vms');setTimeout(openCreateModal,200)", className: 'glass-btn-primary glass-btn-sm' }],
+  'app-store': [{ label: 'Create VM', onclick: "navigate('vms');setTimeout(openCreateModal,200)", className: 'glass-btn-primary glass-btn-sm' }],
   integrations: [{ label: 'Refresh', onclick: 'fetchIntegrations()', className: 'glass-btn-secondary glass-btn-sm' }],
   gitops: [{ label: 'Refresh', onclick: 'fetchGitOps()', className: 'glass-btn-secondary glass-btn-sm' }],
   events: [{ label: 'Refresh', onclick: "fetchEvents(true)", className: 'glass-btn-secondary glass-btn-sm' }],
@@ -11161,7 +11208,7 @@ function applyLoginModeUI() {
   }
   if (modeBadge) modeBadge.textContent = isApiKey ? 'API key' : 'Username & password';
   if (subEl) subEl.textContent = isApiKey ? 'Use your API key to continue' : 'Sign in with your username and password';
-  if (submitLabel) submitLabel.textContent = isApiKey ? 'Connect to Veyron' : 'Sign in';
+  if (submitLabel) submitLabel.textContent = isApiKey ? 'Connect to Veyron' : 'Sign in to Veyron';
   if (toggleBtn) toggleBtn.textContent = isApiKey ? 'Use username and password instead' : 'Use an API key instead';
   if (hint) hint.style.display = isApiKey ? '' : 'none';
 }
@@ -11511,7 +11558,7 @@ const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Screen Sharing', subtitle: 'ConsoleHub inline VNC', action: 'navigate:console-hub', keys: ['screen', 'sharing', 'connect'] },
   { kind: 'action', title: 'Remote Desktop (RDP)', subtitle: 'Windows NodePort RDP expose', action: 'navigate:vms', keys: ['rdp', 'remote', 'desktop', 'windows', '3389'] },
   { kind: 'action', title: 'Forge a new VM', subtitle: 'Create from template', action: 'forge_vm', keys: ['forge', 'create', 'new vm'] },
-  { kind: 'action', title: 'Forge VM (Wizard)', subtitle: '6-step guided wizard', action: 'forge_vm_wizard', keys: ['forge wizard', 'wizard', 'guided', 'step'] },
+  { kind: 'action', title: 'Create VM (Wizard)', subtitle: '6-step guided wizard', action: 'forge_vm_wizard', keys: ['forge wizard', 'wizard', 'guided', 'step'] },
   { kind: 'action', title: 'Ask Zyra', subtitle: 'Ask Zyra fleet assistant (⌘J)', action: 'mac:ask_zyra', keys: ['ask', 'zyra', 'ai', 'copilot', 'assistant'] },
   { kind: 'page', title: 'Settings', subtitle: 'Platform preferences & integrations', action: 'navigate:settings', keys: ['settings', 'preferences', 'config', 'api key'] },
   { kind: 'page', title: 'Workloads', subtitle: 'Pods, VMIs, virt-launcher, CDI', action: 'navigate:workloads', keys: ['workloads', 'pods', 'virt-launcher', 'cdi'] },
@@ -11531,7 +11578,7 @@ let dynamicIslandOpen = false;
 let desktopTier = 'auto';
 let dockEditorPaths = [];
 
-// ── Orbit shell — spatial deepen mode. Default home is Desktop (Forge Signal Desk).
+// ── Orbit shell — spatial deepen mode. Default home is Desktop (Signal Desk).
 let shellMode = 'desktop';
 let orbitZoom = { level: 'cluster', ns: null, node: null };
 let _shellReady = false;
@@ -14629,7 +14676,7 @@ function renderSettingsVmr() {
   // Section C: Shortcuts table rows
   const shortcuts = [
     ['⌘K',   'Spotlight — jump to any page or VM'],
-    ['⌘N',   'Quick Forge — launch a VM from anywhere'],
+    ['⌘N',   'Quick Create — launch a VM from anywhere'],
     ['⌘J',   'Ask Zyra AI assistant'],
     ['F3 / ⌘↑', 'Mission Control — dashboard overview'],
     ['/',    'Focus VM search (VMs page)'],
@@ -15047,7 +15094,7 @@ async function fetchAppStore(opts) {
         '<div class="app-store-icon">' + distroSvg(t.id || t.title) + '</div>' +
         '<div class="app-store-title">' + esc(t.title) + '</div>' +
         '<div class="app-store-sub">' + esc(t.subtitle) + '</div>' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Forge VM</button>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Create VM</button>' +
       '</div>';
     }).join('') || '<div class="empty-state"><p>No templates in store</p></div>';
   } catch (e) {
@@ -15225,9 +15272,9 @@ function vmListEmptyHtml(filteredEmpty) {
     let html = '<div class="empty-state vmr-empty-panel">' +
       '<div class="icon-wrap">&#9781;</div>' +
       '<p style="font-size:1rem;font-weight:600;color:var(--text-bright);margin:0 0 8px">No virtual machines yet</p>' +
-      '<p class="sub" style="margin:0">Forge your first VM from a template to get started.</p>' +
+      '<p class="sub" style="margin:0">Create your first VM from a template to get started.</p>' +
       '<div class="empty-state-actions">' +
-      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>';
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Create VM</button>';
     if (currentNamespace !== 'all') {
       html += '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setNamespace(\'all\')">All workspaces</button>';
     }
@@ -16411,8 +16458,8 @@ function renderFoundryVmr() {
       '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Template Foundry</h1>' +
       '<p class="vmr-hero-sub">' + count + ' template' + (count !== 1 ? 's' : '') +
       (windows > 0 ? ' · ' + windows + ' Windows' : '') + (linux > 0 ? ' · ' + linux + ' Linux' : '') + ' · Click any tile to forge a VM</p></div>' +
-      '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openForgeWizard()">Forge Wizard</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Quick Forge</button></div></div>';
+      '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openForgeWizard()">Create Wizard</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Quick Create</button></div></div>';
   }
 
   // Populate foundry rail with OS family nav
@@ -16447,7 +16494,7 @@ function filterFoundryByFamily(btn, family) {
       '<div class="app-store-icon">' + distroSvg(t.id || t.title) + '</div>' +
       '<div class="app-store-title">' + esc(t.title) + '</div>' +
       '<div class="app-store-sub">' + esc(t.subtitle) + '</div>' +
-      '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Forge VM</button>' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Create VM</button>' +
       '</div>';
   }).join('') || '<div class="empty-state"><p>No ' + esc(family || '') + ' templates</p></div>';
 }
@@ -16560,7 +16607,7 @@ function openFoundryPreview(title, bodyHtml) {
   drawer.removeAttribute('aria-hidden');
 }
 
-// ── Forge Wizard ──
+// ── Create Wizard ──
 let _forgeWizardStep = 1;
 const FORGE_WIZARD_STEPS = 6;
 
@@ -16742,7 +16789,7 @@ async function submitForgeWizard(andStart) {
   } catch (e) {
     toast('Forge failed: ' + (e.message || String(e)), 'error');
   } finally {
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = andStart ? 'Forge + Start' : 'Forge VM'; }
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = andStart ? 'Create + Start' : 'Create VM'; }
   }
 }
 
@@ -17020,7 +17067,7 @@ function renderPinnedVms(vms) {
   const list = (vms || []).slice(0, 3);
   const forgeCard = '<button type="button" class="vmr-forge-placeholder" onclick="openCreateModal()">' +
     '<span class="vmr-forge-placeholder-icon" aria-hidden="true">⬡</span>' +
-    '<span class="vmr-forge-placeholder-label">Forge New VM</span></button>';
+    '<span class="vmr-forge-placeholder-label">Create New VM</span></button>';
   sec.style.display = '';
   el.innerHTML = '<div class="vmr-card-grid vmr-card-grid-pinned">' +
     list.map(v => pinnedVmCard(typeof v === 'object' ? v : { name: v, status: 'Running', namespace: 'default' })).join('') +
@@ -18566,7 +18613,7 @@ async function fetchVMs(opts) {
       const dashVmList = document.getElementById('dash-vm-list');
       if (dashVmList) {
         dashVmList.innerHTML = vmData.length === 0
-          ? '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p><button class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="openCreateModal()">+ Forge a VM</button></div>'
+          ? '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p><button class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="openCreateModal()">+ Create a VM</button></div>'
           : vmData.slice(0, 10).map(v => dashVmRow(v)).join('');
       }
     }
@@ -19930,7 +19977,7 @@ function renderAboutShortcuts() {
   const fromApi = (lastExperienceDesktop && lastExperienceDesktop.keyboard_shortcuts) || [];
   const fallback = [
     { keys: '⌘K', label: 'Spotlight search' },
-    { keys: '⌘N', label: 'Quick Forge — launch a VM from anywhere' },
+    { keys: '⌘N', label: 'Quick Create — launch a VM from anywhere' },
     { keys: '⌘J', label: 'Ask Zyra AI assistant' },
     { keys: 'F3 / ⌃↑', label: 'Mission Control (cluster overview)' },
     { keys: '⌘⇧B', label: 'Browse all pages' },
@@ -19943,7 +19990,7 @@ function renderAboutShortcuts() {
     { keys: 'T', label: 'Toggle live event ticker strip' },
     { keys: '↑ / ↓ or j / k', label: 'Navigate VM list (vi-style j/k also works)' },
     { keys: 'Enter', label: 'Open inspector for selected VM' },
-    { keys: 'C', label: 'Forge a new VM (VMs page)' },
+    { keys: 'C', label: 'Create a new VM (VMs page)' },
     { keys: '⌘A', label: 'Select / deselect all VMs (VMs page)' },
     { keys: '?', label: 'Open this shortcuts reference' },
     { keys: 'Esc', label: 'Close overlays / dismiss VM inspector' },
@@ -20223,7 +20270,7 @@ async function forgeVM() {
     if (st === 'NodePort' || st === 'LoadBalancer') {
       const np = parseInt((document.getElementById('vm-expose-np') || {}).value, 10);
       if (np) {
-        if (np < 30000 || np > 32767) { toast('NodePort must be in 30000–32767 (suggested 30100–30199)', 'error'); btn.disabled = false; btn.textContent = 'Forge VM'; return; }
+        if (np < 30000 || np > 32767) { toast('NodePort must be in 30000–32767 (suggested 30100–30199)', 'error'); btn.disabled = false; btn.textContent = 'Create VM'; return; }
         port0.node_port = np;
       }
     }
@@ -20255,7 +20302,7 @@ async function forgeVM() {
     toast('Error: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Forge VM';
+    btn.textContent = 'Create VM';
   }
 }
 
@@ -21642,7 +21689,7 @@ var VIM_CMD_HELP = {
   delete:  'delete selected VM (with confirm)',
   clone:   'clone selected VM to a new name',
   cli:     'show CLI commands for selected VM',
-  forge:   'open Quick Forge VM launcher (⌘N)',
+  forge:   'open Quick Create VM launcher (⌘N)',
   go:      'go <page>  — navigate to page',
   ns:      'ns <name>  — switch namespace',
   filter:  'filter <query>  — set VM search filter',
@@ -26625,7 +26672,7 @@ function vfoAction(action) { if (_vfoNs && _vfoName) { vmAction(_vfoNs, _vfoName
 function vfoOpenVnc() { if (_vfoNs && _vfoName) { closeVmFocusOverlay(); openConnectModal(_vfoNs, _vfoName, 'vnc'); } }
 function vfoSnap() { if (_vfoNs && _vfoName) { openSnapModalFor(_vfoNs, _vfoName); } }
 
-// ── Quick Forge ──
+// ── Quick Create ──
 var _qfTemplates = [];
 function openQuickForge() {
   const modal = document.getElementById('quick-forge-modal');
@@ -29398,7 +29445,7 @@ function closeMacShortcuts() {
 })();
 </script>
 <script>
-/* Forge Signal Desk — Fleet Crucible.
+/* Signal Desk — Fleet Crucible.
    Quiet fleet = anonymous ember dust. Attention VMs = luminous interactive seals.
    Active on Forge + glass decks + solid dark themes (not glass-only). */
 (function(){

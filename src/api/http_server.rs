@@ -1249,7 +1249,7 @@ pub mod web {
             )
             .replace(
                 "/*__SHELL_LAYOUT__*/",
-                /* Late: shell law + carbon plates beat leftover inline / veyron rules */
+                /* Late shell/sidebar/carbon, then apple themes so paper + Action Blue still win */
                 concat!(
                     include_str!("web/shell-layout.css"),
                     "\n",
@@ -1257,7 +1257,11 @@ pub mod web {
                     "\n",
                     include_str!("web/dashboard-carbon.css"),
                     "\n",
-                    include_str!("web/dashboard-carbon-deck.css")
+                    include_str!("web/dashboard-carbon-deck.css"),
+                    "\n",
+                    include_str!("web/dashboard-apple-login.css"),
+                    "\n",
+                    include_str!("web/dashboard-apple-themes.css")
                 ),
             )
             .replace("/*__VMR_JS__*/", include_str!("web/dashboard-veyron.js"))
