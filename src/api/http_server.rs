@@ -797,6 +797,7 @@ pub mod web {
                 .route("/assets/three.module.min.js", get(three_handler))
                 .route("/assets/dashboard-veyron-3d.js", get(veyron_3d_handler))
                 .route("/assets/zyvor-logo.png", get(zyvor_logo_handler))
+                .route("/assets/zyvor-z-mark.png", get(zyvor_z_mark_handler))
                 // VM endpoints
                 .route("/api/v1/vms", get(list_vms_handler))
                 .route("/api/v1/vms", post(create_vm_handler))
@@ -1303,6 +1304,13 @@ pub mod web {
         (
             [(header::CONTENT_TYPE, "image/png")],
             include_bytes!("web/zyvor-logo.png").as_ref(),
+        )
+    }
+
+    async fn zyvor_z_mark_handler() -> impl IntoResponse {
+        (
+            [(header::CONTENT_TYPE, "image/png")],
+            include_bytes!("web/zyvor-z-mark.png").as_ref(),
         )
     }
 
