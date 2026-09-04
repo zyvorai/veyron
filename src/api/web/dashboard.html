@@ -29494,11 +29494,11 @@ function closeMacShortcuts() {
     var ws = document.querySelectorAll('.holo-orb-wrap');
     for (var i = 0; i < ws.length; i++){
       var pg = ws[i].closest('.page');
-      if (pg && pg.classList.contains('active') && pg.offsetParent !== null) return ws[i];
+      if (pg && pg.classList.contains('active') && pg.offsetParent !== null && ws[i].getClientRects().length) return ws[i];
     }
     // Signal Desk orb may sit outside .page visibility quirks — prefer dashboard orb
     var dash = document.getElementById('holo-fleet-orb');
-    if (dash && document.getElementById('page-dashboard') && document.getElementById('page-dashboard').classList.contains('active')) return dash;
+    if (dash && dash.getClientRects().length && document.getElementById('page-dashboard') && document.getElementById('page-dashboard').classList.contains('active')) return dash;
     return null;
   }
   function curCanvas(){ var w = curWrap(); return w ? w.querySelector('canvas') : null; }
@@ -29571,7 +29571,8 @@ function closeMacShortcuts() {
     if (vms.length !== lastN || sigKey !== lastSigKey) build();
     if (cssW === 0 || Math.abs(cv.getBoundingClientRect().width - cssW) > 1) resize(cv);
     var ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
-    var cx = cssW/2, cy = cssH/2, maxR = Math.min(cssW, cssH)/2 - 26;
+    var cx = cssW/2, cy = cssH/2, maxR = Math.max(0, Math.min(cssW, cssH)/2 - 26);
+    if (maxR <= 0){ raf = requestAnimationFrame(loop); return; }
     t += 0.005;
     var run = 0, fail = 0, eyes = 0;
     for (var k = 0; k < vms.length; k++){ var to = toneOf(vms[k]); if (to==='ok') run++; if (to==='crit') fail++; if (to!=='ok') eyes++; }
