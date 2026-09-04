@@ -10,7 +10,11 @@ Veyron Mission Control is a hash-routed SPA under `/dashboard` (`#page`).
 | **Finder / Browse** | Sidebar + mega-menu navigation |
 | **Spotlight (`⌘K`)** | Jump to any labeled page |
 | **Favorites** | Fleet Constellation, Reactor, Gallery, vCentre, ConsoleHub, VM Capsule |
-| **Settings** | Auth, theme, AI providers |
+| **Create VM** | Menubar Fleet → Create VM (wizard) |
+| **Settings** | Auth, **Light/Dark** theme, AI providers |
+| **Console** | noVNC (link quality presets), SSH expose, RDP expose |
+
+Theme: Light (paper) or Dark (iPad Pro black). Public RDP NodePort needs `VEYRON_ALLOW_PUBLIC_RDP=1`; prefer ClusterIP + VPN.
 
 ## Browse vs act
 

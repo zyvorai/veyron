@@ -25,16 +25,18 @@ Veyron — Kubernetes-native KubeVirt VM command center
 
 | Task | Command / doc |
 |------|----------------|
-| Architecture, tiers, themes | [CLOUDOS_VISION.md](CLOUDOS_VISION.md) |
+| Architecture, tiers, **Light/Dark Apple themes** | [CLOUDOS_VISION.md](CLOUDOS_VISION.md) · `CLAUDE.md` § Design system |
 | AI modules & LLM config | [VEYRON_AI.md](VEYRON_AI.md) |
 | Ask Zyra standalone page | `https://HOST:30151/ask-zyra` (chat + quick chips) |
 | PVC resize | `PATCH /api/v1/storage/pvcs/:ns/:name` · `{"new_size":"50Gi"}` |
 | Post-deploy smoke test | `VEYRON_API_KEY='…' ./scripts/verify-veyron-remote.sh HOST [30151]` |
-| VM daily ops E2E | `VEYRON_API_KEY='…' ./scripts/test-vm-daily-ops-remote.sh HOST [30151]` |
+| VM daily ops E2E (create, VNC ticket, SSH/RDP, snapshots) | `VEYRON_API_KEY='…' ./scripts/test-vm-daily-ops-remote.sh HOST [30151]` |
+| Dashboard Chrome console sweep | `VEYRON_API_KEY='…' ./scripts/dashboard-console-check.sh --host HOST` |
+| Customer go-live gate | `VEYRON_API_KEY='…' ./scripts/customer-readiness.sh HOST [--ssh-user U] [--full]` |
 | Cluster E2E | `./scripts/test-remote.sh HOST USER` |
 | OpenRouter for Ask Zyra | `./scripts/configure-zyra-openrouter.sh HOST USER` |
 
-Cache-bust the dashboard after UI deploy: `https://HOST:30151/dashboard?dash=<rev>` (see `veyron-dashboard-rev` meta tag in `dashboard.html`).
+Cache-bust the dashboard after UI deploy: `https://HOST:30151/dashboard?dash=<rev>` (see `veyron-dashboard-rev` meta tag in `dashboard.html`; current rev `20260902b`).
 
 ## User Stories
 

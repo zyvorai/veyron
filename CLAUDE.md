@@ -116,7 +116,7 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
 
 - `src/api/http_server.rs` — Axum server, TLS, auth middleware, rate limiting, WebSocket upgrade, VNC proxy. VM routes: **`/network/internet`** (per-VM egress), **`/expose`** (SSH via `kubevirt.io/domain`), **`/rdp-expose`** (RDP via `kubevirt.io/vm` + NodePort).
 - `src/api/handlers/` — handler modules per API domain (`vmis`, `pods`, `metrics`, `costs`, `snapshots`, `compliance`, `soc`, etc.)
-- **Vendored JS assets** are served as their own same-origin routes (not inlined into `DASHBOARD_HTML`), matching the existing `novnc_handler`/`/assets/novnc.min.js` pattern (`http_server.rs`): `three_handler` → **`/assets/three.module.min.js`** (vendored three.js r160, ESM build, `src/api/web/vendor/three.module.min.js`) and `veyron_3d_handler` → **`/assets/dashboard-veyron-3d.js`** (`src/api/web/dashboard-veyron-3d.js`, a shared `createScene(canvas)` WebGL bootstrap — camera/renderer/resize/animation-loop plumbing, IronWolf token-color reader, and a **mandatory `dispose()`** to tear down the WebGL context on page leave). Both are dynamically `import()`ed only by the pages that render a 3D scene (Reactor Core, Topology, Fleet Constellation) — never eagerly loaded, since this SPA has 65 pages and only 3 use WebGL, and browsers cap concurrent WebGL contexts (~16).
+- **Vendored JS assets** are served as their own same-origin routes (not inlined into `DASHBOARD_HTML`), matching the existing `novnc_handler`/`/assets/novnc.min.js` pattern (`http_server.rs`): `three_handler` → **`/assets/three.module.min.js`** (vendored three.js r160, ESM build, `src/api/web/vendor/three.module.min.js`) and `veyron_3d_handler` → **`/assets/dashboard-veyron-3d.js`** (`src/api/web/dashboard-veyron-3d.js`, a shared `createScene(canvas)` WebGL bootstrap — camera/renderer/resize/animation-loop plumbing, CSS-token color reader, and a **mandatory `dispose()`** to tear down the WebGL context on page leave). Both are dynamically `import()`ed only by the pages that render a 3D scene (Reactor Core, Topology, Fleet Constellation) — never eagerly loaded, since this SPA has 65 pages and only 3 use WebGL, and browsers cap concurrent WebGL contexts (~16). Zyvor mark: **`/assets/zyvor-z-mark.png`**.
 
 **Day-2 operations** (ongoing fleet maintenance; mutations ⇒ Write, cluster-wide/destructive ⇒ Admin in `auth_context.rs`; several are **dry-run by default**):
   - **Compute** (`handlers/compute.rs`): `POST /vms/:ns/:name/hotplug` (live CPU/mem via KubeVirt `maxSockets`/`maxGuest`), `PUT /vms/:ns/:name/run-strategy` (Always|Manual|Halted|RerunOnFailure), `POST /vms/bulk` (start|stop|restart|migrate|delete over many), `POST /vms/:ns/:name/drift/remediate` (kick operator re-reconcile).
@@ -126,7 +126,7 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
   - **Data/DR**: `POST /dr/failback` (`handlers/dr.rs`); `app_consistent` flag on `POST /snapshots`; `GET`/`DELETE /storage/orphans` (reclaim, dry-run unless `?confirm=true`); `POST /velero/{backups,restores}` (`handlers/velero.rs`, `VELERO_NAMESPACE`); `POST /vms/:ns/:name/disks/:volume/migrate` (storage-class migration via KubeVirt `updateVolumesStrategy: Migration`, dry-run default).
   - **Platform** (`handlers/operators.rs`): `GET /platform/versions` (KubeVirt/CDI installed versions), `POST /platform/upgrade` (patch CR `imageTag`, dry-run default, needs `kubevirts: patch` RBAC); `GET /capacity/headroom` (`handlers/capacity.rs`), `GET /disks/conversion/capabilities`.
   - Regression gate: **`./scripts/dashboard-console-check.sh --host HOST`** (headless Chrome console-error sweep) caught the routing/500 bugs in these — run after dashboard edits.
-- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS / ZeusOS shell**: macOS 26 Tahoe density (`body.mac-desktop-root`), SF system typography, 40px menubar, glass **dock**, **mac-page-toolbar** (Normal/Power hide `.page-header`), `.mac-page-window` content panes, desktop tiers Normal/Power/Advanced, Finder sidebar, **Ask Zyra** assistant (⌘J). VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `veyron_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
+- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS shell** with an **Apple Store–style** product look (`dashboard-apple-themes.css` / `dashboard-apple-login.css`): Light (paper + Action Blue) default and Dark (iPad Pro true black). Shell chrome: macOS density (`body.mac-desktop-root`), SF typography, 40px menubar, Finder sidebar, desktop tiers Normal/Power/Advanced, **Ask Zyra** (⌘J). **Create VM** opens the forge wizard (`openCreateModal` → `openForgeWizard`). VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) in `localStorage` under `veyron_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
 
 **SharedState pattern** used by every handler:
 ```rust
@@ -295,114 +295,86 @@ redirect happen."
 - **KubeVirt virtio video (optional):** set `kubevirt_video_type` on `VMConfig` (builder: `.kubevirt_video_type("virtio")`) to emit `domain.devices.video`. This requires the cluster KubeVirt **`VideoConfig` alpha feature gate**; without it the API may reject or ignore the field depending on version.
 - **Windows day-to-day remoting:** prefer **RDP** for interactive work; KubeVirt VNC through the dashboard is best-effort over WebSockets. See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md`.
 
-## Design system — IronWolf (the design law)
+## Design system — Apple Store / Zeus product look (the design law)
 
-The dashboard (`src/api/web/dashboard.html`) uses the **IronWolf** design language for its default look: calm steel-blue metal-sheen surfaces, flat borderless content. `tahoe` (Carbon, dark default) and `light` follow this restrained palette. A third theme, **`holo`** (label **"Zeus"**), is an explicit, opt-in exception: an orange/navy palette (`--plasma:#F97316`) modeled on the sibling `zeus-os` project's shell (`src/api/web/dashboard-holo.css`), with liquid-glass card surfaces (`--glass-blur:blur(40px) saturate(1.2)`, 1.25rem radius) but no aurora field, cursor spotlight, or starfield — those are explicitly suppressed under `holo` (`#holo-cursor-glow, #holo-starfield{display:none!important}`). `THEME_PRESETS`/`VALID_THEMES` ship exactly these three (`tahoe`/`light`/`holo`); the other 9 old `glass-deck` decks (`nebula`, `solaris`, `biolume`, `sakura`, `mono`, `inferno`, `voltage`, `daylight`, `prism`, plus older ids like `carbon`/`forge`/`synthwave`) remain retired and are remapped onto `tahoe` via `LEGACY_THEME_ALIASES` — their CSS stays pruned. Outside of `holo`, "wow" still comes from motion and interaction, not color — the editorial **Signal Desk** home page (contextual briefing, scored attention rail, animated stat tiles, orb micro-interactions) is the reference for that direction.
+The dashboard (`src/api/web/dashboard.html`) uses an **Apple accessories / shop** visual language: paper Light surfaces, Action Blue CTAs, chapter heroes, product bands/shelves/tiles — not IronWolf metal-sheen and not the retired `holo`/glass-deck family.
 
-**It lives in a theme layer.** IronWolf's tokens are defined in `src/api/web/dashboard-ironwolf-themes.css` under `html[data-theme='tahoe']`/`html.theme-tahoe` (and a `light` counterpart), embedded via `include_str!` in `src/api/http_server.rs` (concatenated with `dashboard-veyron.css` and `dashboard-ironwolf-login.css` into the `/*__VMR_CSS__*/` placeholder). It cascades to all pages by overriding the same shared surface classes (`.card .glass-card .chart-card .vm-card .tile .panel .vmr-panel .id-*`) the old themes used — the token *names* are unchanged (`--void`, `--panel`, `--plasma`, `--ink`, etc.), only the values and the absence of the `.glass-deck` aurora engine. **To restyle every page, edit the IronWolf token block — do not touch 65 pages.**
+**Themes that ship** (`THEME_PRESETS` / `VALID_THEMES` in `dashboard.html`):
+
+| Theme | Mood |
+|---|---|
+| `light` (default) | Paper `#f5f5f7` / white panels, ink `#1d1d1f`, Action Blue `#0071e3` |
+| `dark` | iPad Pro true black `#000`, silver headlines, sky links `#2997ff`, flat surfaces `#161617` / `#1d1d1f` |
+
+Every legacy id (`tahoe`, `holo`, `nebula`, `carbon`, `forge`, …) remaps via `LEGACY_THEME_ALIASES` onto `light` or `dark`. Do **not** reintroduce IronWolf CSS, `dashboard-holo.css`, or multi-hue glass-deck themes.
+
+**CSS pipeline** (`src/api/http_server.rs`):
+
+```text
+/*__VMR_CSS__*/ and late /*__SHELL_LAYOUT__*/ both end with:
+  carbon → carbon-deck → shell-layout → sidebar → veyron
+  → dashboard-apple-login.css → dashboard-apple-themes.css   (last = wins)
+```
+
+Deleted SoT files: `dashboard-ironwolf-themes.css`, `dashboard-ironwolf-login.css`, `dashboard-holo.css`. **To restyle every page, edit `dashboard-apple-themes.css` — do not touch 65 pages.**
+
+### Login
+
+`dashboard-apple-login.css` — chapter-style sign-in with clear **Veyron** product identity (Zyvor eyebrow, “Sign in to Veyron”). Zyvor **Z** mark at `/assets/zyvor-z-mark.png` (hero + sign-in). Theme picker is Light/Dark only.
 
 ### Color — tokens, not raw hex
 
-Prefer CSS custom properties for surfaces, text, and status — this contract is unchanged from before, just recolored calmer.
+Shared token *names* (`--void`, `--hull`, `--panel*`, `--plasma`, `--ink*`, status tokens) still drive components; Apple themes set the values.
 
-| Purpose | Token / value |
+| Purpose | Token / Light | Dark |
+|---|---|---|
+| Page canvas | `--void` / `--hull` paper | `#000` |
+| Surfaces | `--panel*` white / `#f5f5f7` | `#161617` / `#1d1d1f` |
+| Accent / CTA | `--plasma` Action Blue `#0071e3` | sky `#2997ff` for links; keep CTAs readable |
+| Hairlines | `--hairline` | subtle white alpha |
+| Text | `--ink` / `--ink-2` / `--ink-3` | silver hierarchy |
+| Status | `--nominal` / `--caution` / `--critical` / `--inert` | **theme-independent** — never redefine per theme |
+
+### Page primitives (Apple chapter layout)
+
+Prefer these over inventing new card chrome:
+
+- **`.apple-chapter`** — kicker + title + lede + CTA row (every page hero)
+- **`.apple-band` / `.apple-band-paper`** — full-bleed section bands
+- **`.apple-shelf` / `.apple-shelf-2|3|4`** — product grids
+- **`.apple-tile`**, **`.apple-benefit`**, chip rows — accessory-style cells
+- Status still uses `.id-sig.id-sig-ok/warn/crit/inert` (+ `.id-pulse`)
+
+UI copy: prefer **Create VM** (not “Forge”) in user-visible strings; the wizard modal remains `#forge-wizard-modal` internally. `openCreateModal()` routes to `openForgeWizard()` when that modal exists.
+
+### Navigation (live)
+
+- **Finder sidebar** `#cloudos-finder` — primary nav (`dashboard-sidebar.css`); `finderNavigate` / tier locks / badges
+- **Menubar** — Veyron / Go / View / Fleet / Ops / Observe / Secure / AI; **Create VM** under Fleet opens the wizard
+- **Browse all pages** — `toggleClassicNav()` / ⌘⇧B
+- Dock remains suppressed as a visual affordance; mega-menu and Finder cover navigation
+
+`monitoring` navigates to **`stack-health`** (alias in `dashboard-veyron.js`).
+
+### Surfaces & motion
+
+Keep content editorial and product-like: large chapter titles, calm hairlines, Action Blue CTAs. Avoid reintroducing aurora fields, cursor spotlights, starfields, or multi-theme glass decks. Home/Signal Desk may keep light motion (count-up stats, optional orb); 3D pages still use `dashboard-veyron-3d.js` with mandatory `dispose()`.
+
+### Per-page checklist
+
+1. Chapter hero (`.apple-chapter`) present; hide duplicate JS-injected IronWolf heroes if any remain
+2. Status via `.id-sig-*`; colors via CSS vars
+3. Prefer band/shelf/tile for KPI/list bodies
+4. Wire VM actions to `openCopilotWithVm()` / Ask Zyra where relevant
+5. Gate: `cargo build --features web` + `./scripts/dashboard-console-check.sh --host HOST`
+
+### Verification scripts (deployed cluster)
+
+| Script | Covers |
 |---|---|
-| Deepest background | `--void` |
-| Page background | `--hull` |
-| Glass surface | `--glass-bg` + `--glass-blur` (`.card`, `.chart-card`, `.vm-card` consume these) |
-| Card surface (id-*) | `--panel` `--panel-2` `--panel-hi` |
-| Default / emphasis border | `--hairline` / `--hairline-hi` |
-| Primary accent | `--plasma` (IronWolf tahoe: steel blue `#64a0dc`) |
-| Plasma variants | `--plasma-deep` `--plasma-glow` `--plasma-line` |
-| Metal accents | `--metal-sheen` `--metal-highlight` `--accent-steel` `--accent-steel-bright` |
-| Status: healthy/running | `--nominal` + `--nominal-bg` |
-| Status: warning | `--caution` + `--caution-bg` |
-| Status: error/critical | `--critical` + `--critical-bg` |
-| Status: stopped/off | `--inert` + `--inert-bg` |
-| Text | `--ink` / `--ink-2` / `--ink-3` |
+| `./scripts/verify-veyron-remote.sh HOST` | API smoke |
+| `./scripts/test-vm-daily-ops-remote.sh HOST` | Create/start/stop/pause, VNC ticket, SSH/RDP expose, snapshots |
+| `./scripts/dashboard-console-check.sh --host HOST` | Chrome console/page-error sweep |
+| `./scripts/customer-readiness.sh HOST [--ssh-user U] [--full]` | Full go-live gate |
 
-Status tokens (`--nominal/--caution/--critical/--inert`) are theme-independent — defined once in `dashboard.html`'s base `:root` (~line 129), not per-theme, and no theme (including `holo`) should ever redefine them; only layer glow/emphasis on top. For `tahoe`/`light` there is no aurora/multi-hue mandate: keep the brand accent in the steel-blue family, reserve color for status and sparing accent use, not ambient decoration. `holo` is the one deliberate exception to that restraint — it's an opt-in colorful theme, not a direction to bring back into the default look.
-
-### Surfaces — flat web-page content (NOT floating boxes)
-
-**Design update (de-box):** content surfaces are **flat and borderless** — the UI reads as a normal flowing web page, not a boxed desktop app. The glass tokens still exist, but a late override layer neutralizes the box treatment. **Do not re-introduce card borders, radius, drop-shadows, backdrop-blur, or hover-float on content surfaces.**
-
-- The flatten layer is one block, **`FLAT WEB CONTENT`**, appended at the end of the first `<style>` in `dashboard.html` (search `FLAT WEB CONTENT`). It targets `html.glass-deck .card/.glass-card/.chart-card/.vm-card/.vmr-panel/.tile/.panel/.id-tile/.id-vmcard/.id-tpl/.mac-page-window` with `background:transparent; border:none; border-radius:0; box-shadow:none; backdrop-filter:none` (all `!important`, placed last so it beats the glass-deck box rules). **To change surface framing globally, edit this block — do not touch 67 pages or the per-theme variants.**
-- **Sections, not cards:** top-level groups (`.space-y > .card/.glass-card/.chart-card/.vmr-panel`) get a **top hairline divider** (`border-top:1px solid var(--hairline)`) + gutter-aligned padding; the first child stays flush. Card headers (`.card-header`, `.id-card-h`) render as flat **section headings** with a bottom hairline, no fill.
-- **No fake window chrome:** the per-page `.mac-page-window` frame is stripped and the `.mac-page-toolbar` fake title bar (traffic-light dots `.mac-page-toolbar-traffic`) is hidden.
-- **Left sidebar is live navigation** (revived from the earlier "dead code" state): `#cloudos-finder` (`<aside data-shell-region="nav">`, structural CSS in `dashboard-sidebar.css`) is a zeus-os-style icon-rail sidebar, 11 collapsible `.finder-section` groups (`.cloudos-finder-item[data-page]`), a filter box (`filterFinderNav`), and expanded/narrow/collapsed modes toggled via `cycleFinderSidebar()` (bound to `⌘\`) or the menubar reopen button (`#mac-menubar-sidebar-btn`); state persists in `localStorage` (`veyron_finder_sidebar_mode`, `veyron_finder_sections_v1`). Below 960px it becomes a slide-in drawer (`body.finder-mobile-open`, `#mac-menubar-sidebar-mobile-btn` hamburger). `syncFinderActive`/`syncFinderTierLocks`/`updateFinderBadges` (pre-existing functions, unchanged) keep it in sync with the current page and desktop tier. The top menubar (word menus + icon submenus) is the other live nav surface, plus the **"Browse all pages" mega-menu** (`toggleClassicNav()`, CSS-driven via `body.classic-nav-open .browse-mega-menu` — a separate, unrelated-by-name system from the older `#cloudos-browse-rail` element below) reachable from the sidebar's own "Browse all pages" item, the menubar's Go menu, or **⌘⇧B**. The **dock** (`#cloudos-dock`) and the standalone header button `#cloudos-browse-rail` (a redundant, alternate trigger for the same `toggleClassicNav()`) are still `display:none!important` under the pre-existing "NO SIDE MENU" block in `dashboard-ironwolf-themes.css`, unchanged by this sidebar revival — that only hides their own visual affordance, not the mega-menu feature itself, which stays reachable through the entry points above.
-- **VM/Node Inspector is an inline accordion expand, not a side rail** (2026-08-04): selecting a row in the VMs/Nodes roster used to open the Inspector `<aside>` (`#vm-focus-pane`/`#node-focus-pane`) in a persistent 2-column grid rail (`[data-shell-region="split"]` / `="rail"`, `shell-layout.css`) — a master-detail desktop pattern regardless of border/background flattening. `positionVmFocusPaneInline()`/`positionNodeFocusPaneInline()` (`dashboard.html`) now move the pane via JS to sit directly after the clicked roster row (`.vmr-roster-row`/`.vm-row`/`.vm-card`, matched by `data-vm-ns`+`data-vm-name` or `data-node-name`) on desktop, add `.vmr-inline-inspector`, collapse the split grid to one column, and un-bound the roster's own scroll box so expanded content flows with the page. This only runs above 1024px — below it the pane is moved back into `#vm-workspace`/`#node-workspace` so the pre-existing mobile slide-in drawer (`shell-layout.css` `@media (max-width:1024px)`) is untouched. A resize listener re-syncs both on breakpoint crossing.
-- **Correction (verified directly in the CSS, not inferred): the base aurora field (`body::before`, five radial-gradient blooms at fixed positions) is global and unconditional** — it is its own bare selector, not gated behind `.glass-deck`, so it renders under `tahoe`/`light` too, not just the retired Holographic Ops family. The `.glass-deck`-gated machinery that *is* retired is the rest of that engine: floating-glass surface treatment, cursor spotlight, twinkling starfield, and the fleet-orb boot sequence. Because the aurora blooms sit at fixed percentage positions, a viewport region far from all five can read as visually flat/empty — the `body` background is a subtle `--bg-deep`→`--hull` gradient (not a flat fill) specifically to avoid that reading. IronWolf's *additional* motion budget is spent locally: the Signal Desk home hero has its own pointer parallax (`initIwCcParallax`) and rotating tips (`initIwCcTipRotator`), the fleet orb (`#holo-fleet-orb.iw-home-orb`) is scoped to the dashboard page, and card/tile hover-float plus status-orb pulse apply everywhere.
-
-### Depth & motion
-
-- **Home hero parallax**: the Signal Desk hero tracks the pointer (`initIwCcParallax` in `dashboard-veyron.js`), scoped to `#page-dashboard` — not a global background effect.
-- **Micro-interactions carry the "wow"**: animated count-up stat tiles (`iwCcAnimateStat`), the fleet-orb surprise pulse/burst on click or hover (`iwCcOrbSurprise`), and rotating contextual tips are the signature IronWolf motion language — favor these over ambient background effects when adding new interactions.
-
-### Status rendering — luminous signal orbs, never flat rectangles
-
-Status is a pulsing `.id-sig` pill with an `.id-pulse` dot (holo gives it a glow halo):
-- Running → `<span class="id-sig id-sig-ok"><span class="id-pulse"></span>running</span>`
-- Warning → `id-sig-warn` · Critical → `id-sig-crit` (blinks fast) · Stopped → `id-sig-inert`
-
-Never use a flat colored badge, colored background div, or colored text alone to convey status.
-
-### Typography
-
-- **Display / headings**: `font-family: var(--sans-deck)` (SF Pro Display). KPI numerals get an aurora-lit gradient text fill under holo.
-- **All data, IPs, specs, eyebrow labels**: `font-family: 'IBM Plex Mono', ui-monospace, monospace`
-- **Numbers**: always `font-feature-settings: "tnum"` so they don't jitter on live updates
-- **Eyebrow labels**: monospace, 10px, `letter-spacing: 2px`, `text-transform: uppercase`, color `--ink-3`
-
-### Page structure — every page should have
-
-1. **KPI tile row** — `.id-tile` cards with `.id-eyebrow` + `.id-big` metric + `.id-spark` sparkline
-2. **Section headings** — `.id-sec-h` with `<h2>` + `.id-line` (holo: plasma-fade line)
-3. **Hero pages** (`#page-dashboard`, `#page-vms`, `#page-reactor`, `#page-topology`): luminous command-banner header + floating-glass panels (`.vmr-panel`, `.vm-card`).
-
-### Component classes (use these, don't reinvent)
-
-`.id-tile` · `.id-vmcard` · `.id-gauge` · `.id-sig-ok/warn/crit/inert` · `.id-alert` · `.id-zeus` · `.id-btn-plasma` · `.id-btn-ghost` · `.id-chip` · `.id-card-h` · `.id-readout` · `.id-bars` · `.id-tpl` · `.id-eyebrow` · `.id-metric` · `.id-sec-h` · `.vmr-panel` (dashboard panel)
-
-### Signature interactions (apply to every interactive element)
-
-- **Cards/panels**: float on hover (`translateY(-4px)` + plasma bloom) — reuse `.card`/`.id-tile`/`.id-vmcard`/`.vmr-panel`.
-- **Running VMs**: glowing pulse on the status orb (built into `.id-sig-ok`).
-- **KPI tiles**: soft plasma bloom via `.id-tile::after` (built in).
-- **New pages**: always wire `openCopilotWithVm()` on VM-level click actions for Ask Zyra integration.
-
-> `tahoe` (Carbon, dark default), `light`, and `holo` (Zeus, orange/navy glass) ship today. `THEME_PRESETS`/`VALID_THEMES` are these three; every other legacy theme id remaps onto `tahoe` via `LEGACY_THEME_ALIASES` in `dashboard.html`.
-
-### The retired `glass-deck` family, one revival (`holo`/Zeus), and the left sidebar — history
-
-Before IronWolf, Holographic Ops was one of a **family** of ten glass themes (`holo`, `nebula`, `solaris`, `biolume`, `sakura`, `mono`, `inferno`, `voltage`, `daylight`, `prism`, plus older ids like `carbon`/`forge`/`synthwave`/`aurora`/`nord`/`matrix`/`tahoe-light`/`frost`/`daylight`) keyed to an `html.glass-deck` class — floating-glass surfaces, aurora field, pointer parallax, fleet orb, cursor spotlight, twinkling starfield. All ten were made unreachable when the boot script hard-normalized `data-theme` to only ever be `tahoe` or `light`, and their CSS was then **removed** via a script-assisted, selector-level pass (not a blind line-range delete): every top-level CSS rule across `dashboard.html`'s main `<style>` block, `dashboard-veyron.css`, and `dashboard-ironwolf-themes.css` was parsed, each comma-separated selector checked against three verified-safe dead patterns (`data-theme="X"` where X isn't tahoe/light; `.glass-deck`; any selector containing "finder"), and rules were either dropped whole or trimmed to keep only their live selectors. ~380 rules / ~660 selectors removed across the three files (~107KB). At the same time the left Finder sidebar (`#cloudos-finder`) was force-hidden and its reopen path disabled, leaving menubar + dock as the only navigation.
-
-**`holo` was later revived** as a third, explicitly opt-in theme, first as a blue/purple "Aurora" look, then **rebuilt to match the sibling `zeus-os` project's UX** (orange/navy palette, liquid-glass cards, label **"Zeus"**) — see `src/api/web/dashboard-holo.css`. The aurora field, cursor spotlight, and starfield from the original revival were explicitly disabled again in the Zeus rewrite (they don't match zeus-os's look); the `.holo-orb-wrap` fleet-orb canvas and `ORB_THEMES`/`THEME_PRESETS`/`VALID_THEMES`/`parseStoredThemeEarly` wiring stayed. **The other 9 decks (`nebula`/`solaris`/`biolume`/`sakura`/`mono`/`inferno`/`voltage`/`prism`/`borealis`) remain retired — do not reintroduce them.**
-
-**The left Finder sidebar was also revived** as part of the same zeus-os UX pass (see the "Left sidebar is live navigation" bullet above, `dashboard-sidebar.css`, and the `#cloudos-finder` markup in `dashboard.html`) — it is live, primary navigation again, not dead code. `finderNavigate`/`finderRunCopilotQuick`/`finderBackupAdvisor`/`syncFinderActive`/`syncFinderTierLocks`/`updateFinderBadges` (pre-existing, reused as-is) plus the newer `setFinderSidebarMode`/`cycleFinderSidebar`/`initFinderSections`/`filterFinderNav`/`openFinderMobile` drive it. The dock remains suppressed; the top menubar and the "Browse all pages" mega-menu (see the note above) are the other live nav paths besides the sidebar.
-
-### Per-page sweep procedure
-
-IronWolf applies globally via the `tahoe`/`light` theme blocks in `dashboard-ironwolf-themes.css`, so most pages need no per-page work. When a specific page section in `dashboard.html` still needs hand-tuning:
-
-1. **Read** the page's `<div class="page section-shell" id="page-…">` block
-2. **Identify violations**: raw hex colors, flat status badges, non-Signal-Dot status indicators, missing KPI tiles, non-`--ink/ink-2/ink-3` text colors, any reference to a retired glass-deck class/id
-3. **Replace** status badges with `.id-sig.id-sig-ok/warn/crit/inert` pills
-4. **Replace** KPI numbers with `.id-tile > .id-eyebrow + .id-big` patterns
-5. **Replace** any `color:#xxx` or `background:#xxx` inline styles with `var(--token)`
-6. **Replace** JS canvas/SVG hex strings with `VMR_SIG.ok / .warn / .crit / .off`
-7. **Add** section heading with `.id-sec-h` if missing
-8. **Wire** VM-level clicks to `openCopilotWithVm()`
-9. **Test**: `cargo build --features web` must succeed; no new raw hex in the diff; `./scripts/dashboard-console-check.sh --host HOST` clean
-
-### Batch sequence (active — full 65-page IronWolf sweep)
-
-Work pages in this order (each batch is a single commit+push; never skip the build + console-check gate between batches):
-
-- **Batch 0** (done) — token foundation; legacy scaffold/CSS cleanup (dead `web/src/components/instrument` React library removed, unused `dashboard-packetwolf-themes.css` removed)
-- **Batch A** — Signature surfaces: Home/Signal Desk, Reactor Core, Topology, Fleet Constellation, Ask Zyra (these get 3D/WebGL treatment for the fleet visualizations; every other page stays vanilla canvas/CSS)
-- **Batch B** — Compute pages: vms, nodes, pods, workloads, scheduling, hpa, autoscaler, vm-capsule, console-hub, gallery-wall, vcentre
-- **Batch C** — Observe pages: monitoring, metrics, alerts, events, slo, performance, heatmap, custom-dashboards, observability, insights, traces, logs, incidents, dependencies
-- **Batch D** — Storage + Network: snapshots, storage, images, backups, ingress, network-policies, cilium, network-intel
-- **Batch E** — Security + Platform: security, compliance, rbac, policies, quotas, audit, soc, helm, operators, crds, blueprint-studio, custom-resources, catalog, app-store, gitops, integrations, webhooks, tenants, stack-health, settings
-- **Batch F** — FinOps + Ops: costs, forecasting, chaos, dr, actions, notifications
+RDP **NodePort**/`LoadBalancer` is refused unless `VEYRON_ALLOW_PUBLIC_RDP=1`; prefer **ClusterIP** + VPN/gateway.
