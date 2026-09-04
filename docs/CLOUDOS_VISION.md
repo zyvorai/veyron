@@ -1,10 +1,10 @@
 # CloudOS — Veyron Dashboard Architecture & Vision
 
-CloudOS is the default shell for the Veyron dashboard: a macOS Tahoe–inspired desktop for Kubernetes-native VM operations. The UI ships as a single self-contained SPA embedded in the Rust binary — no separate frontend build, no CDN at runtime.
+CloudOS is the default shell for the Veyron dashboard: a macOS-inspired desktop for Kubernetes-native VM operations, presented with an **Apple Store–style** product UI (chapter heroes, paper/true-black themes, Action Blue). The UI ships as a single self-contained SPA embedded in the Rust binary — no separate frontend build, no CDN at runtime.
 
-**Current dashboard revision:** `20260804b` (cache-bust via `?dash=<rev>` and `<meta name="veyron-dashboard-rev">`).
+**Current dashboard revision:** `20260902b` (cache-bust via `?dash=<rev>` and `<meta name="veyron-dashboard-rev">`).
 
-> **Staleness note:** this doc predates the **IronWolf** theme pivot (see `CLAUDE.md` § Design system) and the growth to 65 pages. The Themes section and page/line counts below have been corrected; other sections (tier gating, chrome-layer specifics) may still describe an earlier revision and would benefit from a fuller refresh alongside the active 65-page redesign sweep.
+> Design SoT: `CLAUDE.md` § Design system — Apple Store / Zeus product look. IronWolf and `holo` CSS have been removed.
 
 ---
 
@@ -12,17 +12,20 @@ CloudOS is the default shell for the Veyron dashboard: a macOS Tahoe–inspired 
 
 | Asset | Source | Role |
 |---|---|---|
-| HTML shell + inline JS | `src/api/web/dashboard.html` (~30k lines) | All 65 pages, CloudOS chrome, Ask Zyra modal |
-| Layout & VMR panels | `src/api/web/dashboard-veyron.css` | Glass surfaces, dock, fleet cards |
-| Theme tokens | `src/api/web/dashboard-ironwolf-themes.css` | IronWolf `tahoe`/`light` token blocks |
-| Sign-in page | `src/api/web/dashboard-ironwolf-login.css` | Split-screen login hero + glass panel |
+| HTML shell + inline JS | `src/api/web/dashboard.html` (~30k lines) | All ~65 pages, CloudOS chrome, Ask Zyra modal |
+| Layout & VMR panels | `src/api/web/dashboard-veyron.css` | Panels, dock hooks, fleet cards |
+| Theme tokens (SoT) | `src/api/web/dashboard-apple-themes.css` | Light paper + Dark iPad Pro tokens; chapter/band/shelf primitives |
+| Sign-in page | `src/api/web/dashboard-apple-login.css` | Apple chapter login + Veyron / Zyvor identity |
 | Page renderers | `src/api/web/dashboard-veyron.js` | Mission Control, Signal Desk, Fleet, Foundry, capsule tabs |
+| Zyvor Z mark | `src/api/web/zyvor-z-mark.png` | `/assets/zyvor-z-mark.png` on login |
 
-At startup, `src/api/http_server.rs` reads the CSS/JS siblings via `include_str!` and performs literal `replace()` into the HTML template before serving `GET /`:
+At startup, `src/api/http_server.rs` reads the CSS/JS siblings via `include_str!` and performs literal `replace()` into the HTML template before serving `GET /dashboard`:
 
 ```text
-/*__VMR_CSS__*/  →  dashboard-veyron.css + dashboard-ironwolf-themes.css + dashboard-ironwolf-login.css
-/*__VMR_JS__*/   →  dashboard-veyron.js
+/*__VMR_CSS__*/     → carbon + carbon-deck + shell-layout + sidebar + veyron
+                      + apple-login + apple-themes
+/*__SHELL_LAYOUT__*/ → shell + sidebar + carbon (+ deck) + apple-login + apple-themes  (apple last = wins)
+/*__VMR_JS__*/       → dashboard-veyron.js
 ```
 
 The binary is fully self-contained. Browsers cache aggressively; bump `DASH_REV` / `__VEYRON_DASH_REV` when shipping UI changes.
@@ -37,14 +40,14 @@ The active layout uses `body.mac-desktop-root`. Legacy `veyron-topbar` / `veyron
 
 | Layer | Purpose | Key shortcuts |
 |---|---|---|
-| **Menubar** (40px) | App menu, View, tier badge, clock, Control Center | ⌘J Ask Zyra, ⌘K Spotlight, ⌘⇧B Browse |
-| ~~Finder sidebar~~ | Legacy collapsible sidebar (`#cloudos-finder`) — force-hidden at boot (`initFinderCollapsed()`), its reopen control permanently disabled. Dead code pending removal; **not** live navigation. | — |
-| **Dock** | Pinned pages + Ask Zyra (✦) + trash metaphor | Click or Launchpad |
-| **mac-page-window** | Content pane for the active `data-page` section | `.mac-page-toolbar` replaces legacy `.page-header` on Normal/Power |
+| **Menubar** (40px) | App menu, Go, View, Fleet/Ops/Observe/Secure/AI, Control Center | ⌘J Ask Zyra, ⌘K Spotlight, ⌘⇧B Browse |
+| **Finder sidebar** | Live primary nav (`#cloudos-finder`, `dashboard-sidebar.css`); collapsible sections, filter, tier locks | ⌘\\ cycle width |
+| **Dock** | Visually suppressed; Launchpad / Browse / Finder cover the same jobs | — |
+| **mac-page-window** | Content pane for the active `data-page` section | `.mac-page-toolbar` / chapter heroes |
 | **Mission Control overlay** | Cluster overview grid (F3) | Fleet health at a glance |
 | **Launchpad** | Full-page app grid | All tier-allowed pages |
 | **Spotlight** | ⌘K fuzzy search | Pages, VMs, actions including Ask Zyra |
-| **Control Center** | Theme, wallpaper, tier, quick tiles | Ask Zyra tile, desktop tier switcher |
+| **Control Center** | Theme, wallpaper, tier, quick tiles | Light/Dark, desktop tier |
 | **Browse sheet** | Mega-menu of all pages (⌘⇧B) | Mobile: bottom sheet |
 
 ### Desktop tiers
@@ -62,44 +65,42 @@ Stored in `localStorage` as `veyron_desktop_tier` + `veyron_desktop_tier_auto`. 
 
 ### Mock-aligned chrome (Power / Automatic home)
 
-The default Mission Control home matches the `veyron.png` reference layout:
+The default Mission Control home matches the product reference layout:
 
 | Surface | Behavior |
 |---|---|
 | **Menubar center** | Search, alert pill, **Home / Monitor / Ask Zyra** quick pills |
-| **Finder Platform rail** | Stack Health → Settings (nine links); Favorites collapsed on Power |
-| **Finder Ask Zyra** | Four shortcuts: Ask Zyra, Unhealthy VMs, Backup Advisor, Storage Doctor |
-| **Mission Control** | Compact title + Live badge; 4-card grid (Fleet Health, Ask Zyra, Quick Actions, Alerts) |
-| **Pinned VMs** | Always visible with dashed **Forge New VM** placeholder |
-| **Status bar** | **Zen mode on** (Automatic tier or View → Zen mode) + large clock above dock |
-| **Advanced home** | Restores hero, metrics strip, and Recent Activity on Mission Control |
+| **Finder Platform rail** | Stack Health → Settings; Favorites on Power+ |
+| **Finder Ask Zyra** | Ask Zyra, Unhealthy VMs, Backup Advisor, Storage Doctor |
+| **Mission Control** | Apple chapter hero + fleet briefing / quick actions / alerts |
+| **Create VM** | Menubar Fleet → Create VM opens **forge wizard** (`openCreateModal` → `openForgeWizard`) |
+| **Status bar** | Zen mode + clock when enabled |
+| **Advanced home** | Restores denser metrics / activity where still present |
 
-Zen mode: `veyron_zen_mode` in `localStorage`, or on by default when desktop tier is Automatic. Hides desktop tabs and shows the status-bar label.
+Zen mode: `veyron_zen_mode` in `localStorage`, or on by default when desktop tier is Automatic.
 
-### Themes & wallpapers — IronWolf
+### Themes & wallpapers — Apple Light / Dark
 
-Two themes ship today (Settings → Theme, Control Center, menubar), branded **IronWolf**:
+Two themes ship (Settings → Theme, Control Center, menubar):
 
 | Theme key | Mood |
 |---|---|
-| `tahoe` | Default dark — calm steel-blue metal-sheen surfaces (`#64a0dc` accent) |
-| `light` | Daylight counterpart |
+| `light` | Default — paper `#f5f5f7`, white panels, Action Blue `#0071e3` |
+| `dark` | iPad Pro true black `#000`, silver type, sky `#2997ff` |
 
-Every previous theme id (`holo`, `nebula`, `solaris`, `biolume`, `sakura`, `mono`, `inferno`, `voltage`, `daylight`, `prism`, `wolf`, `forge`, `ember`, `sonoma`, `graphite`, `slate`, `frost`, etc.) is remapped onto `tahoe` or `light` via `LEGACY_THEME_ALIASES` in `dashboard.html` — existing `localStorage` values migrate silently on load, no user-visible break.
+Legacy ids (`tahoe`, `holo`, `nebula`, `carbon`, `daylight`, …) remap via `LEGACY_THEME_ALIASES` onto `light` or `dark`. Keys: `veyron_theme`, `veyron_wallpaper` (pairing: light→`tahoe`, dark→`midnight`).
 
-Keys: `veyron_theme`, `veyron_wallpaper`.
+**Surface tokens:** `dashboard-apple-themes.css` under `html[data-theme='light'|'dark']` — maps `--void`, `--hull`, `--panel*`, `--plasma`, `--ink*`, plus chapter/band/shelf primitives (`.apple-chapter`, `.apple-band`, `.apple-shelf`, `.apple-tile`). Status tokens (`--nominal/--caution/--critical/--inert`) stay theme-independent in `dashboard.html` `:root`.
 
-**Surface tokens:** `dashboard-ironwolf-themes.css` defines the token blocks under `html[data-theme='tahoe']`/`html.theme-tahoe` and a `light` counterpart — `--void`, `--hull`, `--panel*`, `--plasma`, `--ink*`, `--metal-sheen`/`--metal-highlight`/`--accent-steel*`. Status tokens (`--nominal/--caution/--critical/--inert`) are theme-independent, defined once in `dashboard.html`'s base `:root`. Glass cards, forms, tables, hero panels, and charts read these vars so both themes tint correctly with no per-page work.
+**Sign-in:** `dashboard-apple-login.css` chapter login with Zyvor Z mark and Light/Dark appearance control before connect.
 
-**Sign-in theme picker:** the API key modal (`dashboard-ironwolf-login.css` split-screen hero + glass panel) includes a tahoe/light appearance grid. Theme choice persists via `veyron_theme` before connect.
-
-**Retired:** the prior 8/10-theme "Holographic Ops" `glass-deck` family and its PacketWolf-mirrored `dashboard-packetwolf-themes.css` surface tokens have been removed. See `CLAUDE.md` § "The retired `glass-deck` family" for what's left to prune.
+**Retired (do not restore):** IronWolf CSS, `dashboard-holo.css`, PacketWolf mirrored theme packs, multi-deck `glass-deck` aurora/spotlight/starfield.
 
 ### Typography & density
 
-- System stack: `-apple-system`, SF Pro, Segoe UI fallbacks
-- Menubar 40px; glass cards with `backdrop-filter: blur(12–20px)`
-- `--violet` (`#9b7cff`) for Ask Zyra / AI surfaces
+- System stack: `-apple-system`, SF Pro Display / Text, Helvetica Neue fallbacks (`--font-hero` / `--font-display`)
+- Menubar 40px; prefer flat product sections over heavy glass cards
+- Ask Zyra / AI surfaces use the Action Blue / sky accent family (not a separate violet mandate)
 
 ---
 
@@ -173,16 +174,18 @@ Recent VMs: `localStorage` key `veyron_recent_vms` (Spotlight empty state).
 
 ---
 
-## 6. Forge VM Wizard
+## 6. Create VM Wizard
 
-Six steps with a top progress rail:
+User-facing label is **Create VM**. Entry: menubar Fleet → Create VM, or `openCreateModal()` (routes to `openForgeWizard()` when `#forge-wizard-modal` exists). Six steps with a top progress rail:
 
 1. **Template** — OS family from catalog
 2. **Profile** — optional `VMProfile` CRD
-3. **Hardware** — CPU, RAM, disk, GPU
-4. **Network** — masquerade/bridge/SRIOV, NADs
+3. **Hardware** — CPU, RAM, disk, GPU (when advertised)
+4. **Network** — expose / internet egress
 5. **Security** — TPM, Secure Boot, backup/policy bindings, limits
-6. **Review** — summary grid + collapsible YAML → `POST /api/v1/vms`
+6. **Review** — summary → `POST /api/v1/vms` (Create / Create + Start)
+
+Legacy single-sheet `#create-modal` remains in the DOM as fallback when the wizard is absent.
 
 ---
 
