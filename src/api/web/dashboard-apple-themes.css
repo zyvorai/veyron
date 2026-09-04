@@ -1,6 +1,6 @@
 /* Apple Store / Zeus OS design tokens for Veyron.
-   Light (default) = paper + Action Blue; Dark = quiet charcoal + Action Blue.
-   Loads last in CSS concat so it wins over IronWolf steel / holo orange. */
+   Light = paper + Action Blue; Dark = iPad Pro true black + silver type + sky links.
+   Loads last in CSS concat so it wins over leftover carbon plating. */
 
 :root {
   --apple-ink: #1d1d1f;
@@ -93,7 +93,7 @@ html[data-theme='light'] body::before {
   display: none !important;
 }
 
-/* ---- Dark companion (quiet charcoal, Action Blue intent) ---- */
+/* ---- Dark — Apple iPad Pro black (true black + silver type + sky links) ---- */
 html[data-theme='dark'],
 html.theme-dark,
 html[data-theme='tahoe'],
@@ -102,59 +102,64 @@ html[data-theme='holo'],
 html.theme-holo {
   --apple-ink: #f5f5f7;
   --apple-muted: #a1a1a6;
-  --apple-paper: #1d1d1f;
-  --bg-primary: #111113;
-  --bg-secondary: #1d1d1f;
-  --bg-tertiary: #2c2c2e;
+  --apple-paper: #161617;
+  --apple-border: #424245;
+  --apple-action: #0071e3;
+  --apple-action-hover: #0077ed;
+  --apple-link: #2997ff;
+  --apple-sky: #2997ff;
+  --bg-primary: #000000;
+  --bg-secondary: #161617;
+  --bg-tertiary: #1d1d1f;
   --text-primary: #f5f5f7;
   --text-secondary: #a1a1a6;
-  --text-muted: #a1a1a6;
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(255, 255, 255, 0.16);
-  --void: #0b0b0c;
-  --hull: #111113;
-  --panel: #1d1d1f;
-  --panel-2: #2c2c2e;
-  --panel-hi: #3a3a3c;
-  --hairline: rgba(255, 255, 255, 0.1);
-  --hairline-hi: rgba(255, 255, 255, 0.16);
-  --plasma: #0071e3;
-  --plasma-deep: #2997ff;
-  --plasma-glow: rgba(0, 113, 227, 0.28);
-  --plasma-line: rgba(41, 151, 255, 0.45);
-  --deck-temp: #0071e3;
-  --deck-temp-glow: rgba(0, 113, 227, 0.2);
+  --text-muted: #86868b;
+  --border-color: rgba(255, 255, 255, 0.12);
+  --border-hover: rgba(255, 255, 255, 0.2);
+  --void: #000000;
+  --hull: #000000;
+  --panel: #161617;
+  --panel-2: #1d1d1f;
+  --panel-hi: #2c2c2e;
+  --hairline: rgba(255, 255, 255, 0.12);
+  --hairline-hi: rgba(255, 255, 255, 0.22);
+  --plasma: #2997ff;
+  --plasma-deep: #0071e3;
+  --plasma-glow: rgba(41, 151, 255, 0.22);
+  --plasma-line: rgba(41, 151, 255, 0.4);
+  --deck-temp: #2997ff;
+  --deck-temp-glow: rgba(41, 151, 255, 0.16);
   --ink: #f5f5f7;
   --ink-2: #a1a1a6;
   --ink-3: #6e6e73;
-  --primary: #0071e3;
-  --primary-dim: rgba(0, 113, 227, 0.16);
-  --primary-glow: rgba(0, 113, 227, 0.34);
-  --primary-blue: #0071e3;
-  --bg-0: #0b0b0c;
-  --bg: #111113;
-  --bg-deep: #0b0b0c;
-  --bg-card: rgba(29, 29, 31, 0.92);
-  --bg-card-solid: #1d1d1f;
-  --bg-elevated: #2c2c2e;
+  --primary: #2997ff;
+  --primary-dim: rgba(41, 151, 255, 0.14);
+  --primary-glow: rgba(41, 151, 255, 0.28);
+  --primary-blue: #2997ff;
+  --bg-0: #000000;
+  --bg: #000000;
+  --bg-deep: #000000;
+  --bg-card: rgba(22, 22, 23, 0.96);
+  --bg-card-solid: #161617;
+  --bg-elevated: #1d1d1f;
   --text: #f5f5f7;
   --text-bright: #ffffff;
-  --text-dim: #6e6e73;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-hot: rgba(0, 113, 227, 0.4);
-  --blue: #0071e3;
-  --cyan: #2997ff;
-  --accent: #0071e3;
+  --text-dim: #86868b;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-hot: rgba(41, 151, 255, 0.45);
+  --blue: #2997ff;
+  --cyan: #64d2ff;
+  --accent: #2997ff;
   --molten: #2997ff;
   --spark: #64d2ff;
-  --forge: #0071e3;
-  --ember: #0071e3;
+  --forge: #2997ff;
+  --ember: #2997ff;
   --orange: #ff9f0a;
   --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --mac-vibrancy: rgba(17, 17, 19, 0.78);
-  --mac-border: rgba(255, 255, 255, 0.08);
-  --ironwolf-glass-chrome-bg: rgba(29, 29, 31, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --mac-vibrancy: rgba(0, 0, 0, 0.72);
+  --mac-border: rgba(255, 255, 255, 0.1);
+  --ironwolf-glass-chrome-bg: rgba(22, 22, 23, 0.82);
   color-scheme: dark;
 }
 
@@ -162,9 +167,8 @@ html[data-theme='dark'] body.mac-desktop-root,
 html.theme-dark body.mac-desktop-root,
 html[data-theme='tahoe'] body.mac-desktop-root,
 html[data-theme='holo'] body.mac-desktop-root {
-  background:
-    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(0, 113, 227, 0.14), transparent 55%),
-    linear-gradient(180deg, #111113 0%, #0b0b0c 100%) !important;
+  /* iPad Pro: flat true black — no ambient blue bloom */
+  background: #000000 !important;
   color: var(--ink);
   font-family: var(--font-display);
 }
@@ -181,9 +185,9 @@ html[data-theme='holo'] body::after {
 
 /* Kill holo orange leftovers when remapped / legacy */
 html[data-theme='holo'] {
-  --plasma: #0071e3 !important;
-  --primary: #0071e3 !important;
-  --accent: #0071e3 !important;
+  --plasma: #2997ff !important;
+  --primary: #2997ff !important;
+  --accent: #2997ff !important;
 }
 
 /* Global type */
@@ -479,16 +483,98 @@ html[data-theme='holo'] #page-dashboard .apple-home-vitals {
   #page-dashboard .apple-home-vitals-inner { grid-template-columns: 1fr; gap: 1.75rem; }
 }
 
-/* Theme swatch previews for Light / Dark only */
+/* Theme swatch previews — Light paper / iPad Pro black */
 .theme-swatch-preview.light {
-  background: linear-gradient(135deg, #ffffff 0%, #f5f5f7 40%, #0071e3 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f7 45%, #0071e3 100%);
 }
 .theme-swatch-preview.dark,
 .theme-swatch-preview.tahoe {
-  background: linear-gradient(135deg, #0b0b0c 0%, #1d1d1f 45%, #0071e3 100%);
+  background: linear-gradient(160deg, #000000 0%, #1d1d1f 55%, #2997ff 100%);
 }
 .theme-swatch-preview.auto {
-  background: linear-gradient(135deg, #f5f5f7 0%, #0071e3 48%, #0b0b0c 52%, #2997ff 100%);
+  background: linear-gradient(135deg, #f5f5f7 0%, #0071e3 48%, #000000 52%, #2997ff 100%);
+}
+
+/* iPad Pro dark: chapters, bands, tiles */
+html[data-theme='dark'] .apple-chapter-title,
+html[data-theme='tahoe'] .apple-chapter-title,
+html[data-theme='holo'] .apple-chapter-title,
+html[data-theme='dark'] .apple-section-title,
+html[data-theme='tahoe'] .apple-section-title,
+html[data-theme='holo'] .apple-section-title,
+html[data-theme='dark'] #page-dashboard .apple-home-hero .apple-chapter-title,
+html[data-theme='tahoe'] #page-dashboard .apple-home-hero .apple-chapter-title,
+html[data-theme='holo'] #page-dashboard .apple-home-hero .apple-chapter-title {
+  color: #ffffff;
+}
+html[data-theme='dark'] .apple-band,
+html[data-theme='tahoe'] .apple-band,
+html[data-theme='holo'] .apple-band {
+  background: #000000;
+}
+html[data-theme='dark'] .apple-band-paper,
+html[data-theme='tahoe'] .apple-band-paper,
+html[data-theme='holo'] .apple-band-paper {
+  background: #161617;
+}
+html[data-theme='dark'] .apple-tile,
+html[data-theme='tahoe'] .apple-tile,
+html[data-theme='holo'] .apple-tile {
+  background: #161617;
+}
+html[data-theme='dark'] .apple-band-paper .apple-tile,
+html[data-theme='tahoe'] .apple-band-paper .apple-tile,
+html[data-theme='holo'] .apple-band-paper .apple-tile {
+  background: #1d1d1f;
+}
+html[data-theme='dark'] a.apple-tile:hover,
+html[data-theme='dark'] button.apple-tile:hover,
+html[data-theme='tahoe'] a.apple-tile:hover,
+html[data-theme='holo'] a.apple-tile:hover {
+  background: #2c2c2e;
+}
+html[data-theme='dark'] .apple-btn-primary,
+html[data-theme='tahoe'] .apple-btn-primary,
+html[data-theme='holo'] .apple-btn-primary {
+  background: #0071e3;
+}
+html[data-theme='dark'] .apple-btn-secondary,
+html[data-theme='tahoe'] .apple-btn-secondary,
+html[data-theme='holo'] .apple-btn-secondary {
+  color: #2997ff;
+  border-color: #2997ff;
+}
+html[data-theme='dark'] .apple-btn-secondary:hover,
+html[data-theme='tahoe'] .apple-btn-secondary:hover,
+html[data-theme='holo'] .apple-btn-secondary:hover {
+  background: rgba(41, 151, 255, 0.1);
+}
+html[data-theme='dark'] .apple-chip.active,
+html[data-theme='dark'] .apple-chip[aria-pressed="true"],
+html[data-theme='tahoe'] .apple-chip.active,
+html[data-theme='holo'] .apple-chip.active {
+  background: #f5f5f7;
+  border-color: #f5f5f7;
+  color: #000000;
+}
+html[data-theme='dark'] #page-dashboard .apple-home-vitals,
+html[data-theme='tahoe'] #page-dashboard .apple-home-vitals,
+html[data-theme='holo'] #page-dashboard .apple-home-vitals {
+  background: #161617;
+}
+html[data-theme='dark'] .mac-menubar.navbar,
+html[data-theme='tahoe'] .mac-menubar.navbar,
+html[data-theme='holo'] .mac-menubar.navbar {
+  background: rgba(0, 0, 0, 0.78) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+html[data-theme='dark'] .cloudos-finder,
+html[data-theme='tahoe'] .cloudos-finder,
+html[data-theme='holo'] .cloudos-finder {
+  background: rgba(22, 22, 23, 0.92) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* ============================================================
