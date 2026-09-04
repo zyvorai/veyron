@@ -4252,12 +4252,12 @@ form.card,
 /* Shell layout contract — late include wins over any leftover inline rules */
 /*__SHELL_LAYOUT__*/
 
-/* Late Carbon ground — dark themes only (Apple light stays paper) */
+/* Late Carbon ground — dark themes only (Apple light stays paper; dark = iPad Pro black) */
 html[data-theme='dark'] body.mac-desktop-root,
 html[data-theme='tahoe'] body.mac-desktop-root,
 html[data-theme='carbon'] body.mac-desktop-root,
 html[data-theme='holo'] body.mac-desktop-root {
-  background: var(--hull, #111113) !important;
+  background: #000000 !important;
 }
 html[data-theme='light'] body.mac-desktop-root,
 html.light-theme body.mac-desktop-root {
@@ -4267,14 +4267,8 @@ html[data-theme='dark'] body.mac-desktop-root::before,
 html[data-theme='tahoe'] body.mac-desktop-root::before,
 html[data-theme='carbon'] body.mac-desktop-root::before,
 html[data-theme='holo'] body.mac-desktop-root::before {
-  content: "" !important;
-  position: fixed !important;
-  inset: 0 !important;
-  pointer-events: none !important;
-  z-index: 0 !important;
-  background-image: none !important;
-  opacity: 0 !important;
-  animation: none !important;
+  content: none !important;
+  display: none !important;
 }
 html[data-theme='light'] body.mac-desktop-root::before,
 html.light-theme body.mac-desktop-root::before {
@@ -8806,8 +8800,8 @@ const MAX_PTS = 30;
 const THEME_KEY = 'veyron_theme';
 /* Apple/Zeus Phase 1 — Light (default paper) + Dark companion; Action Blue only. */
 const THEME_PRESETS = [
-  { id: 'light', label: 'Light', category: 'apple', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#ffffff 0%,#f5f5f7 40%,#0071e3 100%)' },
-  { id: 'dark', label: 'Dark', category: 'apple', defaultWallpaper: 'midnight', previewGradient: 'linear-gradient(135deg,#0b0b0c 0%,#1d1d1f 45%,#0071e3 100%)' }
+  { id: 'light', label: 'Light', category: 'apple', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,#ffffff 0%,#f5f5f7 45%,#0071e3 100%)' },
+  { id: 'dark', label: 'Dark', category: 'apple', defaultWallpaper: 'midnight', previewGradient: 'linear-gradient(160deg,#000000 0%,#1d1d1f 55%,#2997ff 100%)' }
 ];
 const VALID_THEMES = THEME_PRESETS.map(function(p) { return p.id; });
 const LEGACY_THEME_ALIASES = {
