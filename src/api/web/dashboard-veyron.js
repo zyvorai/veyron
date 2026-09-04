@@ -1219,7 +1219,7 @@
         ok: p.forge_vm_ready, label: 'Create VM',
         tagline: 'Templates synced · Forge workflow ready',
         detail: p.forge_vm_ready ? 'Dashboard forge workflow ready' : 'Resolve KubeVirt first',
-        problem: 'Forge VM workflow unavailable',
+        problem: 'Create VM workflow unavailable',
         impact: 'Cannot create VMs from the dashboard wizard.',
         rootCause: 'KubeVirt API check failed — resolve it first.',
         fix: 'Resolve KubeVirt API check, then recheck stack health.',
@@ -2383,7 +2383,7 @@
     var orig = window.renderPinnedVms;
     var forgeCard = '<button type="button" class="vmr-forge-placeholder" onclick="openCreateModal()">' +
       '<span class="vmr-forge-placeholder-icon" aria-hidden="true">⬡</span>' +
-      '<span class="vmr-forge-placeholder-label">Forge New VM</span></button>';
+      '<span class="vmr-forge-placeholder-label">Create New VM</span></button>';
     window.renderPinnedVms = function (vms) {
       var sec = document.getElementById('dc-pinned-section');
       var el = document.getElementById('dc-pinned-vms');
