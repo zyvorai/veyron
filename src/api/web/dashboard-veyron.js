@@ -274,6 +274,11 @@
   window.renderVmrPageHero = function renderVmrPageHero(elId, title, tagline, actionHtml, pageKey) {
     var el = document.getElementById(elId);
     if (!el) return;
+    /* Apple chapter headers own the page top — skip legacy IronWolf heroes */
+    if (el.hasAttribute('hidden') || el.getAttribute('aria-hidden') === 'true') {
+      el.innerHTML = '';
+      return;
+    }
     if (pageKey && !vmrShowPageHero(pageKey)) {
       el.className = 'vmr-page-hero-compact';
       el.innerHTML = '';
@@ -369,10 +374,11 @@
     var alertEl = document.getElementById('iw-stat-alerts');
     var boardCount = document.getElementById('iw-cc-board-count');
     iwCcAnimateStat(runEl, running, loaded);
-    if (runEl) runEl.className = 'iw-home-stat-value' + (running ? ' tone-ok' : '');
+    if (runEl) runEl.className = 'apple-vital-value iw-home-stat-value' + (running ? ' tone-ok' : '');
     iwCcAnimateStat(totEl, vms.length, loaded);
+    if (totEl) totEl.className = 'apple-vital-value iw-home-stat-value';
     iwCcAnimateStat(alertEl, alertCount, loaded);
-    if (alertEl) alertEl.className = 'iw-home-stat-value' + (alertCount ? (failed ? ' tone-bad' : ' tone-warn') : '');
+    if (alertEl) alertEl.className = 'apple-vital-value iw-home-stat-value' + (alertCount ? (failed ? ' tone-bad' : ' tone-warn') : '');
     if (boardCount) {
       if (!loaded || !signals.length) {
         boardCount.hidden = true;
@@ -407,10 +413,10 @@
     ];
     var tips = window.__iwCcTips;
     var kickers = [
-      'Veyron · macOS Tahoe 26',
-      'Veyron · Live Fleet Bridge',
-      'Veyron · ' + dayPart + ' watch',
-      'Veyron · Liquid Glass desk'
+      'Veyron',
+      'Veyron',
+      'Veyron',
+      'Veyron'
     ];
 
     var descEl = document.getElementById('iw-home-desc');
@@ -593,7 +599,7 @@
       if (showAdvancedHome) {
         renderVmrPageHero('vmr-mission-hero', 'Veyron Mission Control',
           'Kubernetes-native VM command center · ' + ns + ' workspace',
-          '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>');
+          '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Create VM</button>');
         renderVmrMetricsStrip('vmr-mission-metrics', [
           { label: 'Total VMs', value: vms.length },
           { label: 'Running', value: running, tone: 'ok' },
@@ -617,7 +623,7 @@
         return ({ normal: 0, power: 1, advanced: 2 })[t] || 0;
       };
       var quickActions = [
-        { label: 'Forge VM', fn: 'openCreateModal()', min: 'normal' },
+        { label: 'Create VM', fn: 'openCreateModal()', min: 'normal' },
         { label: 'Open Console', fn: "navigate('console-hub')", min: 'normal' },
         { label: 'Template Foundry', fn: "navigate('app-store')", min: 'normal' },
         { label: 'View Snapshots', fn: "navigate('snapshots')", min: 'power' },
@@ -905,7 +911,7 @@
   // (#vmr-roster-headroom) — real data, no placeholder numbers.
   window.renderVmrDeviationBar = function renderVmrDeviationBar() {
     var hero = document.getElementById('vmr-fleet-hero');
-    if (!hero) return;
+    if (!hero || hero.hasAttribute('hidden') || hero.getAttribute('aria-hidden') === 'true') return;
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
     var stopped = vms.filter(function (v) { return v.status === 'Stopped'; }).length;
@@ -1087,7 +1093,7 @@
     }).join('');
     renderVmrPageHero('vmr-foundry-hero', 'Veyron Template Foundry',
       'Launch Linux, Windows, BSD, Talos, and custom KubeVirt VMs.',
-      '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>',
+      '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Create VM</button>',
       'app-store');
   };
 
@@ -1137,7 +1143,7 @@
           '<div class="vmr-template-card-actions">' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openFoundryPreview(' + jsArgs(t.id) + ')') + '>Preview</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Customize</button>' +
-          '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Forge VM</button></div></div>';
+          '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Create VM</button></div></div>';
       }).join('');
       grid.className = 'vmr-card-grid';
       grid.innerHTML = cards + '<div class="vmr-template-card vmr-template-card-import">' +
@@ -1210,7 +1216,7 @@
         cmd: 'kubectl get cdi -n cdi'
       },
       {
-        ok: p.forge_vm_ready, label: 'Forge VM',
+        ok: p.forge_vm_ready, label: 'Create VM',
         tagline: 'Templates synced · Forge workflow ready',
         detail: p.forge_vm_ready ? 'Dashboard forge workflow ready' : 'Resolve KubeVirt first',
         problem: 'Forge VM workflow unavailable',
@@ -1237,7 +1243,7 @@
         '</div>' +
         '<div class="vmr-stack-timeline">' +
           (function() {
-            var stages = ['CRDs', 'RBAC', 'API', 'Controller', 'CDI', 'Template', 'Forge VM'];
+            var stages = ['CRDs', 'RBAC', 'API', 'Controller', 'CDI', 'Template', 'Create VM'];
             var stageMap = [true, true, checks[0] && checks[0].ok, checks[1] && checks[1].ok, checks[2] && checks[2].ok, true, checks[3] && checks[3].ok];
             return stages.map(function(s, i) {
               var ok = stageMap[i] !== false;
@@ -1870,7 +1876,7 @@
   // cordon/uncordon now lives on every roster row and in the node rail.
   window.renderNodesDeviationBar = function renderNodesDeviationBar() {
     var hero = document.getElementById('vmr-nodes-hero');
-    if (!hero) return;
+    if (!hero || hero.hasAttribute('hidden') || hero.getAttribute('aria-hidden') === 'true') return;
     var nodes = typeof lastNodes !== 'undefined' && lastNodes ? lastNodes : [];
     var ready = nodes.filter(function (n) { return n.status === 'Ready'; }).length;
     var notReady = nodes.length - ready;
@@ -3055,11 +3061,10 @@
 
   function settingsThemeSwatchGrid() {
     var themes = [
-      { id: 'tahoe', label: 'Carbon', cls: 'tahoe' },
       { id: 'light', label: 'Light', cls: 'light' },
-      { id: 'holo', label: 'Zeus', cls: 'holo' }
+      { id: 'dark', label: 'Dark', cls: 'dark' }
     ];
-    return '<div class="theme-swatch-grid vmr-settings-theme-grid" role="radiogroup" aria-label="Theme">' +
+    return '<div class="theme-swatch-grid vmr-settings-theme-grid" role="radiogroup" aria-label="Appearance">' +
       themes.map(function(t) {
         return '<button type="button" class="theme-swatch" data-theme="' + t.id + '" role="radio" onclick="setTheme(\'' + t.id + '\')">' +
           '<span class="theme-swatch-preview ' + t.cls + '"></span><span class="theme-swatch-label">' + esc(t.label) + '</span></button>';
@@ -3068,7 +3073,7 @@
 
   function settingsSummaryStrip() {
     var ns = typeof currentNamespace !== 'undefined' ? currentNamespace : 'all';
-    var theme = document.documentElement.getAttribute('data-theme') || 'tahoe';
+    var theme = document.documentElement.getAttribute('data-theme') || 'light';
     var tier = document.body.getAttribute('data-desktop-tier') || 'power';
     var saved = loadVeyronSettings();
     var refresh = saved['set-refresh-interval'] || '30';
@@ -3325,7 +3330,7 @@
         '<pre style="font-size:.72rem;color:var(--muted);white-space:pre-wrap;word-break:break-all;line-height:1.5;max-height:160px;overflow:auto">' + esc(yamlPreview) + '</pre>' +
       '</div>' +
       '<div class="vmr-fdrawer-actions">' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('forgeFromTemplate(' + jsArgs(tpl.id || tpl.title) + ')') + '>Forge VM</button>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('forgeFromTemplate(' + jsArgs(tpl.id || tpl.title) + ')') + '>Create VM</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Customize</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(window._vmrFoundryYamlCache||&apos;&apos;)">Export YAML</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZyra(' + jsArgs('Tell me about the ' + (tpl.title || tpl.id) + ' template') + ')') + '>Ask Zyra</button>' +

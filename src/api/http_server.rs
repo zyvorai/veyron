@@ -1231,9 +1231,7 @@ pub mod web {
             .replace(
                 "/*__VMR_CSS__*/",
                 concat!(
-                    /* tokens → carbon → deck components → shell → sidebar → veyron → login → holo */
-                    include_str!("web/dashboard-ironwolf-themes.css"),
-                    "\n",
+                    /* carbon → deck → shell → sidebar → veyron → apple login → apple (wins; IronWolf/holo dropped) */
                     include_str!("web/dashboard-carbon.css"),
                     "\n",
                     include_str!("web/dashboard-carbon-deck.css"),
@@ -1244,9 +1242,9 @@ pub mod web {
                     "\n",
                     include_str!("web/dashboard-veyron.css"),
                     "\n",
-                    include_str!("web/dashboard-ironwolf-login.css"),
+                    include_str!("web/dashboard-apple-login.css"),
                     "\n",
-                    include_str!("web/dashboard-holo.css")
+                    include_str!("web/dashboard-apple-themes.css")
                 ),
             )
             .replace(
