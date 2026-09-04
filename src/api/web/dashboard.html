@@ -6649,6 +6649,9 @@ html.light-theme body.mac-desktop-root::before {
     <p class="apple-chapter-kicker">Stack Health</p>
     <h1 class="apple-chapter-title">Platform pulse.</h1>
     <p class="apple-chapter-lede">KubeVirt, CDI, and control-plane readiness at a glance.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-secondary" onclick="fetchStackHealth()">Refresh</button>
+    </div>
   </header>
 
   <div id="vmr-stack-hero" hidden aria-hidden="true"></div>
@@ -14916,14 +14919,7 @@ function applyCloudOsSession() {
 async function fetchStackHealth() {
   const hero = document.getElementById('vmr-stack-hero');
   const body = document.getElementById('vmr-stack-body');
-  if (hero) hero.innerHTML = '<header class="apple-chapter">
-  <p class="apple-chapter-kicker">Stack Health</p>
-  <h1 class="apple-chapter-title">Stack Health</h1>
-  <p class="apple-chapter-lede">KubeVirt, CDI, and platform component status</p>
-  <div class="apple-chapter-cta">
-    <button type="button" class="apple-btn-secondary" onclick="fetchStackHealth()">↺ Refresh</button>
-  </div>
-</header>';
+  if (hero) hero.innerHTML = '';
   const stackHealthErrs = [];
   const [healthRes, operatorsRes, monRes] = await Promise.all([
     apiJson('/api/v1/health').catch(function() { stackHealthErrs.push('health'); return { status: 'unreachable', version: '—', uptime_seconds: 0 }; }),
