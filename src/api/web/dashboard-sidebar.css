@@ -79,13 +79,13 @@ body.finder-narrow .finder-search-wrap{ display: none; }
 .finder-section{ margin-bottom: 2px; }
 .finder-section-label{
   padding: 12px 10px 4px; font-family: var(--mono-deck,'IBM Plex Mono',ui-monospace,monospace);
-  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); font-weight: 600;
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); font-weight: 600;
 }
 .finder-section-toggle{
   width: 100%; display: flex; align-items: center; justify-content: space-between;
   padding: 10px 10px 4px; background: transparent; border: none; cursor: pointer;
   font-family: var(--mono-deck,'IBM Plex Mono',ui-monospace,monospace);
-  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); font-weight: 600;
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); font-weight: 600;
 }
 .finder-chevron{ transition: transform .14s ease; font-size: 9px; }
 .finder-section.collapsed .finder-chevron{ transform: rotate(-90deg); }

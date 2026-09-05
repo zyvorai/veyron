@@ -15,6 +15,7 @@ const HOST = process.argv[2];
 const PORT = process.argv[3] || '30151';
 const VW = parseInt(process.argv[4] || '1440', 10);
 const KEY = process.env.VEYRON_API_KEY || 'Admin@321';
+const THEME = process.env.VEYRON_TEST_THEME || 'light';
 const BASE = `https://${HOST}:${PORT}`;
 
 // [label, open expression, selector of the thing that should become visible]
@@ -28,7 +29,7 @@ const OVERLAYS = [
   ['preferences',      'openMacPreferences()',         '#mac-preferences-modal, #mac-preferences'],
   ['dockEditor',       'openDockEditor()',             '#dock-editor-modal'],
   ['quickForge',       'openQuickForge()',             '#quick-forge-modal, #quickforge-modal'],
-  ['askZeus',          'openAskZeus()',                '#copilot-panel, #copilot-modal, .id-zeus'],
+  ['askZyra',          'openAskZyra()',                '#copilot-panel, #copilot-modal, .id-zeus'],
   ['classicNav',       'toggleClassicNav()',           '#classic-nav-backdrop, #browse-menu, .classic-nav-panel'],
   ['actionLog',        'toggleActionLog()',            '#vmr-action-log-panel'],
   ['createVm',         'openCreateModal()',            '#forge-wizard-modal, #create-modal'],
@@ -36,20 +37,26 @@ const OVERLAYS = [
   ['macMenuGo',        "toggleMacMenu('go')",          '#mac-menu-go'],
   ['macMenuView',      "toggleMacMenu('view')",        '#mac-menu-view'],
   ['macMenuZeusos',    "toggleMacMenu('zeusos')",      '#mac-menu-zeusos'],
+  ['crdCreate',        'openCrdCreateModal()',         '#crd-create-modal'],
+  ['snapSchedule',     'openScheduleModal()',          '#snap-schedule-modal'],
+  ['platformInstall',  'openPlatformInstallModal()',   '#platform-install-modal'],
+  ['imageImport',      'openImageImportModal()',       '#image-import-modal'],
+  ['imageUpload',      'openImageUploadModal()',       '#image-upload-modal'],
 ];
 
 (async () => {
   const browser = await chromium.launch({ headless: true, channel: 'chrome', args: ['--ignore-certificate-errors'] });
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: VW, height: 1080 } });
-  await ctx.addInitScript((k) => {
+  await ctx.addInitScript(([k, theme]) => {
     try {
       localStorage.setItem('veyron_api_key', k);
       localStorage.setItem('veyron_shell', 'desktop');
       localStorage.setItem('veyron_zen_mode', '0');
       localStorage.setItem('veyron_desktop_tier', 'advanced');
       localStorage.setItem('veyron_desktop_tier_auto', '0');
+      localStorage.setItem('veyron_theme', theme);
     } catch (e) {}
-  }, KEY);
+  }, [KEY, THEME]);
   const page = await ctx.newPage();
   let cur = 'boot';
   const consoleErrs = {};
@@ -135,6 +142,6 @@ const OVERLAYS = [
     }
   }
 
-  console.log(JSON.stringify({ viewport: VW, findings }, null, 2));
+  console.log(JSON.stringify({ viewport: VW, theme: THEME, findings }, null, 2));
   await browser.close();
 })().catch((e) => { console.error('ERROR', e); process.exit(2); });

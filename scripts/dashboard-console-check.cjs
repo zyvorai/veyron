@@ -42,6 +42,7 @@ const HOST = arg('host', process.env.VEYRON_HOST || '127.0.0.1');
 const PORT = arg('port', process.env.VEYRON_PORT || '30151');
 const KEY = arg('key', process.env.VEYRON_API_KEY || 'Admin@321');
 const SCHEME = arg('scheme', 'https');
+const THEME = process.env.VEYRON_TEST_THEME || 'light';
 const SHOT_DIR = arg('screenshot', has('screenshot') ? '.' : null);
 const FOCUS = arg('page', null);
 
@@ -64,7 +65,7 @@ const BASE = `${SCHEME}://${HOST}:${PORT}`;
     headless: true, channel: 'chrome', args: ['--ignore-certificate-errors'],
   });
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1600, height: 1050 } });
-  await ctx.addInitScript((k) => { try { localStorage.setItem('veyron_api_key', k); } catch (e) {} }, KEY);
+  await ctx.addInitScript(([k, theme]) => { try { localStorage.setItem('veyron_api_key', k); localStorage.setItem('veyron_theme', theme); } catch (e) {} }, [KEY, THEME]);
   const page = await ctx.newPage();
 
   const perPage = {};
@@ -101,7 +102,7 @@ const BASE = `${SCHEME}://${HOST}:${PORT}`;
     }
   }
 
-  console.log(`=== Veyron dashboard console sweep · ${BASE} ===`);
+  console.log(`=== Veyron dashboard console sweep · ${BASE} · theme=${THEME} ===`);
   let clean = 0, pagesWithErrors = 0;
   for (const p of ['boot', ...PAGES]) {
     const errs = (perPage[p] || []).filter((v, i, a) => a.indexOf(v) === i);

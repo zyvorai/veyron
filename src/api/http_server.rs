@@ -5417,11 +5417,21 @@ pub mod web {
     async fn health_handler() -> impl IntoResponse {
         let ctx = req_ctx(HttpMethod::GET, "/api/v1/health");
         let registry = std::env::var("ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY").ok();
+        let context_name = crate::api::handlers::clusters::effective_current_context(
+            crate::kube::active_kube_context().as_deref(),
+        );
+        let cluster_context = if context_name.is_empty() {
+            let ns = std::env::var("VEYRON_NAMESPACE").unwrap_or_else(|_| "default".to_string());
+            format!("in-cluster ({ns})")
+        } else {
+            context_name
+        };
         let health = serde_json::json!({
             "status": "healthy",
             "version": "v1",
             "service": "veyron-api",
-            "kubevirt_disk_image_registry": registry
+            "kubevirt_disk_image_registry": registry,
+            "cluster_context": cluster_context
         });
         ok_json(&ApiResponse::success(&health, &ctx.request_id))
     }

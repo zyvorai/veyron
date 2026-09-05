@@ -177,6 +177,13 @@
   color: #1d1d1f;
   font-weight: 600;
 }
+.login-cluster-badge {
+  margin: -0.75rem 0 1.25rem;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
+  color: #6e6e73;
+}
 
 .login-hero-title {
   margin: 0.55rem 0 0;
@@ -627,6 +634,7 @@ html[data-theme='dark'] .login-tagline,
 html[data-theme='dark'] .login-form-sub,
 html[data-theme='dark'] .login-chapter-note,
 html[data-theme='dark'] .login-hint,
+html[data-theme='dark'] .login-cluster-badge,
 html[data-theme='dark'] .login-panel-sub,
 html[data-theme='tahoe'] .login-product-eyebrow,
 html[data-theme='tahoe'] .login-tagline,
