@@ -2272,6 +2272,7 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   color:var(--text-dim);
   border-bottom:1px solid var(--border);
   background:rgba(255,255,255,.02);
+  overflow-wrap:anywhere;
 }
 .table tbody td{
   padding:14px 16px;
@@ -2279,6 +2280,11 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   color:var(--text);
   border-bottom:1px solid rgba(120,132,148,.12);
   vertical-align:top;
+  /* K8s/RBAC identifiers (system:controller:very-long-name) have no spaces —
+     colons/hyphens aren't break points by default, so a single long token
+     forces the table (and its card, and the grid track around it) wider than
+     the viewport with no way to reach the rest of the row. Let it wrap. */
+  overflow-wrap:anywhere;
 }
 .table tbody tr:hover td{
   background:rgba(57,66,78,.18);
