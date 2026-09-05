@@ -257,7 +257,11 @@ h1, h2, .id-sec-h h2, .page-header h1, .iw-home-title, .apple-chapter-title {
 /* AirPods-style hero band — full-bleed centered chapter with a soft accent glow.
    Opt-in: add alongside .apple-chapter on flagship heroes only, not every chapter. */
 .apple-hero-band {
-  position: relative;
+  /* !important: body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > *
+     (shell-layout flatten rule) forces position:static on direct page-stack children
+     with much higher specificity (5 classes) than this single-class selector —
+     without !important the glow's ::before positions against the wrong ancestor. */
+  position: relative !important;
   overflow: hidden;
 }
 .apple-hero-band::before {
