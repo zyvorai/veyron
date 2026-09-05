@@ -253,6 +253,52 @@ h1, h2, .id-sec-h h2, .page-header h1, .iw-home-title, .apple-chapter-title {
   gap: 0.85rem;
   margin-top: 1.75rem;
 }
+
+/* AirPods-style hero band — full-bleed centered chapter with a soft accent glow.
+   Opt-in: add alongside .apple-chapter on flagship heroes only, not every chapter. */
+.apple-hero-band {
+  position: relative;
+  overflow: hidden;
+}
+.apple-hero-band::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -10%;
+  right: -10%;
+  height: 28rem;
+  transform: translateY(-60%);
+  background: radial-gradient(60% 60% at 50% 30%, var(--plasma-glow), transparent 70%);
+  pointer-events: none;
+}
+.apple-hero-band > * {
+  position: relative;
+}
+.apple-hero-band--dark {
+  background: radial-gradient(60% 70% at 50% 0%, var(--plasma-glow), transparent 65%), #000;
+  border-radius: 1.5rem;
+}
+.apple-hero-band--dark::before {
+  content: none;
+}
+.apple-hero-band--dark .apple-chapter-kicker,
+.apple-hero-band--dark .apple-chapter-title {
+  color: #f5f5f7;
+}
+.apple-hero-band--dark .apple-chapter-lede {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Per-VM identity strip (VM Capsule hero) — the dark band wraps only the
+   name + status pill; metrics/sparklines/action-rail stay outside it. */
+.vm-hero-identity {
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.25rem;
+}
+.apple-hero-band--dark .vm-hero-title {
+  color: #f5f5f7;
+}
+
 .apple-btn-primary,
 .apple-btn-secondary {
   display: inline-flex;

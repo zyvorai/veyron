@@ -983,9 +983,9 @@ body:not([data-page="dashboard"])::before{animation:none!important}
 }
 
 /* Grids */
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
 .dashboard-command-grid{display:grid;grid-template-columns:1.35fr .95fr;gap:22px}
 .dashboard-side-stack{display:grid;gap:22px}
 @media(max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr)}}
@@ -2247,6 +2247,14 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   width:100%;
   border-collapse:collapse;
 }
+/* A data table wider than its card (many columns, or long unwrapped cell
+   content like a joined RBAC subjects list) was pushing the whole card past
+   the viewport edge with no way to reach the rest of it. Scroll the card
+   horizontally instead of letting it overflow. */
+.card:has(> table.table),
+.glass-card:has(> table.table){
+  overflow-x:auto;
+}
 .table thead th{
   text-align:left;
   padding:14px 16px;
@@ -3056,6 +3064,8 @@ body.mac-desktop-root .veyron-menu-wordmark{max-width:5.5rem;overflow:hidden;tex
   body.mac-desktop-root .mac-menubar-title{display:none!important}
   body.mac-desktop-root .mac-menubar-clock{display:none!important}
   body.mac-desktop-root .btn-nav-browse{display:none!important}
+  body.mac-desktop-root .mac-auth-hint{display:none!important}
+  body.mac-desktop-root .nav-status{display:none!important}
 }
 @media(max-width:1100px){
   body.mac-desktop-root .mac-auth-hint{display:none!important}
@@ -5225,7 +5235,7 @@ html.light-theme body.mac-desktop-root::before {
   <div class="iw-cc-atmosphere" aria-hidden="true" style="display:none"></div>
 
   <!-- Chapter 1: one composition — brand, headline, lede, CTAs only -->
-  <header class="apple-home-hero" id="iw-cc-banner">
+  <header class="apple-home-hero apple-hero-band" id="iw-cc-banner">
     <p class="apple-chapter-kicker" id="iw-cc-kicker-text">Veyron</p>
     <h1 class="apple-chapter-title" id="iw-home-title">Your fleet.<br>One console.</h1>
     <p class="apple-chapter-lede" id="iw-home-desc">KubeVirt-native private cloud — provision, monitor, and operate virtual machines from one place.</p>
@@ -5369,7 +5379,7 @@ html.light-theme body.mac-desktop-root::before {
 <div class="page section-shell" id="page-vms" data-section="compute" data-shell-region="page">
 <div class="space-y animate-fade-in" data-shell-region="page-stack">
   <div data-shell-region="page-header">
-  <header class="apple-chapter">
+  <header class="apple-chapter apple-hero-band">
     <p class="apple-chapter-kicker">Virtual Machines</p>
     <h1 class="apple-chapter-title">Your fleet.</h1>
     <p class="apple-chapter-lede">Provision, inspect, and operate every virtual machine from one roster.</p>
@@ -7747,6 +7757,15 @@ body.classic-nav-open .classic-nav-backdrop{
   inset:96px 0 0 0!important;
   z-index:1125!important;
 }
+/* Same body>* override hits #mac-notification-center and #mac-control-center
+   (also direct <body> children) — collapses them to position:relative, which
+   renders them in normal document flow instead of pinned to the menubar,
+   pushing them off the left edge of the viewport. */
+#mac-notification-center,
+#mac-control-center{
+  position:fixed!important;
+  z-index:190!important;
+}
 /* Signal Desk hero (dashboard page) — same treatment, per explicit request
    that no page keeps the milled-plate box look, hero pages included.
    dashboard-ironwolf-themes.css's "Command Centre surfaces — softer macOS
@@ -8424,6 +8443,7 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
           </div>
           <h2 class="login-form-heading">Sign in to Veyron</h2>
           <p class="login-form-sub">Continue to your private cloud console.</p>
+          <p class="login-cluster-badge" id="login-cluster-badge" hidden></p>
           <div class="login-card" id="login-glass-card">
             <div style="margin-bottom:16px">
               <span id="login-mode-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6e6e73">Username &amp; password</span>
@@ -11094,6 +11114,23 @@ async function pkceChallenge(verifier) {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+async function loadLoginClusterBadge() {
+  try {
+    const resp = await fetch('/api/v1/health');
+    if (!resp.ok) return null;
+    const body = await resp.json();
+    const ctxName = body && (body.cluster_context || (body.data && body.data.cluster_context));
+    const badge = document.getElementById('login-cluster-badge');
+    if (badge) {
+      if (ctxName) { badge.textContent = 'Connecting to: ' + ctxName; badge.hidden = false; }
+      else { badge.hidden = true; }
+    }
+    return ctxName || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function loadOidcConfig() {
   try {
     const resp = await fetch('/api/v1/auth/oidc/config');
@@ -11187,6 +11224,7 @@ async function handleOidcCallback() {
 }
 
 async function initAuth() {
+  loadLoginClusterBadge();
   await loadOidcConfig();
   if (await handleOidcCallback()) return;
   if (!getAuthCredential()) await requireApiKey();
@@ -20658,7 +20696,7 @@ document.addEventListener('keydown', e => {
     closeClassicNav();
     closeCreateModal(); closeSnapModal(); closeResizeModal(); closeCloneModal(); closeGlassConfirm(); closeGlassPrompt(); closeConnectModal(); closeSshPopover();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal(); closeDockEditor(); closeRdpSheet(false); closeMacPreferences();
-    closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeCrdCreateModal(); closeScheduleModal();
+    closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeImageUploadModal(); closeCrdCreateModal(); closeScheduleModal();
     closeVmFocusOverlay(); closeQuickForge(); closeVmCompareOverlay(); if (typeof closeVmCompare === 'function') closeVmCompare();
     if (typeof closePodLogsVmr === 'function') closePodLogsVmr();
     if (typeof closeForgeWizard === 'function') closeForgeWizard();
@@ -21050,8 +21088,10 @@ function renderVmHero(vm, ns, name, vmi, extras) {
     '<button type="button" class="vm-hero-link" ' + onStopHandler('copyVmJsonToClipboard(' + jsArgs(ns, name) + ')') + '>JSON</button></div>';
   return '<div class="vm-hero zeus-glass" data-vm-status="' + esc(String(vm.status || status).toLowerCase()) + '">' +
     '<div class="vm-hero-top"><div>' +
-      '<h2 class="vm-hero-title vmr-copy-tile" title="Copy VM name" onclick="copyToClipboard(' + JSON.stringify(name) + ')">' + esc(name) + '<span class="vmr-copy-hint">copy</span></h2>' +
-      idSig(String(status)) +
+      '<div class="apple-hero-band apple-hero-band--dark vm-hero-identity">' +
+        '<h2 class="vm-hero-title vmr-copy-tile" title="Copy VM name" onclick="copyToClipboard(' + JSON.stringify(name) + ')">' + esc(name) + '<span class="vmr-copy-hint">copy</span></h2>' +
+        idSig(String(status)) +
+      '</div>' +
       '<div class="vm-hero-metrics">' +
         '<div class="vm-hero-metric">CPU<strong>' + esc(vm.cpu || '—') + '</strong></div>' +
         '<div class="vm-hero-metric">Memory<strong>' + esc(vm.memory || '—') + '</strong></div>' +

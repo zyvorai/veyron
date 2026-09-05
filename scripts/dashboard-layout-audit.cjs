@@ -10,13 +10,21 @@ const PORT = process.argv[3] || '30151';
 const VW = parseInt(process.argv[4] || '1920', 10);
 const TIER = process.argv[5] || 'advanced';
 const KEY = process.env.VEYRON_API_KEY || 'CHANGE_ME';
+const THEME = process.env.VEYRON_TEST_THEME || 'light';
 const BASE = `https://${HOST}:${PORT}`;
 
 const PAGES = [
-  'dashboard', 'vms', 'snapshots', 'integrations', 'storage', 'nodes', 'pods',
-  'topology', 'monitoring', 'backups', 'costs', 'security', 'soc', 'gitops',
-  'network-intel', 'network-policies', 'cilium', 'alerts', 'events', 'reactor',
-  'compliance', 'chaos', 'catalog',
+  'dashboard', 'vms', 'snapshots', 'nodes', 'pods', 'storage', 'events', 'crds',
+  'blueprint-studio', 'policies', 'insights', 'actions', 'costs', 'security',
+  'monitoring', 'workloads', 'alerts', 'audit', 'soc', 'notifications', 'helm',
+  'operators', 'custom-resources', 'slo', 'chaos', 'rbac', 'quotas', 'ingress',
+  'hpa', 'backups', 'catalog', 'app-store', 'console-hub', 'stack-health',
+  'vm-capsule', 'network-intel', 'settings', 'integrations', 'metrics',
+  'mission-control', 'topology', 'dependencies', 'autoscaler', 'forecasting',
+  'gitops', 'ask-zyra', 'scheduling', 'cilium', 'observability', 'performance',
+  'webhooks', 'compliance', 'dr', 'heatmap', 'custom-dashboards',
+  'network-policies', 'images', 'traces', 'logs', 'incidents', 'reactor',
+  'fleet-constellation', 'gallery-wall', 'vcentre', 'tenants',
 ];
 
 const AUDIT = () => {
@@ -87,15 +95,16 @@ const AUDIT = () => {
 (async () => {
   const browser = await chromium.launch({ headless: true, channel: 'chrome', args: ['--ignore-certificate-errors'] });
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: VW, height: 1080 } });
-  await ctx.addInitScript(([k, tier]) => {
+  await ctx.addInitScript(([k, tier, theme]) => {
     try {
       localStorage.setItem('veyron_api_key', k);
       localStorage.setItem('veyron_shell', 'desktop');
       localStorage.setItem('veyron_zen_mode', '0');
       localStorage.setItem('veyron_desktop_tier', tier);
       localStorage.setItem('veyron_desktop_tier_auto', '0');
+      localStorage.setItem('veyron_theme', theme);
     } catch (e) {}
-  }, [KEY, TIER]);
+  }, [KEY, TIER, THEME]);
   const page = await ctx.newPage();
   const errs = {};
   let cur = 'boot';
@@ -118,6 +127,6 @@ const AUDIT = () => {
       report[p] = { error: String(e).slice(0, 200) };
     }
   }
-  console.log(JSON.stringify({ viewport: VW, tier: TIER, findings: report, consoleErrors: errs }, null, 2));
+  console.log(JSON.stringify({ viewport: VW, tier: TIER, theme: THEME, findings: report, consoleErrors: errs }, null, 2));
   await browser.close();
 })().catch((e) => { console.error('ERROR', e); process.exit(2); });
