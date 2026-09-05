@@ -268,8 +268,8 @@ h1, h2, .id-sec-h h2, .page-header h1, .iw-home-title, .apple-chapter-title {
   content: '';
   position: absolute;
   top: 50%;
-  left: -10%;
-  right: -10%;
+  left: 0;
+  right: 0;
   height: 28rem;
   transform: translateY(-60%);
   background: radial-gradient(60% 60% at 50% 30%, var(--plasma-glow), transparent 70%);
