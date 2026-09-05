@@ -986,6 +986,13 @@ body:not([data-page="dashboard"])::before{animation:none!important}
 .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
 .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
+/* minmax(0,1fr) above constrains the TRACK, but a grid item's default
+   min-width:auto still lets its own box grow past that track to fit wide
+   content (e.g. a table with a long unwrapped RBAC subjects cell) — the
+   classic grid-blowout gap. min-width:0 on the item closes it; overflow-x:auto
+   on .card:has(>table.table) then scrolls that content within its own box
+   instead of pushing the whole row past the viewport edge. */
+.grid-2>*,.grid-3>*,.grid-4>*{min-width:0}
 .dashboard-command-grid{display:grid;grid-template-columns:1.35fr .95fr;gap:22px}
 .dashboard-side-stack{display:grid;gap:22px}
 @media(max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr)}}
