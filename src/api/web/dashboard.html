@@ -3023,7 +3023,12 @@ body.mac-desktop-root[data-desktop-tier="power"] .mac-page-toolbar-wrap{display:
 body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-center{flex:1;justify-content:center;min-width:0;padding:0 6px}
 body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-center-inner{max-width:min(320px,42vw)}
 body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-left{max-width:min(240px,28vw)}
-body.mac-desktop-root[data-desktop-tier="power"] .navbar-right{gap:5px;max-width:min(520px,52vw)}
+/* Power tier's own always-visible navbar-right content (clock, notification/
+   command-center toggles, 3 spotlight-style buttons, namespace select, auth
+   session text, Sign out) needs ~602px — found clipping (Sign out and the
+   namespace select losing pixels) on the very first page load, no multi-page
+   state needed. 520px predates something that grew; bumped with headroom. */
+body.mac-desktop-root[data-desktop-tier="power"] .navbar-right{gap:5px;max-width:min(620px,58vw)}
 body.mac-desktop-root[data-desktop-tier="power"] .mac-auth-hint{display:none!important}
 body.mac-desktop-root[data-desktop-tier="power"] .ns-select{max-width:108px;padding:4px 8px;font-size:.72rem}
 body.mac-desktop-root[data-desktop-tier="power"] #auth-signout-btn{font-size:.68rem;padding:3px 7px}
