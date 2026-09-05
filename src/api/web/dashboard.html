@@ -3022,7 +3022,10 @@ body.mac-desktop-root[data-desktop-tier="power"] .btn-nav-browse,
 body.mac-desktop-root[data-desktop-tier="power"] .mac-page-toolbar-wrap{display:none!important}
 body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-center{flex:1;justify-content:center;min-width:0;padding:0 6px}
 body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-center-inner{max-width:min(320px,42vw)}
-body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-left{max-width:min(240px,28vw)}
+/* Same class of bug as .navbar-right below: the app-menu button (228.5px)
+   plus the "veyron / command-centre" breadcrumb (52.8px) need ~299px;
+   240px clipped the breadcrumb. Bumped with headroom. */
+body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-left{max-width:min(310px,32vw)}
 /* Power tier's own always-visible navbar-right content (clock, notification/
    command-center toggles, 3 spotlight-style buttons, namespace select, auth
    session text, Sign out) needs ~602px — found clipping (Sign out and the
