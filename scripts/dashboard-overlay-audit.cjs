@@ -89,10 +89,24 @@ const OVERLAYS = [
         const b = el.getBoundingClientRect();
         const out = { rect: { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left), right: Math.round(b.right) }, iw: window.innerWidth, ih: window.innerHeight };
         // Is any ancestor clipping this overlay (overflow hidden + fixed height)?
+        // A plain overflow:hidden ancestor can only clip a position:fixed descendant if
+        // it also establishes a containing block for it (transform/filter/perspective/
+        // contain/will-change/backdrop-filter) — per spec, overflow:hidden alone does not.
+        // Without this check, any overflow:hidden layout container (common in this shell)
+        // falsely flags every fixed, full-viewport overlay as "trapped".
+        const elIsFixed = getComputedStyle(el).position === 'fixed';
+        const establishesContainingBlock = (cs) =>
+          (cs.transform && cs.transform !== 'none') ||
+          (cs.filter && cs.filter !== 'none') ||
+          (cs.perspective && cs.perspective !== 'none') ||
+          (cs.backdropFilter && cs.backdropFilter !== 'none') ||
+          (cs.willChange && /transform|perspective|filter/.test(cs.willChange)) ||
+          (cs.contain && /paint|layout|strict|content/.test(cs.contain));
         let n = el.parentElement, trapped = null;
         while (n && n !== document.body) {
           const cs = getComputedStyle(n);
-          if ((cs.overflow === 'hidden' || cs.overflowY === 'hidden')) {
+          const clips = cs.overflow === 'hidden' || cs.overflowY === 'hidden';
+          if (clips && (!elIsFixed || establishesContainingBlock(cs))) {
             const nb = n.getBoundingClientRect();
             if (b.bottom > nb.bottom + 1 || b.top < nb.top - 1) {
               trapped = (n.tagName.toLowerCase() + (n.id ? '#' + n.id : '') + '.' + (n.className || '').toString().split(/\s+/)[0]);
