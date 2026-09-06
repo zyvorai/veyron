@@ -993,8 +993,12 @@ body:not([data-page="dashboard"])::before{animation:none!important}
    on .card:has(>table.table) then scrolls that content within its own box
    instead of pushing the whole row past the viewport edge. */
 .grid-2>*,.grid-3>*,.grid-4>*{min-width:0}
-.dashboard-command-grid{display:grid;grid-template-columns:1.35fr .95fr;gap:22px}
-.dashboard-side-stack{display:grid;gap:22px}
+/* Same grid-blowout gap as above: a long unbroken Signal Feed event message
+   (e.g. a manifest file path) forced the right column past the viewport
+   edge at narrower widths, since neither the track nor the item had a
+   min-width floor removed. */
+.dashboard-command-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.95fr);gap:22px}
+.dashboard-side-stack{display:grid;gap:22px;min-width:0}
 @media(max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:1080px){.dashboard-command-grid{grid-template-columns:1fr}}
 @media(max-width:800px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
@@ -1295,7 +1299,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .event-dot.info{background:var(--plasma);box-shadow:0 0 6px var(--plasma-glow)}
 .event-dot.error{background:var(--error);box-shadow:0 0 6px rgba(226,75,74,.3)}
 .event-body{flex:1;min-width:0}
-.event-msg{font-size:.95rem;font-weight:500;color:var(--text)}
+.event-msg{font-size:.95rem;font-weight:500;color:var(--text);overflow-wrap:anywhere}
 .event-meta{font-size:.8rem;color:var(--text-dim);margin-top:6px;display:flex;gap:14px;font-family:var(--font-mono)}
 .event-badge{
   padding:3px 10px;border-radius:3px;
