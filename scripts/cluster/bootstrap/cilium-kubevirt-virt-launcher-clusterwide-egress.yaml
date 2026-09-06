@@ -2,6 +2,13 @@
 # (guest NAT runs through the launcher). This clusterwide policy allows all
 # virt-launcher pods in any namespace to reach the cluster and the internet.
 #
+# ingress: allow-all is required too, not just documentation of intent — see the
+# comment in cilium-veyron-egress.yaml for the observed failure mode. An
+# egress-only policy on this selector would put every virt-launcher pod's Cilium
+# identity into default-deny-ingress, which would silently break kubelet's
+# probes on the launcher AND inbound VNC/SSH/RDP/console access to the guest,
+# for every VM whose launcher pod is freshly scheduled.
+#
 # Requires CRD: ciliumclusterwidenetworkpolicies.cilium.io
 # Applied by deploy-all-remote.sh / deploy-k8s-remote.sh when Cilium is present.
 # Per-VM egress: Veyron API PUT /api/v1/vms/:ns/:name/network/internet
@@ -14,6 +21,9 @@ spec:
   endpointSelector:
     matchLabels:
       kubevirt.io: virt-launcher
+  ingress:
+    - fromEntities:
+        - all
   egress:
     - toEntities:
         - all
