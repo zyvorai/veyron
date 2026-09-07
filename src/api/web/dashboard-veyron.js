@@ -251,6 +251,7 @@
   window.applyVmrLegacyPagePolish = function applyVmrLegacyPagePolish(page) {
     var pageEl = document.getElementById('page-' + page);
     if (!pageEl) return;
+    pageEl.classList.add('apple-body');
     pageEl.querySelectorAll('.glass-card, .card.glass-card, .card').forEach(function (c) {
       if (!c.classList.contains('vmr-panel') && !c.classList.contains('vmr-surface-card')) {
         c.classList.add('vmr-surface-card');
@@ -269,6 +270,27 @@
     pageEl.querySelectorAll('.form-select, .form-input').forEach(function (inp) {
       inp.classList.add('vmr-form-control');
     });
+    /* Band wrap only when the page has no editorial .apple-band already
+       (snapshots / monitoring / settings keep their hand-authored rhythm). */
+    if (!pageEl.querySelector('.apple-band')) {
+      var stack = pageEl.querySelector(':scope > .space-y') || pageEl.querySelector('.space-y');
+      if (stack && !stack.querySelector(':scope > .apple-band-inner')) {
+        var wrap = document.createElement('div');
+        wrap.className = 'apple-band-inner';
+        var kids = Array.prototype.slice.call(stack.children);
+        var moved = 0;
+        kids.forEach(function (child) {
+          if (child.classList && (child.classList.contains('apple-chapter') || child.classList.contains('apple-hero-band') || child.classList.contains('page-header') || child.classList.contains('vmr-page-hero') || child.classList.contains('vmr-legacy-page-header'))) {
+            return;
+          }
+          if (child.hasAttribute && (child.hasAttribute('hidden') || child.getAttribute('aria-hidden') === 'true')) return;
+          wrap.appendChild(child);
+          moved++;
+        });
+        if (moved > 0) stack.appendChild(wrap);
+        else wrap.remove();
+      }
+    }
   };
 
   window.renderVmrPageHero = function renderVmrPageHero(elId, title, tagline, actionHtml, pageKey) {

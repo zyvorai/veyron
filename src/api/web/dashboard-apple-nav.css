@@ -37,18 +37,59 @@ body.mac-desktop-root .apple-topnav {
 .apple-topnav-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
   margin-right: 12px;
   flex: 0 0 auto;
+  color: var(--ink);
 }
-.apple-topnav-logo { display: block; height: 22px; width: auto; }
+.zyvor-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ff5a15;
+  line-height: 1;
+}
+.zyvor-mark {
+  display: block;
+  flex: 0 0 auto;
+  color: #ff5a15;
+}
+.zyvor-wordmark {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--ink, #1d1d1f);
+}
+html[data-theme="dark"] .zyvor-wordmark {
+  color: #f5f5f7;
+}
+.zyvor-product-muted {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--ink-3, #6e6e73);
+}
+.apple-topnav-product {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink-3);
+  letter-spacing: -0.01em;
+  padding-left: 8px;
+  border-left: 1px solid var(--hairline);
+  line-height: 1;
+}
+.apple-topnav-logo { display: none; }
 .apple-topnav-logo-dark { display: none; }
 html[data-theme="dark"] .apple-topnav-logo-light { display: none; }
-html[data-theme="dark"] .apple-topnav-logo-dark { display: block; }
+html[data-theme="dark"] .apple-topnav-logo-dark { display: none; }
 
 .apple-topnav-utils {
   display: flex;
@@ -72,6 +113,22 @@ html[data-theme="dark"] .apple-topnav-logo-dark { display: block; }
   font-size: 0.95rem;
 }
 .apple-topnav-icon-btn:hover { background: var(--panel-2); color: var(--ink); }
+html[data-theme="dark"] .apple-topnav-icon-btn {
+  color: rgba(255, 255, 255, 0.72);
+}
+html[data-theme="dark"] .apple-topnav-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f5f7;
+}
+html[data-theme="dark"] .apple-topnav-ns-select {
+  background: #1d1d1f;
+  color: #f5f5f7;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+html[data-theme="dark"] #auth-session-label,
+html[data-theme="dark"] .auth-session {
+  color: rgba(255, 255, 255, 0.66);
+}
 .apple-topnav-ns-select {
   height: 28px;
   padding: 0 8px;
@@ -246,22 +303,7 @@ body.mac-desktop-root .apple-rail[data-collapsed="1"] { width: var(--apple-rail-
   flex-direction: column;
   gap: 4px;
 }
-.apple-rail-footer-btn {
-  width: 100%;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 8px;
-  border-radius: 8px;
-  background: none;
-  border: none;
-  color: var(--ink-2);
-  cursor: pointer;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-align: left;
-}
+.apple-rail-footer-btn { display: none !important; }
 .apple-rail-footer-btn:hover { background: var(--panel-2); color: var(--ink); }
 .apple-rail-footer-btn-primary {
   background: color-mix(in srgb, var(--plasma) 14%, transparent);
