@@ -2189,26 +2189,45 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
 .console-drawer-body{flex:1;min-height:0;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
 .console-drawer-body #vnc-container{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 .console-drawer-body.serial-body{
-  flex:1;min-height:0;background:#0b0d12;display:block;overflow:hidden;
+  flex:1;min-height:0;background:#000!important;display:block;overflow:hidden;color-scheme:dark;
 }
 .console-drawer-body.serial-body #serial-output{
   height:100%;margin:0;padding:14px 16px;overflow:auto;
-  color:#c8e6c9;font-family:var(--font-mono);font-size:13px;line-height:1.35;
-  border:none;background:transparent;white-space:pre-wrap;word-break:break-word;
+  color:#f5f5f7;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:13px;line-height:1.45;
+  border:none;background:#000!important;white-space:pre-wrap;word-break:break-word;
 }
+.console-drawer-body.serial-body #serial-output .ansi-fg-black{color:#8e8e93}
+.console-drawer-body.serial-body #serial-output .ansi-fg-red{color:#ff453a}
+.console-drawer-body.serial-body #serial-output .ansi-fg-green{color:#32d74b}
+.console-drawer-body.serial-body #serial-output .ansi-fg-yellow{color:#ffd60a}
+.console-drawer-body.serial-body #serial-output .ansi-fg-blue{color:#0a84ff}
+.console-drawer-body.serial-body #serial-output .ansi-fg-magenta{color:#bf5af2}
+.console-drawer-body.serial-body #serial-output .ansi-fg-cyan{color:#64d2ff}
+.console-drawer-body.serial-body #serial-output .ansi-fg-white{color:#f5f5f7}
+.console-drawer-body.serial-body #serial-output .ansi-fg-bright-black{color:#636366}
+.console-drawer-body.serial-body #serial-output .ansi-fg-bright-red{color:#ff6961}
+.console-drawer-body.serial-body #serial-output .ansi-fg-bright-green{color:#30db5b}
+.console-drawer-body.serial-body #serial-output .ansi-fg-bright-yellow{color:#ffd426}
+.console-drawer-body.serial-body #serial-output .ansi-fg-bright-blue{color:#409cff}
+.console-drawer-body.serial-body #serial-output .ansi-fg-bright-magenta{color:#da8fff}
+.console-drawer-body.serial-body #serial-output .ansi-fg-bright-cyan{color:#70d7ff}
+.console-drawer-body.serial-body #serial-output .ansi-fg-bright-white{color:#fff}
+.console-drawer-body.serial-body #serial-output .ansi-bold{font-weight:700}
+.console-drawer-body.serial-body #serial-output ::selection{background:rgba(10,132,255,.4)}
 .serial-drawer-footer{
-  display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--glass-border);
-  background:var(--glass-bg-elevated);flex-shrink:0;
+  display:flex;gap:10px;padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);
+  background:#2c2c2e;flex-shrink:0;
 }
 .serial-drawer-footer .serial-input{
-  flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--glass-border);
-  background:rgba(15,23,42,.55);color:var(--text);font-family:var(--font-mono);font-size:.84rem;
+  flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+  background:#1c1c1e;color:#f5f5f7;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.84rem;caret-color:#f5f5f7;
 }
-.serial-drawer-footer .serial-input:focus{outline:none;border-color:var(--primary-blue)}
+.serial-drawer-footer .serial-input:focus{outline:none;border-color:#0a84ff;box-shadow:0 0 0 3px rgba(10,132,255,.25)}
+.serial-drawer-footer .serial-input::placeholder{color:rgba(255,255,255,.3)}
 .pod-log-preview{
   margin:0;padding:12px 14px;max-height:320px;overflow:auto;
-  background:rgba(11,13,18,.85);border-radius:10px;border:1px solid var(--glass-border);
-  color:var(--text);font-family:var(--font-mono);font-size:.78rem;line-height:1.4;white-space:pre-wrap;word-break:break-word;
+  background:#000;border-radius:10px;border:1px solid rgba(255,255,255,.1);
+  color:#f5f5f7;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.78rem;line-height:1.45;white-space:pre-wrap;word-break:break-word;
 }
 
 .drift-badge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;vertical-align:middle}
@@ -4488,8 +4507,11 @@ html.light-theme body.mac-desktop-root::before {
 <header class="apple-topnav" role="banner" data-shell-region="topbar">
   <div class="apple-topnav-row">
     <button type="button" class="apple-topnav-brand" onclick="navGo('dashboard')" aria-label="Veyron home">
-      <img class="apple-topnav-logo apple-topnav-logo-light" src="/assets/zyvor-logo.png" alt="Zyvor">
-      <img class="apple-topnav-logo apple-topnav-logo-dark" src="/assets/zyvor-logo-on-dark.png" alt="Zyvor">
+      <span class="zyvor-lockup" aria-hidden="true">
+        <svg class="zyvor-mark" viewBox="0 0 18 18" width="22" height="22" focusable="false"><path d="M2 2h14L6.6 16H16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+        <span class="zyvor-wordmark">zyvor</span>
+      </span>
+      <span class="apple-topnav-product">Veyron</span>
     </button>
     <button type="button" class="apple-topnav-burger" id="apple-topnav-burger" onclick="railToggleMobile()" aria-label="Menu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -4641,14 +4663,6 @@ html.light-theme body.mac-desktop-root::before {
     </div>
   </div>
   <div class="apple-rail-footer">
-    <button type="button" class="apple-rail-footer-btn apple-rail-footer-btn-primary btn-create" onclick="railCloseMobile(); openCreateModal();" title="Create VM">
-      <span class="apple-rail-icon" aria-hidden="true"><i data-lucide="plus"></i></span>
-      <span class="apple-rail-label apple-rail-footer-btn-label">Create VM</span>
-    </button>
-    <button type="button" class="apple-rail-footer-btn" onclick="railCloseMobile(); toggleClassicNav();" title="Browse all pages (⌘⇧B)">
-      <span class="apple-rail-icon" aria-hidden="true"><i data-lucide="layout-grid"></i></span>
-      <span class="apple-rail-label apple-rail-footer-btn-label">Browse all pages</span>
-    </button>
     <button type="button" class="apple-rail-collapse-btn" onclick="railToggleCollapsed()" title="Toggle sidebar (⌘\\)" aria-label="Toggle sidebar">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
     </button>
@@ -4862,7 +4876,7 @@ html.light-theme body.mac-desktop-root::before {
   </div>
 </div>
 <div class="classic-nav-backdrop" id="classic-nav-backdrop" onclick="closeClassicNav()"></div>
-<button type="button" class="cloudos-browse-rail" id="cloudos-browse-rail" onclick="toggleClassicNav()" title="Browse all pages (⌘⇧B)" aria-label="Browse all pages">Browse</button>
+<button type="button" class="cloudos-browse-rail" id="cloudos-browse-rail" hidden onclick="toggleClassicNav()" title="Browse all pages (⌘⇧B)" aria-label="Browse all pages" style="display:none!important">Browse</button>
 
 <!-- ── Instrument Deck telemetry spine ── -->
 <div class="id-spine" id="id-spine" aria-hidden="true">
@@ -4922,7 +4936,7 @@ html.light-theme body.mac-desktop-root::before {
       <div class="console-drawer-toolbar" style="border:none;padding:0;background:transparent;flex-shrink:0">
         <span id="copilot-mode-badge" class="copilot-module-badge" style="display:none"></span>
         <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runCopilotAsk()">Send</button>
-        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="copilotNewChat()">New chat</button>
+        <button type="button" class="apple-btn-soft glass-btn-sm" onclick="copilotNewChat()">New chat</button>
       </div>
     </div>
     <div class="copilot-drawer-body">
@@ -4930,26 +4944,26 @@ html.light-theme body.mac-desktop-root::before {
     <div id="copilot-thread" class="copilot-thread" aria-live="polite"></div>
     <textarea class="form-input" id="copilot-input" rows="2" placeholder="Ask Zyra… fleet health, storage, security — or &quot;spin up 3 ubuntu web servers, 4 cores, 8Gi&quot;" aria-label="Ask Zyra" style="width:100%;font-size:.9rem"></textarea>
     <div class="copilot-chip-group"><div class="copilot-chip-label">Fleet</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px">
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs have no backups?')">Backups</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are pending scheduling?')">Pending</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which PVCs are almost full?')">Storage</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Security review for production VMs')">Security</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which namespaces are near quota limits?')">Quotas</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Velero DR readiness')">Velero DR</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Which VMs have no backups?')">Backups</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Which VMs are pending scheduling?')">Pending</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Which PVCs are almost full?')">Storage</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Security review for production VMs')">Security</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Which namespaces are near quota limits?')">Quotas</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Velero DR readiness')">Velero DR</button>
     </div></div>
     <div class="copilot-chip-group"><div class="copilot-chip-label">Per-VM</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px">
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Why is my VM stuck in scheduling?')">Scheduling</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show network for my VM')">Network</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show guest agent status')">Guest</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show guest filesystem')">Guest FS</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Why is my VM stuck in scheduling?')">Scheduling</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Show network for my VM')">Network</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Show guest agent status')">Guest</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Show guest filesystem')">Guest FS</button>
     </div></div>
     <div class="copilot-chip-group"><div class="copilot-chip-label">Platform</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px">
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Create Ubuntu 22.04 VM 2 CPU 4Gi')">YAML</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are most expensive?')">Costs</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Is the template catalog in sync?')">Catalog</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Compliance score for production VMs')">Compliance</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Node capacity and pressure')">Nodes</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Create Ubuntu 22.04 VM 2 CPU 4Gi')">YAML</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Which VMs are most expensive?')">Costs</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Is the template catalog in sync?')">Catalog</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Compliance score for production VMs')">Compliance</button>
+      <button type="button" class="apple-chip copilot-chip-btn" onclick="copilotChip('Node capacity and pressure')">Nodes</button>
     </div></div>
     <div id="copilot-result"></div>
     </div>
@@ -8253,28 +8267,33 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
   </div>
 </div>
 
-<!-- API KEY MODAL — Apple Store chapter login (Veyron) -->
+<!-- API KEY MODAL — Apple Store chapter login (Veyron · h2kvm PremiumLoginShell parity) -->
 <div class="modal-overlay mac-signin-overlay" id="apikey-modal">
   <div class="login-page login-store-page">
     <div class="login-store-scroll" id="login-store-scroll">
-      <section class="login-chapter login-chapter-hero" aria-label="Veyron">
+      <section class="login-chapter login-chapter-hero" data-tone="sky" aria-label="Veyron">
         <div class="login-chapter-inner">
           <div class="login-brand-lockup">
-            <img class="login-z-mark" src="/assets/zyvor-z-mark.png" width="72" height="72" alt="Zyvor" decoding="async">
-            <p class="login-product-eyebrow">Zyvor</p>
+            <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" class="login-zyvor-mark" aria-label="zyvor.dev" title="zyvor.dev">
+              <span class="zyvor-lockup zyvor-lockup-lg">
+                <svg class="zyvor-mark" viewBox="0 0 18 18" width="36" height="36" focusable="false" aria-hidden="true"><path d="M2 2h14L6.6 16H16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+                <span class="zyvor-wordmark">zyvor</span>
+                <span class="zyvor-product-muted">Veyron</span>
+              </span>
+            </a>
           </div>
           <p class="login-wordmark">Veyron</p>
           <h1 class="login-hero-title">Private cloud.<br>One console.</h1>
           <p class="login-tagline">You are signing in to <strong>Veyron</strong> — the KubeVirt control plane for virtual machines, snapshots, networking, and day-2 ops.</p>
-          <div class="login-product-pills" aria-label="Product capabilities">
-            <span class="login-product-pill">Virtual Machines</span>
-            <span class="login-product-pill">Snapshots &amp; DR</span>
-            <span class="login-product-pill">RDP &amp; Console</span>
-            <span class="login-product-pill">Ask Zyra</span>
+          <div class="login-pill-row" aria-label="Product capabilities">
+            <span class="login-pill" data-tone="sky"><span class="login-pill-dot" aria-hidden="true"></span>Virtual Machines</span>
+            <span class="login-pill" data-tone="emerald"><span class="login-pill-dot" aria-hidden="true"></span>Snapshots &amp; DR</span>
+            <span class="login-pill" data-tone="violet"><span class="login-pill-dot" aria-hidden="true"></span>RDP &amp; Console</span>
+            <span class="login-pill" data-tone="amber"><span class="login-pill-dot" aria-hidden="true"></span>Ask Zyra</span>
           </div>
           <div class="login-cta">
-            <button type="button" class="login-cta-primary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Sign in to Veyron</button>
-            <button type="button" class="login-cta-secondary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Learn more</button>
+            <button type="button" class="login-cta-primary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Sign in</button>
+            <button type="button" class="login-cta-secondary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Continue</button>
           </div>
           <p class="login-chapter-note">KubeVirt · Kubernetes · Cilium · CDI</p>
         </div>
@@ -8282,14 +8301,17 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
       <section class="login-chapter login-chapter-sign-in" id="login-chapter-signin" aria-label="Sign in to Veyron">
         <div class="login-chapter-inner login-sign-in-inner">
           <div class="login-brand-lockup login-brand-lockup-compact">
-            <img class="login-z-mark login-z-mark-sm" src="/assets/zyvor-z-mark.png" width="44" height="44" alt="" decoding="async">
-            <p class="login-product-eyebrow">Veyron</p>
+            <span class="zyvor-lockup zyvor-lockup-md" aria-hidden="true">
+              <svg class="zyvor-mark" viewBox="0 0 18 18" width="28" height="28" focusable="false"><path d="M2 2h14L6.6 16H16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+              <span class="zyvor-wordmark">zyvor</span>
+              <span class="zyvor-product-muted">Veyron</span>
+            </span>
           </div>
           <h2 class="login-form-heading">Sign in to Veyron</h2>
-          <p class="login-form-sub">Continue to your private cloud console.</p>
+          <p class="login-form-sub" id="login-form-sub">Continue to your private cloud console.</p>
           <p class="login-cluster-badge" id="login-cluster-badge" hidden></p>
           <div class="login-card" id="login-glass-card">
-            <div style="margin-bottom:16px">
+            <div style="margin-bottom:16px" id="login-mode-header">
               <span id="login-mode-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6e6e73">Username &amp; password</span>
               <p class="login-panel-sub" id="login-panel-sub" style="margin:6px 0 0;font-size:.84rem;color:#6e6e73">Sign in with your username and password</p>
             </div>
@@ -8300,33 +8322,73 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
               <button type="button" class="login-btn-secondary" style="width:100%;text-align:center" onclick="startOidcLogin()">Sign in with SSO</button>
               <div class="auth-divider">or sign in below</div>
             </div>
-            <div style="margin-bottom:16px" id="login-username-row">
-              <label for="login-username-input">Username</label>
-              <div style="position:relative">
-                <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <input type="text" class="login-input" id="login-username-input" placeholder="e.g. jordan" autocomplete="username" autofocus>
+
+            <!-- Password mode: step identify -->
+            <div id="login-step-identify" class="login-apple-step">
+              <div class="login-apple-fields" style="margin-bottom:16px" id="login-username-row">
+                <label for="login-username-input">Username</label>
+                <div style="position:relative">
+                  <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <input type="text" class="login-input" id="login-username-input" placeholder="e.g. jordan" autocomplete="username" autofocus>
+                </div>
               </div>
+              <button type="button" class="login-btn-primary" id="login-continue-btn" onclick="loginContinueIdentify()">
+                <span>Continue</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
             </div>
-            <div style="margin-bottom:12px">
-              <label for="apikey-input" id="apikey-input-label">Password</label>
-              <div style="position:relative">
-                <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <input type="password" class="login-input" id="apikey-input" placeholder="Enter your password" autocomplete="current-password">
-                <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide" aria-label="Show/hide password">&#128065;</button>
+
+            <!-- Password mode: step password -->
+            <div id="login-step-password" class="login-apple-step login-step-hidden">
+              <button type="button" class="login-apple-identity" id="login-identity-chip" onclick="loginBackIdentify()" aria-label="Change account">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                <span class="truncate" id="login-identity-name"></span>
+              </button>
+              <div class="login-apple-fields" style="margin-bottom:12px">
+                <label for="apikey-input" id="apikey-input-label">Password</label>
+                <div style="position:relative">
+                  <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <input type="password" class="login-input" id="apikey-input" placeholder="Enter your password" autocomplete="current-password">
+                  <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide" aria-label="Show/hide password">&#128065;</button>
+                </div>
               </div>
+              <div class="remember-row">
+                <input type="checkbox" id="apikey-remember">
+                <label for="apikey-remember">Remember me on this device</label>
+              </div>
+              <button type="button" class="login-btn-primary" id="login-submit-btn" onclick="submitApiKey()">
+                <span id="login-submit-label">Sign in to Veyron</span>
+              </button>
+              <p class="login-trust-line">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                Secured with cluster authentication
+              </p>
             </div>
-            <div class="remember-row">
-              <input type="checkbox" id="apikey-remember">
-              <label for="apikey-remember">Remember me on this device</label>
+
+            <!-- API key mode (single step) -->
+            <div id="login-step-apikey" class="login-apple-step login-step-hidden">
+              <div style="margin-bottom:12px">
+                <label for="apikey-input-apikey" id="apikey-input-label-alt">API key</label>
+                <div style="position:relative">
+                  <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <input type="password" class="login-input" id="apikey-input-apikey" placeholder="Enter your API key" autocomplete="off">
+                  <button class="eye-btn" type="button" onclick="toggleKeyVisibility('apikey-input-apikey')" title="Show/hide" aria-label="Show/hide API key">&#128065;</button>
+                </div>
+              </div>
+              <div class="remember-row">
+                <input type="checkbox" id="apikey-remember-apikey">
+                <label for="apikey-remember-apikey">Remember me on this device</label>
+              </div>
+              <button type="button" class="login-btn-primary" onclick="submitApiKey()">
+                <span>Connect to Veyron</span>
+              </button>
             </div>
-            <button type="button" class="login-btn-primary" onclick="submitApiKey()">
-              <span id="login-submit-label">Sign in to Veyron</span>
-            </button>
+
             <p style="text-align:center;margin:16px 0 0">
               <button type="button" id="login-mode-toggle" onclick="toggleLoginMode()" style="background:none;border:none;color:#6e6e73;font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0">Use an API key instead</button>
             </p>
           </div>
-          <p class="login-hint" id="login-apikey-hint">Default key: <code style="font-family:var(--font-mono);font-size:.72rem">CHANGE_ME</code> — change after first sign-in.</p>
+          <p class="login-hint" id="login-apikey-hint">Use a cluster operator account or API key issued for this Veyron deployment.</p>
         </div>
       </section>
     </div>
@@ -11061,37 +11123,121 @@ async function initAuth() {
 }
 
 let loginMode = 'password'; // 'password' (username+password) | 'apikey' (raw key, for CI/automation)
+let loginStep = 'identify'; // 'identify' | 'password' (password mode only)
+const LOGIN_USER_KEY = 'veyron_login_username';
 
-function applyLoginModeUI() {
-  const usernameRow = document.getElementById('login-username-row');
-  const pwLabel = document.getElementById('apikey-input-label');
-  const pwInput = document.getElementById('apikey-input');
+function loginShakeCard() {
+  const card = document.getElementById('login-glass-card');
+  if (!card) return;
+  card.classList.remove('login-shake');
+  void card.offsetWidth;
+  card.classList.add('login-shake');
+  setTimeout(function () { card.classList.remove('login-shake'); }, 450);
+}
+
+function setLoginStepVisible(stepId, show) {
+  const el = document.getElementById(stepId);
+  if (!el) return;
+  el.classList.toggle('login-step-hidden', !show);
+  if (show) {
+    el.classList.remove('login-apple-step');
+    void el.offsetWidth;
+    el.classList.add('login-apple-step');
+  }
+}
+
+function applyLoginStepUI() {
+  const isApiKey = loginMode === 'apikey';
+  const identify = document.getElementById('login-step-identify');
+  const password = document.getElementById('login-step-password');
+  const apikey = document.getElementById('login-step-apikey');
+  const formSub = document.getElementById('login-form-sub');
+  const panelSub = document.getElementById('login-panel-sub');
   const modeBadge = document.getElementById('login-mode-badge');
-  const subEl = document.getElementById('login-panel-sub');
-  const submitLabel = document.getElementById('login-submit-label');
   const toggleBtn = document.getElementById('login-mode-toggle');
   const hint = document.getElementById('login-apikey-hint');
   const errEl = document.getElementById('apikey-error');
   if (errEl) errEl.style.display = 'none';
-  const isApiKey = loginMode === 'apikey';
-  if (usernameRow) usernameRow.style.display = isApiKey ? 'none' : '';
-  if (pwLabel) pwLabel.textContent = isApiKey ? 'API key' : 'Password';
-  if (pwInput) {
-    pwInput.placeholder = isApiKey ? 'Enter your API key' : 'Enter your password';
-    pwInput.autocomplete = isApiKey ? 'off' : 'current-password';
+
+  if (isApiKey) {
+    setLoginStepVisible('login-step-identify', false);
+    setLoginStepVisible('login-step-password', false);
+    setLoginStepVisible('login-step-apikey', true);
+    if (modeBadge) modeBadge.textContent = 'API key';
+    if (panelSub) panelSub.textContent = 'Use your API key to continue';
+    if (formSub) formSub.textContent = 'Connect with an API key issued for this cluster.';
+    if (toggleBtn) toggleBtn.textContent = 'Use username and password instead';
+    if (hint) hint.style.display = '';
+    setTimeout(function () {
+      const el = document.getElementById('apikey-input-apikey');
+      if (el) el.focus();
+    }, 0);
+    return;
   }
-  if (modeBadge) modeBadge.textContent = isApiKey ? 'API key' : 'Username & password';
-  if (subEl) subEl.textContent = isApiKey ? 'Use your API key to continue' : 'Sign in with your username and password';
-  if (submitLabel) submitLabel.textContent = isApiKey ? 'Connect to Veyron' : 'Sign in to Veyron';
-  if (toggleBtn) toggleBtn.textContent = isApiKey ? 'Use username and password instead' : 'Use an API key instead';
-  if (hint) hint.style.display = isApiKey ? '' : 'none';
+
+  setLoginStepVisible('login-step-apikey', false);
+  if (modeBadge) modeBadge.textContent = 'Username & password';
+  if (toggleBtn) toggleBtn.textContent = 'Use an API key instead';
+  if (hint) hint.style.display = 'none';
+
+  if (loginStep === 'password') {
+    setLoginStepVisible('login-step-identify', false);
+    setLoginStepVisible('login-step-password', true);
+    const user = (document.getElementById('login-username-input') || {}).value || '';
+    const nameEl = document.getElementById('login-identity-name');
+    if (nameEl) nameEl.textContent = user.trim();
+    if (panelSub) {
+      panelSub.innerHTML = 'Enter the password for <span class="login-apple-host">' +
+        String(user.trim()).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>';
+    }
+    if (formSub) formSub.textContent = 'Enter your password to continue.';
+    setTimeout(function () {
+      const el = document.getElementById('apikey-input');
+      if (el) el.focus();
+    }, 0);
+  } else {
+    setLoginStepVisible('login-step-identify', true);
+    setLoginStepVisible('login-step-password', false);
+    if (panelSub) panelSub.textContent = 'Sign in with your username and password';
+    if (formSub) formSub.textContent = 'Continue to your private cloud console.';
+    setTimeout(function () {
+      const el = document.getElementById('login-username-input');
+      if (el) el.focus();
+    }, 0);
+  }
+}
+
+function applyLoginModeUI() {
+  applyLoginStepUI();
+}
+
+function loginContinueIdentify() {
+  const userInp = document.getElementById('login-username-input');
+  if (!userInp) return;
+  const username = userInp.value.trim();
+  if (!username) {
+    loginShakeCard();
+    userInp.focus();
+    return;
+  }
+  loginStep = 'password';
+  applyLoginStepUI();
+}
+
+function loginBackIdentify() {
+  loginStep = 'identify';
+  const passInp = document.getElementById('apikey-input');
+  if (passInp) {
+    passInp.value = '';
+    passInp.type = 'password';
+  }
+  applyLoginStepUI();
 }
 
 function toggleLoginMode() {
   loginMode = loginMode === 'password' ? 'apikey' : 'password';
+  loginStep = 'identify';
   applyLoginModeUI();
-  const focusId = loginMode === 'apikey' ? 'apikey-input' : 'login-username-input';
-  setTimeout(() => { const el = document.getElementById(focusId); if (el) el.focus(); }, 0);
 }
 
 function requireApiKey() {
@@ -11100,10 +11246,20 @@ function requireApiKey() {
     if (existing) { resolve(existing.token); return; }
     loadOidcConfig();
     apiKeyResolve = resolve;
-    document.getElementById('apikey-input').value = '';
+    const passInp = document.getElementById('apikey-input');
+    if (passInp) passInp.value = '';
+    const keyInp = document.getElementById('apikey-input-apikey');
+    if (keyInp) keyInp.value = '';
     const userInp = document.getElementById('login-username-input');
-    if (userInp) userInp.value = '';
+    let savedUser = '';
+    try { savedUser = localStorage.getItem(LOGIN_USER_KEY) || ''; } catch (e) {}
+    if (userInp) userInp.value = savedUser;
     loginMode = 'password';
+    loginStep = savedUser ? 'password' : 'identify';
+    if (savedUser) {
+      const rem = document.getElementById('apikey-remember');
+      if (rem) rem.checked = true;
+    }
     applyLoginModeUI();
     document.getElementById('apikey-modal').classList.add('open');
     try {
@@ -11111,12 +11267,12 @@ function requireApiKey() {
     } catch (e) {
       syncThemeSwatches('tahoe');
     }
-    setTimeout(() => document.getElementById('login-username-input').focus(), 100);
   });
 }
 
 function submitApiKey() {
   if (loginMode === 'apikey') { submitApiKeyRaw(); return; }
+  if (loginStep !== 'password') { loginContinueIdentify(); return; }
   submitLogin();
 }
 
@@ -11125,12 +11281,12 @@ function submitLogin() {
   const passInp = document.getElementById('apikey-input');
   const errEl = document.getElementById('apikey-error');
   const errMsg = document.getElementById('apikey-error-msg');
-  const btn = document.querySelector('#apikey-modal .login-btn-primary');
+  const btn = document.getElementById('login-submit-btn') || document.querySelector('#login-step-password .login-btn-primary');
   if (!userInp || !passInp) return;
   const username = userInp.value.trim();
   const password = passInp.value;
-  if (!username) { userInp.focus(); return; }
-  if (!password) { passInp.focus(); return; }
+  if (!username) { loginStep = 'identify'; applyLoginStepUI(); return; }
+  if (!password) { passInp.focus(); loginShakeCard(); return; }
   if (errEl) errEl.style.display = 'none';
   sessionStorage.removeItem(OIDC_TOKEN_KEY);
   const rememberEl = document.getElementById('apikey-remember');
@@ -11149,9 +11305,14 @@ function submitLogin() {
         if (errMsg) errMsg.textContent = (res.body && res.body.message) ? res.body.message : 'Invalid username or password.';
         if (errEl) errEl.style.display = 'flex';
         if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        loginShakeCard();
         passInp.select(); passInp.focus();
         return;
       }
+      try {
+        if (remember) localStorage.setItem(LOGIN_USER_KEY, username);
+        else localStorage.removeItem(LOGIN_USER_KEY);
+      } catch (e) {}
       localStorage.removeItem('veyron_display_name'); sessionStorage.removeItem('veyron_display_name');
       if (res.body.display_name) {
         if (remember) { localStorage.setItem('veyron_display_name', res.body.display_name); } else { sessionStorage.setItem('veyron_display_name', res.body.display_name); }
@@ -11163,25 +11324,25 @@ function submitLogin() {
       if (errMsg) errMsg.textContent = 'Could not reach the server — check your connection and try again.';
       if (errEl) errEl.style.display = 'flex';
       if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+      loginShakeCard();
     });
 }
 
 function submitApiKeyRaw() {
-  const inp = document.getElementById('apikey-input');
+  const inp = document.getElementById('apikey-input-apikey') || document.getElementById('apikey-input');
   const errEl = document.getElementById('apikey-error');
   const errMsg = document.getElementById('apikey-error-msg');
-  const btn = document.querySelector('#apikey-modal .login-btn-primary');
+  const btn = document.querySelector('#login-step-apikey .login-btn-primary') || document.querySelector('#apikey-modal .login-btn-primary');
   if (!inp) return;
   const key = inp.value.trim();
-  if (!key) { inp.focus(); return; }
+  if (!key) { inp.focus(); loginShakeCard(); return; }
   if (errEl) errEl.style.display = 'none';
   sessionStorage.removeItem(OIDC_TOKEN_KEY);
-  const rememberEl = document.getElementById('apikey-remember');
+  const rememberEl = document.getElementById('apikey-remember-apikey') || document.getElementById('apikey-remember');
   const remember = rememberEl ? rememberEl.checked : false;
 
   localStorage.removeItem('veyron_display_name'); sessionStorage.removeItem('veyron_display_name');
 
-  // Store key then probe to validate before closing the modal
   if (remember) { localStorage.setItem('veyron_api_key', key); } else { sessionStorage.setItem('veyron_api_key', key); localStorage.removeItem('veyron_api_key'); }
   if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
   fetch('/api/v1/experience/desktop', { headers: { 'X-API-Key': key }, signal: AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined })
@@ -11191,44 +11352,48 @@ function submitApiKeyRaw() {
         if (errMsg) errMsg.textContent = r.status === 403 ? 'Key lacks permission for this cluster.' : 'Invalid API key — check and try again.';
         if (errEl) errEl.style.display = 'flex';
         if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        loginShakeCard();
         inp.select(); inp.focus();
         return;
       }
       _applyKeyAccepted(key);
     })
     .catch(function() {
-      // Network unreachable — accept key anyway, dashboard will show proper errors
       _applyKeyAccepted(key);
     });
 }
 function _applyKeyAccepted(key) {
-  const btn = document.querySelector('#apikey-modal .login-btn-primary');
-  if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  document.querySelectorAll('#apikey-modal .login-btn-primary').forEach(function (btn) {
+    btn.disabled = false; btn.style.opacity = '';
+  });
   document.getElementById('apikey-modal').classList.remove('open');
   updateAuthSessionUI();
   if (apiKeyResolve) { apiKeyResolve(key); apiKeyResolve = null; }
   refresh();
 }
 
-function toggleKeyVisibility() {
-  const inp = document.getElementById('apikey-input');
-  const btn = document.getElementById('eye-toggle');
-  if (!inp || !btn) return;
+function toggleKeyVisibility(inputId) {
+  const inp = document.getElementById(inputId || 'apikey-input');
+  const btn = inputId === 'apikey-input-apikey'
+    ? document.querySelector('#login-step-apikey .eye-btn')
+    : document.getElementById('eye-toggle');
+  if (!inp) return;
   if (inp.type === 'password') {
     inp.type = 'text';
-    btn.innerHTML = '&#128064;';
+    if (btn) btn.innerHTML = '&#128064;';
   } else {
     inp.type = 'password';
-    btn.innerHTML = '&#128065;';
+    if (btn) btn.innerHTML = '&#128065;';
   }
 }
 
-// Submit API key on Enter
+// Submit / Continue on Enter while login overlay is open
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('apikey-modal').classList.contains('open')) {
     e.preventDefault();
     e.stopPropagation();
-    submitApiKey();
+    if (loginMode === 'password' && loginStep === 'identify') loginContinueIdentify();
+    else submitApiKey();
   }
 });
 
@@ -24082,11 +24247,66 @@ function openSerialConsole(ns, name) {
   document.getElementById('serial-modal').classList.add('open');
   document.body.classList.add('mac-console-open');
   document.body.style.overflow = 'hidden';
-  document.getElementById('serial-output').textContent = '';
+  document.getElementById('serial-output').innerHTML = '';
   setMacConsoleStatus('serial', 'Connecting…', '');
   connectSerial();
   const serialInp = document.getElementById('serial-input');
   if (serialInp) setTimeout(() => serialInp.focus(), 120);
+}
+
+var _serialAnsiFg = '';
+var _serialAnsiBold = false;
+var SERIAL_ANSI_FG = {
+  '30': 'ansi-fg-black', '31': 'ansi-fg-red', '32': 'ansi-fg-green', '33': 'ansi-fg-yellow',
+  '34': 'ansi-fg-blue', '35': 'ansi-fg-magenta', '36': 'ansi-fg-cyan', '37': 'ansi-fg-white',
+  '90': 'ansi-fg-bright-black', '91': 'ansi-fg-bright-red', '92': 'ansi-fg-bright-green', '93': 'ansi-fg-bright-yellow',
+  '94': 'ansi-fg-bright-blue', '95': 'ansi-fg-bright-magenta', '96': 'ansi-fg-bright-cyan', '97': 'ansi-fg-bright-white'
+};
+
+function ansiEscapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function ansiToHtmlChunk(text) {
+  var out = '';
+  var re = /\u001b\[([0-9;]*)m/g;
+  var last = 0;
+  var m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out += wrapAnsiSpan(text.slice(last, m.index));
+    var codes = (m[1] || '0').split(';');
+    for (var i = 0; i < codes.length; i++) {
+      var c = codes[i] || '0';
+      if (c === '0' || c === '') { _serialAnsiFg = ''; _serialAnsiBold = false; }
+      else if (c === '1') _serialAnsiBold = true;
+      else if (c === '22') _serialAnsiBold = false;
+      else if (c === '39') _serialAnsiFg = '';
+      else if (SERIAL_ANSI_FG[c]) _serialAnsiFg = SERIAL_ANSI_FG[c];
+    }
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out += wrapAnsiSpan(text.slice(last));
+  return out;
+}
+
+function wrapAnsiSpan(raw) {
+  if (!raw) return '';
+  var cls = [];
+  if (_serialAnsiFg) cls.push(_serialAnsiFg);
+  if (_serialAnsiBold) cls.push('ansi-bold');
+  var html = ansiEscapeHtml(raw);
+  if (!cls.length) return html;
+  return '<span class="' + cls.join(' ') + '">' + html + '</span>';
+}
+
+function appendSerialOutput(chunk) {
+  var out = document.getElementById('serial-output');
+  if (!out || !chunk) return;
+  out.insertAdjacentHTML('beforeend', ansiToHtmlChunk(chunk));
+  if (out.innerHTML.length > SERIAL_OUT_MAX * 2) {
+    out.innerHTML = out.innerHTML.slice(-SERIAL_OUT_MAX);
+  }
+  out.scrollTop = out.scrollHeight;
 }
 
 async function connectSerial() {
@@ -24099,6 +24319,8 @@ async function connectSerial() {
     serialWs = null;
   }
   const out = document.getElementById('serial-output');
+  _serialAnsiFg = '';
+  _serialAnsiBold = false;
   let url;
   try {
     url = await wsConsoleUrl('/api/v1/vms/' + encodeURIComponent(serialVmNs) + '/' + encodeURIComponent(serialVmName) + '/serial');
@@ -24126,11 +24348,7 @@ async function connectSerial() {
     if (typeof ev.data === 'string') chunk = ev.data;
     else if (ev.data instanceof ArrayBuffer) chunk = serialBufToText(new Uint8Array(ev.data));
     if (!chunk) return;
-    out.textContent += chunk;
-    if (out.textContent.length > SERIAL_OUT_MAX) {
-      out.textContent = out.textContent.slice(-SERIAL_OUT_MAX);
-    }
-    out.scrollTop = out.scrollHeight;
+    appendSerialOutput(chunk);
   };
 
   serialWs.onerror = function () {
