@@ -624,7 +624,10 @@ html[data-theme='holo'] #page-dashboard .apple-home-vitals {
 }
 html[data-theme='dark'] .mac-menubar.navbar,
 html[data-theme='tahoe'] .mac-menubar.navbar,
-html[data-theme='holo'] .mac-menubar.navbar {
+html[data-theme='holo'] .mac-menubar.navbar,
+html[data-theme='dark'] body.mac-desktop-root .apple-topnav,
+html[data-theme='tahoe'] body.mac-desktop-root .apple-topnav,
+html[data-theme='holo'] body.mac-desktop-root .apple-topnav {
   background: rgba(0, 0, 0, 0.78) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: saturate(180%) blur(20px);
@@ -632,7 +635,10 @@ html[data-theme='holo'] .mac-menubar.navbar {
 }
 html[data-theme='dark'] .cloudos-finder,
 html[data-theme='tahoe'] .cloudos-finder,
-html[data-theme='holo'] .cloudos-finder {
+html[data-theme='holo'] .cloudos-finder,
+html[data-theme='dark'] body.mac-desktop-root .apple-rail,
+html[data-theme='tahoe'] body.mac-desktop-root .apple-rail,
+html[data-theme='holo'] body.mac-desktop-root .apple-rail {
   background: rgba(22, 22, 23, 0.92) !important;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
 }

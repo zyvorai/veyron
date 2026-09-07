@@ -2720,6 +2720,18 @@ body[data-desktop-tier="normal"] .mac-menubar-title {
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s, border-color 0.15s;
+  /* Unlike its sibling .mac-dynamic-island, this had no overflow/ellipsis
+     safety net — white-space:nowrap with no way to clip meant its flex
+     min-content floor was its full untruncated text width, so
+     .mac-menubar-center-inner (flex:1, min-width:0) could never shrink it
+     enough to fit at narrow widths. The row's total demand then exceeded
+     .mac-menubar-center's box and its overflow:hidden hard-clipped whatever
+     fell off the end — a real "control sliced off" bug, not just a
+     visually-safe ellipsis. max-width + ellipsis gives it the same
+     safe-shrink floor its sibling already has. */
+  max-width: min(140px, 20vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mac-alert-pill:hover {

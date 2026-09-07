@@ -41,8 +41,8 @@ const AUDIT = () => {
     return r.width > 1 && r.height > 1;
   };
 
-  // 1. Content colliding with the fixed menubar.
-  const bar = document.querySelector('.mac-menubar');
+  // 1. Content colliding with the fixed top bar.
+  const bar = document.querySelector('.apple-topnav') || document.querySelector('.mac-menubar');
   if (bar && vis(bar)) {
     const br = bar.getBoundingClientRect();
     const active = document.querySelector('.page.section-shell:not([hidden])') || document.body;
@@ -61,7 +61,7 @@ const AUDIT = () => {
   }
 
   // 2. Containers that clip their own content (overflow hidden + content wider).
-  document.querySelectorAll('.page.section-shell:not([hidden]) *, .mac-menubar, .navbar-right, .mac-menubar-center, .mac-menubar-left').forEach((el) => {
+  document.querySelectorAll('.page.section-shell:not([hidden]) *, .apple-topnav, .apple-rail, .mac-menubar, .navbar-right, .mac-menubar-center, .mac-menubar-left').forEach((el) => {
     if (!vis(el)) return;
     const cs = getComputedStyle(el);
     if (cs.overflowX !== 'hidden' && cs.overflow !== 'hidden') return;
@@ -78,11 +78,30 @@ const AUDIT = () => {
   }
 
   // 4. Visible elements running past the right viewport edge.
+  // A horizontally-scrollable ancestor (overflow-x: auto/scroll, actually
+  // scrollable) legitimately holds children whose own box extends past the
+  // viewport — that content is reachable by scrolling the ancestor, not
+  // unreachable/broken. Found on the workloads/network-intel tables: their
+  // wrapper (.vmr-table-wrap, overflow-x:auto) sat entirely on-screen while
+  // the <table> child's true (unclipped) rendered width ran past the edge —
+  // getBoundingClientRect reports that full box regardless of the ancestor's
+  // clipping, so without this check every scrollable table on a narrow
+  // viewport reports as "offscreen" even though nothing is actually broken.
+  const inScrollableAncestor = (el) => {
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      if ((cs.overflowX === 'auto' || cs.overflowX === 'scroll') && a.scrollWidth > a.clientWidth + 2) {
+        return true;
+      }
+    }
+    return false;
+  };
   const seen = new Set();
   document.querySelectorAll('.page.section-shell:not([hidden]) *').forEach((el) => {
     if (!vis(el)) return;
     const r = el.getBoundingClientRect();
     if (r.right > window.innerWidth + 2 && r.width < window.innerWidth) {
+      if (inScrollableAncestor(el)) return;
       const k = desc(el);
       if (seen.has(k)) return;
       seen.add(k);
