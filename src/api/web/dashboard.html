@@ -3034,7 +3034,9 @@ body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-left{max-width:min
    command-center toggles, 3 spotlight-style buttons, namespace select, auth
    session text, Sign out) needs ~602px — found clipping (Sign out and the
    namespace select losing pixels) on the very first page load, no multi-page
-   state needed. 520px predates something that grew; bumped with headroom. */
+   state needed. 520px predates something that grew; bumped with headroom.
+   The actual fix for that clipping is the base .navbar-right flex-shrink:0
+   below — it applies to every tier, see the comment there. */
 body.mac-desktop-root[data-desktop-tier="power"] .navbar-right{gap:5px;max-width:min(620px,58vw)}
 body.mac-desktop-root[data-desktop-tier="power"] .mac-auth-hint{display:none!important}
 body.mac-desktop-root[data-desktop-tier="power"] .ns-select{max-width:108px;padding:4px 8px;font-size:.72rem}
@@ -3050,7 +3052,24 @@ body.mac-desktop-root .mac-menubar.navbar{
 }
 body.mac-desktop-root .mac-menubar-left{flex:0 1 auto;min-width:0;overflow:hidden}
 body.mac-desktop-root .mac-menubar-center{flex:1 1 auto;min-width:0;overflow:hidden}
-body.mac-desktop-root .navbar-right{flex:0 1 auto;min-width:0;overflow:hidden;flex-shrink:1}
+/* flex-shrink:0 — a layout audit at 1024px found this starved to ~400px
+   against a ~548px content need (Power AND Advanced tier both — Advanced is
+   silently what most pages actually render at even when a tier of "power" is
+   requested, since autoElevateTierForPage() upgrades to "advanced" for any
+   page whose #page-<id> container isn't in the DOM yet), clipping Sign out
+   and the namespace select. Root cause: .mac-menubar-center is flex:1 1 auto
+   here — for Power tier it's further overridden to flex:1 (shorthand for
+   flex-basis:0%) — and a flex item whose basis is small/zero is nearly
+   exempt from flexbox's shrink math regardless of its flex-shrink factor, so
+   nearly all the compression falls on navbar-right instead, whose basis is
+   its full content width. Center holds little to no visible content at this
+   width in either tier (search/quick-nav are hidden for Power; Advanced's
+   own center content already has overflow:hidden), so it costs nothing to
+   let IT absorb the squeeze — pin navbar-right's width like the essential
+   left group already is (see mac-menubar-left's own flex:0 *0* auto above),
+   matching this file's "shed low-priority controls, pin only what's
+   essential" menubar-capacity philosophy below. */
+body.mac-desktop-root .navbar-right{flex:0 1 auto;min-width:0;overflow:hidden;flex-shrink:0}
 /* ── Menubar capacity ──────────────────────────────────────────────────────
    The bar is a fixed-height overflow:hidden row, so any group whose content
    exceeds its box loses controls off the edge silently — no scroll, no
@@ -4464,220 +4483,177 @@ html.light-theme body.mac-desktop-root::before {
 }
 </style>
 </head>
-<body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto" data-shell="desktop" data-shell-layout="root" data-dock="visible" data-focus="off">
+<body class="mac-desktop-root mission-control-home" data-shell="desktop" data-shell-layout="root" data-focus="off">
 <div id="vmr-ambient" class="vmr-ambient" aria-hidden="true"></div>
-<header class="navbar cloudos-topbar mac-menubar" role="banner" data-shell-region="topbar">
-  <div class="mac-menubar-left navbar-left">
-    <div class="mac-menubar-menus">
-      <div class="mac-menu-wrap">
-        <button type="button" class="mac-menu-trigger mac-app-menu" id="mac-menu-zeusos-btn" onclick="toggleMacMenu('zeusos')" aria-haspopup="true" aria-expanded="false" aria-label="Veyron menu">
-          <svg class="veyron-logo-svg" viewBox="0 0 64 64" width="22" height="22" aria-hidden="true" focusable="false">
-            <defs><linearGradient id="zyvor-mg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a3d"/><stop offset="1" stop-color="#f0583a"/></linearGradient></defs>
-            <rect width="64" height="64" rx="14" fill="url(#zyvor-mg)"/>
-            <path d="M19 18h26v7L29 40h16v7H19v-7l16-15H19z" fill="#fff"/>
-          </svg>
-          <span class="veyron-menu-wordmark">Veyron</span>
-        </button>
-        <div class="mac-menu-panel" id="mac-menu-zeusos" role="menu">
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openAboutModal();closeMacMenus()">About Veyron</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openMacPreferences();closeMacMenus()">Preferences… <span class="mac-menu-shortcut">⌘,</span></button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openDockEditor();closeMacMenus()">Customize Dock…</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openLaunchpad();closeMacMenus()">Launchpad (Templates)</button>
-          <div class="mac-menu-sep"></div>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="tahoe" onclick="setDesktopWallpaper('tahoe')">Wallpaper: Carbon</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="aurora" onclick="setDesktopWallpaper('aurora')">Wallpaper: Aurora</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="midnight" onclick="setDesktopWallpaper('midnight')">Wallpaper: Midnight</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="ocean" onclick="setDesktopWallpaper('ocean')">Wallpaper: Ocean</button>
-          <div class="mac-menu-sep"></div>
-          <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="auto" onclick="setDesktopTier('auto',true)">Desktop: Automatic</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="normal" onclick="setDesktopTier('normal',true)">Desktop: Normal</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="power" onclick="setDesktopTier('power',true)">Desktop: Power user</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="advanced" onclick="setDesktopTier('advanced',true)">Desktop: Advanced</button>
-          <div class="mac-menu-sep"></div>
-          <button type="button" class="mac-menu-item" role="menuitem" id="mac-menu-signout" onclick="signOut();closeMacMenus()">Sign out</button>
-        </div>
-      </div>
-      <button type="button" class="mac-menubar-icon-btn mac-menubar-sidebar-btn" id="mac-menubar-sidebar-btn" onclick="setFinderSidebarMode('expanded')" title="Show navigation (&#8984;\\)" aria-label="Show navigation">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+<header class="apple-topnav" role="banner" data-shell-region="topbar">
+  <div class="apple-topnav-row">
+    <button type="button" class="apple-topnav-brand" onclick="navGo('dashboard')" aria-label="Veyron home">
+      <img class="apple-topnav-logo apple-topnav-logo-light" src="/assets/zyvor-logo.png" alt="Zyvor">
+      <img class="apple-topnav-logo apple-topnav-logo-dark" src="/assets/zyvor-logo-on-dark.png" alt="Zyvor">
+    </button>
+    <button type="button" class="apple-topnav-burger" id="apple-topnav-burger" onclick="railToggleMobile()" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="apple-topnav-utils">
+      <button type="button" class="apple-topnav-icon-btn" onclick="openSpotlight()" title="Search (⌘K)" aria-label="Search">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       </button>
-      <button type="button" class="mac-menubar-icon-btn mac-menubar-sidebar-mobile-btn" id="mac-menubar-sidebar-mobile-btn" onclick="openFinderMobile()" title="Navigation" aria-label="Open navigation">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-      </button>
-      <div class="mac-menu-wrap">
-        <button type="button" class="mac-menu-trigger" id="mac-menu-go-btn" onclick="toggleMacMenu('go')" aria-haspopup="true" aria-expanded="false">
-          <svg class="mac-menu-trigger-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          Go
-        </button>
-        <div class="mac-menu-panel" id="mac-menu-go" role="menu">
-          <button type="button" class="mac-menu-item" role="menuitem" data-go-page="dashboard" onclick="finderNavigate('dashboard');closeMacMenus()">Mission Control</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-go-page="vms" onclick="finderNavigate('vms');closeMacMenus()">Fleet Command</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-go-page="app-store" onclick="finderNavigate('app-store');closeMacMenus()">Template Foundry</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-go-page="stack-health" onclick="finderNavigate('stack-health');closeMacMenus()">Stack Health</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-go-page="snapshots" onclick="finderNavigate('snapshots');closeMacMenus()">Snapshots &amp; Backups</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZyra();closeMacMenus()">Ask Zyra… <span class="mac-menu-shortcut">⌘J</span></button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="toggleClassicNav();closeMacMenus()">Browse all pages… <span class="mac-menu-shortcut">⌘⇧B</span></button>
-        </div>
-      </div>
-      <div class="mac-menu-wrap">
-        <button type="button" class="mac-menu-trigger" id="mac-menu-view-btn" onclick="toggleMacMenu('view')" aria-haspopup="true" aria-expanded="false">
-          <svg class="mac-menu-trigger-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          View
-        </button>
-        <div class="mac-menu-panel" id="mac-menu-view" role="menu">
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openMissionControlOverlay();closeMacMenus()">Cluster Overview <span class="mac-menu-shortcut">F3</span></button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openLaunchpad();closeMacMenus()">Launchpad</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openSpotlight();closeMacMenus()">Spotlight <span class="mac-menu-shortcut">⌘K</span></button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openMacShortcuts();closeMacMenus()">Keyboard Shortcuts… <span class="mac-menu-shortcut">⌘/</span></button>
-          <button type="button" class="mac-menu-item" role="menuitem" id="mac-menu-zen-toggle" onclick="toggleZenMode();closeMacMenus()">Zen mode</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="setShell(shellMode==='orbit'?'desktop':'orbit');closeMacMenus()">Toggle Orbit shell <span class="mac-menu-shortcut">⌘⇧O</span></button>
-          <div class="mac-menu-sep"></div>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="toggleActionLog();closeMacMenus()">Session Action Log <span class="mac-menu-shortcut">⌘⇧L</span></button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openClusterSwitcher();closeMacMenus()">Switch Cluster Context…</button>
-        </div>
-      </div>
-      <!-- Unified nav icons + submenus (replaces second finder-top strip) -->
-      <div class="mac-menubar-nav-icons" id="mac-menubar-nav-icons" role="menubar" aria-label="Primary navigation">
-        <div class="mac-menu-wrap">
-          <button type="button" class="mac-nav-icon-btn" id="mac-nav-home" data-nav-section="dashboard" onclick="finderNavigate('dashboard')" title="Mission Control" aria-label="Mission Control">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-          </button>
-        </div>
-        <div class="mac-menu-wrap">
-          <button type="button" class="mac-nav-icon-btn" id="mac-menu-nav-fleet-btn" data-nav-section="fleet" onclick="toggleMacMenu('nav-fleet')" aria-haspopup="true" aria-expanded="false" title="Fleet" aria-label="Fleet menu">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-          </button>
-          <div class="mac-menu-panel mac-menu-panel-icons" id="mac-menu-nav-fleet" role="menu">
-            <button type="button" class="mac-menu-item" data-go-page="vms" role="menuitem" onclick="finderNavigate('vms');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>Fleet Command</button>
-            <button type="button" class="mac-menu-item" data-go-page="console-hub" role="menuitem" onclick="finderNavigate('console-hub');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>ConsoleHub</button>
-            <button type="button" class="mac-menu-item" data-go-page="app-store" role="menuitem" onclick="finderNavigate('app-store');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.29 7 12 12l8.71-5M12 22V12"/></svg></span>Template Foundry</button>
-            <button type="button" class="mac-menu-item" data-go-page="vm-capsule" role="menuitem" onclick="finderNavigate('vm-capsule');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>VM Capsule</button>
-            <div class="mac-menu-sep"></div>
-            <button type="button" class="mac-menu-item" role="menuitem" onclick="openCreateModal();closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span>Create VM</button>
-          </div>
-        </div>
-        <div class="mac-menu-wrap">
-          <button type="button" class="mac-nav-icon-btn" id="mac-menu-nav-ops-btn" data-nav-section="ops" onclick="toggleMacMenu('nav-ops')" aria-haspopup="true" aria-expanded="false" title="Operations" aria-label="Operations menu">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          </button>
-          <div class="mac-menu-panel mac-menu-panel-icons" id="mac-menu-nav-ops" role="menu">
-            <button type="button" class="mac-menu-item" data-go-page="stack-health" role="menuitem" onclick="finderNavigate('stack-health');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Stack Health</button>
-            <button type="button" class="mac-menu-item" data-go-page="snapshots" role="menuitem" onclick="finderNavigate('snapshots');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>Snapshots &amp; Backups</button>
-            <button type="button" class="mac-menu-item" data-go-page="monitoring" role="menuitem" onclick="finderNavigate('monitoring');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg></span>Monitoring</button>
-            <button type="button" class="mac-menu-item" data-go-page="nodes" role="menuitem" onclick="finderNavigate('nodes');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg></span>Cluster Nodes</button>
-            <button type="button" class="mac-menu-item" data-go-page="workloads" role="menuitem" onclick="finderNavigate('workloads');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg></span>Workloads</button>
-          </div>
-        </div>
-        <div class="mac-menu-wrap">
-          <button type="button" class="mac-nav-icon-btn" id="mac-menu-nav-observe-btn" data-nav-section="observe" onclick="toggleMacMenu('nav-observe')" aria-haspopup="true" aria-expanded="false" title="Observe" aria-label="Observe menu">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-3"/></svg>
-          </button>
-          <div class="mac-menu-panel mac-menu-panel-icons" id="mac-menu-nav-observe" role="menu">
-            <button type="button" class="mac-menu-item" data-go-page="events" role="menuitem" onclick="finderNavigate('events');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>Events</button>
-            <button type="button" class="mac-menu-item" data-go-page="alerts" role="menuitem" onclick="finderNavigate('alerts');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>Alerts</button>
-            <button type="button" class="mac-menu-item" data-go-page="logs" role="menuitem" onclick="finderNavigate('logs');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></span>Logs</button>
-            <button type="button" class="mac-menu-item" data-go-page="metrics" role="menuitem" onclick="finderNavigate('metrics');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-3"/></svg></span>Metrics</button>
-            <button type="button" class="mac-menu-item" data-go-page="costs" role="menuitem" onclick="finderNavigate('costs');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 18V6"/></svg></span>Cost Explorer</button>
-          </div>
-        </div>
-        <div class="mac-menu-wrap">
-          <button type="button" class="mac-nav-icon-btn" id="mac-menu-nav-secure-btn" data-nav-section="secure" onclick="toggleMacMenu('nav-secure')" aria-haspopup="true" aria-expanded="false" title="Security" aria-label="Security menu">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </button>
-          <div class="mac-menu-panel mac-menu-panel-icons" id="mac-menu-nav-secure" role="menu">
-            <button type="button" class="mac-menu-item" data-go-page="security" role="menuitem" onclick="finderNavigate('security');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Security Posture</button>
-            <button type="button" class="mac-menu-item" data-go-page="rbac" role="menuitem" onclick="finderNavigate('rbac');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>RBAC</button>
-            <button type="button" class="mac-menu-item" data-go-page="compliance" role="menuitem" onclick="finderNavigate('compliance');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Compliance</button>
-            <button type="button" class="mac-menu-item" data-go-page="network-intel" role="menuitem" onclick="finderNavigate('network-intel');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20 4a10 10 0 0 1 0 16M4 20a10 10 0 0 1 0-16"/></svg></span>Network Intelligence</button>
-          </div>
-        </div>
-        <div class="mac-menu-wrap">
-          <button type="button" class="mac-nav-icon-btn mac-nav-icon-ai" id="mac-menu-nav-ai-btn" data-nav-section="ai" onclick="toggleMacMenu('nav-ai')" aria-haspopup="true" aria-expanded="false" title="Ask Zyra" aria-label="Ask Zyra menu">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M5 19l.8 2.2L8 22l-2.2.8L5 25l-.8-2.2L2 22l2.2-.8L5 19z"/></svg>
-          </button>
-          <div class="mac-menu-panel mac-menu-panel-icons" id="mac-menu-nav-ai" role="menu">
-            <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZyra();closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg></span>Ask Zyra… <span class="mac-menu-shortcut">⌘J</span></button>
-            <button type="button" class="mac-menu-item" role="menuitem" onclick="finderRunCopilotQuick('Show all unhealthy VMs');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span>Unhealthy VMs</button>
-            <button type="button" class="mac-menu-item" role="menuitem" onclick="finderBackupAdvisor();closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></span>Backup Advisor</button>
-            <button type="button" class="mac-menu-item" role="menuitem" onclick="finderRunCopilotQuick('Which PVCs are almost full?');closeMacMenus()"><span class="mac-menu-item-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>Storage Doctor</button>
-          </div>
-        </div>
-        <div class="mac-menu-wrap">
-          <button type="button" class="mac-nav-icon-btn" id="mac-nav-browse" data-nav-section="browse" onclick="toggleClassicNav();closeMacMenus()" title="Browse all pages" aria-label="Browse all pages">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-          </button>
-        </div>
-      </div>
+      <button type="button" class="apple-topnav-icon-btn" id="mac-nc-toggle" onclick="toggleNotificationCenter()" title="Notifications" aria-label="Notifications">🔔<span class="mac-nc-badge" id="mac-nc-badge" style="display:none">0</span></button>
+      <button type="button" class="apple-topnav-icon-btn" id="mac-cc-toggle" onclick="toggleControlCenter()" title="Control Center" aria-label="Control Center">▥</button>
+      <select class="apple-topnav-ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
+        <option value="all">all</option>
+        <option value="default">default</option>
+      </select>
+      <span id="auth-session-label" class="auth-session" style="display:none"></span>
+      <button type="button" class="apple-topnav-signout" id="auth-signout-btn" style="display:none" onclick="signOut()">Sign out</button>
     </div>
-    <!-- Side finder retired — nav is menubar menus + icons only -->
-    <span class="mac-menubar-title" id="mac-menubar-title">Veyron · Command Centre</span><span class="mac-menubar-crumb" id="mac-menubar-crumb">veyron / command-centre</span>
-  </div>
-  <div class="mac-menubar-center">
-    <div class="mac-menubar-center-inner">
-      <input type="search" class="vmr-header-search" id="vmr-header-search" placeholder="Search VMs, templates…" aria-label="Search" onclick="openSpotlight()" readonly>
-      <button type="button" class="mac-alert-pill empty" id="mac-alert-pill" onclick="navigate('events')" title="View alerts">No alerts</button>
-      <button type="button" class="mac-zen-pill" id="mac-zen-pill" onclick="toggleZenMode()" title="Zen mode — click to toggle" aria-pressed="false" hidden>Zen</button>
-      <div class="mac-quick-nav" role="group" aria-label="Quick navigation">
-        <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-home" onclick="navigate('dashboard')">Home</button>
-        <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-monitor" onclick="navigate('stack-health')">Monitor</button>
-        <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-ask" onclick="openAskZyra()">Ask Zyra</button>
-      </div>
-    </div>
-    <div class="mac-dynamic-island-wrap">
-      <button type="button" class="mac-dynamic-island" id="mac-dynamic-island-btn" onclick="toggleDynamicIsland(event)" aria-expanded="false" title="Fleet status">
-        <span style="display:inline-flex;align-items:center;gap:8px;max-width:100%;overflow:hidden">
-          <span class="nav-dot ok" id="mac-island-dot"></span>
-          <span id="mac-island-text">Connected</span>
-        </span>
-        <div class="mac-dynamic-island-expanded" id="mac-dynamic-island-expanded">
-          <div class="mac-island-row"><span>Health</span><strong id="mac-island-health-val">—</strong></div>
-          <div class="mac-island-row"><span>VMs</span><span id="mac-island-vms">—</span></div>
-          <div class="mac-island-row"><span>Open windows</span><span id="mac-island-tabs">—</span></div>
-          <div class="mac-island-row"><span>Workspace</span><span id="mac-island-ws">—</span></div>
-          <div class="mac-island-row"><span>Alerts</span><span id="mac-island-alerts">—</span></div>
-          <div class="mac-island-actions">
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();navigate('dashboard')">Home</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();navigate('monitoring')">Monitor</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZyra()">Ask Zyra</button>
-          </div>
-        </div>
-      </button>
-    </div>
-  </div>
-  <div class="navbar-right">
-    <span class="mac-auth-hint" id="mac-auth-hint" title="API authentication"></span>
-    <div class="topbar-location menubar-tier-advanced-only" id="topbar-location-wrap">
-      <span class="topbar-location-meta" id="cluster-context-meta">Location: loading…</span>
-      <select class="form-select topbar-location-select" id="cluster-activate-select" style="display:none"></select>
-      <button type="button" class="glass-btn-secondary glass-btn-sm topbar-location-btn" id="cluster-activate-btn" onclick="activateClusterContext()" style="display:none">Switch</button>
-    </div>
-    <span class="mac-menubar-clock" id="mac-menubar-clock" aria-hidden="true"><span class="mac-menubar-clock-date" id="mac-menubar-clock-date"></span><span class="mac-menubar-clock-time" id="mac-menubar-clock-time"></span></span>
-    <button type="button" class="mac-nc-toggle" id="mac-nc-toggle" onclick="toggleNotificationCenter()" title="Notification Center" aria-label="Notification Center">🔔<span class="mac-nc-badge" id="mac-nc-badge" style="display:none">0</span></button>
-    <button type="button" class="mac-cc-toggle" id="mac-cc-toggle" onclick="toggleControlCenter()" title="Control Center" aria-label="Control Center">▥</button>
-    <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)" hidden aria-hidden="true">Browse</button>
-    <button type="button" class="btn-spotlight" onclick="openQuickForge()" title="Quick VM Launcher (⌘N)" style="color:var(--cyan)" aria-label="New VM">⌘N</button>
-    <span id="vmr-fleet-mood" title="Fleet health" aria-live="polite" style="font-size:.9rem;cursor:default;user-select:none;padding:0 4px;opacity:.85" onclick="navigate('vms')"></span>
-    <button type="button" class="btn-spotlight" id="vmr-action-log-btn" onclick="toggleActionLog()" title="Session action log" style="position:relative" aria-label="Action log">◎<span id="vmr-action-log-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--caution);color:#000;border-radius:8px;font-size:.55rem;font-weight:700;min-width:14px;height:14px;line-height:14px;padding:0 3px;text-align:center"></span></button>
-    <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
-    <select class="theme-select menubar-tier-collapsible" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
-      <option value="light">Light</option>
-      <option value="dark">Dark</option>
-      <option value="auto">Auto · Day/Night</option>
-    </select>
-    <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
-      <option value="all">all</option>
-      <option value="default">default</option>
-    </select>
-    <select class="refresh-select menubar-tier-collapsible" id="refresh-interval" onchange="setRefreshInterval(this.value)" title="Auto-refresh interval">
-      <option value="5000">5s</option><option value="10000">10s</option><option value="30000">30s</option><option value="0">Off</option>
-    </select>
-    <svg class="refresh-ring menubar-tier-collapsible" id="refresh-ring" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:middle;margin-right:2px"><circle class="refresh-ring-bg" cx="8" cy="8" r="6" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="2"/><circle class="refresh-ring-progress" id="refresh-ring-progress" cx="8" cy="8" r="6" fill="none" stroke="rgba(56,189,248,.7)" stroke-width="2" stroke-linecap="round" stroke-dasharray="37.7" stroke-dashoffset="37.7" transform="rotate(-90 8 8)"/></svg>
-    <span class="refresh-text menubar-tier-collapsible" id="last-refresh"></span>
-    <button type="button" class="glass-btn-secondary glass-btn-sm menubar-tier-collapsible" onclick="refresh()" title="Refresh now (⌘R)" aria-label="Refresh" style="padding:3px 8px;font-size:.8rem">⟳</button>
-    <span id="auth-session-label" class="auth-session" style="display:none"></span>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" id="auth-signout-btn" style="display:none;font-size:.72rem" onclick="signOut()">Sign out</button>
-    <div class="nav-status menubar-tier-advanced-only"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Initializing...</span></div>
   </div>
 </header>
+<div class="apple-rail-backdrop" id="apple-rail-backdrop" onclick="railCloseMobile()" aria-hidden="true"></div>
+<aside class="apple-rail" id="apple-rail" data-shell-region="nav" aria-label="Veyron navigation">
+  <div class="apple-rail-filter">
+    <label class="sr-only" for="apple-rail-filter-input">Filter navigation</label>
+    <input type="search" id="apple-rail-filter-input" class="apple-rail-filter-input" placeholder="Filter navigation…" oninput="filterRailNav(this.value)" autocomplete="off">
+  </div>
+  <div class="apple-rail-scroll">
+    <div class="apple-rail-section" data-section="workspace">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('workspace')"><span class="apple-rail-section-label">Workspace</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="workspace">
+        <button type="button" class="apple-rail-link" data-page="dashboard" onclick="navGo('dashboard')" title="Signal Desk"><span class="apple-rail-icon"><i data-lucide="home"></i></span><span class="apple-rail-label">Signal Desk</span></button>
+        <button type="button" class="apple-rail-link" data-page="vms" onclick="navGo('vms')" title="Fleet Command"><span class="apple-rail-icon"><i data-lucide="server"></i></span><span class="apple-rail-label">Fleet Command</span><span class="apple-rail-badge" id="rail-badge-vms"></span></button>
+        <button type="button" class="apple-rail-link" data-page="reactor" onclick="navGo('reactor')" title="Reactor Core"><span class="apple-rail-icon"><i data-lucide="atom"></i></span><span class="apple-rail-label">Reactor Core</span></button>
+        <button type="button" class="apple-rail-link" data-page="fleet-constellation" onclick="navGo('fleet-constellation')" title="Fleet Constellation"><span class="apple-rail-icon"><i data-lucide="orbit"></i></span><span class="apple-rail-label">Fleet Constellation</span></button>
+        <button type="button" class="apple-rail-link" data-page="topology" onclick="navGo('topology')" title="Topology"><span class="apple-rail-icon"><i data-lucide="layout-panel-top"></i></span><span class="apple-rail-label">Topology</span></button>
+        <button type="button" class="apple-rail-link" data-page="gallery-wall" onclick="navGo('gallery-wall')" title="Gallery Wall"><span class="apple-rail-icon"><i data-lucide="grid-2x2"></i></span><span class="apple-rail-label">Gallery Wall</span></button>
+        <button type="button" class="apple-rail-link" data-page="vcentre" onclick="navGo('vcentre')" title="vCentre"><span class="apple-rail-icon"><i data-lucide="zap"></i></span><span class="apple-rail-label">vCentre</span></button>
+        <button type="button" class="apple-rail-link" data-page="console-hub" onclick="navGo('console-hub')" title="ConsoleHub"><span class="apple-rail-icon"><i data-lucide="monitor"></i></span><span class="apple-rail-label">ConsoleHub</span></button>
+        <button type="button" class="apple-rail-link" data-page="vm-capsule" onclick="navGo('vm-capsule')" title="VM Capsule"><span class="apple-rail-icon"><i data-lucide="box"></i></span><span class="apple-rail-label">VM Capsule</span></button>
+        <button type="button" class="apple-rail-link" data-page="app-store" onclick="navGo('app-store')" title="Template Foundry"><span class="apple-rail-icon"><i data-lucide="package"></i></span><span class="apple-rail-label">Template Foundry</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="ai">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('ai')"><span class="apple-rail-section-label">AI</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="ai">
+        <button type="button" class="apple-rail-link" data-page="ask-zyra" onclick="navGo('ask-zyra')" title="Ask Zyra"><span class="apple-rail-icon"><i data-lucide="sparkles"></i></span><span class="apple-rail-label">Ask Zyra</span></button>
+        <button type="button" class="apple-rail-link" onclick="finderRunCopilotQuick('Show all unhealthy VMs')" title="Unhealthy VMs"><span class="apple-rail-icon"><i data-lucide="heart-pulse"></i></span><span class="apple-rail-label">Unhealthy VMs</span></button>
+        <button type="button" class="apple-rail-link" onclick="finderBackupAdvisor()" title="Backup Advisor"><span class="apple-rail-icon"><i data-lucide="archive"></i></span><span class="apple-rail-label">Backup Advisor</span></button>
+        <button type="button" class="apple-rail-link" onclick="finderRunCopilotQuick('Which PVCs are almost full?')" title="Storage Doctor"><span class="apple-rail-icon"><i data-lucide="hard-drive"></i></span><span class="apple-rail-label">Storage Doctor</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="compute">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('compute')"><span class="apple-rail-section-label">Compute</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="compute">
+        <button type="button" class="apple-rail-link" data-page="nodes" onclick="navGo('nodes')" title="Nodes"><span class="apple-rail-icon"><i data-lucide="cpu"></i></span><span class="apple-rail-label">Nodes</span></button>
+        <button type="button" class="apple-rail-link" data-page="pods" onclick="navGo('pods')" title="Pods"><span class="apple-rail-icon"><i data-lucide="container"></i></span><span class="apple-rail-label">Pods</span></button>
+        <button type="button" class="apple-rail-link" data-page="workloads" onclick="navGo('workloads')" title="Workloads"><span class="apple-rail-icon"><i data-lucide="layers"></i></span><span class="apple-rail-label">Workloads</span></button>
+        <button type="button" class="apple-rail-link" data-page="scheduling" onclick="navGo('scheduling')" title="Scheduling"><span class="apple-rail-icon"><i data-lucide="clock"></i></span><span class="apple-rail-label">Scheduling</span></button>
+        <button type="button" class="apple-rail-link" data-page="hpa" onclick="navGo('hpa')" title="HPA"><span class="apple-rail-icon"><i data-lucide="trending-up"></i></span><span class="apple-rail-label">HPA</span></button>
+        <button type="button" class="apple-rail-link" data-page="autoscaler" onclick="navGo('autoscaler')" title="Autoscaler"><span class="apple-rail-icon"><i data-lucide="gauge"></i></span><span class="apple-rail-label">Autoscaler</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="observe">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('observe')"><span class="apple-rail-section-label">Observe</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="observe">
+        <button type="button" class="apple-rail-link" data-page="stack-health" onclick="navGo('stack-health')" title="Monitoring"><span class="apple-rail-icon"><i data-lucide="activity"></i></span><span class="apple-rail-label">Monitoring</span></button>
+        <button type="button" class="apple-rail-link" data-page="mission-control" onclick="navGo('mission-control')" title="Mission Control"><span class="apple-rail-icon"><i data-lucide="network"></i></span><span class="apple-rail-label">Mission Control</span></button>
+        <button type="button" class="apple-rail-link" data-page="metrics" onclick="navGo('metrics')" title="Metrics"><span class="apple-rail-icon"><i data-lucide="bar-chart-2"></i></span><span class="apple-rail-label">Metrics</span></button>
+        <button type="button" class="apple-rail-link" data-page="alerts" onclick="navGo('alerts')" title="Alerts"><span class="apple-rail-icon"><i data-lucide="bell"></i></span><span class="apple-rail-label">Alerts</span></button>
+        <button type="button" class="apple-rail-link" data-page="events" onclick="navGo('events')" title="Events"><span class="apple-rail-icon"><i data-lucide="clock"></i></span><span class="apple-rail-label">Events</span></button>
+        <button type="button" class="apple-rail-link" data-page="slo" onclick="navGo('slo')" title="SLO"><span class="apple-rail-icon"><i data-lucide="check-square"></i></span><span class="apple-rail-label">SLO</span></button>
+        <button type="button" class="apple-rail-link" data-page="performance" onclick="navGo('performance')" title="Performance"><span class="apple-rail-icon"><i data-lucide="zap"></i></span><span class="apple-rail-label">Performance</span></button>
+        <button type="button" class="apple-rail-link" data-page="heatmap" onclick="navGo('heatmap')" title="Heatmap"><span class="apple-rail-icon"><i data-lucide="grid-2x2"></i></span><span class="apple-rail-label">Heatmap</span></button>
+        <button type="button" class="apple-rail-link" data-page="custom-dashboards" onclick="navGo('custom-dashboards')" title="Custom Dashboards"><span class="apple-rail-icon"><i data-lucide="layout-dashboard"></i></span><span class="apple-rail-label">Custom Dashboards</span></button>
+        <button type="button" class="apple-rail-link" data-page="observability" onclick="navGo('observability')" title="Overview"><span class="apple-rail-icon"><i data-lucide="radar"></i></span><span class="apple-rail-label">Overview</span></button>
+        <button type="button" class="apple-rail-link" data-page="insights" onclick="navGo('insights')" title="Insights"><span class="apple-rail-icon"><i data-lucide="brain"></i></span><span class="apple-rail-label">Insights</span></button>
+        <button type="button" class="apple-rail-link" data-page="traces" onclick="navGo('traces')" title="Traces"><span class="apple-rail-icon"><i data-lucide="share-2"></i></span><span class="apple-rail-label">Traces</span></button>
+        <button type="button" class="apple-rail-link" data-page="logs" onclick="navGo('logs')" title="Console"><span class="apple-rail-icon"><i data-lucide="terminal"></i></span><span class="apple-rail-label">Console</span></button>
+        <button type="button" class="apple-rail-link" data-page="incidents" onclick="navGo('incidents')" title="Incidents"><span class="apple-rail-icon"><i data-lucide="heart-pulse"></i></span><span class="apple-rail-label">Incidents</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="storage">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('storage')"><span class="apple-rail-section-label">Storage</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="storage">
+        <button type="button" class="apple-rail-link" data-page="snapshots" onclick="navGo('snapshots')" title="Snapshots"><span class="apple-rail-icon"><i data-lucide="camera"></i></span><span class="apple-rail-label">Snapshots</span></button>
+        <button type="button" class="apple-rail-link" data-page="storage" onclick="navGo('storage')" title="Storage"><span class="apple-rail-icon"><i data-lucide="hard-drive"></i></span><span class="apple-rail-label">Storage</span></button>
+        <button type="button" class="apple-rail-link" data-page="images" onclick="navGo('images')" title="Images"><span class="apple-rail-icon"><i data-lucide="box"></i></span><span class="apple-rail-label">Images</span></button>
+        <button type="button" class="apple-rail-link" data-page="backups" onclick="navGo('backups')" title="Backups"><span class="apple-rail-icon"><i data-lucide="archive"></i></span><span class="apple-rail-label">Backups</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="network">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('network')"><span class="apple-rail-section-label">Network</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="network">
+        <button type="button" class="apple-rail-link" data-page="ingress" onclick="navGo('ingress')" title="Ingress"><span class="apple-rail-icon"><i data-lucide="arrow-right-left"></i></span><span class="apple-rail-label">Ingress</span></button>
+        <button type="button" class="apple-rail-link" data-page="network-policies" onclick="navGo('network-policies')" title="Network Policies"><span class="apple-rail-icon"><i data-lucide="shield"></i></span><span class="apple-rail-label">Network Policies</span></button>
+        <button type="button" class="apple-rail-link" data-page="cilium" onclick="navGo('cilium')" title="Cilium"><span class="apple-rail-icon"><i data-lucide="network"></i></span><span class="apple-rail-label">Cilium</span></button>
+        <button type="button" class="apple-rail-link" data-page="network-intel" onclick="navGo('network-intel')" title="Network Intel"><span class="apple-rail-icon"><i data-lucide="radar"></i></span><span class="apple-rail-label">Network Intel</span></button>
+        <button type="button" class="apple-rail-link" data-page="dependencies" onclick="navGo('dependencies')" title="Dependencies"><span class="apple-rail-icon"><i data-lucide="share-2"></i></span><span class="apple-rail-label">Dependencies</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="security">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('security')"><span class="apple-rail-section-label">Security</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="security">
+        <button type="button" class="apple-rail-link" data-page="security" onclick="navGo('security')" title="Posture"><span class="apple-rail-icon"><i data-lucide="shield"></i></span><span class="apple-rail-label">Posture</span></button>
+        <button type="button" class="apple-rail-link" data-page="compliance" onclick="navGo('compliance')" title="Compliance"><span class="apple-rail-icon"><i data-lucide="check-square"></i></span><span class="apple-rail-label">Compliance</span></button>
+        <button type="button" class="apple-rail-link" data-page="rbac" onclick="navGo('rbac')" title="RBAC"><span class="apple-rail-icon"><i data-lucide="lock"></i></span><span class="apple-rail-label">RBAC</span></button>
+        <button type="button" class="apple-rail-link" data-page="policies" onclick="navGo('policies')" title="Policies"><span class="apple-rail-icon"><i data-lucide="file-check"></i></span><span class="apple-rail-label">Policies</span></button>
+        <button type="button" class="apple-rail-link" data-page="quotas" onclick="navGo('quotas')" title="Quotas"><span class="apple-rail-icon"><i data-lucide="gauge"></i></span><span class="apple-rail-label">Quotas</span></button>
+        <button type="button" class="apple-rail-link" data-page="audit" onclick="navGo('audit')" title="Audit"><span class="apple-rail-icon"><i data-lucide="file-text"></i></span><span class="apple-rail-label">Audit</span></button>
+        <button type="button" class="apple-rail-link" data-page="soc" onclick="navGo('soc')" title="SOC"><span class="apple-rail-icon"><i data-lucide="radar"></i></span><span class="apple-rail-label">SOC</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="platform">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('platform')"><span class="apple-rail-section-label">Platform</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="platform">
+        <button type="button" class="apple-rail-link" data-page="helm" onclick="navGo('helm')" title="Helm"><span class="apple-rail-icon"><i data-lucide="package"></i></span><span class="apple-rail-label">Helm</span></button>
+        <button type="button" class="apple-rail-link" data-page="operators" onclick="navGo('operators')" title="Operators"><span class="apple-rail-icon"><i data-lucide="settings"></i></span><span class="apple-rail-label">Operators</span></button>
+        <button type="button" class="apple-rail-link" data-page="crds" onclick="navGo('crds')" title="CRDs"><span class="apple-rail-icon"><i data-lucide="folder-tree"></i></span><span class="apple-rail-label">CRDs</span></button>
+        <button type="button" class="apple-rail-link" data-page="blueprint-studio" onclick="navGo('blueprint-studio')" title="Blueprint Studio"><span class="apple-rail-icon"><i data-lucide="layout-dashboard"></i></span><span class="apple-rail-label">Blueprint Studio</span></button>
+        <button type="button" class="apple-rail-link" data-page="custom-resources" onclick="navGo('custom-resources')" title="Custom Resources"><span class="apple-rail-icon"><i data-lucide="box"></i></span><span class="apple-rail-label">Custom Resources</span></button>
+        <button type="button" class="apple-rail-link" data-page="catalog" onclick="navGo('catalog')" title="Catalog"><span class="apple-rail-icon"><i data-lucide="book-open"></i></span><span class="apple-rail-label">Catalog</span></button>
+        <button type="button" class="apple-rail-link" data-page="gitops" onclick="navGo('gitops')" title="GitOps"><span class="apple-rail-icon"><i data-lucide="plug-zap"></i></span><span class="apple-rail-label">GitOps</span></button>
+        <button type="button" class="apple-rail-link" data-page="integrations" onclick="navGo('integrations')" title="Integrations"><span class="apple-rail-icon"><i data-lucide="plug"></i></span><span class="apple-rail-label">Integrations</span></button>
+        <button type="button" class="apple-rail-link" data-page="webhooks" onclick="navGo('webhooks')" title="Webhooks"><span class="apple-rail-icon"><i data-lucide="zap"></i></span><span class="apple-rail-label">Webhooks</span></button>
+        <button type="button" class="apple-rail-link" data-page="tenants" onclick="navGo('tenants')" title="Tenants"><span class="apple-rail-icon"><i data-lucide="users"></i></span><span class="apple-rail-label">Tenants</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="finops">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('finops')"><span class="apple-rail-section-label">FinOps</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="finops">
+        <button type="button" class="apple-rail-link" data-page="costs" onclick="navGo('costs')" title="Costs"><span class="apple-rail-icon"><i data-lucide="dollar-sign"></i></span><span class="apple-rail-label">Costs</span></button>
+        <button type="button" class="apple-rail-link" data-page="forecasting" onclick="navGo('forecasting')" title="Forecasting"><span class="apple-rail-icon"><i data-lucide="line-chart"></i></span><span class="apple-rail-label">Forecasting</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="ops">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('ops')"><span class="apple-rail-section-label">Ops</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="ops">
+        <button type="button" class="apple-rail-link" data-page="chaos" onclick="navGo('chaos')" title="Chaos"><span class="apple-rail-icon"><i data-lucide="flame"></i></span><span class="apple-rail-label">Chaos</span></button>
+        <button type="button" class="apple-rail-link" data-page="dr" onclick="navGo('dr')" title="Disaster Recovery"><span class="apple-rail-icon"><i data-lucide="archive"></i></span><span class="apple-rail-label">Disaster Recovery</span></button>
+        <button type="button" class="apple-rail-link" data-page="actions" onclick="navGo('actions')" title="Actions"><span class="apple-rail-icon"><i data-lucide="terminal"></i></span><span class="apple-rail-label">Actions</span></button>
+        <button type="button" class="apple-rail-link" data-page="notifications" onclick="navGo('notifications')" title="Notifications"><span class="apple-rail-icon"><i data-lucide="bell"></i></span><span class="apple-rail-label">Notifications</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section" data-section="admin">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('admin')"><span class="apple-rail-section-label">Admin</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="admin">
+        <button type="button" class="apple-rail-link" data-page="stack-health" onclick="navGo('stack-health')" title="Stack Health"><span class="apple-rail-icon"><i data-lucide="activity"></i></span><span class="apple-rail-label">Stack Health</span></button>
+        <button type="button" class="apple-rail-link" data-page="settings" onclick="navGo('settings')" title="Settings"><span class="apple-rail-icon"><i data-lucide="settings"></i></span><span class="apple-rail-label">Settings</span></button>
+      </div>
+    </div>
+  </div>
+  <div class="apple-rail-footer">
+    <button type="button" class="apple-rail-footer-btn apple-rail-footer-btn-primary btn-create" onclick="railCloseMobile(); openCreateModal();" title="Create VM">
+      <span class="apple-rail-icon" aria-hidden="true"><i data-lucide="plus"></i></span>
+      <span class="apple-rail-label apple-rail-footer-btn-label">Create VM</span>
+    </button>
+    <button type="button" class="apple-rail-footer-btn" onclick="railCloseMobile(); toggleClassicNav();" title="Browse all pages (⌘⇧B)">
+      <span class="apple-rail-icon" aria-hidden="true"><i data-lucide="layout-grid"></i></span>
+      <span class="apple-rail-label apple-rail-footer-btn-label">Browse all pages</span>
+    </button>
+    <button type="button" class="apple-rail-collapse-btn" onclick="railToggleCollapsed()" title="Toggle sidebar (⌘\\)" aria-label="Toggle sidebar">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    </button>
+  </div>
+</aside>
 <nav class="vmr-primary-tabs" id="vmr-primary-tabs" role="tablist" aria-label="Veyron primary navigation"></nav>
 <div class="mac-desktop-tabs" id="mac-desktop-tabs" role="tablist" aria-label="Open windows"></div>
 <div class="mac-control-center" id="mac-control-center" role="dialog" aria-label="Control Center">
@@ -4715,7 +4691,6 @@ html.light-theme body.mac-desktop-root::before {
       </div>
       <select class="form-select sr-only" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)" aria-hidden="true" tabindex="-1"><option value="tahoe">Carbon</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option></select>
     </div>
-    <div class="mac-cc-row"><span>Desktop</span><select class="form-select" id="cc-tier-select" onchange="setDesktopTier(this.value,true)"><option value="auto">Automatic</option><option value="normal">Normal</option><option value="power">Power user</option><option value="advanced">Advanced</option></select></div>
     <div class="mac-cc-row"><span>Shell</span><select class="form-select" id="cc-shell-select" onchange="setShell(this.value)"><option value="orbit">Orbit · Spatial</option><option value="desktop">Desktop · Classic</option></select></div>
   </div>
   <div class="mac-cc-section">
@@ -4889,15 +4864,6 @@ html.light-theme body.mac-desktop-root::before {
 <div class="classic-nav-backdrop" id="classic-nav-backdrop" onclick="closeClassicNav()"></div>
 <button type="button" class="cloudos-browse-rail" id="cloudos-browse-rail" onclick="toggleClassicNav()" title="Browse all pages (⌘⇧B)" aria-label="Browse all pages">Browse</button>
 
-<div id="veyron-legacy-hooks" class="sr-only" aria-hidden="true">
-  <nav id="veyron-sidebar-nav"></nav>
-  <span id="veyron-context-ns">all</span>
-  <span id="veyron-context-scope">All Namespaces</span>
-  <button type="button" id="veyron-alerts-pill" class="veyron-alerts-pill empty" hidden>No alerts</button>
-  <select id="veyron-ns-select" hidden aria-hidden="true" tabindex="-1"></select>
-  <input type="text" id="veyron-copilot-input" class="veyron-copilot-input" hidden aria-hidden="true" tabindex="-1">
-</div>
-
 <!-- ── Instrument Deck telemetry spine ── -->
 <div class="id-spine" id="id-spine" aria-hidden="true">
   <div class="id-scan"></div>
@@ -4909,154 +4875,6 @@ html.light-theme body.mac-desktop-root::before {
   <div class="id-seg">net <b id="id-t-net">—</b> Mb/s</div>
 </div>
 
-<div class="cloudos-body-row">
-<div class="cloudos-finder-backdrop" id="cloudos-finder-backdrop" onclick="closeFinderMobile()" aria-hidden="true"></div>
-<aside class="cloudos-finder" id="cloudos-finder" data-shell-region="nav" aria-label="Veyron navigation" data-sidebar-mode="expanded">
-  <div class="finder-toolbar">
-    <button type="button" class="finder-sidebar-toggle" id="finder-sidebar-toggle" onclick="cycleFinderSidebar()" title="Collapse sidebar (&#8984;\\)" aria-label="Collapse sidebar">
-      <span aria-hidden="true">&#9707;</span>
-    </button>
-    <span class="finder-toolbar-title">Navigate</span>
-  </div>
-  <div class="finder-search-wrap">
-    <span class="finder-search-icon" aria-hidden="true">&#8981;</span>
-    <input type="search" id="finder-nav-search" class="finder-nav-search" placeholder="Filter navigation" aria-label="Filter navigation" oninput="filterFinderNav(this.value)">
-  </div>
-  <div class="finder-nav-scroll" id="finder-nav-scroll">
-  <div class="finder-section" id="finder-sec-workspace" data-finder-section="workspace">
-    <div class="finder-section-label">Workspace</div>
-    <div class="finder-section-body" id="finder-workspace">
-      <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon"><i data-lucide="home"></i></span><span class="fi-label">Signal Desk</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon"><i data-lucide="server"></i></span><span class="fi-label">Fleet Command</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="reactor" onclick="finderNavigate('reactor')"><span class="fi-icon"><i data-lucide="atom"></i></span><span class="fi-label">Reactor Core</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="fleet-constellation" onclick="finderNavigate('fleet-constellation')"><span class="fi-icon"><i data-lucide="orbit"></i></span><span class="fi-label">Fleet Constellation</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="topology" onclick="finderNavigate('topology')"><span class="fi-icon"><i data-lucide="layout-panel-top"></i></span><span class="fi-label">Topology</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="gallery-wall" onclick="finderNavigate('gallery-wall')"><span class="fi-icon"><i data-lucide="grid-2x2"></i></span><span class="fi-label">Gallery Wall</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="vcentre" onclick="finderNavigate('vcentre')"><span class="fi-icon"><i data-lucide="zap"></i></span><span class="fi-label">vCentre</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="console-hub" onclick="finderNavigate('console-hub')"><span class="fi-icon"><i data-lucide="monitor"></i></span><span class="fi-label">ConsoleHub</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon"><i data-lucide="box"></i></span><span class="fi-label">VM Capsule</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon"><i data-lucide="package"></i></span><span class="fi-label">Template Foundry</span></button>
-    </div>
-  </div>
-  <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
-    <div class="finder-section-label">AI</div>
-    <div class="finder-section-body" id="finder-ai">
-      <button type="button" class="cloudos-finder-item" data-page="ask-zyra" onclick="finderNavigate('ask-zyra')"><span class="fi-icon"><i data-lucide="sparkles"></i></span><span class="fi-label">Ask Zyra</span></button>
-      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon"><i data-lucide="heart-pulse"></i></span><span class="fi-label">Unhealthy VMs</span></button>
-      <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon"><i data-lucide="archive"></i></span><span class="fi-label">Backup Advisor</span></button>
-      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon"><i data-lucide="hard-drive"></i></span><span class="fi-label">Storage Doctor</span></button>
-    </div>
-  </div>
-  <div class="finder-section collapsed" id="finder-sec-compute" data-finder-section="compute">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('compute')"><span>Compute</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-compute">
-      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon"><i data-lucide="cpu"></i></span><span class="fi-label">Nodes</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="pods" onclick="finderNavigate('pods')"><span class="fi-icon"><i data-lucide="container"></i></span><span class="fi-label">Pods</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon"><i data-lucide="layers"></i></span><span class="fi-label">Workloads</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="scheduling" onclick="finderNavigate('scheduling')"><span class="fi-icon"><i data-lucide="clock"></i></span><span class="fi-label">Scheduling</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="hpa" onclick="finderNavigate('hpa')"><span class="fi-icon"><i data-lucide="trending-up"></i></span><span class="fi-label">HPA</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="autoscaler" onclick="finderNavigate('autoscaler')"><span class="fi-icon"><i data-lucide="gauge"></i></span><span class="fi-label">Autoscaler</span></button>
-    </div>
-  </div>
-  <div class="finder-section collapsed" id="finder-sec-observe" data-finder-section="observe">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('observe')"><span>Observe</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-observe">
-      <button type="button" class="cloudos-finder-item" data-page="stack-health" onclick="finderNavigate('stack-health')"><span class="fi-icon"><i data-lucide="activity"></i></span><span class="fi-label">Monitoring</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="mission-control" onclick="finderNavigate('mission-control')"><span class="fi-icon"><i data-lucide="network"></i></span><span class="fi-label">Mission Control</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="metrics" onclick="finderNavigate('metrics')"><span class="fi-icon"><i data-lucide="bar-chart-2"></i></span><span class="fi-label">Metrics</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="alerts" onclick="finderNavigate('alerts')"><span class="fi-icon"><i data-lucide="bell"></i></span><span class="fi-label">Alerts</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon"><i data-lucide="clock"></i></span><span class="fi-label">Events</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="slo" onclick="finderNavigate('slo')"><span class="fi-icon"><i data-lucide="check-square"></i></span><span class="fi-label">SLO</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="performance" onclick="finderNavigate('performance')"><span class="fi-icon"><i data-lucide="zap"></i></span><span class="fi-label">Performance</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="heatmap" onclick="finderNavigate('heatmap')"><span class="fi-icon"><i data-lucide="grid-2x2"></i></span><span class="fi-label">Heatmap</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="custom-dashboards" onclick="finderNavigate('custom-dashboards')"><span class="fi-icon"><i data-lucide="layout-dashboard"></i></span><span class="fi-label">Custom Dashboards</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="observability" onclick="finderNavigate('observability')"><span class="fi-icon"><i data-lucide="radar"></i></span><span class="fi-label">Overview</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="insights" onclick="finderNavigate('insights')"><span class="fi-icon"><i data-lucide="brain"></i></span><span class="fi-label">Insights</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="traces" onclick="finderNavigate('traces')"><span class="fi-icon"><i data-lucide="share-2"></i></span><span class="fi-label">Traces</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="logs" onclick="finderNavigate('logs')"><span class="fi-icon"><i data-lucide="terminal"></i></span><span class="fi-label">Console</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="incidents" onclick="finderNavigate('incidents')"><span class="fi-icon"><i data-lucide="heart-pulse"></i></span><span class="fi-label">Incidents</span></button>
-    </div>
-  </div>
-  <div class="finder-section collapsed" id="finder-sec-storage" data-finder-section="storage">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('storage')"><span>Storage</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-storage">
-      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon"><i data-lucide="camera"></i></span><span class="fi-label">Snapshots</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="storage" onclick="finderNavigate('storage')"><span class="fi-icon"><i data-lucide="hard-drive"></i></span><span class="fi-label">Storage</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="images" onclick="finderNavigate('images')"><span class="fi-icon"><i data-lucide="box"></i></span><span class="fi-label">Images</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="backups" onclick="finderNavigate('backups')"><span class="fi-icon"><i data-lucide="archive"></i></span><span class="fi-label">Backups</span></button>
-    </div>
-  </div>
-  <div class="finder-section collapsed" id="finder-sec-network" data-finder-section="network">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('network')"><span>Network</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-network">
-      <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon"><i data-lucide="arrow-right-left"></i></span><span class="fi-label">Ingress</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="network-policies" onclick="finderNavigate('network-policies')"><span class="fi-icon"><i data-lucide="shield"></i></span><span class="fi-label">Network Policies</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="cilium" onclick="finderNavigate('cilium')"><span class="fi-icon"><i data-lucide="network"></i></span><span class="fi-label">Cilium</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="network-intel" data-min-tier="advanced" onclick="finderNavigate('network-intel')"><span class="fi-icon"><i data-lucide="radar"></i></span><span class="fi-label">Network Intel</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="dependencies" onclick="finderNavigate('dependencies')"><span class="fi-icon"><i data-lucide="share-2"></i></span><span class="fi-label">Dependencies</span></button>
-    </div>
-  </div>
-  <div class="finder-section collapsed" id="finder-sec-security" data-finder-section="security">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('security')"><span>Security</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-security">
-      <button type="button" class="cloudos-finder-item" data-page="security" data-min-tier="advanced" onclick="finderNavigate('security')"><span class="fi-icon"><i data-lucide="shield"></i></span><span class="fi-label">Posture</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="compliance" onclick="finderNavigate('compliance')"><span class="fi-icon"><i data-lucide="check-square"></i></span><span class="fi-label">Compliance</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="rbac" onclick="finderNavigate('rbac')"><span class="fi-icon"><i data-lucide="lock"></i></span><span class="fi-label">RBAC</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="policies" onclick="finderNavigate('policies')"><span class="fi-icon"><i data-lucide="file-check"></i></span><span class="fi-label">Policies</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="quotas" onclick="finderNavigate('quotas')"><span class="fi-icon"><i data-lucide="gauge"></i></span><span class="fi-label">Quotas</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="audit" onclick="finderNavigate('audit')"><span class="fi-icon"><i data-lucide="file-text"></i></span><span class="fi-label">Audit</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="soc" onclick="finderNavigate('soc')"><span class="fi-icon"><i data-lucide="radar"></i></span><span class="fi-label">SOC</span></button>
-    </div>
-  </div>
-  <div class="finder-section collapsed" id="finder-sec-platform" data-finder-section="platform">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('platform')"><span>Platform</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-platform">
-      <button type="button" class="cloudos-finder-item" data-page="helm" onclick="finderNavigate('helm')"><span class="fi-icon"><i data-lucide="package"></i></span><span class="fi-label">Helm</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="operators" onclick="finderNavigate('operators')"><span class="fi-icon"><i data-lucide="settings"></i></span><span class="fi-label">Operators</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="crds" onclick="finderNavigate('crds')"><span class="fi-icon"><i data-lucide="folder-tree"></i></span><span class="fi-label">CRDs</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="blueprint-studio" onclick="finderNavigate('blueprint-studio')"><span class="fi-icon"><i data-lucide="layout-dashboard"></i></span><span class="fi-label">Blueprint Studio</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="custom-resources" onclick="finderNavigate('custom-resources')"><span class="fi-icon"><i data-lucide="box"></i></span><span class="fi-label">Custom Resources</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="catalog" onclick="finderNavigate('catalog')"><span class="fi-icon"><i data-lucide="book-open"></i></span><span class="fi-label">Catalog</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="gitops" onclick="finderNavigate('gitops')"><span class="fi-icon"><i data-lucide="plug-zap"></i></span><span class="fi-label">GitOps</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="integrations" data-min-tier="power" onclick="finderNavigate('integrations')"><span class="fi-icon"><i data-lucide="plug"></i></span><span class="fi-label">Integrations</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="webhooks" onclick="finderNavigate('webhooks')"><span class="fi-icon"><i data-lucide="zap"></i></span><span class="fi-label">Webhooks</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="tenants" onclick="finderNavigate('tenants')"><span class="fi-icon"><i data-lucide="users"></i></span><span class="fi-label">Tenants</span></button>
-    </div>
-  </div>
-  <div class="finder-section collapsed" id="finder-sec-finops" data-finder-section="finops">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('finops')"><span>FinOps</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-finops">
-      <button type="button" class="cloudos-finder-item" data-page="costs" data-min-tier="advanced" onclick="finderNavigate('costs')"><span class="fi-icon"><i data-lucide="dollar-sign"></i></span><span class="fi-label">Costs</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="forecasting" onclick="finderNavigate('forecasting')"><span class="fi-icon"><i data-lucide="line-chart"></i></span><span class="fi-label">Forecasting</span></button>
-    </div>
-  </div>
-  <div class="finder-section collapsed" id="finder-sec-ops" data-finder-section="ops">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('ops')"><span>Ops</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-ops">
-      <button type="button" class="cloudos-finder-item" data-page="chaos" onclick="finderNavigate('chaos')"><span class="fi-icon"><i data-lucide="flame"></i></span><span class="fi-label">Chaos</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="dr" onclick="finderNavigate('dr')"><span class="fi-icon"><i data-lucide="archive"></i></span><span class="fi-label">Disaster Recovery</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="actions" onclick="finderNavigate('actions')"><span class="fi-icon"><i data-lucide="terminal"></i></span><span class="fi-label">Actions</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="notifications" onclick="finderNavigate('notifications')"><span class="fi-icon"><i data-lucide="bell"></i></span><span class="fi-label">Notifications</span></button>
-    </div>
-  </div>
-  <div class="finder-section collapsed" id="finder-sec-admin" data-finder-section="admin">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('admin')"><span>Admin</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-admin">
-      <button type="button" class="cloudos-finder-item" data-page="stack-health" data-min-tier="power" onclick="finderNavigate('stack-health')"><span class="fi-icon"><i data-lucide="activity"></i></span><span class="fi-label">Stack Health</span></button>
-      <button type="button" class="cloudos-finder-item" data-page="settings" onclick="finderNavigate('settings')"><span class="fi-icon"><i data-lucide="settings"></i></span><span class="fi-label">Settings</span></button>
-    </div>
-  </div>
-  <div class="finder-section" id="finder-sec-recent-vms" data-finder-section="recent-vms" style="display:none">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('recent-vms')"><span>Recent VMs</span><span class="finder-chevron">&#9662;</span></button>
-    <div class="finder-section-body" id="finder-recent-vms-links"></div>
-  </div>
-  <button type="button" class="cloudos-finder-item finder-browse-all" onclick="toggleClassicNav()"><span class="fi-icon"><i data-lucide="more-horizontal"></i></span><span class="fi-label">Browse all pages</span></button>
-  </div>
-  <div class="finder-footer">
-    <div id="finder-current-window" class="finder-current-window">Signal Desk</div>
-    <div class="cloudos-finder-title">Veyron</div>
-  </div>
-</aside>
 <div class="cloudos-main" data-shell-region="main">
 
 <div class="mac-shortcuts-overlay" id="mac-shortcuts-overlay" role="dialog" aria-label="Keyboard shortcuts" hidden>
@@ -5069,6 +4887,7 @@ html.light-theme body.mac-desktop-root::before {
       <div><kbd>⌘K</kbd><span>Spotlight</span></div>
       <div><kbd>⌘J</kbd><span>Ask Zyra</span></div>
       <div><kbd>⌘N</kbd><span>Create VM</span></div>
+      <div><kbd>⌘\\</kbd><span>Toggle nav rail</span></div>
       <div><kbd>⌘,</kbd><span>System Settings</span></div>
       <div><kbd>⌘⇧O</kbd><span>Toggle Orbit</span></div>
       <div><kbd>⌘⇧B</kbd><span>Browse pages</span></div>
@@ -7336,8 +7155,8 @@ html.light-theme body.mac-desktop-root::before {
   <div class="card glass-card">
     <div class="card-header">
       <span class="card-title">Incident Timeline</span><span id="incidents-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
-      <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
-        <input type="search" id="incidents-search" class="form-input" placeholder="Filter by title, VM, namespace…" oninput="filterIncidentsView(this.value)" style="width:220px;font-size:.82rem">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto;min-width:0">
+        <input type="search" id="incidents-search" class="form-input" placeholder="Filter by title, VM, namespace…" oninput="filterIncidentsView(this.value)" style="width:220px;max-width:100%;font-size:.82rem">
         <select id="incident-severity-filter" class="toolbar-input" onchange="fetchIncidents()">
           <option value="">All Severities</option>
           <option value="critical">Critical</option>
@@ -8795,7 +8614,6 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 </div>
 </div>
 </div>
-</div>
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
@@ -9495,16 +9313,6 @@ function navigate(page, opts) {
   if (typeof closeSshPopover === 'function') {
     try { closeSshPopover(); } catch (e) {}
   }
-  if (!opts || !opts.skipTierCheck) {
-    if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(page, desktopTier)) {
-      if (typeof autoElevateTierForPage === 'function' && autoElevateTierForPage(page)) {
-        /* tier elevated — continue navigation */
-      } else {
-        showTierUpgradePrompt(page);
-        return;
-      }
-    }
-  }
   if (currentPage === 'vcentre' && page !== 'vcentre' && window.vcCloseDetail) vcCloseDetail();
   // Clear page-specific polling intervals when leaving those pages
   if (currentPage === 'fleet-constellation' && page !== 'fleet-constellation' && window.destroyFleetConstellation) destroyFleetConstellation();
@@ -9513,8 +9321,7 @@ function navigate(page, opts) {
   if (currentPage === 'gallery-wall' && page !== 'gallery-wall' && window.destroyGalleryWall) destroyGalleryWall();
   currentPage = page;
   document.title = (page === 'dashboard' ? '' : navPageLabel(page) + ' — ') + 'Veyron';
-  if (desktopTier === 'auto') applyDesktopTierUi(uiTierForPage(page));
-  else document.body.classList.toggle('mission-control-home', page === 'dashboard' && document.body.dataset.desktopTier !== 'advanced');
+  document.body.classList.toggle('mission-control-home', page === 'dashboard');
   if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
   if (typeof renderVmrPrimaryTabs === 'function') renderVmrPrimaryTabs();
   recordSpotlightRecent({ kind: 'page', title: navPageLabel(page), action: 'navigate:' + page });
@@ -9536,9 +9343,7 @@ function navigate(page, opts) {
   });
   document.body.dataset.page = page;
   document.body.dataset.section = pageEl.dataset.section || page;
-  syncFinderActive(page);
-  syncDockActive(page);
-  syncCloudosMobileBar(page);
+  syncTopNavActive(page);
   upsertDesktopTab(page);
   renderDesktopTabs();
   updatePageContext(page);
@@ -9551,7 +9356,6 @@ function navigate(page, opts) {
     document.body.classList.toggle('orbit-home', page === 'dashboard');
     if (page === 'dashboard' && typeof _setOrbitHash === 'function') _setOrbitHash();
   }
-  if (typeof syncMacMenuActive === 'function') syncMacMenuActive(page);
 }
 
 // ── Dashboard hash routing (#vms/ns/name, #pods/ns/name, #nodes/name) ──
@@ -11623,7 +11427,7 @@ const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Control Center', subtitle: 'Theme, wallpaper, workspace', action: 'mac:control_center', keys: ['control', 'center', 'appearance', 'wallpaper'] },
   { kind: 'action', title: 'Toggle Orbit / Desktop shell', subtitle: 'Spatial command bridge ⇄ classic desktop (⌘⇧O)', action: 'mac:toggle_shell', keys: ['orbit', 'shell', 'desktop', 'spatial', 'toggle', 'bridge'] },
   { kind: 'action', title: 'Notification Center', subtitle: 'Recent alerts', action: 'mac:notifications', keys: ['notification', 'alerts', 'bell'] },
-  { kind: 'action', title: 'Toggle Navigation', subtitle: 'Expand · icon rail · hide (⌘\\)', action: 'mac:finder', keys: ['finder', 'sidebar', 'navigation'] },
+  { kind: 'action', title: 'Toggle Navigation', subtitle: 'Expand · collapse icon rail (⌘\\)', action: 'mac:finder', keys: ['finder', 'sidebar', 'navigation', 'rail'] },
   { kind: 'action', title: 'Open ConsoleHub', subtitle: 'Inline VNC · RDP · SSH · Serial', action: 'navigate:console-hub', keys: ['console', 'consolehub', 'terminal', 'vnc', 'serial'] },
   { kind: 'action', title: 'Screen Sharing', subtitle: 'ConsoleHub inline VNC', action: 'navigate:console-hub', keys: ['screen', 'sharing', 'connect'] },
   { kind: 'action', title: 'Remote Desktop (RDP)', subtitle: 'Windows NodePort RDP expose', action: 'navigate:vms', keys: ['rdp', 'remote', 'desktop', 'windows', '3389'] },
@@ -13056,7 +12860,6 @@ function initDesktopShell() {
   }
   renderCloudOsDock();
   renderDesktopTabs();
-  syncFinderTierLocks();
   // Orbit shell restore (after theme/tier are set so the glass-deck check is valid).
   shellMode = loadShell();
   applyShell(shellMode);
@@ -14630,39 +14433,101 @@ function closeClassicNav() {
   syncClassicNavUi();
 }
 
-function finderNavigate(page) {
-  if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(page, desktopTier)) {
-    if (typeof autoElevateTierForPage === 'function' && autoElevateTierForPage(page)) {
-      navigate(page, { skipTierCheck: true });
-      return;
-    }
-    showTierUpgradePrompt(page);
-    return;
-  }
+function navGo(page) {
   closeClassicNav();
-  closeFinderMobile();
-  navigate(page, { skipTierCheck: true });
+  railCloseMobile();
+  navigate(page);
 }
 
-function syncFinderTierLocks() {
-  const auto = desktopTier === 'auto' || isDesktopTierAuto();
-  document.querySelectorAll('.cloudos-finder-item[data-page]').forEach(function(btn) {
-    const page = btn.dataset.page;
-    const allowed = auto || (typeof isPageAllowedForTier !== 'function' || isPageAllowedForTier(page, desktopTier));
-    btn.classList.toggle('tier-locked', !allowed);
-    if (allowed) {
-      const label = btn.querySelector('.fi-label');
-      btn.title = label ? label.textContent : '';
-    } else {
-      const need = typeof requiredTierForPage === 'function' ? requiredTierForPage(page) : 'advanced';
-      btn.title = requiredTierLabel(need) + ' desktop required';
-    }
+const RAIL_COLLAPSED_KEY = 'veyron_rail_collapsed';
+const RAIL_SECTIONS_KEY = 'veyron_rail_sections_collapsed';
+
+function railToggleCollapsed() {
+  const rail = document.getElementById('apple-rail');
+  if (!rail) return;
+  const collapsed = rail.getAttribute('data-collapsed') !== '1';
+  rail.setAttribute('data-collapsed', collapsed ? '1' : '0');
+  document.body.classList.toggle('rail-collapsed', collapsed);
+  try { localStorage.setItem(RAIL_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch (e) {}
+  const btn = rail.querySelector('.apple-rail-collapse-btn');
+  if (btn) btn.title = collapsed ? 'Expand sidebar (⌘\\)' : 'Collapse sidebar (⌘\\)';
+}
+
+function railLoadSectionState() {
+  try {
+    const raw = localStorage.getItem(RAIL_SECTIONS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function railToggleSection(name) {
+  const sec = document.querySelector('.apple-rail-section[data-section="' + name + '"]');
+  if (!sec) return;
+  const collapsed = sec.classList.toggle('rail-section-collapsed');
+  const state = railLoadSectionState();
+  state[name] = collapsed;
+  try { localStorage.setItem(RAIL_SECTIONS_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function railInit() {
+  const rail = document.getElementById('apple-rail');
+  if (!rail) return;
+  let collapsed = '0';
+  try { collapsed = localStorage.getItem(RAIL_COLLAPSED_KEY) || '0'; } catch (e) {}
+  rail.setAttribute('data-collapsed', collapsed);
+  document.body.classList.toggle('rail-collapsed', collapsed === '1');
+  const state = railLoadSectionState();
+  Object.keys(state).forEach(function (name) {
+    if (!state[name]) return;
+    const sec = document.querySelector('.apple-rail-section[data-section="' + name + '"]');
+    if (sec) sec.classList.add('rail-section-collapsed');
   });
 }
 
+function railToggleMobile() {
+  const rail = document.getElementById('apple-rail');
+  const btn = document.getElementById('apple-topnav-burger');
+  if (!rail) return;
+  const open = rail.classList.toggle('rail-mobile-open');
+  document.body.classList.toggle('rail-mobile-open', open);
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function railCloseMobile() {
+  const rail = document.getElementById('apple-rail');
+  const btn = document.getElementById('apple-topnav-burger');
+  if (rail) rail.classList.remove('rail-mobile-open');
+  document.body.classList.remove('rail-mobile-open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+function syncTopNavActive(page) {
+  document.querySelectorAll('.apple-rail-link[data-page]').forEach(function (btn) {
+    btn.classList.toggle('active', btn.dataset.page === page);
+  });
+}
+
+function filterRailNav(query) {
+  const q = (query || '').trim().toLowerCase();
+  document.querySelectorAll('.apple-rail-section[data-section]').forEach(function (sec) {
+    let anyMatch = !q;
+    sec.querySelectorAll('.apple-rail-link').forEach(function (item) {
+      const label = (item.querySelector('.apple-rail-label')?.textContent || item.getAttribute('title') || item.textContent || '').toLowerCase();
+      const match = !q || label.includes(q);
+      item.style.display = match ? '' : 'none';
+      if (match) anyMatch = true;
+    });
+    sec.style.display = anyMatch ? '' : 'none';
+    if (q && anyMatch) sec.classList.remove('rail-section-collapsed');
+  });
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', railInit);
+else railInit();
+
 function updateFinderBadges() {
-  const vmBadge = document.getElementById('finder-badge-vms');
-  if (vmBadge) vmBadge.textContent = (vmData && vmData.length > 0) ? vmData.length : '';
+  const vmBadge = document.getElementById('rail-badge-vms') || document.getElementById('finder-badge-vms');
+  if (vmBadge) vmBadge.textContent = (vmData && vmData.length > 0) ? String(vmData.length) : '';
 }
 
 function vmSkeletonHtml(n) {
@@ -14748,6 +14613,8 @@ function renderSettingsVmr() {
     ['⌘K',   'Spotlight — jump to any page or VM'],
     ['⌘N',   'Quick Create — launch a VM from anywhere'],
     ['⌘J',   'Ask Zyra AI assistant'],
+    ['⌘\\\\', 'Toggle left navigation rail'],
+    ['⌘⇧B',  'Browse all pages'],
     ['F3 / ⌘↑', 'Mission Control — dashboard overview'],
     ['/',    'Focus VM search (VMs page)'],
     ['?',    'Show this shortcuts reference'],
@@ -14831,136 +14698,70 @@ function finderRunCopilotQuick(query) {
 
 function finderBackupAdvisor() {
   try {
-    finderNavigate('backups');
+    navGo('backups');
     runBackupAdvisor();
   } catch (e) { toast((e && e.message) || String(e), 'error'); }
 }
 
-function syncFinderActive(page) {
-  document.querySelectorAll('.cloudos-finder-item').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.page === page);
-  });
-  syncFinderTierLocks();
+/* Legacy Finder sidebar helpers — DOM (#cloudos-finder) removed in favor of
+   #apple-rail. Keep thin shims so old call sites (tier UI, boot) stay safe. */
+function setFinderSidebarMode(_mode, _persist) {
+  /* no-op: rail collapse is railToggleCollapsed / localStorage veyron_rail_collapsed */
 }
 
-/* ── Sidebar mode machine (expanded / narrow / hidden) ──
-   Persisted three-state toggle, mirroring the pattern zeus-os's own
-   ZeusSidebar uses (icon-rail vs expanded), plus a fully-hidden state
-   for users who prefer the old menubar-only flow. Default is
-   'expanded' — this sidebar is the primary navigation now, not an
-   optional extra, so it should be visible out of the box. */
-const FINDER_SIDEBAR_MODE_KEY = 'veyron_finder_sidebar_mode';
-const FINDER_SECTION_STATE_KEY = 'veyron_finder_sections_v1';
-
-function isFinderMobile() {
-  return window.matchMedia && window.matchMedia('(max-width: 960px)').matches;
-}
-
-function setFinderSidebarMode(mode, persist) {
-  if (!['expanded', 'narrow', 'hidden'].includes(mode)) mode = 'expanded';
-  document.body.classList.remove('finder-narrow', 'finder-collapsed');
-  if (mode === 'narrow') document.body.classList.add('finder-narrow');
-  else if (mode === 'hidden') document.body.classList.add('finder-collapsed');
-  const aside = document.getElementById('cloudos-finder');
-  if (aside) aside.setAttribute('data-sidebar-mode', mode);
-  if (persist !== false) {
-    try { localStorage.setItem(FINDER_SIDEBAR_MODE_KEY, mode); } catch (e) {}
-  }
-  syncFinderToggleUi(mode);
-}
-
-function syncFinderToggleUi(mode) {
-  const btn = document.getElementById('mac-menubar-sidebar-btn');
-  if (btn) btn.style.display = mode === 'hidden' ? '' : 'none';
-  const toggle = document.getElementById('finder-sidebar-toggle');
-  if (toggle) toggle.title = mode === 'expanded' ? 'Narrow sidebar (⌘\\\\)' : (mode === 'narrow' ? 'Hide sidebar (⌘\\\\)' : 'Show sidebar (⌘\\\\)');
-}
+function syncFinderToggleUi(_mode) {}
 
 function cycleFinderSidebar() {
-  if (isFinderMobile()) { closeFinderMobile(); return; }
-  const cur = document.body.classList.contains('finder-collapsed') ? 'hidden'
-    : (document.body.classList.contains('finder-narrow') ? 'narrow' : 'expanded');
-  const next = cur === 'expanded' ? 'narrow' : (cur === 'narrow' ? 'hidden' : 'expanded');
-  setFinderSidebarMode(next, true);
+  if (window.matchMedia && window.matchMedia('(max-width: 960px)').matches) {
+    railCloseMobile();
+    return;
+  }
+  railToggleCollapsed();
 }
 
 function initFinderCollapsed() {
-  if (isFinderMobile()) { setFinderSidebarMode('expanded', false); return; }
-  let mode = 'expanded';
-  try {
-    const saved = localStorage.getItem(FINDER_SIDEBAR_MODE_KEY);
-    if (saved === 'narrow' || saved === 'hidden' || saved === 'expanded') mode = saved;
-  } catch (e) {}
-  setFinderSidebarMode(mode, false);
-  initFinderSections();
-  initFinderItemTooltips();
+  railInit();
 }
 
-function initFinderItemTooltips() {
-  document.querySelectorAll('.cloudos-finder-item[data-page]').forEach(function(btn) {
-    if (!btn.title) {
-      const label = btn.querySelector('.fi-label');
-      if (label) btn.title = label.textContent;
-    }
-  });
-}
+function initFinderItemTooltips() {}
 
-/* Per-section collapse state persists across sessions so a user's
-   preferred layout (e.g. "Compute" pinned open) survives reloads. */
 function loadFinderSectionState() {
-  try {
-    const raw = localStorage.getItem(FINDER_SECTION_STATE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) { return {}; }
+  return railLoadSectionState();
 }
 
 function saveFinderSectionState(state) {
-  try { localStorage.setItem(FINDER_SECTION_STATE_KEY, JSON.stringify(state)); } catch (e) {}
+  try { localStorage.setItem(RAIL_SECTIONS_KEY, JSON.stringify(state || {})); } catch (e) {}
 }
 
-function initFinderSections() {
-  const state = loadFinderSectionState();
-  Object.keys(state).forEach(function(name) {
-    const sec = document.getElementById('finder-sec-' + name);
-    if (sec) sec.classList.toggle('collapsed', !!state[name]);
-  });
-}
+function initFinderSections() {}
 
 function toggleFinderSection(name) {
-  const sec = document.getElementById('finder-sec-' + name);
-  if (!sec) return;
-  const collapsed = sec.classList.toggle('collapsed');
-  const state = loadFinderSectionState();
-  state[name] = collapsed;
-  saveFinderSectionState(state);
+  railToggleSection(name);
 }
 
 function filterFinderNav(query) {
-  const q = (query || '').trim().toLowerCase();
-  document.querySelectorAll('.finder-section[data-finder-section]').forEach(function(sec) {
-    let anyMatch = !q;
-    sec.querySelectorAll('.cloudos-finder-item').forEach(function(item) {
-      if (item.classList.contains('finder-browse-all')) return;
-      const label = (item.querySelector('.fi-label')?.textContent || item.textContent || '').toLowerCase();
-      const match = !q || label.includes(q);
-      item.style.display = match ? '' : 'none';
-      if (match) anyMatch = true;
-    });
-    sec.style.display = anyMatch ? '' : 'none';
-    if (q && anyMatch) sec.classList.remove('collapsed');
-  });
+  filterRailNav(query);
+  const input = document.getElementById('apple-rail-filter-input');
+  if (input && input.value !== (query || '')) input.value = query || '';
 }
 
 function syncFinderMobileUi() {
-  document.body.classList.toggle('finder-mobile-open', false);
+  document.body.classList.toggle('rail-mobile-open',
+    !!(document.getElementById('apple-rail') && document.getElementById('apple-rail').classList.contains('rail-mobile-open')));
 }
 
 function closeFinderMobile() {
-  document.body.classList.remove('finder-mobile-open');
+  railCloseMobile();
 }
 
 function openFinderMobile() {
-  document.body.classList.add('finder-mobile-open');
+  const rail = document.getElementById('apple-rail');
+  if (!rail || rail.classList.contains('rail-mobile-open')) return;
+  railToggleMobile();
+}
+
+function syncFinderTierLocks() {
+  /* Tier locks were on removed finder items; page gating still runs in navigate(). */
 }
 
 async function fetchExperienceSession() {
@@ -18194,6 +17995,7 @@ function activateSpotlightResult(idx) {
 }
 
 function runMacShellAction(action) {
+  if (action === 'mac:finder') { railToggleCollapsed(); return true; }
   if (action === 'mac:browse_all') { toggleClassicNav(); return true; }
   if (action === 'mac:mission_control') { openMissionControlOverlay(); return true; }
   if (action === 'mac:dock_editor') { openDockEditor(); return true; }
@@ -20009,8 +19811,9 @@ function updateHealth(ok, msg, warn) {
   const isWarn = warn === true;
   const dot = document.getElementById('health-dot');
   const cls = ok ? 'ok' : (isWarn ? 'warn' : 'err');
-  dot.className = 'nav-dot ' + cls;
-  document.getElementById('health-text').textContent = ok ? 'Online' : (msg || 'Offline');
+  if (dot) dot.className = 'nav-dot ' + cls;
+  const text = document.getElementById('health-text');
+  if (text) text.textContent = ok ? 'Online' : (msg || 'Offline');
 }
 
 function getPlatformInstallScript() {
@@ -20443,7 +20246,7 @@ document.addEventListener('keydown', e => {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
       e.preventDefault();
-      if (typeof cycleFinderSidebar === 'function') cycleFinderSidebar();
+      railToggleCollapsed();
       return;
     }
   }
@@ -25284,7 +25087,7 @@ window.addEventListener('load', async () => {
 
   // Set saved refresh interval
   const sel = document.getElementById('refresh-interval');
-  sel.value = refreshInterval || '30000';
+  if (sel) sel.value = refreshInterval || '30000';
 
   // Ensure auth (API key or OIDC) before any API calls
   await initAuth();
@@ -25298,10 +25101,10 @@ window.addEventListener('load', async () => {
   initVmViewMode();
   initDesktopShell();
   initZeusShell();
-  initFinderCollapsed();
-  syncFinderActive(currentPage);
+  railInit();
   updateFinderBadges();
   syncBrowseMenuLabels();
+  if (typeof _refreshLucide === 'function') _refreshLucide();
   fetchExperienceSession();
   fetchExperienceDesktop();
 
@@ -29372,13 +29175,6 @@ function closeMacShortcuts() {
   <div class="launchpad-grid" id="launchpad-grid"></div>
 </div>
 
-<nav id="cloudos-mobile-bar" class="cloudos-mobile-bar" aria-label="Quick navigation">
-  <button type="button" data-mobile-nav="dashboard" onclick="navigate('dashboard')">Home</button>
-  <button type="button" data-mobile-nav="browse" onclick="toggleClassicNav()">Browse</button>
-  <button type="button" data-mobile-nav="spotlight" onclick="openSpotlight()">Search</button>
-  <button type="button" data-mobile-nav="copilot" onclick="openAskZyra()">Ask Zyra</button>
-</nav>
-
 <!-- EVENT TICKER -->
 <div id="vmr-event-ticker" class="vmr-event-ticker" style="display:none" aria-live="polite" aria-label="Cluster event feed">
   <span class="vmr-ticker-label">LIVE</span>
@@ -29387,10 +29183,6 @@ function closeMacShortcuts() {
   </div>
   <button type="button" class="vmr-ticker-close" onclick="hideEventTicker()" title="Hide ticker (T)">×</button>
 </div>
-
-<footer id="cloudos-dock" class="mac-dock" role="navigation" aria-label="Veyron dock">
-  <div class="mac-dock-inner mac-dock-inner-scroll" id="cloudos-dock-inner"></div>
-</footer>
 
 <div class="modal-overlay" id="mac-preferences-modal" role="dialog" aria-modal="true" aria-label="System Settings" onclick="if(event.target===this)closeMacPreferences()">
   <div class="modal glass-modal mac-sheet-modal" style="max-width:440px" onclick="event.stopPropagation()">

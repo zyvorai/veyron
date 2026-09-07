@@ -48,6 +48,7 @@ body.mac-desktop-root > #cloudos-dock {
 [data-shell-region="topbar"],
 [data-shell-region="dock"],
 [data-shell-region="statusbar"],
+body.mac-desktop-root > .apple-topnav,
 body.mac-desktop-root > .mac-menubar.navbar,
 body.mac-desktop-root > header.navbar {
   flex: 0 0 auto;
@@ -63,15 +64,10 @@ body.mac-desktop-root > .cloudos-body-row,
   overflow: hidden;
 }
 
-/* Persistent left nav sidebar — a flex sibling of .cloudos-main inside
-   .cloudos-body-row, sized by mode (see dashboard-sidebar.css for the
-   width values themselves; this file only owns containment/overflow). */
-#cloudos-finder[data-shell-region="nav"] {
-  flex: 0 0 auto;
+/* Left nav is position:fixed (dashboard-apple-nav.css). Do not flex-size it
+   as a body-row sibling — width/offset live on --apple-rail-w-* vars. */
+#apple-rail[data-shell-region="nav"] {
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 [data-shell-region="main"],

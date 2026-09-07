@@ -1,0 +1,379 @@
+/* Apple-style shell — a slim, sticky top bar (brand + search + utilities,
+   no page navigation, matching zeus-os's own WebShell split) plus a
+   persistent left side rail (all page navigation, matching zeus-os's
+   ZeusSidebar: two states — expanded with labeled sections, collapsed to a
+   68px icon rail with hover flyouts on section headers so collapsed mode
+   stays fully navigable). See [[veyron-apple-topnav-shell-replacement]] for
+   the two CSS gotchas already hit building this shell (overflow-clipping an
+   absolutely-positioned popover, and a `body.mac-desktop-root > *` rule
+   outranking a bare class selector on specificity) — the same care applies
+   to the rail's flyouts below. */
+
+/* body.mac-desktop-root > * (ambient-background layering, dashboard.html)
+   forces position:relative;z-index:1 on every direct body child and — since
+   it pairs a type selector with a class — actually outranks a bare
+   .apple-topnav class selector on specificity (equal class count, but its
+   extra "body" type component breaks the tie). Scope under
+   body.mac-desktop-root too so this legitimately wins instead of reaching
+   for !important. */
+body.mac-desktop-root .apple-topnav {
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.apple-topnav-row {
+  height: var(--apple-topnav-h, 44px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 16px;
+}
+
+.apple-topnav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 12px;
+  flex: 0 0 auto;
+}
+.apple-topnav-logo { display: block; height: 22px; width: auto; }
+.apple-topnav-logo-dark { display: none; }
+html[data-theme="dark"] .apple-topnav-logo-light { display: none; }
+html[data-theme="dark"] .apple-topnav-logo-dark { display: block; }
+
+.apple-topnav-utils {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+.apple-topnav-icon-btn {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.apple-topnav-icon-btn:hover { background: var(--panel-2); color: var(--ink); }
+.apple-topnav-ns-select {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid var(--hairline);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 0.78rem;
+  max-width: 110px;
+}
+.apple-topnav-signout {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: none;
+  background: var(--plasma);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+:root:not([data-theme="light"]) .apple-topnav-signout,
+[data-theme="dark"] .apple-topnav-signout {
+  color: #001b3d;
+}
+
+.apple-topnav-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-right: 8px;
+}
+.apple-topnav-burger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 1px;
+}
+
+/* ── Side rail ─────────────────────────────────────────────────────────── */
+
+:root {
+  --apple-rail-w-expanded: 220px;
+  --apple-rail-w-collapsed: 68px;
+  --apple-topnav-h: 44px;
+}
+
+body.mac-desktop-root .apple-rail {
+  position: fixed;
+  top: var(--apple-topnav-h);
+  left: 0;
+  bottom: 0;
+  z-index: 480;
+  width: var(--apple-rail-w-expanded);
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--hairline);
+  transition: width 0.18s ease;
+}
+/* Same body.mac-desktop-root specificity requirement as the mobile
+   translateX override below — .apple-rail[data-collapsed="1"] alone (0,2,0)
+   loses to the base rule above (0,2,1), so the rail never actually shrank:
+   confirmed live, getBoundingClientRect().width stayed expanded with
+   data-collapsed="1" already set, just the icons/labels inside changed. */
+body.mac-desktop-root .apple-rail[data-collapsed="1"] { width: var(--apple-rail-w-collapsed); }
+
+.apple-rail-filter {
+  flex: 0 0 auto;
+  padding: 10px 8px 6px;
+}
+.apple-rail-filter-input {
+  width: 100%;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  background: var(--panel-2, var(--void));
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+.apple-rail-filter-input::placeholder { color: var(--ink-3, var(--ink-2)); }
+.apple-rail[data-collapsed="1"] .apple-rail-filter { display: none; }
+
+.apple-rail-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: visible;
+  padding: 4px 8px 10px;
+  scrollbar-width: thin;
+}
+
+.apple-rail-section { position: relative; margin-bottom: 4px; }
+
+.apple-rail-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.apple-rail-chevron { transition: transform 0.15s; flex: 0 0 auto; }
+.apple-rail-section.rail-section-collapsed .apple-rail-chevron { transform: rotate(-90deg); }
+.apple-rail-section.rail-section-collapsed .apple-rail-section-body { display: none; }
+
+.apple-rail-section-body { display: flex; flex-direction: column; gap: 1px; }
+
+.apple-rail-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.apple-rail-link:hover { background: var(--panel-2); }
+.apple-rail-link.active {
+  background: color-mix(in srgb, var(--plasma) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--plasma);
+  color: var(--plasma);
+  font-weight: 600;
+}
+.apple-rail-icon { display: inline-flex; width: 18px; height: 18px; flex: 0 0 auto; }
+.apple-rail-icon svg, .apple-rail-icon i { width: 18px; height: 18px; }
+.apple-rail-label { overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; }
+.apple-rail-badge {
+  display: none;
+  margin-left: 6px;
+  min-width: 1.25rem;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--plasma) 18%, transparent);
+  color: var(--plasma);
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.35rem;
+  text-align: center;
+  flex: 0 0 auto;
+}
+.apple-rail-badge:not(:empty) { display: inline-block; }
+
+.apple-rail-footer {
+  flex: 0 0 auto;
+  padding: 8px;
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.apple-rail-footer-btn {
+  width: 100%;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+}
+.apple-rail-footer-btn:hover { background: var(--panel-2); color: var(--ink); }
+.apple-rail-footer-btn-primary {
+  background: color-mix(in srgb, var(--plasma) 14%, transparent);
+  color: var(--plasma);
+}
+.apple-rail-footer-btn-primary:hover {
+  background: color-mix(in srgb, var(--plasma) 22%, transparent);
+  color: var(--plasma);
+}
+.apple-rail-collapse-btn {
+  width: 100%;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.apple-rail-collapse-btn:hover { background: var(--panel-2); color: var(--ink); }
+.apple-rail[data-collapsed="1"] .apple-rail-footer-btn .apple-rail-label,
+.apple-rail[data-collapsed="1"] .apple-rail-footer-btn-label { display: none; }
+.apple-rail[data-collapsed="1"] .apple-rail-footer-btn {
+  justify-content: center;
+  padding: 0;
+}
+
+/* Collapsed state: icon-only rail, section headers hidden. Each link keeps
+   its always-visible icon (native `title` attribute gives the label on
+   hover) so collapsed mode stays fully navigable with zero extra JS.
+   A separate floating "flyout duplicating the section body" was tried here
+   and dropped — the same element can't simultaneously be "always-visible
+   inline icon row" and "hidden-until-hover panel" (the two rulesets fought,
+   leaving it permanently invisible even on hover, only caught by an actual
+   screenshot, not by the JS/console checks it otherwise passed). Keeping
+   the icon row as one simple always-visible row avoided reintroducing that
+   in a rush; a labeled flyout can be revisited as a real follow-up using a
+   dedicated element instead of dual-purposing this one. */
+.apple-rail[data-collapsed="1"] .apple-rail-section-header { display: none; }
+.apple-rail[data-collapsed="1"] .apple-rail-section-body { display: flex !important; }
+.apple-rail[data-collapsed="1"] .apple-rail-label { display: none; }
+.apple-rail[data-collapsed="1"] .apple-rail-link { justify-content: center; padding: 8px; }
+
+.apple-rail-backdrop { display: none; }
+
+/* Content offset — the rail is fixed, not a flex sibling, so .cloudos-main
+   needs real margin math (the old flexbox Finder sidebar never needed
+   this). */
+body.mac-desktop-root .cloudos-main {
+  margin-left: var(--apple-rail-w-expanded);
+  transition: margin-left 0.18s ease;
+}
+body.mac-desktop-root.rail-collapsed .cloudos-main {
+  margin-left: var(--apple-rail-w-collapsed);
+}
+
+@media (max-width: 960px) {
+  .apple-topnav-burger { display: flex; }
+  .apple-topnav-ns-select { display: none; }
+
+  body.mac-desktop-root .apple-rail {
+    top: 0;
+    width: min(280px, 80vw);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 600;
+  }
+  /* Needs the same body.mac-desktop-root prefix as the base rule above —
+     .apple-rail.rail-mobile-open (0,2,0) otherwise loses to
+     body.mac-desktop-root .apple-rail (0,2,1): equal class count, but the
+     base rule's extra "body" type-selector component still wins the
+     specificity tie-break, so the drawer never actually slides on-screen
+     even though the class toggles correctly (confirmed live: transform
+     stayed translateX(-280px) with rail-mobile-open already applied). */
+  body.mac-desktop-root .apple-rail.rail-mobile-open { transform: translateX(0); }
+  body.mac-desktop-root .apple-rail[data-collapsed="1"] { width: min(280px, 80vw); }
+  .apple-rail[data-collapsed="1"] .apple-rail-section-header { display: flex; }
+  .apple-rail[data-collapsed="1"] .apple-rail-section-body {
+    display: flex !important;
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    width: auto;
+  }
+  .apple-rail[data-collapsed="1"] .apple-rail-label { display: inline; }
+  .apple-rail[data-collapsed="1"] .apple-rail-link { justify-content: flex-start; padding: 7px 8px; }
+  .apple-rail[data-collapsed="1"] .apple-rail-filter { display: block; }
+  .apple-rail[data-collapsed="1"] .apple-rail-footer-btn .apple-rail-label,
+  .apple-rail[data-collapsed="1"] .apple-rail-footer-btn-label { display: inline; }
+  .apple-rail[data-collapsed="1"] .apple-rail-footer-btn {
+    justify-content: flex-start;
+    padding: 0 8px;
+  }
+  .apple-rail-collapse-btn { display: none; }
+
+  body.mac-desktop-root .cloudos-main { margin-left: 0 !important; }
+
+  /* Scoped under body.mac-desktop-root — same specificity trap as .apple-topnav
+     (see the comment above it): body.mac-desktop-root > * outranks a bare
+     .apple-rail-backdrop class selector and was forcing position:relative;
+     z-index:1 on it, collapsing it to a 0-height non-fixed element. */
+  body.mac-desktop-root .apple-rail-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 590;
+    background: rgba(0, 0, 0, 0.4);
+  }
+  body.mac-desktop-root.rail-mobile-open .apple-rail-backdrop { display: block; }
+}

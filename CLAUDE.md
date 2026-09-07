@@ -126,7 +126,7 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
   - **Data/DR**: `POST /dr/failback` (`handlers/dr.rs`); `app_consistent` flag on `POST /snapshots`; `GET`/`DELETE /storage/orphans` (reclaim, dry-run unless `?confirm=true`); `POST /velero/{backups,restores}` (`handlers/velero.rs`, `VELERO_NAMESPACE`); `POST /vms/:ns/:name/disks/:volume/migrate` (storage-class migration via KubeVirt `updateVolumesStrategy: Migration`, dry-run default).
   - **Platform** (`handlers/operators.rs`): `GET /platform/versions` (KubeVirt/CDI installed versions), `POST /platform/upgrade` (patch CR `imageTag`, dry-run default, needs `kubevirts: patch` RBAC); `GET /capacity/headroom` (`handlers/capacity.rs`), `GET /disks/conversion/capabilities`.
   - Regression gate: **`./scripts/dashboard-console-check.sh --host HOST`** (headless Chrome console-error sweep) caught the routing/500 bugs in these — run after dashboard edits.
-- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS shell** with an **Apple Store–style** product look (`dashboard-apple-themes.css` / `dashboard-apple-login.css`): Light (paper + Action Blue) default and Dark (iPad Pro true black). Shell chrome: macOS density (`body.mac-desktop-root`), SF typography, 40px menubar, Finder sidebar, desktop tiers Normal/Power/Advanced, **Ask Zyra** (⌘J). **Create VM** opens the forge wizard (`openCreateModal` → `openForgeWizard`). VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) in `localStorage` under `veyron_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
+- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS shell** with an **Apple Store–style** product look (`dashboard-apple-themes.css` / `dashboard-apple-login.css`): Light (paper + Action Blue) default and Dark (iPad Pro true black). Shell chrome: macOS density (`body.mac-desktop-root`), SF typography, slim `.apple-topnav` + left `#apple-rail`, desktop tiers Normal/Power/Advanced, **Ask Zyra** (⌘J). **Create VM** opens the forge wizard (`openCreateModal` → `openForgeWizard`). VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) in `localStorage` under `veyron_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
 
 **SharedState pattern** used by every handler:
 ```rust
@@ -312,8 +312,8 @@ Every legacy id (`tahoe`, `holo`, `nebula`, `carbon`, `forge`, …) remaps via `
 
 ```text
 /*__VMR_CSS__*/ and late /*__SHELL_LAYOUT__*/ both end with:
-  carbon → carbon-deck → shell-layout → sidebar → veyron
-  → dashboard-apple-login.css → dashboard-apple-themes.css   (last = wins)
+  carbon → carbon-deck → shell-layout → veyron
+  → dashboard-apple-login.css → dashboard-apple-nav.css → dashboard-apple-themes.css (last = wins)
 ```
 
 Deleted SoT files: `dashboard-ironwolf-themes.css`, `dashboard-ironwolf-login.css`, `dashboard-holo.css`. **To restyle every page, edit `dashboard-apple-themes.css` — do not touch 65 pages.**
@@ -349,10 +349,10 @@ UI copy: prefer **Create VM** (not “Forge”) in user-visible strings; the wiz
 
 ### Navigation (live)
 
-- **Finder sidebar** `#cloudos-finder` — primary nav (`dashboard-sidebar.css`); `finderNavigate` / tier locks / badges
-- **Menubar** — Veyron / Go / View / Fleet / Ops / Observe / Secure / AI; **Create VM** under Fleet opens the wizard
-- **Browse all pages** — `toggleClassicNav()` / ⌘⇧B
-- Dock remains suppressed as a visual affordance; mega-menu and Finder cover navigation
+- **Left rail** `#apple-rail` — primary nav (`dashboard-apple-nav.css`); `navGo` / section accordion / VM badges
+- **Top bar** `.apple-topnav` — brand, Spotlight, notifications, Control Center, namespace (no page menus)
+- **Browse all pages** — `toggleClassicNav()` / ⌘⇧B (also rail footer); collapse rail with ⌘\\
+- Dock remains suppressed as a visual affordance; mega-menu and rail cover navigation
 
 `monitoring` navigates to **`stack-health`** (alias in `dashboard-veyron.js`).
 

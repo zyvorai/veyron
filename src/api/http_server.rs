@@ -797,6 +797,7 @@ pub mod web {
                 .route("/assets/three.module.min.js", get(three_handler))
                 .route("/assets/dashboard-veyron-3d.js", get(veyron_3d_handler))
                 .route("/assets/zyvor-logo.png", get(zyvor_logo_handler))
+                .route("/assets/zyvor-logo-on-dark.png", get(zyvor_logo_dark_handler))
                 .route("/assets/zyvor-z-mark.png", get(zyvor_z_mark_handler))
                 // VM endpoints
                 .route("/api/v1/vms", get(list_vms_handler))
@@ -1232,35 +1233,35 @@ pub mod web {
             .replace(
                 "/*__VMR_CSS__*/",
                 concat!(
-                    /* carbon → deck → shell → sidebar → veyron → apple login → apple (wins; IronWolf/holo dropped) */
+                    /* carbon → deck → shell → veyron → apple login → apple nav → apple themes (wins) */
                     include_str!("web/dashboard-carbon.css"),
                     "\n",
                     include_str!("web/dashboard-carbon-deck.css"),
                     "\n",
                     include_str!("web/shell-layout.css"),
                     "\n",
-                    include_str!("web/dashboard-sidebar.css"),
-                    "\n",
                     include_str!("web/dashboard-veyron.css"),
                     "\n",
                     include_str!("web/dashboard-apple-login.css"),
+                    "\n",
+                    include_str!("web/dashboard-apple-nav.css"),
                     "\n",
                     include_str!("web/dashboard-apple-themes.css")
                 ),
             )
             .replace(
                 "/*__SHELL_LAYOUT__*/",
-                /* Late shell/sidebar/carbon, then apple themes so paper + Action Blue still win */
+                /* Late shell/carbon, then apple themes so paper + Action Blue still win */
                 concat!(
                     include_str!("web/shell-layout.css"),
-                    "\n",
-                    include_str!("web/dashboard-sidebar.css"),
                     "\n",
                     include_str!("web/dashboard-carbon.css"),
                     "\n",
                     include_str!("web/dashboard-carbon-deck.css"),
                     "\n",
                     include_str!("web/dashboard-apple-login.css"),
+                    "\n",
+                    include_str!("web/dashboard-apple-nav.css"),
                     "\n",
                     include_str!("web/dashboard-apple-themes.css")
                 ),
@@ -1304,6 +1305,13 @@ pub mod web {
         (
             [(header::CONTENT_TYPE, "image/png")],
             include_bytes!("web/zyvor-logo.png").as_ref(),
+        )
+    }
+
+    async fn zyvor_logo_dark_handler() -> impl IntoResponse {
+        (
+            [(header::CONTENT_TYPE, "image/png")],
+            include_bytes!("web/zyvor-logo-on-dark.png").as_ref(),
         )
     }
 
