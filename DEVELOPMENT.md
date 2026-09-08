@@ -146,6 +146,21 @@ cargo fmt --all
 cargo clippy --all-targets -- -D warnings
 ```
 
+### React console (`frontend/`)
+
+The new `/console` React app (Phase 1 migration, coexists with `/dashboard`) builds separately:
+
+```bash
+cd frontend
+npm install
+npm run dev      # Vite dev server, proxies /api to https://127.0.0.1:5151
+npm run build    # -> frontend/dist/, embedded into the Rust binary via include_dir!
+```
+
+`cargo build`/`cargo build --features web` reads whatever is currently in `frontend/dist/` —
+run `npm run build` first after changing anything under `frontend/src/` (the Docker build does
+this automatically via a `node:22-slim` stage; see CLAUDE.md's "React console" section).
+
 ### Useful local commands
 
 ```bash
