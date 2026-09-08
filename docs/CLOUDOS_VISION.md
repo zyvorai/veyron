@@ -6,6 +6,12 @@ CloudOS is the default shell for the Veyron dashboard: a macOS-inspired desktop 
 
 > Design SoT: `CLAUDE.md` § Design system — Apple Store / Zeus product look. IronWolf and `holo` CSS have been removed.
 
+> **This document covers only the CloudOS/`dashboard.html` shell.** A second, additive app — a
+> real React/Vite build at `/console` (`frontend/`) — now coexists alongside it, migrating pages
+> in incrementally (VM Center + a growing set of resource-list pages so far). See `CLAUDE.md` §
+> React console. `/dashboard` remains the primary, complete surface; `/console` is not a
+> replacement yet.
+
 ---
 
 ## 1. Overview
