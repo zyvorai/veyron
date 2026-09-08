@@ -2,9 +2,9 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Path rules shared by dashboard middleware.
+//! Path rules shared by API middleware (auth + rate limits).
 
-/// Routes reachable without an API key (shell HTML, health, static assets).
+/// Routes reachable without an API key (health, guestkit bootstrap, auth).
 pub fn is_auth_exempt_path(path: &str) -> bool {
     path == "/api/v1/health"
         || path == "/api/v1/platform/guestkit/binary"
@@ -12,13 +12,9 @@ pub fn is_auth_exempt_path(path: &str) -> bool {
         || path == "/api/v1/auth/oidc/token"
         || path == "/api/v1/auth/login"
         || path == "/"
-        || path == "/dashboard"
-        || path.starts_with("/assets/")
-        || path == "/console"
-        || path.starts_with("/console/assets/")
 }
 
-/// Dashboard API prefixes exempt from the global rate limiter.
+/// API prefixes exempt from the global rate limiter for high-frequency GET polling.
 pub const OPERATOR_API_PREFIXES: &[&str] = &[
     "/api/v1/vms",
     "/api/v1/ws",
@@ -69,16 +65,15 @@ pub fn is_operator_api_path(path: &str) -> bool {
 }
 
 pub fn is_rate_limit_exempt_path(path: &str, method: &str) -> bool {
-    // Fixed low-risk endpoints (health, OIDC, shell) are exempt regardless of method.
+    // Fixed low-risk endpoints are exempt regardless of method.
     if path == "/api/v1/health"
         || path == "/api/v1/auth/oidc/config"
         || path == "/api/v1/auth/oidc/token"
         || path == "/"
-        || path == "/dashboard"
     {
         return true;
     }
-    // The broad dashboard-API prefix exemption is for high-frequency *polling*.
+    // Broad API prefix exemption is for high-frequency *polling*.
     // Never exempt mutating methods — many exempt prefixes (/vms, /backups, /dr,
     // /clusters, /snapshots) have expensive write sub-routes that must stay
     // rate-limited (create VM, DR failover, restore, …).
@@ -98,13 +93,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn auth_exempt_includes_dashboard_shell_and_health() {
+    fn auth_exempt_includes_health_and_auth() {
         for path in [
             "/",
-            "/dashboard",
-            "/assets/novnc.min.js",
-            "/console",
-            "/console/assets/index-abc123.js",
             "/api/v1/health",
             "/api/v1/platform/guestkit/binary",
             "/api/v1/auth/oidc/config",
@@ -115,6 +106,8 @@ mod tests {
         }
         assert!(!is_auth_exempt_path("/api/v1/vms"));
         assert!(!is_auth_exempt_path("/api/v1/auth/users"));
+        assert!(!is_auth_exempt_path("/dashboard"));
+        assert!(!is_auth_exempt_path("/assets/novnc.min.js"));
     }
 
     #[test]
@@ -160,10 +153,8 @@ mod tests {
     }
 
     #[test]
-    fn rate_limit_exempt_includes_dashboard_api_and_shell() {
-        // Shell + fixed endpoints exempt regardless of method.
-        assert!(is_rate_limit_exempt_path("/dashboard", "GET"));
-        // Dashboard-API polling (GET) exempt; mutations are NOT.
+    fn rate_limit_exempt_includes_api_polls_and_root() {
+        assert!(is_rate_limit_exempt_path("/", "GET"));
         assert!(is_rate_limit_exempt_path("/api/v1/alerts", "GET"));
         assert!(is_rate_limit_exempt_path("/api/v1/costs/summary", "GET"));
         assert!(!is_rate_limit_exempt_path("/api/v1/vms", "POST"));

@@ -40,9 +40,6 @@ web/**/node_modules/
 web/**/dist/
 web/**/test-results/
 
-# React console (Phase 1 migration, frontend/)
-frontend/node_modules/
-frontend/dist/
 web/**/.vite/
 
 # Local AI caches

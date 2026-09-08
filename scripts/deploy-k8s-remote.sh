@@ -585,7 +585,7 @@ echo "  ${COLOR_GREEN}Done${COLOR_RESET} ${COLOR_DIM}($(format_duration "${TOTAL
 echo "  ${COLOR_BOLD}════════════════════════════════════════${COLOR_RESET}"
 echo ""
 echo "  ${COLOR_BOLD}URLs${COLOR_RESET}"
-echo "    Dashboard:  https://${HOST}:${DISPLAY_NODE_PORT}/dashboard"
+echo "    API:        https://${HOST}:${DISPLAY_NODE_PORT}/api/v1/health"
 echo "    Health:     https://${HOST}:${DISPLAY_NODE_PORT}/api/v1/health"
 echo ""
 echo "  ${COLOR_DIM}TLS:${COLOR_RESET} self-signed init-container cert (browser warning) unless you mount a Secret at /certs."

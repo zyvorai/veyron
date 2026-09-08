@@ -100,7 +100,7 @@ The **operator** uses **`operator/config/rbac/role.yaml`** (and **`charts/veyron
 
 ## Architecture
 
-Veyron is a dual-mode binary: a **CLI tool** and an **HTTP API + dashboard** for managing KubeVirt VMs on Kubernetes.
+Veyron is a dual-mode binary: a **CLI tool** and an **HTTP API** for managing KubeVirt VMs on Kubernetes (no browser UI).
 
 ### Kubernetes operator (`operator/`)
 
@@ -116,7 +116,6 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
 
 - `src/api/http_server.rs` — Axum server, TLS, auth middleware, rate limiting, WebSocket upgrade, VNC proxy. VM routes: **`/network/internet`** (per-VM egress), **`/expose`** (SSH via `kubevirt.io/domain`), **`/rdp-expose`** (RDP via `kubevirt.io/vm` + NodePort).
 - `src/api/handlers/` — handler modules per API domain (`vmis`, `pods`, `metrics`, `costs`, `snapshots`, `compliance`, `soc`, etc.)
-- **Vendored JS assets** are served as their own same-origin routes (not inlined into `DASHBOARD_HTML`), matching the existing `novnc_handler`/`/assets/novnc.min.js` pattern (`http_server.rs`): `three_handler` → **`/assets/three.module.min.js`** (vendored three.js r160, ESM build, `src/api/web/vendor/three.module.min.js`) and `veyron_3d_handler` → **`/assets/dashboard-veyron-3d.js`** (`src/api/web/dashboard-veyron-3d.js`, a shared `createScene(canvas)` WebGL bootstrap — camera/renderer/resize/animation-loop plumbing, CSS-token color reader, and a **mandatory `dispose()`** to tear down the WebGL context on page leave). Both are dynamically `import()`ed only by the pages that render a 3D scene (Reactor Core, Topology, Fleet Constellation) — never eagerly loaded, since this SPA has 65 pages and only 3 use WebGL, and browsers cap concurrent WebGL contexts (~16). Zyvor mark: **`/assets/zyvor-z-mark.png`**.
 
 **Day-2 operations** (ongoing fleet maintenance; mutations ⇒ Write, cluster-wide/destructive ⇒ Admin in `auth_context.rs`; several are **dry-run by default**):
   - **Compute** (`handlers/compute.rs`): `POST /vms/:ns/:name/hotplug` (live CPU/mem via KubeVirt `maxSockets`/`maxGuest`), `PUT /vms/:ns/:name/run-strategy` (Always|Manual|Halted|RerunOnFailure), `POST /vms/bulk` (start|stop|restart|migrate|delete over many), `POST /vms/:ns/:name/drift/remediate` (kick operator re-reconcile).
@@ -125,19 +124,6 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
   - **Self-healing** (`handlers/self_healing.rs`): `POST /self-healing/run` (dry-run unless `?heal=true`), `GET/POST /self-healing/policy` (ConfigMap `veyron.io/type=self-healing`); a lease-guarded `self_healing_tick` in the scheduler loop restarts Failed/Unknown VMIs when enabled (per-VM cooldown).
   - **Data/DR**: `POST /dr/failback` (`handlers/dr.rs`); `app_consistent` flag on `POST /snapshots`; `GET`/`DELETE /storage/orphans` (reclaim, dry-run unless `?confirm=true`); `POST /velero/{backups,restores}` (`handlers/velero.rs`, `VELERO_NAMESPACE`); `POST /vms/:ns/:name/disks/:volume/migrate` (storage-class migration via KubeVirt `updateVolumesStrategy: Migration`, dry-run default).
   - **Platform** (`handlers/operators.rs`): `GET /platform/versions` (KubeVirt/CDI installed versions), `POST /platform/upgrade` (patch CR `imageTag`, dry-run default, needs `kubevirts: patch` RBAC); `GET /capacity/headroom` (`handlers/capacity.rs`), `GET /disks/conversion/capabilities`.
-  - Regression gate: **`./scripts/dashboard-console-check.sh --host HOST`** (headless Chrome console-error sweep) caught the routing/500 bugs in these — run after dashboard edits.
-- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS shell** with an **Apple Store–style** product look (`dashboard-apple-themes.css` / `dashboard-apple-login.css`): Light (paper + Action Blue) default and Dark (iPad Pro true black). Shell chrome: macOS density (`body.mac-desktop-root`), SF typography, slim `.apple-topnav` + left `#apple-rail`, desktop tiers Normal/Power/Advanced, **Ask Zyra** (⌘J). **Create VM** opens the forge wizard (`openCreateModal` → `openForgeWizard`). VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) in `localStorage` under `veyron_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
-
-### React console (`frontend/`, Phase 1 migration — additive, coexists with `/dashboard`)
-
-A second, real React app is being migrated in incrementally alongside the vanilla `dashboard.html` SPA — not a replacement yet. `frontend/` is a plain Vite + React + JSX project (no TypeScript):
-
-- `frontend/src/App.jsx` — owns its own shell (topbar + rail), matches the Zyvor orange design by eye (own `frontend/src/styles.css`, not sharing tokens with `dashboard-apple-themes.css` yet). Migrated pages: Mission Control (apple.com-style landing), Virtual machines (bespoke `VmTable`/`Inspector` — multi-select, right-click context menu, bulk-action bar, console sheet), and a **generic config-driven list-page pattern** (`frontend/src/Resource.jsx`'s `ResourceTable`/`ResourceInspector`, parameterized by column/field defs registered in `App.jsx`'s `LIST_PAGES` object) covering Hosts, Pods, Storage, Snapshots, Backups, Alerts — adding another simple read-only resource page is a column/field definition, not a new component. Everything else in the rail (Images & ISOs, Topology, Monitoring, Security, Settings) is a plain link out to `/dashboard#pagename` — a real page navigation, not a client route — because each needs bespoke UI the generic pattern doesn't fit (non-standard API response shape, graph viz, dashboards/forms).
-- `frontend/src/api.js` — talks to the same REST API `dashboard.html` already uses (`X-API-Key`, key cached in `localStorage['veyron_api_key']` — a session already logged into `/dashboard` is picked up here too).
-- **Build**: `cd frontend && npm install && npm run build` → `frontend/dist/`. The `Dockerfile` adds a `node:22-slim` `frontend-builder` stage that runs this before the Rust build stage, which `COPY --from=frontend-builder`s `dist/` into its build context; `src/api/http_server.rs` embeds it via `include_dir!("$CARGO_MANIFEST_DIR/frontend/dist")` (`CONSOLE_DIST`) — same self-contained-single-binary property as `dashboard.html`'s `include_str!`. **Node build must complete before `cargo build` runs** — `include_dir!` needs the directory on disk at Rust compile time.
-- **Routes**: `GET /console` (shell `index.html`), `GET /console/assets/*file` (hashed JS/CSS, cache-control immutable) — both exempted from the API-key auth middleware in `dashboard_paths::is_auth_exempt_path()`, matching `/dashboard`/`/assets/*` (the JS itself still calls the real API with a key).
-- Local dev: `cd frontend && npm run dev` (Vite dev server, proxies `/api` to `https://127.0.0.1:5151`, `secure:false` for the self-signed cert).
-- Verify after touching `frontend/`: `cargo build --features web` (confirms `include_dir!` embedding) + a live click-through of `/console` (no dedicated console-check script yet — reuse `scripts/dashboard-console-check.cjs`'s Playwright/`playwright-core` pattern by hand against `${host}/console`).
 
 **SharedState pattern** used by every handler:
 ```rust
@@ -150,7 +136,7 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 
 **Auth**: `X-API-Key` header, `Authorization: Bearer <jwt>` (HMAC-SHA256 or OIDC), or `?token=` query param. Multi-key RBAC via `VEYRON_API_KEYS="name:key:role,..."` — the format is **`name:key:role`** (e.g. `"admin-user:k1:admin,ci:k2:write,viewer:k3:readonly"`); a missing 3rd field defaults to `readonly`, and the single `VEYRON_API_KEY` is always `admin`. Route-level minimum roles in `src/api/auth_context.rs`. VNC/serial WebSocket upgrades accept `POST /api/v1/ws/ticket` one-time tickets (`src/api/ws_ticket.rs`).
 
-**PacketWolf**: when `VEYRON_PACKETWOLF_URL` is set (or auto-wired by `bootstrap-integrations.sh`), `GET /api/v1/packetwolf/status` probes Network Brain health; dashboard **Cilium** page shows connection banner. **Auth is JWT bearer-token, not a static key**: set `VEYRON_PACKETWOLF_USERNAME`/`VEYRON_PACKETWOLF_PASSWORD` — Veyron logs in against `POST {base}/api/v1/auth/login` and caches the returned token (~24h TTL, auto-refreshed ~60s before expiry; `src/api/handlers/packetwolf.rs`). `VEYRON_PACKETWOLF_API_KEY` (a static `X-API-Key` header) is a fallback for PacketWolf deployments that use that model instead — most current PacketWolf instances do **not**, and silently return 401 on every proxied call (`/network/overview`, `/flows`) if only the API key is set, even though `/status`'s unauthenticated `/health` probe reports reachable. See `docs/OPTIONAL_INTEGRATIONS.md`.
+**PacketWolf**: when `VEYRON_PACKETWOLF_URL` is set (or auto-wired by `bootstrap-integrations.sh`), `GET /api/v1/packetwolf/status` probes Network Brain health; PacketWolf status is available via API. **Auth is JWT bearer-token, not a static key**: set `VEYRON_PACKETWOLF_USERNAME`/`VEYRON_PACKETWOLF_PASSWORD` — Veyron logs in against `POST {base}/api/v1/auth/login` and caches the returned token (~24h TTL, auto-refreshed ~60s before expiry; `src/api/handlers/packetwolf.rs`). `VEYRON_PACKETWOLF_API_KEY` (a static `X-API-Key` header) is a fallback for PacketWolf deployments that use that model instead — most current PacketWolf instances do **not**, and silently return 401 on every proxied call (`/network/overview`, `/flows`) if only the API key is set, even though `/status`'s unauthenticated `/health` probe reports reachable. See `docs/OPTIONAL_INTEGRATIONS.md`.
 
 **Atlas (Ceph-backed VM disk protection)**: Atlas (`../atlas`) is the Zyvor **storage control plane** — it fronts Ceph (RBD/CephFS/RGW), NFS, and ZFS behind a stable REST/gRPC API. When `VEYRON_ATLAS_URL` is set, Veyron drives **Ceph-backed** VM disk snapshot / clone / restore and off-cluster backups (RBD `export-diff` → RGW/S3) through Atlas jobs instead of re-implementing Ceph. This is **additive** — it never replaces the native KubeVirt `VolumeSnapshot` flow under `/api/v1/snapshots`. Client: `src/api/atlas.rs` (`AtlasClient`, HTTP REST v1, PacketWolf-style env config). Handlers: `src/api/handlers/atlas.rs` — `GET /api/v1/atlas/status` (probe + ceph capability summary), `GET …/atlas/volumes`, `GET …/atlas/vms/:ns/:name/volumes` (maps each VM PVC/DataVolume → its Atlas RBD volume by `(namespace, pvc_name)`), `POST …/atlas/vms/:ns/:name/ceph-snapshot`, `POST …/atlas/vms/:ns/:name/ceph-backup` (needs a bound Atlas RGW `bucket_id`), `POST …/atlas/snapshots/:id/{restore,clone}`, `DELETE …/atlas/snapshots/:id`, `GET …/atlas/{snapshots,backups,jobs/:id}`. Write routes return `202` with Atlas `job_id`s to poll. Provisioned volumes carry an `owner:{product:"veyron",resource_type:"virtual_machine"}` binding. Route roles follow the usual gates (GET⇒readonly, `/restore`⇒admin, other writes⇒write). Live contract test: `VEYRON_ATLAS_URL=http://127.0.0.1:5110 cargo test --features web atlas_live` against a fake gateway (`ATLAS_CEPH_DRIVER_MODE=fake cargo run -p atlas-gateway` in `../atlas`).
 
@@ -179,7 +165,7 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 | `src/tui/` | Full ratatui-based TUI; `AppState` (VMs, namespaces, selection), `interactive_app.rs`, theming |
 | `src/handlers/` | CLI command implementations (vm, backup, cost, gitops, crds, infra…) |
 | `src/operator_crds/` | Veyron CRD types under `veyron.io/v1alpha1` |
-| `src/soc/` | Security operations: `SecurityEvent`, ConfigMap event/detection store, collectors, detection rules, SIEM export (`export/elastic`, `splunk`, `sentinel`, `qradar`), hunts, ASM, SOAR webhooks — API `handlers/soc.rs`, dashboard **Security → SOC**. See `docs/SOC.md`. |
+| `src/soc/` | Security operations: `SecurityEvent`, ConfigMap event/detection store, collectors, detection rules, SIEM export (`export/elastic`, `splunk`, `sentinel`, `qradar`), hunts, ASM, SOAR webhooks — API `handlers/soc.rs`. See `docs/SOC.md`. |
 | `src/trial.rs`, `src/bin/trial-tool.rs` | 30-day evaluation licensing for the standalone client tarball, feature-gated (`trial`) so it never affects in-cluster/production builds. See `docs/LICENSING.md`. |
 
 **Windows templates in code** (`windows*` in `src/templates/mod.rs`): Hyper-V feature set, `windows_clock()`, UEFI, virtio driver CDROM, blank SATA disk, virtio NIC, RNG, USB tablet, IO threads, TPM on 2022/11. **No** embedded Cloudbase-Init config or `cloudInitConfigDrive` userData (guest image / your YAML). See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md` (includes **automation**: Packer/CDI/GitOps; `cloud_init` in `converter.rs` emits **NoCloud** only—patch YAML or extend schema for Windows config-drive).
@@ -205,7 +191,7 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 
 - **Handler stubs**: when a K8s API cannot provide a value (e.g. filesystem-level disk usage), return a derived estimate or `"N/A"` with a comment — never silently return `0` or `None` where real data is expected.
 - **ConfigMaps as persistence**: alert rules, notification read-state, webhook configs, gitops sync state, and budgets are all stored as labeled ConfigMaps (`veyron.io/type=<kind>`).
-- **Namespace scoping**: handlers accept `?namespace=all` to query cluster-wide, or a specific namespace. Default in the dashboard JS is `'all'` (see `nsParam()` in `dashboard.html`).
+- **Namespace scoping**: handlers accept `?namespace=all` to query cluster-wide, or a specific namespace. API clients typically use `?namespace=all`.
 - **Async in handlers**: closures inside `.map()` on iterators cannot be async. Pre-fetch async data (e.g. VM counts per namespace) before the `.map()` call.
 - **virt-launcher pod selectors**: always select by **`vm.kubevirt.io/name`** (`kube::VM_NAME_LABEL`) — KubeVirt 1.8 launchers do NOT carry the old `kubevirt.io/domain` label (Services selecting on it get zero endpoints; this bit SSH expose, logs-by-VM, OpenCost, and guest Prometheus). `kubevirt.io/domain` (`VM_NAME_LABEL_LEGACY`) is acceptable only as a read fallback when mapping pods→VMs. RDP expose historically uses `kubevirt.io/vm`, which 1.8 still sets.
 
@@ -236,7 +222,7 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 | `VEYRON_VGPU_LIVE_MIGRATION` | Set to `1` ONLY after verifying the licensed NVIDIA vGPU host stack + KubeVirt actually live-migrate mdev VMIs (Phase 2 attestation). Relaxes the migration gate for vGPU-only VMs and enables `day2_ops.vgpu_live_migration` (when mdev resources are present). Upstream KubeVirt ≤1.8 does NOT support this — never set on plain passthrough clusters. |
 | `VEYRON_ALLOW_PUBLIC_RDP` | Set to `1` to permit `PUT /rdp-expose` with `service_type: NodePort`/`LoadBalancer`. **Default: refused with 403** — a bare 3389 NodePort puts Windows auth on the network with no gateway/MFA/TLS. Prefer `ClusterIP` + VPN/zero-trust gateway or `kubectl port-forward`. |
 | `VEYRON_TRIAL_TOKEN` | Only read on `--features trial` builds (the evaluation client tarball). Overrides the `trial.token` file lookup (next to the binary, then `~/.config/veyron/trial.token`) — set to the token's contents. See `docs/LICENSING.md`. |
-| `VEYRON_OIDC_ISSUER`, `VEYRON_OIDC_CLIENT_ID`, `VEYRON_OIDC_CLIENT_SECRET`, `VEYRON_OIDC_AUTHORIZATION_URL`, `VEYRON_OIDC_TOKEN_URL`, `VEYRON_OIDC_JWKS_URL`, `VEYRON_OIDC_REDIRECT_URI`, `VEYRON_OIDC_ROLE_CLAIM` | Enterprise SSO against a real IdP (Keycloak/Auth0/Okta) — `src/api/oidc.rs`. `oidc_configured()` requires `CLIENT_ID` + (`AUTHORIZATION_URL` or `ISSUER`). Frontend does PKCE + the authorization-code redirect itself (`dashboard.html`, `startOidcLogin`/`handleOidcCallback`); the backend only exchanges the code (`POST /api/v1/auth/oidc/token`, no server-side OAuth `redirect_uri` route) and validates bearer JWTs via JWKS RS256 (falls back to `VEYRON_OIDC_JWKS_URL`-less userinfo lookup) — see `oidc_role_from_bearer`. |
+| `VEYRON_OIDC_ISSUER`, `VEYRON_OIDC_CLIENT_ID`, `VEYRON_OIDC_CLIENT_SECRET`, `VEYRON_OIDC_AUTHORIZATION_URL`, `VEYRON_OIDC_TOKEN_URL`, `VEYRON_OIDC_JWKS_URL`, `VEYRON_OIDC_REDIRECT_URI`, `VEYRON_OIDC_ROLE_CLAIM` | Enterprise SSO against a real IdP (Keycloak/Auth0/Okta) — `src/api/oidc.rs`. `oidc_configured()` requires `CLIENT_ID` + (`AUTHORIZATION_URL` or `ISSUER`). Clients that implement OIDC use PKCE + authorization-code redirect; the backend only exchanges the code (`POST /api/v1/auth/oidc/token`, no server-side OAuth `redirect_uri` route) and validates bearer JWTs via JWKS RS256 (falls back to `VEYRON_OIDC_JWKS_URL`-less userinfo lookup) — see `oidc_role_from_bearer`. |
 | `VEYRON_OIDC_GROUP_ADMIN` / `VEYRON_OIDC_GROUP_WRITE` | Comma-separated, case-insensitive IdP group names mapped to `admin`/`write` roles (exact match, checked before the substring-based `admin`/`write` heuristic in `normalize_role`). Defaults: `veyron-admins,cluster-admins` / `veyron-write,veyron-editors`. Deploy without leaking secrets through `--set`/CLI history: `./scripts/deploy-remote.sh HOST USER --with-oidc` (writes a `veyron-oidc` Secret from `VEYRON_OIDC_*` env vars, wired into `deploy/k8s.yaml` via `envFrom` `optional: true` — absent unless that Secret exists; Helm chart equivalent: `oidc.*` values or `oidc.existingSecret`). See `contrib/veyron-oidc-keycloak.env.example` for a worked Keycloak example. |
 
 ### Real OIDC IdP wiring: confidential clients need `client_secret` at the token endpoint
@@ -276,7 +262,7 @@ real IdP: its "secure by default" audience check needs an explicit off-switch or
 
 A **third** bug — the actual blocker for every browser-driven SSO attempt, found only after the
 first two backend fixes still left real Chrome logins failing while a hand-rolled curl script
-of the identical flow succeeded — was in `dashboard.html`'s very first inline `<script>`
+of the identical flow succeeded — was in `the retired dashboard's very first inline `<script>`
 (before line 20). It's a synchronous cache-busting redirect: if `location.search` doesn't
 already contain `dash=<rev>`, it unconditionally did
 `location.replace(location.pathname + '?' + revParam + location.hash)` — **discarding the
@@ -301,91 +287,16 @@ redirect happen."
 - Host RPC uses virt-launcher pod exec → `virsh qemu-agent-command` with QGA commands (`guestkit-get-evidence`, etc.).
 
 
-- **Dashboard noVNC**: use **Link quality** to trade bandwidth vs responsiveness; reconnect applies the selected preset.
+
 - **Linux templates** (`src/templates/mod.rs`): `.interactive_console_defaults()` enables **USB tablet**, **disables virtio-balloon**, and sets **`ioThreadsPolicy: shared`** for smoother browser consoles. Windows templates already set the same levers explicitly.
 - **KubeVirt virtio video (optional):** set `kubevirt_video_type` on `VMConfig` (builder: `.kubevirt_video_type("virtio")`) to emit `domain.devices.video`. This requires the cluster KubeVirt **`VideoConfig` alpha feature gate**; without it the API may reject or ignore the field depending on version.
-- **Windows day-to-day remoting:** prefer **RDP** for interactive work; KubeVirt VNC through the dashboard is best-effort over WebSockets. See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md`.
 
-## Design system — Apple Store / Zeus product look (the design law)
-
-The dashboard (`src/api/web/dashboard.html`) uses an **Apple accessories / shop** visual language: paper Light surfaces, Action Blue CTAs, chapter heroes, product bands/shelves/tiles — not IronWolf metal-sheen and not the retired `holo`/glass-deck family.
-
-**Themes that ship** (`THEME_PRESETS` / `VALID_THEMES` in `dashboard.html`):
-
-| Theme | Mood |
-|---|---|
-| `light` (default) | Paper `#f5f5f7` / white panels, ink `#1d1d1f`, Action Blue `#0071e3` |
-| `dark` | iPad Pro true black `#000`, silver headlines, sky links `#2997ff`, flat surfaces `#161617` / `#1d1d1f` |
-
-Every legacy id (`tahoe`, `holo`, `nebula`, `carbon`, `forge`, …) remaps via `LEGACY_THEME_ALIASES` onto `light` or `dark`. Do **not** reintroduce IronWolf CSS, `dashboard-holo.css`, or multi-hue glass-deck themes.
-
-**CSS pipeline** (`src/api/http_server.rs`):
-
-```text
-/*__VMR_CSS__*/ and late /*__SHELL_LAYOUT__*/ both end with:
-  carbon → carbon-deck → shell-layout → veyron
-  → dashboard-apple-login.css → dashboard-apple-nav.css → dashboard-apple-themes.css (last = wins)
-```
-
-Deleted SoT files: `dashboard-ironwolf-themes.css`, `dashboard-ironwolf-login.css`, `dashboard-holo.css`. **To restyle every page, edit `dashboard-apple-themes.css` — do not touch 65 pages.**
-
-### Login
-
-`dashboard-apple-login.css` — chapter-style sign-in with clear **Veyron** product identity (Zyvor eyebrow, “Sign in to Veyron”). Zyvor **Z** mark at `/assets/zyvor-z-mark.png` (hero + sign-in). Theme picker is Light/Dark only.
-
-### Color — tokens, not raw hex
-
-Shared token *names* (`--void`, `--hull`, `--panel*`, `--plasma`, `--ink*`, status tokens) still drive components; Apple themes set the values.
-
-| Purpose | Token / Light | Dark |
-|---|---|---|
-| Page canvas | `--void` / `--hull` paper | `#000` |
-| Surfaces | `--panel*` white / `#f5f5f7` | `#161617` / `#1d1d1f` |
-| Accent / CTA | `--plasma` Action Blue `#0071e3` | sky `#2997ff` for links; keep CTAs readable |
-| Hairlines | `--hairline` | subtle white alpha |
-| Text | `--ink` / `--ink-2` / `--ink-3` | silver hierarchy |
-| Status | `--nominal` / `--caution` / `--critical` / `--inert` | **theme-independent** — never redefine per theme |
-
-### Page primitives (Apple chapter layout)
-
-Prefer these over inventing new card chrome:
-
-- **`.apple-chapter`** — kicker + title + lede + CTA row (every page hero)
-- **`.apple-band` / `.apple-band-paper`** — full-bleed section bands
-- **`.apple-shelf` / `.apple-shelf-2|3|4`** — product grids
-- **`.apple-tile`**, **`.apple-benefit`**, chip rows — accessory-style cells
-- Status still uses `.id-sig.id-sig-ok/warn/crit/inert` (+ `.id-pulse`)
-
-UI copy: prefer **Create VM** (not “Forge”) in user-visible strings; the wizard modal remains `#forge-wizard-modal` internally. `openCreateModal()` routes to `openForgeWizard()` when that modal exists.
-
-### Navigation (live)
-
-- **Left rail** `#apple-rail` — primary nav (`dashboard-apple-nav.css`); `navGo` / section accordion / VM badges
-- **Top bar** `.apple-topnav` — brand, Spotlight, notifications, Control Center, namespace (no page menus)
-- **Browse all pages** — `toggleClassicNav()` / ⌘⇧B (also rail footer); collapse rail with ⌘\\
-- Dock remains suppressed as a visual affordance; mega-menu and rail cover navigation
-
-`monitoring` navigates to **`stack-health`** (alias in `dashboard-veyron.js`).
-
-### Surfaces & motion
-
-Keep content editorial and product-like: large chapter titles, calm hairlines, Action Blue CTAs. Avoid reintroducing aurora fields, cursor spotlights, starfields, or multi-theme glass decks. Home/Signal Desk may keep light motion (count-up stats, optional orb); 3D pages still use `dashboard-veyron-3d.js` with mandatory `dispose()`.
-
-### Per-page checklist
-
-1. Chapter hero (`.apple-chapter`) present; hide duplicate JS-injected IronWolf heroes if any remain
-2. Status via `.id-sig-*`; colors via CSS vars
-3. Prefer band/shelf/tile for KPI/list bodies
-4. Wire VM actions to `openCopilotWithVm()` / Ask Zyra where relevant
-5. Gate: `cargo build --features web` + `./scripts/dashboard-console-check.sh --host HOST`
-
-### Verification scripts (deployed cluster)
+## Verification (deployed cluster)
 
 | Script | Covers |
 |---|---|
 | `./scripts/verify-veyron-remote.sh HOST` | API smoke |
 | `./scripts/test-vm-daily-ops-remote.sh HOST` | Create/start/stop/pause, VNC ticket, SSH/RDP expose, snapshots |
-| `./scripts/dashboard-console-check.sh --host HOST` | Chrome console/page-error sweep |
 | `./scripts/customer-readiness.sh HOST [--ssh-user U] [--full]` | Full go-live gate |
 
 RDP **NodePort**/`LoadBalancer` is refused unless `VEYRON_ALLOW_PUBLIC_RDP=1`; prefer **ClusterIP** + VPN/gateway.
