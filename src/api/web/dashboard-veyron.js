@@ -238,9 +238,12 @@
 
   window.renderVmrEmptyState = function renderVmrEmptyState(opts) {
     opts = opts || {};
+    var tone = opts.tone || 'action';
+    if (!/^(action|nominal|caution|critical|info)$/.test(tone)) tone = 'action';
+    var toneClass = 'veyron-ico veyron-ico--lg veyron-ico--' + tone;
     return '<div class="vmr-page-empty">' +
       '<div class="vmr-page-empty-glow" aria-hidden="true"></div>' +
-      '<div class="vmr-page-empty-icon" aria-hidden="true">' + esc(opts.icon || '◫') + '</div>' +
+      '<div class="vmr-page-empty-icon ' + toneClass + '" aria-hidden="true">' + esc(opts.icon || '◫') + '</div>' +
       '<h3>' + esc(opts.title || 'Nothing here yet') + '</h3>' +
       (opts.lead ? '<p class="vmr-page-empty-lead">' + esc(opts.lead) + '</p>' : '') +
       (opts.body || '') +
@@ -475,6 +478,9 @@
         home.classList.add('iw-cc-enter');
       }
     }
+    try {
+      if (typeof updateGettingStartedVisibility === 'function') updateGettingStartedVisibility();
+    } catch (e) {}
 
     if (briefing) {
       if (!loaded) {
@@ -1799,7 +1805,7 @@
         '<div class="vmr-panel-title" style="font-size:.72rem">YAML Preview</div>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(window._vmrForgeYamlCache||&apos;&apos;)">Copy YAML</button>' +
       '</div>' +
-      '<pre style="font-size:.72rem;color:var(--muted);white-space:pre-wrap;word-break:break-all;line-height:1.5;max-height:200px;overflow:auto;margin:0">' + esc(yaml) + '</pre></div>';
+      '<pre class="vmr-forge-yaml veyron-tty" style="font-size:.72rem;max-height:200px;overflow:auto;margin:0">' + esc(yaml) + '</pre></div>';
   };
   window.submitForgeWizard = function submitForgeWizard(startAfter) {
     syncForgeWizardToLegacy();
@@ -2159,7 +2165,7 @@
             '<div class="mac-sheet-title" id="vmr-pod-logs-title">Pod logs</div>' +
           '</div>' +
           '<div class="vmr-pod-logs-meta" id="vmr-pod-logs-meta"></div>' +
-          '<pre id="vmr-pod-logs-body" class="vmr-pod-logs-body">Loading logs…</pre>' +
+          '<pre id="vmr-pod-logs-body" class="vmr-pod-logs-body veyron-tty">Loading logs…</pre>' +
           '<div class="modal-footer vmr-pod-logs-footer">' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" id="vmr-pod-logs-copy">Copy</button>' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" id="vmr-pod-logs-refresh">Refresh</button>' +
@@ -3349,7 +3355,7 @@
       '</div>' +
       '<div class="vmr-panel" style="margin-bottom:12px">' +
         '<div class="vmr-panel-title" style="margin-bottom:8px">YAML Preview</div>' +
-        '<pre style="font-size:.72rem;color:var(--muted);white-space:pre-wrap;word-break:break-all;line-height:1.5;max-height:160px;overflow:auto">' + esc(yamlPreview) + '</pre>' +
+        '<pre class="vmr-forge-yaml veyron-tty" style="font-size:.72rem;max-height:160px;overflow:auto;margin:0">' + esc(yamlPreview) + '</pre>' +
       '</div>' +
       '<div class="vmr-fdrawer-actions">' +
         '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('forgeFromTemplate(' + jsArgs(tpl.id || tpl.title) + ')') + '>Create VM</button>' +

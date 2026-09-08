@@ -18,6 +18,7 @@
   background: var(--zs-carbon);
   border-inline-end: 1px solid var(--zs-rule);
   overflow-y: auto;
+  scrollbar-width: none;
 }
 [data-shell-region="rail-nav"]::-webkit-scrollbar { width: 0; }
 

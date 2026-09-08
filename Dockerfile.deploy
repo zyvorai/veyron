@@ -6,7 +6,9 @@
 #   cp target/release/veyron /tmp/veyron-binary
 #   docker build -t veyron:latest -f Dockerfile.deploy /tmp
 #
-FROM debian:bookworm-slim
+# Match Ubuntu 24.04 build hosts (GLIBC_2.39). bookworm-slim is too old for
+# host-built release binaries and crashes with "GLIBC_2.39 not found".
+FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl \

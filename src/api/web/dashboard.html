@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260902b">
+<meta name="veyron-dashboard-rev" content="20260907n">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%239E97EA'/%3E%3Cstop offset='1' stop-color='%237F77DD'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%2307080A'/%3E%3C/svg%3E">
@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260902b';
+  var DASH_REV = '20260907n';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     // Preserve any existing query string (e.g. an OIDC redirect's ?code=&state=)
@@ -50,6 +50,23 @@
       try { document.body.setAttribute('data-wallpaper', wp); } catch (e2) {}
     });
   } catch (e) {}
+  /* Full-page sign-in lock: hide dashboard shell until a credential exists.
+     Reparent #apikey-modal onto <body> — .cloudos-main is historically unclosed
+     in this SPA, so a nested overlay collapses when the shell is display:none. */
+  try {
+    var hasCred = !!(localStorage.getItem('veyron_api_key') || sessionStorage.getItem('veyron_api_key') || sessionStorage.getItem('veyron_oidc_token'));
+    if (!hasCred) document.documentElement.classList.add('veyron-signin');
+    document.addEventListener('DOMContentLoaded', function () {
+      try {
+        var m = document.getElementById('apikey-modal');
+        if (m && m.parentElement !== document.body) document.body.appendChild(m);
+        if (!hasCred) {
+          document.body.classList.add('veyron-signin');
+          if (m) m.classList.add('open');
+        }
+      } catch (e3) {}
+    });
+  } catch (eSignin) {}
 })();
 </script>
 <style>
@@ -640,6 +657,7 @@ body>*{position:relative;z-index:1}
 .container{position:relative}
 .container>*{position:relative;z-index:1}
 
+html{scrollbar-color:#334155 transparent}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
@@ -1332,11 +1350,11 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
   max-width:480px;margin:20px auto;
 }
-.empty-state .icon{font-size:2.8rem;margin-bottom:16px;opacity:.24;filter:grayscale(.35)}
+.empty-state .icon{font-size:2.8rem;margin-bottom:16px;opacity:1;filter:none;color:var(--apple-action,#0071e3)}
 .empty-state .icon-wrap{
   width:68px;height:68px;margin:0 auto 16px;border-radius:18px;
   display:flex;align-items:center;justify-content:center;font-size:2rem;
-  background:var(--glass-bg-elevated);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);
+  background:rgba(0,113,227,.12);border:1px solid rgba(0,113,227,.22);box-shadow:none;color:var(--apple-action,#0071e3);
 }
 .empty-state p{font-size:.95rem;letter-spacing:.01em;line-height:1.55}
 .empty-state .sub{font-size:.82rem;margin-top:8px;color:var(--text-dim);max-width:48ch;margin-left:auto;margin-right:auto}
@@ -1685,10 +1703,10 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .coming-soon-state .cs-icon-wrap{
   width:72px;height:72px;margin:0 auto 18px;border-radius:20px;
   display:flex;align-items:center;justify-content:center;font-size:2rem;
-  background:var(--glass-bg-elevated);border:1px solid var(--glass-border);
-  box-shadow:var(--glass-shadow);
+  background:rgba(0,113,227,.12);border:1px solid rgba(0,113,227,.22);
+  box-shadow:none;color:var(--apple-action,#0071e3);
 }
-.coming-soon-state .cs-icon{font-size:3rem;opacity:.18;margin-bottom:18px}
+.coming-soon-state .cs-icon{font-size:3rem;opacity:1;margin-bottom:18px;filter:none;color:var(--apple-action,#0071e3)}
 .coming-soon-state h2{color:var(--text-bright);font-size:1.3rem;margin:0 0 10px;font-weight:600}
 .coming-soon-state p{max-width:46ch;margin:0 auto 20px;line-height:1.6;font-size:.9rem}
 .coming-soon-tag{display:inline-flex;padding:4px 12px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(59,130,246,.1);color:rgba(251,191,36,.9);border:1px solid rgba(59,130,246,.22)}
@@ -3450,8 +3468,9 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border,
 .mac-cc-tile-icon{display:block;font-size:1.1rem;margin-bottom:4px}
 /* Sign-in layout stubs — full styles in dashboard-apple-login.css */
 .modal-overlay.mac-signin-overlay{
-  background:#070a10;backdrop-filter:none;-webkit-backdrop-filter:none;
-  align-items:stretch;padding-top:0;flex-direction:row;
+  background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none;
+  align-items:stretch;justify-content:stretch;padding:0;flex-direction:column;
+  z-index:100000;
 }
 /* theme picker (reused below glass card) */
 .signin-theme-picker{display:none!important}
@@ -4035,43 +4054,81 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .vm-view-toggle button:hover{border-color:var(--hairline-hi)!important;color:var(--ink)!important}
 .vm-view-toggle button.active{background:var(--plasma-glow)!important;color:var(--plasma)!important;border-color:var(--plasma-line)!important}
 
-/* ── vCentre design layer ─────────────────────────────────────── */
-:root{--vc-bg:#0a0a0a;--vc-cyan:#00f5ff;--vc-magenta:#ff00aa;--vc-glass:rgba(255,255,255,0.05);--vc-glass-border:rgba(255,255,255,0.10);--vc-run:#10b981;--vc-run-bg:rgba(16,185,129,0.10);--vc-run-border:rgba(16,185,129,0.30)}
-#page-vcentre{background:var(--vc-bg);min-height:100vh}
-.vc-card{background:var(--vc-glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--vc-glass-border);border-radius:24px;padding:24px;cursor:pointer;transition:transform .4s cubic-bezier(.4,0,.2,1),box-shadow .4s}
-.vc-card:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 25px 50px -12px rgba(0,245,255,.15)}
-.vc-card.vc-running{border-color:var(--vc-run-border)}
-.vc-card.vc-crit{border-color:var(--critical-bg)}
-.vc-badge-run{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:var(--vc-run-bg);color:var(--vc-run);border:1px solid var(--vc-run-border);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
-.vc-badge-run .vc-dot{width:6px;height:6px;border-radius:50%;background:var(--vc-run);animation:vc-ping 2s cubic-bezier(0,0,.2,1) infinite}
-.vc-badge-stop{display:inline-flex;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:rgba(255,255,255,.08);color:rgba(255,255,255,.45);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
-.vc-badge-crit{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:var(--critical-bg);color:var(--critical);border:1px solid rgba(226,75,74,.30);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
-@keyframes vc-ping{75%,100%{transform:scale(2.2);opacity:0}}
-.vc-bar-track{height:6px;background:rgba(255,255,255,.10);border-radius:99px;overflow:hidden;margin-top:6px}
-.vc-bar-cpu{height:100%;background:linear-gradient(90deg,var(--vc-cyan),var(--vc-cyan));border-radius:99px;transition:width .6s ease}
-.vc-bar-mem{height:100%;background:linear-gradient(90deg,var(--vc-magenta),var(--vc-magenta));border-radius:99px;transition:width .6s ease}
-.vc-btn-primary{background:linear-gradient(90deg,var(--vc-cyan),var(--vc-cyan));color:var(--void);font-weight:700;padding:11px 22px;border-radius:16px;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.5px;transition:filter .15s}
-.vc-btn-primary:hover{filter:brightness(1.1)}
-.vc-btn-stop{background:var(--critical-bg);color:var(--critical);border:1px solid rgba(226,75,74,.30);padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:background .15s}
-.vc-btn-stop:hover{background:rgba(226,75,74,.20)}
-.vc-btn-start{background:var(--vc-run);color:#000;border:none;padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;font-weight:600;cursor:pointer;transition:filter .15s}
-.vc-btn-start:hover{filter:brightness(1.1)}
-.vc-btn-ghost{background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:border-color .15s}
-.vc-btn-ghost:hover{border-color:rgba(255,255,255,.35)}
-#vc-detail-panel{position:fixed;right:0;top:0;bottom:0;width:320px;background:rgba(0,0,0,.96);border-left:1px solid rgba(255,255,255,.10);padding:24px;overflow-y:auto;z-index:300;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
-#vc-detail-panel.open{transform:translateX(0)}
-.vc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px}
-.vc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.08)}
-.vc-header h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:600;letter-spacing:-.3px;color:#fff;margin:0}
-.vc-header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.vc-stat{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:rgba(255,255,255,.55)}
-.vc-stat.ok{border-color:var(--vc-run-border);color:var(--vc-run)}
-#page-vcentre[data-vc-theme="matrix"]{--vc-bg:#050f05;--vc-cyan:#00ff41;--vc-magenta:#00cc33;--vc-glass:rgba(0,255,65,.04);--vc-glass-border:rgba(0,255,65,.12);--vc-run:#00ff41;--vc-run-bg:rgba(0,255,65,.08);--vc-run-border:rgba(0,255,65,.28)}
-#page-vcentre[data-vc-theme="ember"]{--vc-bg:#0f0800;--vc-cyan:#ff6b35;--vc-magenta:#ff2d55;--vc-glass:rgba(255,107,53,.04);--vc-glass-border:rgba(255,107,53,.12);--vc-run:#10b981;--vc-run-bg:rgba(16,185,129,.10);--vc-run-border:rgba(16,185,129,.30)}
-#page-vcentre[data-vc-theme="arctic"]{--vc-bg:#06080f;--vc-cyan:#60a5fa;--vc-magenta:#a78bfa;--vc-glass:rgba(96,165,250,.04);--vc-glass-border:rgba(96,165,250,.12);--vc-run:#10b981;--vc-run-bg:rgba(16,185,129,.10);--vc-run-border:rgba(16,185,129,.30)}
-.vc-theme-btn{width:18px;height:18px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;flex-shrink:0}
-.vc-theme-btn:hover{transform:scale(1.2)}
-.vc-theme-btn.active{border-color:var(--ink)}
+/* ── VM Center (route: vcentre) — Apple Store product surface ── */
+#page-vcentre{background:transparent;min-height:100%}
+#page-vcentre .vc-toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  margin:0 auto 1.5rem;max-width:72rem;padding:0 clamp(1.25rem,5vw,3rem);
+}
+#page-vcentre .vc-toolbar-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#page-vcentre .vc-stat{
+  display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:500;
+  padding:6px 12px;border-radius:980px;border:1px solid var(--hairline);
+  background:var(--panel);color:var(--ink-2);
+}
+#page-vcentre .vc-stat.ok{color:var(--nominal);border-color:color-mix(in srgb,var(--nominal) 35%,var(--hairline))}
+#page-vcentre .vc-updated{font-size:.72rem;color:var(--ink-3)}
+#page-vcentre .vc-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:1.25rem;max-width:72rem;margin:0 auto;padding:0 clamp(1.25rem,5vw,3rem) 2.5rem;
+}
+#page-vcentre .vc-card{
+  background:var(--panel);border:1px solid var(--hairline);border-radius:1.25rem;
+  padding:1.35rem 1.4rem;cursor:pointer;text-align:left;color:var(--ink);
+  transition:background .18s ease,border-color .18s ease,transform .18s ease;
+}
+#page-vcentre .vc-card:hover{background:var(--panel-2,#ebebed);border-color:color-mix(in srgb,var(--plasma) 28%,var(--hairline));transform:translateY(-2px)}
+html[data-theme='dark'] #page-vcentre .vc-card:hover{background:#1d1d1f}
+#page-vcentre .vc-card.vc-running{border-color:color-mix(in srgb,var(--nominal) 40%,var(--hairline))}
+#page-vcentre .vc-card.vc-crit{border-color:color-mix(in srgb,var(--critical) 45%,var(--hairline))}
+#page-vcentre .vc-card-name{font-family:var(--font-display,-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif);font-size:1.125rem;font-weight:600;letter-spacing:-.02em;color:var(--ink);margin:0 0 .2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#page-vcentre .vc-card-meta{font-size:.78rem;color:var(--ink-3);margin-bottom:1rem}
+#page-vcentre .vc-badge-run,#page-vcentre .vc-badge-stop,#page-vcentre .vc-badge-crit{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;font-size:.68rem;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;border-radius:980px;
+}
+#page-vcentre .vc-badge-run{background:color-mix(in srgb,var(--nominal) 12%,transparent);color:var(--nominal)}
+#page-vcentre .vc-badge-run .vc-dot{width:6px;height:6px;border-radius:50%;background:var(--nominal)}
+#page-vcentre .vc-badge-stop{background:var(--panel-2,#f5f5f7);color:var(--ink-3)}
+#page-vcentre .vc-badge-crit{background:color-mix(in srgb,var(--critical) 12%,transparent);color:var(--critical)}
+#page-vcentre .vc-bar-track{height:5px;background:var(--hairline);border-radius:980px;overflow:hidden;margin-top:5px}
+#page-vcentre .vc-bar-cpu{height:100%;background:var(--plasma);border-radius:980px;transition:width .5s ease}
+#page-vcentre .vc-bar-mem{height:100%;background:var(--nominal);border-radius:980px;transition:width .5s ease}
+#page-vcentre .vc-metric-row{display:flex;justify-content:space-between;font-size:.72rem;color:var(--ink-3);margin-bottom:2px}
+#page-vcentre .vc-metric-row span:last-child{color:var(--ink-2);font-variant-numeric:tabular-nums}
+#page-vcentre .vc-card-actions{display:flex;gap:8px;margin-top:1rem}
+#page-vcentre .vc-btn-stop,#page-vcentre .vc-btn-start,#page-vcentre .vc-btn-ghost{
+  flex:1;padding:9px 12px;border-radius:980px;font-size:.78rem;font-weight:600;cursor:pointer;border:1px solid var(--hairline);background:var(--panel);color:var(--ink);
+}
+#page-vcentre .vc-btn-start{background:var(--plasma);border-color:transparent;color:#fff}
+#page-vcentre .vc-btn-start:hover{filter:brightness(1.05)}
+#page-vcentre .vc-btn-stop{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 30%,var(--hairline))}
+#page-vcentre .vc-btn-ghost:hover{border-color:var(--plasma);color:var(--plasma)}
+#page-vcentre .vc-empty{grid-column:1/-1;text-align:center;padding:3.5rem 1rem;color:var(--ink-3);font-size:.95rem}
+#vc-detail-panel{
+  position:fixed;inset:0;width:auto;top:0;right:0;bottom:0;
+  background:rgba(0,0,0,.4);border-left:none;padding:24px 16px;overflow-y:auto;z-index:520;
+  transform:none;opacity:0;pointer-events:none;transition:opacity .22s ease;
+  display:flex;align-items:center;justify-content:center;color:var(--ink);
+  box-shadow:none
+}
+#vc-detail-panel.open{opacity:1;pointer-events:auto;transform:none}
+#vc-detail-panel .apple-vc-sheet{
+  width:min(400px,94vw);max-height:min(84vh,760px);overflow-y:auto;
+  background:var(--panel,#fff);border:1px solid var(--hairline);border-radius:1.25rem;
+  padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.22)
+}
+html[data-theme='dark'] #vc-detail-panel .apple-vc-sheet{background:#1d1d1f}
+#vc-detail-panel h2{font-family:var(--font-display,-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif);font-size:1.25rem;font-weight:600;letter-spacing:-.02em;color:var(--ink);margin:0;word-break:break-all}
+#vc-detail-panel .vc-dp-close{background:none;border:none;color:var(--ink-3);font-size:1.15rem;cursor:pointer;padding:4px 8px;border-radius:8px}
+#vc-detail-panel .vc-dp-close:hover{background:var(--panel-2,#f5f5f7);color:var(--ink)}
+#vc-detail-panel .vc-dp-facts{background:var(--apple-paper,#f5f5f7);border:1px solid var(--hairline);border-radius:1rem;padding:14px 16px;margin-bottom:1.25rem}
+html[data-theme='dark'] #vc-detail-panel .vc-dp-facts{background:#161617}
+#vc-detail-panel .vc-dp-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hairline);font-size:.85rem}
+#vc-detail-panel .vc-dp-row:last-child{border-bottom:none}
+#vc-detail-panel .vc-dp-row span:first-child{color:var(--ink-3)}
+#vc-detail-panel .vc-dp-actions{display:flex;flex-direction:column;gap:8px}
+#vc-detail-panel .vc-btn-primary{background:var(--plasma);color:#fff;border:none;border-radius:980px;padding:11px 16px;font-size:.85rem;font-weight:600;cursor:pointer;text-align:center}
 
 /* — vmr-chip-dot signals — */
 .vmr-chip-dot{border-radius:50%;display:inline-block;width:7px;height:7px}
@@ -4504,167 +4561,139 @@ html.light-theme body.mac-desktop-root::before {
 </head>
 <body class="mac-desktop-root mission-control-home" data-shell="desktop" data-shell-layout="root" data-focus="off">
 <div id="vmr-ambient" class="vmr-ambient" aria-hidden="true"></div>
-<header class="apple-topnav" role="banner" data-shell-region="topbar">
+<header class="apple-topnav" role="banner" data-shell-region="topbar" id="apple-topnav" onmouseleave="megaLeave()">
   <div class="apple-topnav-row">
+    <button type="button" class="apple-topnav-burger" id="apple-topnav-burger" onclick="railToggleMobile()" aria-label="Menu" aria-expanded="false"><span></span></button>
     <button type="button" class="apple-topnav-brand" onclick="navGo('dashboard')" aria-label="Veyron home">
       <span class="zyvor-lockup" aria-hidden="true">
-        <svg class="zyvor-mark" viewBox="0 0 18 18" width="22" height="22" focusable="false"><path d="M2 2h14L6.6 16H16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+        <svg class="zyvor-mark" viewBox="0 0 18 18" width="22" height="22" focusable="false"><path d="M2 2h14L6.6 16H16" fill="none" stroke="#ff5a15" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
         <span class="zyvor-wordmark">zyvor</span>
       </span>
-      <span class="apple-topnav-product">Veyron</span>
+      <span class="apple-topnav-product">Veyron <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
     </button>
-    <button type="button" class="apple-topnav-burger" id="apple-topnav-burger" onclick="railToggleMobile()" aria-label="Menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
+    <nav class="apple-topnav-primary" aria-label="Primary">
+      <button type="button" class="apple-topnav-item" data-mega="compute" aria-expanded="false" onmouseenter="megaEnter('compute')" onfocus="megaEnter('compute')" onclick="megaToggle('compute')">Compute</button>
+      <button type="button" class="apple-topnav-item" data-mega="platform" aria-expanded="false" onmouseenter="megaEnter('platform')" onfocus="megaEnter('platform')" onclick="megaToggle('platform')">Platform</button>
+      <button type="button" class="apple-topnav-item" data-mega="security" aria-expanded="false" onmouseenter="megaEnter('security')" onfocus="megaEnter('security')" onclick="megaToggle('security')">Security</button>
+      <button type="button" class="apple-topnav-item" data-mega="resilience" aria-expanded="false" onmouseenter="megaEnter('resilience')" onfocus="megaEnter('resilience')" onclick="megaToggle('resilience')">Resilience</button>
+      <button type="button" class="apple-topnav-item" data-mega="observe" aria-expanded="false" onmouseenter="megaEnter('observe')" onfocus="megaEnter('observe')" onclick="megaToggle('observe')">Observe</button>
+    </nav>
     <div class="apple-topnav-utils">
-      <button type="button" class="apple-topnav-icon-btn" onclick="openSpotlight()" title="Search (⌘K)" aria-label="Search">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <label class="apple-topnav-search" title="Search (⌘K)">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" id="apple-topnav-search-input" placeholder="Search" aria-label="Search" autocomplete="off"
+          onclick="openSpotlightFromTopnav()" onfocus="openSpotlightFromTopnav()" onkeydown="topnavSearchKey(event)">
+      </label>
+      <span class="apple-topnav-live" title="Cluster live"><i></i>Live</span>
+      <button type="button" class="apple-topnav-tasks" id="apple-topnav-tasks" onclick="navGo('alerts')" hidden></button>
+      <button type="button" class="apple-topnav-icon-btn" id="mac-nc-toggle" onclick="toggleNotificationCenter()" title="Notifications" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="mac-nc-badge" id="mac-nc-badge" style="display:none">0</span>
       </button>
-      <button type="button" class="apple-topnav-icon-btn" id="mac-nc-toggle" onclick="toggleNotificationCenter()" title="Notifications" aria-label="Notifications">🔔<span class="mac-nc-badge" id="mac-nc-badge" style="display:none">0</span></button>
-      <button type="button" class="apple-topnav-icon-btn" id="mac-cc-toggle" onclick="toggleControlCenter()" title="Control Center" aria-label="Control Center">▥</button>
+      <button type="button" class="apple-topnav-icon-btn" id="mac-cc-toggle" onclick="toggleControlCenter()" title="Control Center" aria-label="Control Center">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+      </button>
+      <button type="button" class="apple-topnav-icon-btn" onclick="openCopilot()" title="Ask Zyra" aria-label="Ask Zyra">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14z"/></svg>
+      </button>
       <select class="apple-topnav-ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
         <option value="all">all</option>
         <option value="default">default</option>
       </select>
+      <button type="button" class="apple-topnav-new" onclick="openCreateModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New VM</button>
       <span id="auth-session-label" class="auth-session" style="display:none"></span>
+      <span class="apple-topnav-avatar" id="apple-topnav-avatar" aria-hidden="true">V</span>
       <button type="button" class="apple-topnav-signout" id="auth-signout-btn" style="display:none" onclick="signOut()">Sign out</button>
     </div>
   </div>
+  <div class="apple-mega" id="apple-mega" hidden onmouseenter="megaCancelLeave()" onmouseleave="megaLeave()">
+    <div class="apple-mega-in">
+      <div class="apple-mega-title" id="apple-mega-title">Browse</div>
+      <div class="apple-mega-list" id="apple-mega-list"></div>
+    </div>
+  </div>
 </header>
+<div class="apple-mega-scrim" id="apple-mega-scrim" hidden onclick="megaClose()"></div>
+
+<div class="apple-chapter-bar" id="apple-chapter-bar" data-shell-region="chapter">
+  <div class="apple-chapter-bar-in">
+    <div class="apple-chapter-bar-title" id="apple-chapter-title">Mission Control <span id="apple-chapter-sub">Private cloud</span></div>
+    <nav class="apple-chapter-bar-links" id="apple-chapter-links" aria-label="Section"></nav>
+    <button type="button" class="apple-chapter-bar-cta" id="apple-chapter-cta" onclick="openCreateModal()">Create VM</button>
+  </div>
+</div>
+
 <div class="apple-rail-backdrop" id="apple-rail-backdrop" onclick="railCloseMobile()" aria-hidden="true"></div>
 <aside class="apple-rail" id="apple-rail" data-shell-region="nav" aria-label="Veyron navigation">
-  <div class="apple-rail-filter">
-    <label class="sr-only" for="apple-rail-filter-input">Filter navigation</label>
-    <input type="search" id="apple-rail-filter-input" class="apple-rail-filter-input" placeholder="Filter navigation…" oninput="filterRailNav(this.value)" autocomplete="off">
-  </div>
   <div class="apple-rail-scroll">
-    <div class="apple-rail-section" data-section="workspace">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('workspace')"><span class="apple-rail-section-label">Workspace</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="workspace">
-        <button type="button" class="apple-rail-link" data-page="dashboard" onclick="navGo('dashboard')" title="Signal Desk"><span class="apple-rail-icon"><i data-lucide="home"></i></span><span class="apple-rail-label">Signal Desk</span></button>
-        <button type="button" class="apple-rail-link" data-page="vms" onclick="navGo('vms')" title="Fleet Command"><span class="apple-rail-icon"><i data-lucide="server"></i></span><span class="apple-rail-label">Fleet Command</span><span class="apple-rail-badge" id="rail-badge-vms"></span></button>
-        <button type="button" class="apple-rail-link" data-page="reactor" onclick="navGo('reactor')" title="Reactor Core"><span class="apple-rail-icon"><i data-lucide="atom"></i></span><span class="apple-rail-label">Reactor Core</span></button>
-        <button type="button" class="apple-rail-link" data-page="fleet-constellation" onclick="navGo('fleet-constellation')" title="Fleet Constellation"><span class="apple-rail-icon"><i data-lucide="orbit"></i></span><span class="apple-rail-label">Fleet Constellation</span></button>
-        <button type="button" class="apple-rail-link" data-page="topology" onclick="navGo('topology')" title="Topology"><span class="apple-rail-icon"><i data-lucide="layout-panel-top"></i></span><span class="apple-rail-label">Topology</span></button>
+    <div class="apple-rail-section" data-section="overview">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('overview')"><span class="apple-rail-section-label">Overview</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="overview">
+        <button type="button" class="apple-rail-link" data-page="dashboard" onclick="navGo('dashboard')" title="Mission Control"><span class="apple-rail-icon"><i data-lucide="layout-grid"></i></span><span class="apple-rail-label">Mission Control</span></button>
+        <button type="button" class="apple-rail-link" onclick="openSpotlight()" title="Machine Finder"><span class="apple-rail-icon"><i data-lucide="compass"></i></span><span class="apple-rail-label">Machine Finder</span></button>
         <button type="button" class="apple-rail-link" data-page="gallery-wall" onclick="navGo('gallery-wall')" title="Gallery Wall"><span class="apple-rail-icon"><i data-lucide="grid-2x2"></i></span><span class="apple-rail-label">Gallery Wall</span></button>
-        <button type="button" class="apple-rail-link" data-page="vcentre" onclick="navGo('vcentre')" title="vCentre"><span class="apple-rail-icon"><i data-lucide="zap"></i></span><span class="apple-rail-label">vCentre</span></button>
-        <button type="button" class="apple-rail-link" data-page="console-hub" onclick="navGo('console-hub')" title="ConsoleHub"><span class="apple-rail-icon"><i data-lucide="monitor"></i></span><span class="apple-rail-label">ConsoleHub</span></button>
-        <button type="button" class="apple-rail-link" data-page="vm-capsule" onclick="navGo('vm-capsule')" title="VM Capsule"><span class="apple-rail-icon"><i data-lucide="box"></i></span><span class="apple-rail-label">VM Capsule</span></button>
-        <button type="button" class="apple-rail-link" data-page="app-store" onclick="navGo('app-store')" title="Template Foundry"><span class="apple-rail-icon"><i data-lucide="package"></i></span><span class="apple-rail-label">Template Foundry</span></button>
-      </div>
-    </div>
-    <div class="apple-rail-section" data-section="ai">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('ai')"><span class="apple-rail-section-label">AI</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="ai">
-        <button type="button" class="apple-rail-link" data-page="ask-zyra" onclick="navGo('ask-zyra')" title="Ask Zyra"><span class="apple-rail-icon"><i data-lucide="sparkles"></i></span><span class="apple-rail-label">Ask Zyra</span></button>
-        <button type="button" class="apple-rail-link" onclick="finderRunCopilotQuick('Show all unhealthy VMs')" title="Unhealthy VMs"><span class="apple-rail-icon"><i data-lucide="heart-pulse"></i></span><span class="apple-rail-label">Unhealthy VMs</span></button>
-        <button type="button" class="apple-rail-link" onclick="finderBackupAdvisor()" title="Backup Advisor"><span class="apple-rail-icon"><i data-lucide="archive"></i></span><span class="apple-rail-label">Backup Advisor</span></button>
-        <button type="button" class="apple-rail-link" onclick="finderRunCopilotQuick('Which PVCs are almost full?')" title="Storage Doctor"><span class="apple-rail-icon"><i data-lucide="hard-drive"></i></span><span class="apple-rail-label">Storage Doctor</span></button>
       </div>
     </div>
     <div class="apple-rail-section" data-section="compute">
       <button type="button" class="apple-rail-section-header" onclick="railToggleSection('compute')"><span class="apple-rail-section-label">Compute</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="apple-rail-section-body" data-section-body="compute">
-        <button type="button" class="apple-rail-link" data-page="nodes" onclick="navGo('nodes')" title="Nodes"><span class="apple-rail-icon"><i data-lucide="cpu"></i></span><span class="apple-rail-label">Nodes</span></button>
+        <button type="button" class="apple-rail-link" data-page="vms" onclick="navGo('vms')" title="Virtual machines"><span class="apple-rail-icon"><i data-lucide="monitor"></i></span><span class="apple-rail-label">Virtual machines</span><span class="apple-rail-badge" id="rail-badge-vms"></span></button>
+        <button type="button" class="apple-rail-link" data-page="nodes" onclick="navGo('nodes')" title="Hosts"><span class="apple-rail-icon"><i data-lucide="server"></i></span><span class="apple-rail-label">Hosts</span></button>
+        <button type="button" class="apple-rail-link" data-page="images" onclick="navGo('images')" title="Images &amp; ISOs"><span class="apple-rail-icon"><i data-lucide="disc"></i></span><span class="apple-rail-label">Images &amp; ISOs</span></button>
+        <button type="button" class="apple-rail-link" data-page="vcentre" onclick="navGo('vcentre')" title="VM Center"><span class="apple-rail-icon"><i data-lucide="monitor"></i></span><span class="apple-rail-label">VM Center</span></button>
+        <button type="button" class="apple-rail-link" data-page="console-hub" onclick="navGo('console-hub')" title="ConsoleHub"><span class="apple-rail-icon"><i data-lucide="terminal"></i></span><span class="apple-rail-label">ConsoleHub</span></button>
+        <button type="button" class="apple-rail-link" data-page="app-store" onclick="navGo('app-store')" title="Template Foundry"><span class="apple-rail-icon"><i data-lucide="package"></i></span><span class="apple-rail-label">Template Foundry</span></button>
+        <button type="button" class="apple-rail-link" data-page="vm-capsule" onclick="navGo('vm-capsule')" title="VM Capsule"><span class="apple-rail-icon"><i data-lucide="box"></i></span><span class="apple-rail-label">VM Capsule</span></button>
         <button type="button" class="apple-rail-link" data-page="pods" onclick="navGo('pods')" title="Pods"><span class="apple-rail-icon"><i data-lucide="container"></i></span><span class="apple-rail-label">Pods</span></button>
-        <button type="button" class="apple-rail-link" data-page="workloads" onclick="navGo('workloads')" title="Workloads"><span class="apple-rail-icon"><i data-lucide="layers"></i></span><span class="apple-rail-label">Workloads</span></button>
-        <button type="button" class="apple-rail-link" data-page="scheduling" onclick="navGo('scheduling')" title="Scheduling"><span class="apple-rail-icon"><i data-lucide="clock"></i></span><span class="apple-rail-label">Scheduling</span></button>
-        <button type="button" class="apple-rail-link" data-page="hpa" onclick="navGo('hpa')" title="HPA"><span class="apple-rail-icon"><i data-lucide="trending-up"></i></span><span class="apple-rail-label">HPA</span></button>
-        <button type="button" class="apple-rail-link" data-page="autoscaler" onclick="navGo('autoscaler')" title="Autoscaler"><span class="apple-rail-icon"><i data-lucide="gauge"></i></span><span class="apple-rail-label">Autoscaler</span></button>
       </div>
     </div>
-    <div class="apple-rail-section" data-section="observe">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('observe')"><span class="apple-rail-section-label">Observe</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="observe">
-        <button type="button" class="apple-rail-link" data-page="stack-health" onclick="navGo('stack-health')" title="Monitoring"><span class="apple-rail-icon"><i data-lucide="activity"></i></span><span class="apple-rail-label">Monitoring</span></button>
-        <button type="button" class="apple-rail-link" data-page="mission-control" onclick="navGo('mission-control')" title="Mission Control"><span class="apple-rail-icon"><i data-lucide="network"></i></span><span class="apple-rail-label">Mission Control</span></button>
-        <button type="button" class="apple-rail-link" data-page="metrics" onclick="navGo('metrics')" title="Metrics"><span class="apple-rail-icon"><i data-lucide="bar-chart-2"></i></span><span class="apple-rail-label">Metrics</span></button>
-        <button type="button" class="apple-rail-link" data-page="alerts" onclick="navGo('alerts')" title="Alerts"><span class="apple-rail-icon"><i data-lucide="bell"></i></span><span class="apple-rail-label">Alerts</span></button>
-        <button type="button" class="apple-rail-link" data-page="events" onclick="navGo('events')" title="Events"><span class="apple-rail-icon"><i data-lucide="clock"></i></span><span class="apple-rail-label">Events</span></button>
-        <button type="button" class="apple-rail-link" data-page="slo" onclick="navGo('slo')" title="SLO"><span class="apple-rail-icon"><i data-lucide="check-square"></i></span><span class="apple-rail-label">SLO</span></button>
-        <button type="button" class="apple-rail-link" data-page="performance" onclick="navGo('performance')" title="Performance"><span class="apple-rail-icon"><i data-lucide="zap"></i></span><span class="apple-rail-label">Performance</span></button>
-        <button type="button" class="apple-rail-link" data-page="heatmap" onclick="navGo('heatmap')" title="Heatmap"><span class="apple-rail-icon"><i data-lucide="grid-2x2"></i></span><span class="apple-rail-label">Heatmap</span></button>
-        <button type="button" class="apple-rail-link" data-page="custom-dashboards" onclick="navGo('custom-dashboards')" title="Custom Dashboards"><span class="apple-rail-icon"><i data-lucide="layout-dashboard"></i></span><span class="apple-rail-label">Custom Dashboards</span></button>
-        <button type="button" class="apple-rail-link" data-page="observability" onclick="navGo('observability')" title="Overview"><span class="apple-rail-icon"><i data-lucide="radar"></i></span><span class="apple-rail-label">Overview</span></button>
-        <button type="button" class="apple-rail-link" data-page="insights" onclick="navGo('insights')" title="Insights"><span class="apple-rail-icon"><i data-lucide="brain"></i></span><span class="apple-rail-label">Insights</span></button>
-        <button type="button" class="apple-rail-link" data-page="traces" onclick="navGo('traces')" title="Traces"><span class="apple-rail-icon"><i data-lucide="share-2"></i></span><span class="apple-rail-label">Traces</span></button>
-        <button type="button" class="apple-rail-link" data-page="logs" onclick="navGo('logs')" title="Console"><span class="apple-rail-icon"><i data-lucide="terminal"></i></span><span class="apple-rail-label">Console</span></button>
-        <button type="button" class="apple-rail-link" data-page="incidents" onclick="navGo('incidents')" title="Incidents"><span class="apple-rail-icon"><i data-lucide="heart-pulse"></i></span><span class="apple-rail-label">Incidents</span></button>
-      </div>
-    </div>
-    <div class="apple-rail-section" data-section="storage">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('storage')"><span class="apple-rail-section-label">Storage</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="storage">
-        <button type="button" class="apple-rail-link" data-page="snapshots" onclick="navGo('snapshots')" title="Snapshots"><span class="apple-rail-icon"><i data-lucide="camera"></i></span><span class="apple-rail-label">Snapshots</span></button>
+    <div class="apple-rail-section" data-section="storage-net">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('storage-net')"><span class="apple-rail-section-label">Storage &amp; network</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="storage-net">
         <button type="button" class="apple-rail-link" data-page="storage" onclick="navGo('storage')" title="Storage"><span class="apple-rail-icon"><i data-lucide="hard-drive"></i></span><span class="apple-rail-label">Storage</span></button>
-        <button type="button" class="apple-rail-link" data-page="images" onclick="navGo('images')" title="Images"><span class="apple-rail-icon"><i data-lucide="box"></i></span><span class="apple-rail-label">Images</span></button>
+        <button type="button" class="apple-rail-link" data-page="snapshots" onclick="navGo('snapshots')" title="Snapshots"><span class="apple-rail-icon"><i data-lucide="camera"></i></span><span class="apple-rail-label">Snapshots</span></button>
         <button type="button" class="apple-rail-link" data-page="backups" onclick="navGo('backups')" title="Backups"><span class="apple-rail-icon"><i data-lucide="archive"></i></span><span class="apple-rail-label">Backups</span></button>
-      </div>
-    </div>
-    <div class="apple-rail-section" data-section="network">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('network')"><span class="apple-rail-section-label">Network</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="network">
-        <button type="button" class="apple-rail-link" data-page="ingress" onclick="navGo('ingress')" title="Ingress"><span class="apple-rail-icon"><i data-lucide="arrow-right-left"></i></span><span class="apple-rail-label">Ingress</span></button>
-        <button type="button" class="apple-rail-link" data-page="network-policies" onclick="navGo('network-policies')" title="Network Policies"><span class="apple-rail-icon"><i data-lucide="shield"></i></span><span class="apple-rail-label">Network Policies</span></button>
-        <button type="button" class="apple-rail-link" data-page="cilium" onclick="navGo('cilium')" title="Cilium"><span class="apple-rail-icon"><i data-lucide="network"></i></span><span class="apple-rail-label">Cilium</span></button>
+        <button type="button" class="apple-rail-link" data-page="cilium" onclick="navGo('cilium')" title="Networks"><span class="apple-rail-icon"><i data-lucide="network"></i></span><span class="apple-rail-label">Networks</span></button>
+        <button type="button" class="apple-rail-link" data-page="topology" onclick="navGo('topology')" title="Topology"><span class="apple-rail-icon"><i data-lucide="share-2"></i></span><span class="apple-rail-label">Topology</span></button>
         <button type="button" class="apple-rail-link" data-page="network-intel" onclick="navGo('network-intel')" title="Network Intel"><span class="apple-rail-icon"><i data-lucide="radar"></i></span><span class="apple-rail-label">Network Intel</span></button>
-        <button type="button" class="apple-rail-link" data-page="dependencies" onclick="navGo('dependencies')" title="Dependencies"><span class="apple-rail-icon"><i data-lucide="share-2"></i></span><span class="apple-rail-label">Dependencies</span></button>
       </div>
     </div>
-    <div class="apple-rail-section" data-section="security">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('security')"><span class="apple-rail-section-label">Security</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="security">
-        <button type="button" class="apple-rail-link" data-page="security" onclick="navGo('security')" title="Posture"><span class="apple-rail-icon"><i data-lucide="shield"></i></span><span class="apple-rail-label">Posture</span></button>
+    <div class="apple-rail-section" data-section="operate">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('operate')"><span class="apple-rail-section-label">Operate</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="operate">
+        <button type="button" class="apple-rail-link" data-page="stack-health" onclick="navGo('stack-health')" title="Monitoring"><span class="apple-rail-icon"><i data-lucide="activity"></i></span><span class="apple-rail-label">Monitoring</span></button>
+        <button type="button" class="apple-rail-link" data-page="alerts" onclick="navGo('alerts')" title="Alerts"><span class="apple-rail-icon"><i data-lucide="bell"></i></span><span class="apple-rail-label">Alerts</span></button>
+        <button type="button" class="apple-rail-link" data-page="events" onclick="navGo('events')" title="Events"><span class="apple-rail-icon"><i data-lucide="list"></i></span><span class="apple-rail-label">Events</span></button>
+        <button type="button" class="apple-rail-link" data-page="security" onclick="navGo('security')" title="Security"><span class="apple-rail-icon"><i data-lucide="shield"></i></span><span class="apple-rail-label">Security</span></button>
+        <button type="button" class="apple-rail-link" data-page="ask-zyra" onclick="navGo('ask-zyra')" title="Ask Zyra"><span class="apple-rail-icon"><i data-lucide="sparkles"></i></span><span class="apple-rail-label">Ask Zyra</span></button>
+        <button type="button" class="apple-rail-link" onclick="finderRunCopilotQuick('Show all unhealthy VMs')" title="Unhealthy VMs"><span class="apple-rail-icon"><i data-lucide="heart-pulse"></i></span><span class="apple-rail-label">Unhealthy VMs</span></button>
+      </div>
+    </div>
+    <div class="apple-rail-section rail-section-collapsed" data-section="more">
+      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('more')"><span class="apple-rail-section-label">More</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="apple-rail-section-body" data-section-body="more">
+        <button type="button" class="apple-rail-link" data-page="reactor" onclick="navGo('reactor')" title="Reactor Core"><span class="apple-rail-icon"><i data-lucide="atom"></i></span><span class="apple-rail-label">Reactor Core</span></button>
+        <button type="button" class="apple-rail-link" data-page="fleet-constellation" onclick="navGo('fleet-constellation')" title="Fleet Constellation"><span class="apple-rail-icon"><i data-lucide="orbit"></i></span><span class="apple-rail-label">Fleet Constellation</span></button>
+        <button type="button" class="apple-rail-link" data-page="workloads" onclick="navGo('workloads')" title="Workloads"><span class="apple-rail-icon"><i data-lucide="layers"></i></span><span class="apple-rail-label">Workloads</span></button>
+        <button type="button" class="apple-rail-link" data-page="soc" onclick="navGo('soc')" title="SOC"><span class="apple-rail-icon"><i data-lucide="radar"></i></span><span class="apple-rail-label">SOC</span></button>
         <button type="button" class="apple-rail-link" data-page="compliance" onclick="navGo('compliance')" title="Compliance"><span class="apple-rail-icon"><i data-lucide="check-square"></i></span><span class="apple-rail-label">Compliance</span></button>
         <button type="button" class="apple-rail-link" data-page="rbac" onclick="navGo('rbac')" title="RBAC"><span class="apple-rail-icon"><i data-lucide="lock"></i></span><span class="apple-rail-label">RBAC</span></button>
-        <button type="button" class="apple-rail-link" data-page="policies" onclick="navGo('policies')" title="Policies"><span class="apple-rail-icon"><i data-lucide="file-check"></i></span><span class="apple-rail-label">Policies</span></button>
-        <button type="button" class="apple-rail-link" data-page="quotas" onclick="navGo('quotas')" title="Quotas"><span class="apple-rail-icon"><i data-lucide="gauge"></i></span><span class="apple-rail-label">Quotas</span></button>
-        <button type="button" class="apple-rail-link" data-page="audit" onclick="navGo('audit')" title="Audit"><span class="apple-rail-icon"><i data-lucide="file-text"></i></span><span class="apple-rail-label">Audit</span></button>
-        <button type="button" class="apple-rail-link" data-page="soc" onclick="navGo('soc')" title="SOC"><span class="apple-rail-icon"><i data-lucide="radar"></i></span><span class="apple-rail-label">SOC</span></button>
-      </div>
-    </div>
-    <div class="apple-rail-section" data-section="platform">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('platform')"><span class="apple-rail-section-label">Platform</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="platform">
-        <button type="button" class="apple-rail-link" data-page="helm" onclick="navGo('helm')" title="Helm"><span class="apple-rail-icon"><i data-lucide="package"></i></span><span class="apple-rail-label">Helm</span></button>
-        <button type="button" class="apple-rail-link" data-page="operators" onclick="navGo('operators')" title="Operators"><span class="apple-rail-icon"><i data-lucide="settings"></i></span><span class="apple-rail-label">Operators</span></button>
-        <button type="button" class="apple-rail-link" data-page="crds" onclick="navGo('crds')" title="CRDs"><span class="apple-rail-icon"><i data-lucide="folder-tree"></i></span><span class="apple-rail-label">CRDs</span></button>
-        <button type="button" class="apple-rail-link" data-page="blueprint-studio" onclick="navGo('blueprint-studio')" title="Blueprint Studio"><span class="apple-rail-icon"><i data-lucide="layout-dashboard"></i></span><span class="apple-rail-label">Blueprint Studio</span></button>
-        <button type="button" class="apple-rail-link" data-page="custom-resources" onclick="navGo('custom-resources')" title="Custom Resources"><span class="apple-rail-icon"><i data-lucide="box"></i></span><span class="apple-rail-label">Custom Resources</span></button>
-        <button type="button" class="apple-rail-link" data-page="catalog" onclick="navGo('catalog')" title="Catalog"><span class="apple-rail-icon"><i data-lucide="book-open"></i></span><span class="apple-rail-label">Catalog</span></button>
-        <button type="button" class="apple-rail-link" data-page="gitops" onclick="navGo('gitops')" title="GitOps"><span class="apple-rail-icon"><i data-lucide="plug-zap"></i></span><span class="apple-rail-label">GitOps</span></button>
-        <button type="button" class="apple-rail-link" data-page="integrations" onclick="navGo('integrations')" title="Integrations"><span class="apple-rail-icon"><i data-lucide="plug"></i></span><span class="apple-rail-label">Integrations</span></button>
-        <button type="button" class="apple-rail-link" data-page="webhooks" onclick="navGo('webhooks')" title="Webhooks"><span class="apple-rail-icon"><i data-lucide="zap"></i></span><span class="apple-rail-label">Webhooks</span></button>
-        <button type="button" class="apple-rail-link" data-page="tenants" onclick="navGo('tenants')" title="Tenants"><span class="apple-rail-icon"><i data-lucide="users"></i></span><span class="apple-rail-label">Tenants</span></button>
-      </div>
-    </div>
-    <div class="apple-rail-section" data-section="finops">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('finops')"><span class="apple-rail-section-label">FinOps</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="finops">
-        <button type="button" class="apple-rail-link" data-page="costs" onclick="navGo('costs')" title="Costs"><span class="apple-rail-icon"><i data-lucide="dollar-sign"></i></span><span class="apple-rail-label">Costs</span></button>
-        <button type="button" class="apple-rail-link" data-page="forecasting" onclick="navGo('forecasting')" title="Forecasting"><span class="apple-rail-icon"><i data-lucide="line-chart"></i></span><span class="apple-rail-label">Forecasting</span></button>
-      </div>
-    </div>
-    <div class="apple-rail-section" data-section="ops">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('ops')"><span class="apple-rail-section-label">Ops</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="ops">
-        <button type="button" class="apple-rail-link" data-page="chaos" onclick="navGo('chaos')" title="Chaos"><span class="apple-rail-icon"><i data-lucide="flame"></i></span><span class="apple-rail-label">Chaos</span></button>
         <button type="button" class="apple-rail-link" data-page="dr" onclick="navGo('dr')" title="Disaster Recovery"><span class="apple-rail-icon"><i data-lucide="archive"></i></span><span class="apple-rail-label">Disaster Recovery</span></button>
-        <button type="button" class="apple-rail-link" data-page="actions" onclick="navGo('actions')" title="Actions"><span class="apple-rail-icon"><i data-lucide="terminal"></i></span><span class="apple-rail-label">Actions</span></button>
+        <button type="button" class="apple-rail-link" data-page="costs" onclick="navGo('costs')" title="Costs"><span class="apple-rail-icon"><i data-lucide="dollar-sign"></i></span><span class="apple-rail-label">Costs</span></button>
+        <button type="button" class="apple-rail-link" data-page="catalog" onclick="navGo('catalog')" title="Catalog"><span class="apple-rail-icon"><i data-lucide="book-open"></i></span><span class="apple-rail-label">Catalog</span></button>
+        <button type="button" class="apple-rail-link" data-page="integrations" onclick="navGo('integrations')" title="Integrations"><span class="apple-rail-icon"><i data-lucide="plug"></i></span><span class="apple-rail-label">Integrations</span></button>
+        <button type="button" class="apple-rail-link" data-page="gitops" onclick="navGo('gitops')" title="GitOps"><span class="apple-rail-icon"><i data-lucide="git-branch"></i></span><span class="apple-rail-label">GitOps</span></button>
+        <button type="button" class="apple-rail-link" data-page="logs" onclick="navGo('logs')" title="Console logs"><span class="apple-rail-icon"><i data-lucide="terminal"></i></span><span class="apple-rail-label">Logs</span></button>
+        <button type="button" class="apple-rail-link" data-page="chaos" onclick="navGo('chaos')" title="Chaos"><span class="apple-rail-icon"><i data-lucide="flame"></i></span><span class="apple-rail-label">Chaos</span></button>
         <button type="button" class="apple-rail-link" data-page="notifications" onclick="navGo('notifications')" title="Notifications"><span class="apple-rail-icon"><i data-lucide="bell"></i></span><span class="apple-rail-label">Notifications</span></button>
-      </div>
-    </div>
-    <div class="apple-rail-section" data-section="admin">
-      <button type="button" class="apple-rail-section-header" onclick="railToggleSection('admin')"><span class="apple-rail-section-label">Admin</span><svg class="apple-rail-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="apple-rail-section-body" data-section-body="admin">
-        <button type="button" class="apple-rail-link" data-page="stack-health" onclick="navGo('stack-health')" title="Stack Health"><span class="apple-rail-icon"><i data-lucide="activity"></i></span><span class="apple-rail-label">Stack Health</span></button>
-        <button type="button" class="apple-rail-link" data-page="settings" onclick="navGo('settings')" title="Settings"><span class="apple-rail-icon"><i data-lucide="settings"></i></span><span class="apple-rail-label">Settings</span></button>
       </div>
     </div>
   </div>
   <div class="apple-rail-footer">
+    <button type="button" class="apple-rail-link" data-page="settings" onclick="navGo('settings')" title="Settings"><span class="apple-rail-icon"><i data-lucide="settings"></i></span><span class="apple-rail-label">Settings</span></button>
     <button type="button" class="apple-rail-collapse-btn" onclick="railToggleCollapsed()" title="Toggle sidebar (⌘\\)" aria-label="Toggle sidebar">
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      <span class="apple-rail-collapse-label">Collapse</span>
     </button>
   </div>
 </aside>
@@ -4983,7 +5012,7 @@ html.light-theme body.mac-desktop-root::before {
     </div>
     <div class="gitops-drawer-body">
       <p id="gitops-export-sub" style="font-size:.82rem;color:var(--text-dim);margin:0;line-height:1.45"></p>
-      <pre id="gitops-export-body"></pre>
+      <pre id="gitops-export-body" class="veyron-tty"></pre>
     </div>
   </div>
 </div>
@@ -5105,8 +5134,54 @@ html.light-theme body.mac-desktop-root::before {
     <p class="apple-home-footnote">KubeVirt · Kubernetes · Snapshots · DR</p>
   </header>
 
+  <!-- Fabric-style platform capabilities strip -->
+  <section class="apple-band apple-caps-strip" id="veyron-caps-strip" aria-label="Platform capabilities">
+    <div class="apple-band-inner">
+      <div class="apple-caps-grid" id="veyron-caps-grid">
+        <div class="apple-caps-tile" data-cap="kubevirt"><p class="apple-caps-title">KubeVirt</p><p class="apple-caps-pill" data-cap-pill>…</p><p class="apple-caps-detail" data-cap-detail>Hypervisor control plane</p></div>
+        <div class="apple-caps-tile" data-cap="cdi"><p class="apple-caps-title">CDI</p><p class="apple-caps-pill" data-cap-pill>…</p><p class="apple-caps-detail" data-cap-detail>Image import &amp; clone</p></div>
+        <div class="apple-caps-tile" data-cap="snapshots"><p class="apple-caps-title">Snapshots</p><p class="apple-caps-pill" data-cap-pill>…</p><p class="apple-caps-detail" data-cap-detail>VolumeSnapshotClass</p></div>
+        <div class="apple-caps-tile" data-cap="storage"><p class="apple-caps-title">Storage</p><p class="apple-caps-pill" data-cap-pill>…</p><p class="apple-caps-detail" data-cap-detail>Default StorageClass</p></div>
+        <div class="apple-caps-tile" data-cap="migration"><p class="apple-caps-title">Live migration</p><p class="apple-caps-pill" data-cap-pill>…</p><p class="apple-caps-detail" data-cap-detail>Multi-node + RWX</p></div>
+        <div class="apple-caps-tile" data-cap="kvm"><p class="apple-caps-title">KVM nodes</p><p class="apple-caps-pill" data-cap-pill>…</p><p class="apple-caps-detail" data-cap-detail>Hardware virtualization</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Fabric Getting Started — shown when fleet is empty -->
+  <section class="apple-band" id="veyron-getting-started" hidden aria-label="Get started">
+    <div class="apple-band-inner">
+      <div class="veyron-getting-started">
+        <h2 class="veyron-gs-title">Get started</h2>
+        <p class="veyron-gs-lede">Your private cloud is ready. Create a VM or explore the surfaces below.</p>
+        <div class="veyron-gs-grid">
+          <div class="veyron-gs-step">
+            <h3>Create your first VM</h3>
+            <p>Pick a template, size it, and boot — usually under a minute.</p>
+            <button type="button" class="veyron-gs-link" onclick="openCreateModal()">Create VM →</button>
+          </div>
+          <div class="veyron-gs-step">
+            <h3>Start from a template</h3>
+            <p>Skip blank-VM setup with a preconfigured OS catalog.</p>
+            <button type="button" class="veyron-gs-link" onclick="navigate('app-store')">View templates →</button>
+          </div>
+          <div class="veyron-gs-step">
+            <h3>Explore the API</h3>
+            <p>Health, templates, and VM ops are one HTTPS call away.</p>
+            <button type="button" class="veyron-gs-link" onclick="navigate('stack-health')">Open Stack Health →</button>
+          </div>
+          <div class="veyron-gs-step">
+            <h3>Configure access</h3>
+            <p>API keys and roles gate write vs admin before you share the console.</p>
+            <button type="button" class="veyron-gs-link" onclick="navigate('settings')">Open Settings →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Chapter 2: quiet metrics (below the fold) -->
-  <section class="apple-home-vitals" aria-label="Fleet vitals">
+  <section class="apple-home-vitals" aria-label="Fleet vitals" id="veyron-home-vitals">
     <div class="apple-home-vitals-inner" id="iw-home-stats">
       <div class="apple-vital">
         <p class="apple-vital-value iw-home-stat-value tone-ok" id="iw-stat-running" data-stat="running">—</p>
@@ -5270,7 +5345,7 @@ html.light-theme body.mac-desktop-root::before {
   <div id="vm-search-node-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
   </div>
-  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="vm-workspace" data-shell-region="split" data-rail="open">
+  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="vm-workspace" data-shell-region="stack" data-rail="closed">
     <div class="vm-list-pane">
       <span id="vms-freshness" class="vmr-freshness-label"></span>
       <div id="vmr-delta-strip" style="display:none"></div>
@@ -5532,10 +5607,10 @@ html.light-theme body.mac-desktop-root::before {
         <p class="apple-section-lede">Protection coverage across the fleet.</p>
       </div>
       <div class="apple-benefit">
-        <div class="apple-benefit-item"><p class="apple-benefit-value" id="snap-protected-count">—</p><p class="apple-benefit-label">Protected VMs</p></div>
-        <div class="apple-benefit-item"><p class="apple-benefit-value tone-warn" id="snap-unprotected-count">—</p><p class="apple-benefit-label">Unprotected</p></div>
-        <div class="apple-benefit-item"><p class="apple-benefit-value" id="snap-policy-count">—</p><p class="apple-benefit-label">Backup Policies</p></div>
-        <div class="apple-benefit-item"><p class="apple-benefit-value" id="snap-failed-count">—</p><p class="apple-benefit-label">Failed Backups</p></div>
+        <div class="apple-benefit-item"><span class="veyron-ico veyron-ico--nominal" aria-hidden="true">◉</span><p class="apple-benefit-value" id="snap-protected-count">—</p><p class="apple-benefit-label">Protected VMs</p></div>
+        <div class="apple-benefit-item"><span class="veyron-ico veyron-ico--caution" aria-hidden="true">◎</span><p class="apple-benefit-value tone-warn" id="snap-unprotected-count">—</p><p class="apple-benefit-label">Unprotected</p></div>
+        <div class="apple-benefit-item"><span class="veyron-ico veyron-ico--action" aria-hidden="true">▤</span><p class="apple-benefit-value" id="snap-policy-count">—</p><p class="apple-benefit-label">Backup Policies</p></div>
+        <div class="apple-benefit-item"><span class="veyron-ico veyron-ico--critical" aria-hidden="true">✕</span><p class="apple-benefit-value" id="snap-failed-count">—</p><p class="apple-benefit-label">Failed Backups</p></div>
       </div>
     </div>
   </section>
@@ -5582,7 +5657,7 @@ html.light-theme body.mac-desktop-root::before {
     <div class="vmr-roster-filter-sp"></div>
   </div>
   </div>
-  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="node-workspace" data-shell-region="split" data-rail="open">
+  <div class="vm-workspace mac-vm-workspace vmr-roster-body" id="node-workspace" data-shell-region="stack" data-rail="closed">
     <div class="vm-list-pane">
       <div class="vmr-roster-head"><span></span><span>Instance</span><span>Roles</span><span>Capacity</span><span></span></div>
       <div data-shell-scroll class="vm-list-scroll">
@@ -5736,11 +5811,11 @@ html.light-theme body.mac-desktop-root::before {
     <div id="blueprint-summary" class="grid-4 page-glass-stats"></div>
 
   <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Ask Zyra YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
-  <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
+  <div class="apple-blueprint-stack" style="display:flex;flex-direction:column;gap:24px;align-items:stretch">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span><span id="blueprint-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="blueprint-search" class="form-input" placeholder="Filter blueprints…" oninput="filterBlueprintsView(this.value)" style="width:160px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportBlueprintsCsv()" title="Export blueprints as CSV" style="margin-left:8px">&#8595; CSV</button></div>
       <table class="table" id="blueprint-studio-table"><thead><tr><th>Name</th><th>NS</th><th>VMs</th><th>Phase</th></tr></thead><tbody id="blueprint-studio-body"></tbody></table>
     </div>
-    <div class="card glass-card"><div class="card-header"><span class="card-title" id="blueprint-studio-editor-title">Select a blueprint</span>
+    <div class="card glass-card apple-band" id="blueprint-studio-editor-band"><div class="card-header"><span class="card-title" id="blueprint-studio-editor-title">Select a blueprint</span>
       <div style="display:flex;gap:8px">
         <button type="button" class="glass-btn-secondary glass-btn-sm" id="blueprint-studio-copy-btn" disabled onclick="copyToClipboard(document.getElementById('blueprint-studio-spec').value)" title="Copy JSON to clipboard">Copy JSON</button>
         <button type="button" class="glass-btn-primary glass-btn-sm" id="blueprint-studio-save-btn" disabled onclick="blueprintStudioSave()">Save</button>
@@ -5964,10 +6039,10 @@ html.light-theme body.mac-desktop-root::before {
         <p class="apple-section-lede">What this console watches for you.</p>
       </div>
       <div class="apple-shelf apple-shelf-2">
-        <article class="apple-tile"><p class="apple-tile-kicker">Discovery</p><h3 class="apple-tile-title">Stack discovery</h3><p class="apple-tile-lede">Detects Prometheus, Grafana, and Alertmanager across monitoring namespaces.</p></article>
-        <article class="apple-tile"><p class="apple-tile-kicker">Advice</p><h3 class="apple-tile-title">Recommendations</h3><p class="apple-tile-lede">Heuristic checks on KubeVirt VM specs: limits, virtio RNG, eviction strategy.</p></article>
-        <article class="apple-tile"><p class="apple-tile-kicker">Signals</p><h3 class="apple-tile-title">Anomaly detection</h3><p class="apple-tile-lede">Sustained CPU or memory above 85% / 95%. Needs metrics-server.</p></article>
-        <article class="apple-tile"><p class="apple-tile-kicker">More</p><h3 class="apple-tile-title">Also in Veyron</h3><p class="apple-tile-lede">Per-VM charts, Alerts, Notifications, SLO and cost signals.</p></article>
+        <article class="apple-tile"><span class="veyron-ico veyron-ico--info" aria-hidden="true">⌕</span><p class="apple-tile-kicker">Discovery</p><h3 class="apple-tile-title">Stack discovery</h3><p class="apple-tile-lede">Detects Prometheus, Grafana, and Alertmanager across monitoring namespaces.</p></article>
+        <article class="apple-tile"><span class="veyron-ico veyron-ico--action" aria-hidden="true">✦</span><p class="apple-tile-kicker">Advice</p><h3 class="apple-tile-title">Recommendations</h3><p class="apple-tile-lede">Heuristic checks on KubeVirt VM specs: limits, virtio RNG, eviction strategy.</p></article>
+        <article class="apple-tile"><span class="veyron-ico veyron-ico--caution" aria-hidden="true">⚡</span><p class="apple-tile-kicker">Signals</p><h3 class="apple-tile-title">Anomaly detection</h3><p class="apple-tile-lede">Sustained CPU or memory above 85% / 95%. Needs metrics-server.</p></article>
+        <article class="apple-tile"><span class="veyron-ico veyron-ico--nominal" aria-hidden="true">◈</span><p class="apple-tile-kicker">More</p><h3 class="apple-tile-title">Also in Veyron</h3><p class="apple-tile-lede">Per-VM charts, Alerts, Notifications, SLO and cost signals.</p></article>
       </div>
     </div>
   </section>
@@ -6099,7 +6174,7 @@ html.light-theme body.mac-desktop-root::before {
       <input type="text" class="form-input" id="soc-hunt-query" placeholder="KQL or SPL query…" style="flex:1;min-width:200px">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runSocHunt()">Run hunt</button>
     </div>
-    <pre id="soc-hunt-results" style="margin:0 16px 16px;padding:12px;font-size:.76rem;max-height:240px;overflow:auto;background:rgba(0,0,0,.25);border-radius:8px"></pre>
+    <pre id="soc-hunt-results" class="veyron-tty" style="margin:0 16px 16px;padding:12px;font-size:.76rem;max-height:240px;overflow:auto;border-radius:12px"></pre>
   </div>
   <div class="card glass-card">
     <div class="card-header"><span class="card-title">Security event stream</span><span id="soc-events-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="soc-events-search" class="form-input" placeholder="Filter events…" oninput="filterSocEventsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="syncSocEvents()" title="Collect security events from cluster">&#8635; Sync</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSocEventsCsv()" title="Export SOC events as CSV">&#8595; CSV</button></div>
@@ -6403,9 +6478,9 @@ html.light-theme body.mac-desktop-root::before {
   <div id="vmr-foundry-hero" hidden aria-hidden="true"></div>
   <div id="app-store-summary"></div>
   <div id="app-store-cap-banner"></div>
-  <div class="vmr-foundry-layout">
-    <div class="vmr-foundry-rail" id="vmr-foundry-rail"></div>
-    <div>
+  <div class="vmr-foundry-layout apple-foundry-fullbleed">
+    <div class="vmr-foundry-rail apple-foundry-chips" id="vmr-foundry-rail" role="tablist" aria-label="Template categories"></div>
+    <div class="vmr-foundry-main">
       <div class="vmr-foundry-filters" id="vmr-foundry-filters">
         <button type="button" class="vmr-filter-chip active">All</button>
         <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAppStore()" title="Refresh template list" style="margin-left:auto">&#8635; Refresh</button>
@@ -6422,16 +6497,18 @@ html.light-theme body.mac-desktop-root::before {
         <button type="button" class="vmr-filter-chip">AD</button>
         <button type="button" class="vmr-filter-chip">K8s node</button>
       </div>
-      <div class="vmr-card-grid" id="app-store-grid"></div>
+      <div class="vmr-card-grid apple-shelf" id="app-store-grid"></div>
     </div>
   </div>
-  <!-- Template Foundry preview drawer -->
-  <div id="vmr-foundry-drawer" class="vmr-foundry-drawer" style="display:none" aria-hidden="true">
+  <!-- Template Foundry preview sheet (centered, not edge drawer) -->
+  <div id="vmr-foundry-drawer" class="vmr-foundry-drawer apple-sheet-overlay" style="display:none" aria-hidden="true">
+    <div class="apple-sheet-card">
     <div class="vmr-foundry-drawer-header">
       <span class="vmr-foundry-drawer-title" id="vmr-fdrawer-title">Template Preview</span>
       <button type="button" class="mac-inspector-close" onclick="closeFoundryPreview()" aria-label="Close preview">×</button>
     </div>
     <div id="vmr-fdrawer-body" class="vmr-foundry-drawer-body"></div>
+    </div>
   </div>
 </div>
 </div>
@@ -6445,36 +6522,35 @@ html.light-theme body.mac-desktop-root::before {
   </header>
 
   <div id="vmr-console-hero" hidden aria-hidden="true"></div>
-  <div class="vmr-console-hub-layout" id="vmr-console-hub-layout">
-    <aside class="vmr-console-sidebar">
-      <div class="vmr-console-sidebar-head">
-        <span class="vmr-console-sidebar-kicker">Connection</span>
-        <span class="vmr-console-sidebar-hint">Browser-native access</span>
+  <div class="vmr-console-hub-layout apple-console-fullbleed" id="vmr-console-hub-layout">
+    <div class="apple-band apple-band-paper vmr-console-connect-band" id="vmr-console-sidebar">
+      <div class="vmr-console-connect-row">
+        <div class="vmr-console-connect-field">
+          <label class="form-label" for="vmr-console-vm-select">Virtual machine</label>
+          <select class="form-select vmr-console-vm-select" id="vmr-console-vm-select" onchange="onConsoleHubVmSelect()"></select>
+        </div>
+        <div class="vmr-console-protocol-tabs" id="vmr-console-protocol-tabs" role="tablist" aria-label="Console protocol">
+          <button type="button" class="active" data-proto="vnc" role="tab" aria-selected="true" onclick="setConsoleHubProto('vnc')"><span class="vmr-console-tab-icon vmr-console-tab-icon--vnc" aria-hidden="true">▣</span>VNC</button>
+          <button type="button" data-proto="rdp" role="tab" aria-selected="false" onclick="setConsoleHubProto('rdp')"><span class="vmr-console-tab-icon vmr-console-tab-icon--rdp" aria-hidden="true">⧉</span>RDP</button>
+          <button type="button" data-proto="ssh" role="tab" aria-selected="false" onclick="setConsoleHubProto('ssh')"><span class="vmr-console-tab-icon vmr-console-tab-icon--ssh" aria-hidden="true">⌘</span>SSH</button>
+          <button type="button" data-proto="serial" role="tab" aria-selected="false" onclick="setConsoleHubProto('serial')"><span class="vmr-console-tab-icon vmr-console-tab-icon--serial" aria-hidden="true">▤</span>Serial</button>
+        </div>
+        <div id="vmr-console-status" class="vmr-console-status">
+          <span class="vmr-console-status-pill idle">Select a running VM</span>
+        </div>
+        <div class="vmr-console-actions" id="vmr-console-actions"></div>
       </div>
-      <label class="form-label" for="vmr-console-vm-select">Virtual machine</label>
-      <select class="form-select vmr-console-vm-select" id="vmr-console-vm-select" onchange="onConsoleHubVmSelect()"></select>
-      <div class="vmr-console-protocol-tabs" id="vmr-console-protocol-tabs" role="tablist" aria-label="Console protocol">
-        <button type="button" class="active" data-proto="vnc" role="tab" aria-selected="true" onclick="setConsoleHubProto('vnc')"><span class="vmr-console-tab-icon">◫</span>VNC</button>
-        <button type="button" data-proto="rdp" role="tab" aria-selected="false" onclick="setConsoleHubProto('rdp')"><span class="vmr-console-tab-icon">▣</span>RDP</button>
-        <button type="button" data-proto="ssh" role="tab" aria-selected="false" onclick="setConsoleHubProto('ssh')"><span class="vmr-console-tab-icon">⌘</span>SSH</button>
-        <button type="button" data-proto="serial" role="tab" aria-selected="false" onclick="setConsoleHubProto('serial')"><span class="vmr-console-tab-icon">▤</span>Serial</button>
-      </div>
-      <div id="vmr-console-status" class="vmr-console-status">
-        <span class="vmr-console-status-pill idle">Select a running VM</span>
-      </div>
-      <div class="vmr-console-actions" id="vmr-console-actions"></div>
-    </aside>
+    </div>
     <div class="vmr-console-stage" id="vmr-console-stage">
       <div class="vmr-console-surface" id="vmr-console-surface">
         <div class="vmr-console-chrome" id="vmr-console-chrome">
-          <div class="vmr-console-traffic" aria-hidden="true"><span></span><span></span><span></span></div>
           <span class="vmr-console-chrome-title" id="vmr-console-chrome-title">ConsoleHub · No VM selected</span>
           <span class="vmr-console-chrome-badge offline" id="vmr-console-chrome-badge">Offline</span>
         </div>
         <div class="vmr-console-empty" id="vmr-console-empty">
           <div class="vmr-console-empty-inner">
             <div class="vmr-console-empty-glow" aria-hidden="true"></div>
-            <div class="vmr-console-empty-icon" aria-hidden="true">▶</div>
+            <div class="vmr-console-empty-icon veyron-ico veyron-ico--lg veyron-ico--action" aria-hidden="true">▶</div>
             <h3>Console offline</h3>
             <p class="vmr-console-empty-lead">Select a running VM or start a stopped machine to open an inline console.</p>
             <div id="vmr-console-quick-picks" class="vmr-console-quick-picks"></div>
@@ -6999,7 +7075,7 @@ html.light-theme body.mac-desktop-root::before {
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="drApply(false)">Apply export on cluster</button>
       <label style="display:flex;align-items:center;gap:6px;font-size:.85rem"><input type="checkbox" id="dr-restore-snap"> Restore latest snapshot</label>
     </div>
-    <pre id="dr-output" class="dr-output-glass"></pre>
+    <pre id="dr-output" class="dr-output-glass veyron-tty"></pre>
   </div>
 </div>
 </div>
@@ -7118,12 +7194,14 @@ html.light-theme body.mac-desktop-root::before {
     <p class="apple-chapter-lede">macOS Console–style viewer for virt-launcher pod logs — filter, stream, and download.</p>
   </header>
   <div id="logs-cap-banner"></div>
-  <div class="console-app" id="console-app">
-    <aside class="console-sidebar" aria-label="Log sources">
+  <div class="console-app apple-console-fullbleed" id="console-app">
+    <div class="apple-band apple-band-paper console-sources-band">
       <div class="console-sidebar-title">Sources</div>
-      <button type="button" class="console-source active" data-console-source="" onclick="selectConsoleSource(this)">All VMs</button>
-      <div id="console-source-list"></div>
-    </aside>
+      <div class="console-source-chips" id="console-source-chips">
+        <button type="button" class="console-source active" data-console-source="" onclick="selectConsoleSource(this)">All VMs</button>
+        <div id="console-source-list" class="console-source-list-inline"></div>
+      </div>
+    </div>
     <div class="console-main">
       <div class="console-toolbar">
         <input id="logs-search" class="toolbar-input" style="flex:1;min-width:160px" placeholder="Search messages…" onkeydown="if(event.key==='Enter')queryLogs()">
@@ -7144,10 +7222,16 @@ html.light-theme body.mac-desktop-root::before {
         <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchLogs()">Refresh</button>
       </div>
       <div id="logs-stats" style="display:none"></div>
-      <div id="logs-stream" class="console-stream console-tty" role="log" aria-live="polite">
-        <div class="console-empty">Select a source or press Refresh to load virt-launcher logs</div>
+      <div class="zf-terminal console-logs-terminal" id="console-logs-terminal">
+        <div class="zf-terminal-titlebar">
+          <span class="zf-terminal-title">virt-launcher logs</span>
+          <span class="zf-terminal-live" id="console-logs-live">Live</span>
+        </div>
+        <div id="logs-stream" class="zf-terminal-body console-stream console-tty" role="log" aria-live="polite">
+          <div class="console-empty zf-terminal-empty">Select a source or press Refresh to load virt-launcher logs</div>
+        </div>
       </div>
-      <div id="console-detail" class="console-detail" aria-live="polite">Select a message for details</div>
+      <div id="console-detail" class="console-detail apple-band" aria-live="polite">Select a message for details</div>
     </div>
   </div>
 </div>
@@ -7313,7 +7397,11 @@ html.light-theme body.mac-desktop-root::before {
 #page-gallery-wall .gw-btn.gw-primary{background:linear-gradient(135deg,var(--gw-bolt),var(--gw-boltd));border-color:transparent;box-shadow:0 8px 22px -8px var(--gw-bolt)}
 #page-gallery-wall .gw-strip{display:grid;grid-template-columns:auto repeat(4,1fr);gap:14px;margin-bottom:20px;align-items:stretch}
 #page-gallery-wall .gw-bigring{background:linear-gradient(180deg,var(--gw-panel),var(--gw-deep));border:1px solid var(--gw-line);border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:18px;min-width:210px}
-#page-gallery-wall .gw-rc{position:relative;width:86px;height:86px;flex:none}
+#page-gallery-wall .gw-rc{position:relative;width:86px;height:86px;flex:none;overflow:visible}
+#page-gallery-wall .gw-rc canvas#gw-ring,
+#page-gallery-wall #gw-ring{
+  width:86px!important;height:86px!important;max-width:86px;max-height:86px;display:block;
+}
 #page-gallery-wall .gw-rc .gw-v{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
 #page-gallery-wall .gw-rc .gw-v .gw-n{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:700;letter-spacing:-1px;color:var(--gw-ink)}
 #page-gallery-wall .gw-rc .gw-v .gw-l{font-size:8.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gw-ink3);font-weight:700}
@@ -7797,7 +7885,7 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
   <!-- vitality strip -->
   <div class="gw-strip">
     <div class="gw-bigring">
-      <div class="gw-rc"><canvas id="gw-ring" width="172" height="172"></canvas><div class="gw-v"><div class="gw-n" id="gw-ring-n">—</div><div class="gw-l">Fleet</div></div></div>
+      <div class="gw-rc"><canvas id="gw-ring" width="172" height="172" aria-hidden="true"></canvas><div class="gw-v"><div class="gw-n" id="gw-ring-n">—</div><div class="gw-l">Fleet</div></div></div>
       <div class="gw-meta">
         <div class="gw-t">Infrastructure vitality</div>
         <div class="gw-s" id="gw-ring-s"><b>Loading…</b></div>
@@ -8267,171 +8355,41 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
   </div>
 </div>
 
-<!-- API KEY MODAL — Apple Store chapter login (Veyron · h2kvm PremiumLoginShell parity) -->
-<div class="modal-overlay mac-signin-overlay" id="apikey-modal">
-  <div class="login-page login-store-page">
-    <div class="login-store-scroll" id="login-store-scroll">
-      <section class="login-chapter login-chapter-hero" data-tone="sky" aria-label="Veyron">
-        <div class="login-chapter-inner">
-          <div class="login-brand-lockup">
-            <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" class="login-zyvor-mark" aria-label="zyvor.dev" title="zyvor.dev">
-              <span class="zyvor-lockup zyvor-lockup-lg">
-                <svg class="zyvor-mark" viewBox="0 0 18 18" width="36" height="36" focusable="false" aria-hidden="true"><path d="M2 2h14L6.6 16H16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
-                <span class="zyvor-wordmark">zyvor</span>
-                <span class="zyvor-product-muted">Veyron</span>
-              </span>
-            </a>
-          </div>
-          <p class="login-wordmark">Veyron</p>
-          <h1 class="login-hero-title">Private cloud.<br>One console.</h1>
-          <p class="login-tagline">You are signing in to <strong>Veyron</strong> — the KubeVirt control plane for virtual machines, snapshots, networking, and day-2 ops.</p>
-          <div class="login-pill-row" aria-label="Product capabilities">
-            <span class="login-pill" data-tone="sky"><span class="login-pill-dot" aria-hidden="true"></span>Virtual Machines</span>
-            <span class="login-pill" data-tone="emerald"><span class="login-pill-dot" aria-hidden="true"></span>Snapshots &amp; DR</span>
-            <span class="login-pill" data-tone="violet"><span class="login-pill-dot" aria-hidden="true"></span>RDP &amp; Console</span>
-            <span class="login-pill" data-tone="amber"><span class="login-pill-dot" aria-hidden="true"></span>Ask Zyra</span>
-          </div>
-          <div class="login-cta">
-            <button type="button" class="login-cta-primary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Sign in</button>
-            <button type="button" class="login-cta-secondary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Continue</button>
-          </div>
-          <p class="login-chapter-note">KubeVirt · Kubernetes · Cilium · CDI</p>
-        </div>
-      </section>
-      <section class="login-chapter login-chapter-sign-in" id="login-chapter-signin" aria-label="Sign in to Veyron">
-        <div class="login-chapter-inner login-sign-in-inner">
-          <div class="login-brand-lockup login-brand-lockup-compact">
-            <span class="zyvor-lockup zyvor-lockup-md" aria-hidden="true">
-              <svg class="zyvor-mark" viewBox="0 0 18 18" width="28" height="28" focusable="false"><path d="M2 2h14L6.6 16H16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
-              <span class="zyvor-wordmark">zyvor</span>
-              <span class="zyvor-product-muted">Veyron</span>
-            </span>
-          </div>
-          <h2 class="login-form-heading">Sign in to Veyron</h2>
-          <p class="login-form-sub" id="login-form-sub">Continue to your private cloud console.</p>
-          <p class="login-cluster-badge" id="login-cluster-badge" hidden></p>
-          <div class="login-card" id="login-glass-card">
-            <div style="margin-bottom:16px" id="login-mode-header">
-              <span id="login-mode-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6e6e73">Username &amp; password</span>
-              <p class="login-panel-sub" id="login-panel-sub" style="margin:6px 0 0;font-size:.84rem;color:#6e6e73">Sign in with your username and password</p>
-            </div>
-            <div id="apikey-error" role="alert" style="display:none;align-items:flex-start;gap:8px;background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.35);border-radius:12px;padding:10px 12px;margin-bottom:16px;font-size:.8rem;color:#ff3b30;line-height:1.45">
-              <span id="apikey-error-msg">Invalid username or password.</span>
-            </div>
-            <div id="oidc-login-section" style="display:none;margin-bottom:16px">
-              <button type="button" class="login-btn-secondary" style="width:100%;text-align:center" onclick="startOidcLogin()">Sign in with SSO</button>
-              <div class="auth-divider">or sign in below</div>
-            </div>
 
-            <!-- Password mode: step identify -->
-            <div id="login-step-identify" class="login-apple-step">
-              <div class="login-apple-fields" style="margin-bottom:16px" id="login-username-row">
-                <label for="login-username-input">Username</label>
-                <div style="position:relative">
-                  <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  <input type="text" class="login-input" id="login-username-input" placeholder="e.g. jordan" autocomplete="username" autofocus>
-                </div>
-              </div>
-              <button type="button" class="login-btn-primary" id="login-continue-btn" onclick="loginContinueIdentify()">
-                <span>Continue</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-              </button>
-            </div>
-
-            <!-- Password mode: step password -->
-            <div id="login-step-password" class="login-apple-step login-step-hidden">
-              <button type="button" class="login-apple-identity" id="login-identity-chip" onclick="loginBackIdentify()" aria-label="Change account">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-                <span class="truncate" id="login-identity-name"></span>
-              </button>
-              <div class="login-apple-fields" style="margin-bottom:12px">
-                <label for="apikey-input" id="apikey-input-label">Password</label>
-                <div style="position:relative">
-                  <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  <input type="password" class="login-input" id="apikey-input" placeholder="Enter your password" autocomplete="current-password">
-                  <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide" aria-label="Show/hide password">&#128065;</button>
-                </div>
-              </div>
-              <div class="remember-row">
-                <input type="checkbox" id="apikey-remember">
-                <label for="apikey-remember">Remember me on this device</label>
-              </div>
-              <button type="button" class="login-btn-primary" id="login-submit-btn" onclick="submitApiKey()">
-                <span id="login-submit-label">Sign in to Veyron</span>
-              </button>
-              <p class="login-trust-line">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-                Secured with cluster authentication
-              </p>
-            </div>
-
-            <!-- API key mode (single step) -->
-            <div id="login-step-apikey" class="login-apple-step login-step-hidden">
-              <div style="margin-bottom:12px">
-                <label for="apikey-input-apikey" id="apikey-input-label-alt">API key</label>
-                <div style="position:relative">
-                  <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  <input type="password" class="login-input" id="apikey-input-apikey" placeholder="Enter your API key" autocomplete="off">
-                  <button class="eye-btn" type="button" onclick="toggleKeyVisibility('apikey-input-apikey')" title="Show/hide" aria-label="Show/hide API key">&#128065;</button>
-                </div>
-              </div>
-              <div class="remember-row">
-                <input type="checkbox" id="apikey-remember-apikey">
-                <label for="apikey-remember-apikey">Remember me on this device</label>
-              </div>
-              <button type="button" class="login-btn-primary" onclick="submitApiKey()">
-                <span>Connect to Veyron</span>
-              </button>
-            </div>
-
-            <p style="text-align:center;margin:16px 0 0">
-              <button type="button" id="login-mode-toggle" onclick="toggleLoginMode()" style="background:none;border:none;color:#6e6e73;font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0">Use an API key instead</button>
-            </p>
-          </div>
-          <p class="login-hint" id="login-apikey-hint">Use a cluster operator account or API key issued for this Veyron deployment.</p>
-        </div>
-      </section>
-    </div>
-  </div>
-</div>
-
-<!-- vCentre page -->
+<!-- VM Center page (route id: vcentre) -->
 <div class="page section-shell" id="page-vcentre" data-section="compute">
 <div class="space-y animate-fade-in" style="padding:28px">
   <header class="apple-chapter apple-hero-band">
-    <p class="apple-chapter-kicker">vCentre</p>
+    <p class="apple-chapter-kicker">VM Center</p>
     <h1 class="apple-chapter-title">Familiar ops.</h1>
-    <p class="apple-chapter-lede">A vSphere-style surface for inventory and day-2 actions.</p>
+    <p class="apple-chapter-lede">A clean surface for inventory and day-2 actions — start, stop, console, and snapshots.</p>
+    <div class="apple-chapter-cta">
+      <button type="button" class="apple-btn-primary" onclick="openCreateModal()">Create VM</button>
+      <button type="button" class="apple-btn-secondary" onclick="navigate('vms')">Fleet roster</button>
+    </div>
   </header>
 
-  <div class="vc-header">
-    <div>
-      <h1>vCentre</h1>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,0.35);margin-top:4px">active workloads — live metrics</div>
+  <div class="vc-toolbar" role="status">
+    <div class="vc-toolbar-meta">
+      <span class="vc-stat ok" id="vc-running-count">0 running</span>
+      <span class="vc-stat" id="vc-stopped-count">0 stopped</span>
+      <span class="vc-updated" id="vc-last-updated"></span>
     </div>
-    <div class="vc-header-right">
-      <span class="vc-stat ok" id="vc-running-count"></span>
-      <span class="vc-stat" id="vc-stopped-count"></span>
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,0.25)" id="vc-last-updated"></span>
-      <div style="display:flex;align-items:center;gap:6px" id="vc-theme-picker">
-        <button type="button" class="vc-theme-btn active" data-vct="nebula" style="background:linear-gradient(135deg,#00f5ff,#ff00aa)" title="Nebula" onclick="vcSetTheme('nebula')"></button>
-        <button type="button" class="vc-theme-btn" data-vct="matrix" style="background:linear-gradient(135deg,#00ff41,#00cc33)" title="Matrix" onclick="vcSetTheme('matrix')"></button>
-        <button type="button" class="vc-theme-btn" data-vct="arctic" style="background:linear-gradient(135deg,#60a5fa,#a78bfa)" title="Arctic" onclick="vcSetTheme('arctic')"></button>
-      </div>
-      <button type="button" class="vc-btn-primary" onclick="openCreateModal()">&#9889; FORGE VM</button>
-    </div>
+    <button type="button" class="apple-btn-primary" onclick="openCreateModal()">Create VM</button>
   </div>
   <div class="vc-grid" id="vc-grid"><!-- populated by JS --></div>
 </div>
 </div>
 
-<!-- vCentre right detail panel (global overlay) -->
-<div id="vc-detail-panel">
+<!-- VM Center detail panel -->
+<div id="vc-detail-panel" aria-label="VM details" onclick="if(event.target===this)vcCloseDetail()">
+  <div class="apple-vc-sheet" onclick="event.stopPropagation()">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-    <h2 id="vc-dp-name" style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;word-break:break-all;color:#fff;margin:0"></h2>
-    <button type="button" onclick="vcCloseDetail()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;padding:4px">&#x2715;</button>
+    <h2 id="vc-dp-name"></h2>
+    <button type="button" class="vc-dp-close" onclick="vcCloseDetail()" aria-label="Close">&#x2715;</button>
   </div>
   <div id="vc-dp-body"></div>
+  </div>
 </div>
 
 <!-- VNC — macOS Screen Sharing style -->
@@ -8502,7 +8460,19 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
     </div>
     <div class="console-drawer-body serial-body">
       <button type="button" class="mac-console-float-back" onclick="closeSerialModal(true)" title="Return (Esc)">‹ Back</button>
-      <pre id="serial-output"></pre>
+      <div class="zf-terminal serial-zf-terminal">
+        <div class="zf-terminal-titlebar">
+          <span class="zf-traffic zf-traffic-close" aria-hidden="true"></span>
+          <span class="zf-traffic zf-traffic-min" aria-hidden="true"></span>
+          <span class="zf-traffic zf-traffic-full" aria-hidden="true"></span>
+          <span class="zf-terminal-title" id="serial-zf-title">Serial</span>
+          <span class="zf-terminal-live" id="serial-zf-live" hidden>Live</span>
+          <button type="button" class="zf-terminal-trailing" onclick="reconnectSerial()">Reconnect</button>
+        </div>
+        <div class="zf-terminal-body">
+          <pre id="serial-output"></pre>
+        </div>
+      </div>
     </div>
     <div class="serial-drawer-footer">
       <input id="serial-input" type="text" autocomplete="off" spellcheck="false" class="serial-input" placeholder="Type a line, press Enter to send (adds newline)" onkeydown="if(event.key==='Enter'){event.preventDefault();sendSerialLine();}">
@@ -8512,6 +8482,19 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
   </div>
 </div>
 <button type="button" class="mac-console-minimized" id="serial-minimized-pill" onclick="restoreMacConsole('serial')" aria-label="Restore serial console">▤ <span id="serial-minimized-label">Serial</span></button>
+
+<!-- Fabric-style undo grace bar -->
+<div id="veyron-undo-bar" class="veyron-undo-bar" hidden role="status" aria-live="polite">
+  <div class="veyron-undo-inner">
+    <span class="veyron-undo-label" id="veyron-undo-label">Action pending…</span>
+    <button type="button" class="veyron-undo-btn" id="veyron-undo-btn" onclick="veyronUndoPending()">↩ Undo</button>
+    <svg class="veyron-undo-ring" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" class="veyron-undo-ring-bg"/>
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" class="veyron-undo-ring-fg" id="veyron-undo-ring-fg"
+        stroke-dasharray="62.83" stroke-dashoffset="0" stroke-linecap="round"/>
+    </svg>
+  </div>
+</div>
 
 <!-- Bootstrap KubeVirt + CDI + virtctl (run on admin workstation; not from browser) -->
 <script id="platform-install-raw" type="text/plain">
@@ -8595,7 +8578,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
         <a class="glass-btn-secondary glass-btn-sm" style="text-decoration:none;display:inline-flex;align-items:center" href="https://kubevirt.io/quickstart_cloud/" target="_blank" rel="noopener noreferrer">KubeVirt quickstart</a>
         <a class="glass-btn-secondary glass-btn-sm" style="text-decoration:none;display:inline-flex;align-items:center" href="https://github.com/kubevirt/containerized-data-importer" target="_blank" rel="noopener noreferrer">CDI</a>
       </div>
-      <pre id="platform-install-pre" class="form-input" style="font-size:.76rem;max-height:min(52vh,560px);overflow:auto;white-space:pre-wrap;background:rgba(0,0,0,.28);padding:14px;border-radius:12px;margin:0;font-family:var(--font-mono);line-height:1.4"></pre>
+      <pre id="platform-install-pre" class="form-input veyron-tty" style="font-size:.76rem;max-height:min(52vh,560px);overflow:auto;white-space:pre-wrap;padding:14px;border-radius:12px;margin:0;line-height:1.4"></pre>
     </div>
     <div class="modal-footer">
       <button type="button" class="glass-btn-secondary" onclick="closePlatformInstallModal()">Close</button>
@@ -8679,7 +8662,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VEYRON_DASH_REV = '20260902b';
+window.__VEYRON_DASH_REV = '20260907n';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
 var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#3b82f6' };
 (function () {
@@ -8754,7 +8737,8 @@ function parseStoredTheme(raw) {
 }
 const NAV_PAGE_LABELS = {
   dashboard: 'Mission Control',
-  vms: 'Fleet Command',
+  vms: 'Virtual machines',
+  vcentre: 'VM Center',
   'fleet-constellation': 'Fleet Constellation',
   'reactor': 'Reactor Core',
   'gallery-wall': 'Gallery Wall',
@@ -8893,6 +8877,7 @@ let lastEvents = [];
 const PAGE_META = {
   dashboard: {kicker:'VEYRON ///', title:'Mission Control', tags:['Live cluster','KubeVirt control','Realtime refresh']},
   vms: {kicker:'VEYRON ///', title:'Fleet Command', tags:['Start stop resize','SSH and VNC','Bulk actions']},
+  vcentre: {kicker:'VM Center', title:'Familiar ops.', tags:['Inventory','Day-2 actions','Console']},
   'console-hub': {kicker:'VEYRON ///', title:'ConsoleHub', tags:['VNC','Serial','RDP','SSH']},
   'stack-health': {kicker:'VEYRON ///', title:'Stack Health', tags:['KubeVirt','CDI','Create VM']},
   monitoring: {kicker:'VEYRON ///', title:'Stack health, anomalies, and recommendations', tags:['Metrics aware','Prometheus hints','Namespace scoped']},
@@ -9406,6 +9391,8 @@ function navigate(page, opts) {
   document.body.dataset.page = page;
   document.body.dataset.section = pageEl.dataset.section || page;
   syncTopNavActive(page);
+  if (typeof updateChapterBar === 'function') updateChapterBar(page);
+  if (typeof megaClose === 'function') megaClose();
   upsertDesktopTab(page);
   renderDesktopTabs();
   updatePageContext(page);
@@ -10528,12 +10515,34 @@ function loadPageData(page, opts) {
 
   function _gwRing(pct, rgb) {
     const c=document.getElementById('gw-ring'); if(!c) return;
-    const x=c.getContext('2d'), w=c.width, h=c.height, cx=w/2, cy=h/2, r=w/2-14;
-    x.clearRect(0,0,w,h); x.lineWidth=11; x.lineCap='round';
-    x.beginPath(); x.arc(cx,cy,r,0,7); x.strokeStyle='rgba(255,255,255,.06)'; x.stroke();
-    const a=-Math.PI/2; x.beginPath(); x.arc(cx,cy,r,a,a+(pct/100)*Math.PI*2);
-    const g=x.createLinearGradient(0,0,w,h); g.addColorStop(0,`rgb(${rgb})`); g.addColorStop(1,rgb==='61,220,143'?'#7aa2ff':'#ffb648');
-    x.strokeStyle=g; x.shadowColor=`rgb(${rgb})`; x.shadowBlur=12; x.stroke(); x.shadowBlur=0;
+    // Bitmap = CSS box × devicePixelRatio (canvas attrs alone render at 172px and spill over the strip)
+    const css = 86;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const px = Math.round(css * dpr);
+    if (c.width !== px || c.height !== px) { c.width = px; c.height = px; }
+    const x = c.getContext('2d');
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const w = css, h = css, cx = w / 2, cy = h / 2, r = w / 2 - 8;
+    x.clearRect(0, 0, w, h);
+    x.lineWidth = 7; x.lineCap = 'round';
+    // Track: readable on both Light paper and Dark panels
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark'
+      || document.documentElement.getAttribute('data-theme') === 'tahoe'
+      || document.documentElement.getAttribute('data-theme') === 'holo';
+    x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2);
+    x.strokeStyle = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
+    x.stroke();
+    const a = -Math.PI / 2;
+    x.beginPath(); x.arc(cx, cy, r, a, a + (pct / 100) * Math.PI * 2);
+    const g = x.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, `rgb(${rgb})`);
+    g.addColorStop(1, rgb === '61,220,143' ? '#34c759' : '#ff9f0a');
+    x.strokeStyle = g;
+    // Soft Apple-style ring — no neon bloom that spills into neighboring copy
+    x.shadowColor = dark ? `rgba(${rgb},.45)` : `rgba(${rgb},.22)`;
+    x.shadowBlur = dark ? 6 : 3;
+    x.stroke();
+    x.shadowBlur = 0;
   }
 
   function _gwConsole(c, id, kind, scale) {
@@ -10575,8 +10584,17 @@ function loadPageData(page, opts) {
       if(_gwFilter==='attn') return _gwMode==='bad'&&(v.failed||v.warn);
       return true;
     });
-    if(_gwFilter==='attn'&&_gwMode==='ok') { wall.innerHTML='<div style="padding:40px;color:var(--gw-ink3);text-align:center;font-size:13px">No VMs need attention right now.</div>'; }
-    else {
+    if(_gwFilter==='attn'&&_gwMode==='ok') {
+      wall.innerHTML='<div class="gw-wall-empty">' +
+        '<div class="veyron-ico veyron-ico--lg veyron-ico--nominal" aria-hidden="true">✓</div>' +
+        '<p>No VMs need attention right now.</p></div>';
+    } else if(!items.length) {
+      wall.innerHTML='<div class="gw-wall-empty">' +
+        '<div class="veyron-ico veyron-ico--lg veyron-ico--action" aria-hidden="true">▦</div>' +
+        '<p><strong>No machines on the wall yet</strong></p>' +
+        '<p class="gw-wall-empty-lead">Create a VM to see live consoles and health tiles here.</p>' +
+        '<button type="button" class="apple-btn-primary" onclick="openCreateModal()">+ Create VM</button></div>';
+    } else {
       items.forEach((v,i)=>{
         const incident=_gwMode==='bad'&&(v.failed||v.warn);
         const isCrit=_gwMode==='bad'&&v.failed;
@@ -10726,16 +10744,16 @@ function loadPageData(page, opts) {
   };
 })();
 
-/* ── vCentre page ────────────────────────────────────────────── */
+/* ── VM Center page (route: vcentre) ──────────────────────────── */
 (function() {
   var _vcInited = false;
   var _vcInterval = null;
 
   function vcBadge(vm) {
     var s = (vm.status || '').toLowerCase();
-    if (s === 'running') return '<span class="vc-badge-run"><span class="vc-dot"></span>RUNNING</span>';
-    if (s === 'failed' || s === 'error') return '<span class="vc-badge-crit">&#8855; ' + esc(vm.status.toUpperCase()) + '</span>';
-    return '<span class="vc-badge-stop">' + esc((vm.status || 'stopped').toUpperCase()) + '</span>';
+    if (s === 'running') return '<span class="vc-badge-run"><span class="vc-dot"></span>Running</span>';
+    if (s === 'failed' || s === 'error') return '<span class="vc-badge-crit">' + esc(vm.status) + '</span>';
+    return '<span class="vc-badge-stop">' + esc(vm.status || 'Stopped') + '</span>';
   }
 
   function vcBar(cls, pct) {
@@ -10754,15 +10772,15 @@ function loadPageData(page, opts) {
       : '<button type="button" class="vc-btn-start" onclick="event.stopPropagation();vmAction(' + jsArgs(ns,vm.name,'start') + ',event)">Start</button>';
     return '<div class="' + cardCls + '" role="button" tabindex="0" onclick="vcOpenDetail(' + jsArgs(ns,vm.name) + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')vcOpenDetail(' + jsArgs(ns,vm.name) + ')">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">' + vcBadge(vm) +
-      '<button type="button" class="vc-btn-ghost" style="padding:7px 14px;font-size:11px" onclick="event.stopPropagation();vcOpenDetail(' + jsArgs(ns,vm.name) + ')">Details</button></div>' +
-      '<div style="margin-bottom:4px;font-family:\'Space Grotesk\',sans-serif;font-size:16px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(vm.name) + '</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:20px">' + esc(vm.ip||'—') + ' · ' + esc(vm.cpu||'?') + ' · ' + esc(vm.memory||'?') + '</div>' +
-      (running ? '<div style="margin-bottom:14px">' +
-        '<div style="display:flex;justify-content:space-between;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px"><span>CPU</span><span style="color:var(--vc-cyan)">' + cpu + '%</span></div>' + vcBar('vc-bar-cpu', cpu) +
-        '<div style="display:flex;justify-content:space-between;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:rgba(255,255,255,0.5);margin-top:10px;margin-bottom:4px"><span>Memory</span><span style="color:var(--vc-magenta)">' + mem + '%</span></div>' + vcBar('vc-bar-mem', mem) +
-      '</div>' : '<div style="height:60px"></div>') +
-      '<div style="display:flex;gap:10px">' + actionBtn +
-      '<button type="button" class="vc-btn-ghost" style="flex:1" onclick="event.stopPropagation();openConnectModal(' + jsArgs(ns,vm.name) + ')">Console</button></div></div>';
+      '<button type="button" class="vc-btn-ghost" style="flex:0;padding:6px 12px" onclick="event.stopPropagation();vcOpenDetail(' + jsArgs(ns,vm.name) + ')">Details</button></div>' +
+      '<div class="vc-card-name">' + esc(vm.name) + '</div>' +
+      '<div class="vc-card-meta">' + esc(vm.ip||'—') + ' · ' + esc(vm.cpu||'?') + ' · ' + esc(vm.memory||'?') + '</div>' +
+      (running ? '<div style="margin-bottom:4px">' +
+        '<div class="vc-metric-row"><span>CPU</span><span>' + cpu + '%</span></div>' + vcBar('vc-bar-cpu', cpu) +
+        '<div class="vc-metric-row" style="margin-top:10px"><span>Memory</span><span>' + mem + '%</span></div>' + vcBar('vc-bar-mem', mem) +
+      '</div>' : '<div style="height:48px"></div>') +
+      '<div class="vc-card-actions">' + actionBtn +
+      '<button type="button" class="vc-btn-ghost" onclick="event.stopPropagation();openConnectModal(' + jsArgs(ns,vm.name) + ')">Console</button></div></div>';
   }
 
   function vcRender() {
@@ -10770,17 +10788,17 @@ function loadPageData(page, opts) {
     if (!grid || document.body.dataset.page !== 'vcentre') return;
     var vms = window.vmData || [];
     if (!vms.length) {
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:rgba(255,255,255,0.3)">No VMs found. Check namespace filter or API connectivity.</div>';
+      grid.innerHTML = '<div class="vc-empty">No VMs yet. Create one to get started, or check the namespace filter.</div>';
     } else {
       grid.innerHTML = vms.map(vcCard).join('');
     }
     var runN = vms.filter(function(v){ return (v.status||'').toLowerCase()==='running'; }).length;
     var runEl = document.getElementById('vc-running-count');
     var stopEl = document.getElementById('vc-stopped-count');
-    if (runEl) runEl.textContent = '● ' + runN + ' running';
-    if (stopEl) stopEl.textContent = '○ ' + (vms.length - runN) + ' stopped';
+    if (runEl) runEl.textContent = runN + ' running';
+    if (stopEl) stopEl.textContent = (vms.length - runN) + ' stopped';
     var upd = document.getElementById('vc-last-updated');
-    if (upd) upd.textContent = 'updated just now';
+    if (upd) upd.textContent = 'Updated just now';
   }
   window.vcRender = vcRender;
 
@@ -10795,22 +10813,20 @@ function loadPageData(page, opts) {
     document.getElementById('vc-dp-name').textContent = vm.name;
     document.getElementById('vc-dp-body').innerHTML =
       '<div style="margin-bottom:20px">' + vcBadge(vm) + '</div>' +
-      '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;margin-bottom:20px">' +
+      '<div class="vc-dp-facts">' +
         [['IP', vm.ip||'—'],['vCPU', vm.cpu||'—'],['Memory', vm.memory||'—'],['Node', vm.node||'—'],['Namespace', ns]].map(function(r){
-          return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;color:#fff">' +
-            '<span style="color:rgba(255,255,255,.45)">' + r[0] + '</span>' +
-            '<span style="font-family:\'IBM Plex Mono\',monospace">' + esc(String(r[1])) + '</span></div>';
+          return '<div class="vc-dp-row"><span>' + r[0] + '</span><span>' + esc(String(r[1])) + '</span></div>';
         }).join('') + '</div>' +
       (running ? '<div style="margin-bottom:20px">' +
-        '<div style="display:flex;justify-content:space-between;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:6px"><span>CPU</span><span style="color:var(--vc-cyan)">' + cpu + '%</span></div>' + vcBar('vc-bar-cpu', cpu) +
-        '<div style="display:flex;justify-content:space-between;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:rgba(255,255,255,0.5);margin-top:12px;margin-bottom:6px"><span>Memory</span><span style="color:var(--vc-magenta)">' + mem + '%</span></div>' + vcBar('vc-bar-mem', mem) +
+        '<div class="vc-metric-row"><span>CPU</span><span>' + cpu + '%</span></div>' + vcBar('vc-bar-cpu', cpu) +
+        '<div class="vc-metric-row" style="margin-top:12px"><span>Memory</span><span>' + mem + '%</span></div>' + vcBar('vc-bar-mem', mem) +
       '</div>' : '') +
-      '<div style="display:flex;flex-direction:column;gap:10px">' +
-        '<button type="button" class="vc-btn-primary" style="text-align:center" onclick="openConnectModal(' + jsArgs(ns,name) + ')">&#8984; Open Console</button>' +
-        (running ? '<button type="button" class="vc-btn-stop" onclick="vmAction(' + jsArgs(ns,name,'stop') + ',event)">&#9632; Stop VM</button>'
-                 : '<button type="button" class="vc-btn-start" onclick="vmAction(' + jsArgs(ns,name,'start') + ',event)">&#9654; Start VM</button>') +
-        '<button type="button" class="vc-btn-ghost" onclick="openSnapModalFor(' + jsArgs(ns,name) + ')">&#8863; Snapshot</button>' +
-        '<button type="button" class="vc-btn-ghost" onclick="navigateToVmCapsule(' + jsArgs(ns,name) + ')">&#8862; Full Capsule &rarr;</button>' +
+      '<div class="vc-dp-actions">' +
+        '<button type="button" class="vc-btn-primary" onclick="openConnectModal(' + jsArgs(ns,name) + ')">Open Console</button>' +
+        (running ? '<button type="button" class="vc-btn-stop" onclick="vmAction(' + jsArgs(ns,name,'stop') + ',event)">Stop VM</button>'
+                 : '<button type="button" class="vc-btn-start" onclick="vmAction(' + jsArgs(ns,name,'start') + ',event)">Start VM</button>') +
+        '<button type="button" class="vc-btn-ghost" onclick="openSnapModalFor(' + jsArgs(ns,name) + ')">Snapshot</button>' +
+        '<button type="button" class="vc-btn-ghost" onclick="navigateToVmCapsule(' + jsArgs(ns,name) + ')">Full Capsule →</button>' +
       '</div>';
     panel.classList.add('open');
   };
@@ -10820,21 +10836,10 @@ function loadPageData(page, opts) {
     if (panel) panel.classList.remove('open');
   };
 
-  window.vcSetTheme = function(name) {
-    var pg = document.getElementById('page-vcentre');
-    if (!pg) return;
-    if (name === 'nebula') pg.removeAttribute('data-vc-theme');
-    else pg.setAttribute('data-vc-theme', name);
-    localStorage.setItem('veyron_vc_theme', name);
-    document.querySelectorAll('.vc-theme-btn').forEach(function(b){
-      b.classList.toggle('active', b.dataset.vct === name);
-    });
-  };
+  window.vcSetTheme = function() { /* neon theme picker retired — Apple themes only */ };
 
   window.initVCentre = function() {
     if (document.body.dataset.page !== 'vcentre') { vcCloseDetail(); return; }
-    vcSetTheme(localStorage.getItem('veyron_vc_theme') || 'nebula');
-    // Always clear and restart so repeated navigate('vcentre') doesn't stack intervals
     if (_vcInterval) { clearInterval(_vcInterval); _vcInterval = null; }
     _vcInited = true;
     _vcInterval = setInterval(function() {
@@ -11105,6 +11110,8 @@ async function handleOidcCallback() {
     sessionStorage.removeItem('veyron_api_key');
     window.history.replaceState({}, '', window.location.pathname);
     document.getElementById('apikey-modal').classList.remove('open');
+    document.documentElement.classList.remove('veyron-signin');
+    document.body.classList.remove('veyron-signin');
     updateAuthSessionUI();
     return true;
   } catch (e) {
@@ -11261,7 +11268,11 @@ function requireApiKey() {
       if (rem) rem.checked = true;
     }
     applyLoginModeUI();
-    document.getElementById('apikey-modal').classList.add('open');
+    document.documentElement.classList.add('veyron-signin');
+    document.body.classList.add('veyron-signin');
+    const modal = document.getElementById('apikey-modal');
+    if (modal && modal.parentElement !== document.body) document.body.appendChild(modal);
+    if (modal) modal.classList.add('open');
     try {
       syncThemeSwatches(parseStoredTheme(localStorage.getItem(THEME_KEY)));
     } catch (e) {
@@ -11367,6 +11378,8 @@ function _applyKeyAccepted(key) {
     btn.disabled = false; btn.style.opacity = '';
   });
   document.getElementById('apikey-modal').classList.remove('open');
+  document.documentElement.classList.remove('veyron-signin');
+  document.body.classList.remove('veyron-signin');
   updateAuthSessionUI();
   if (apiKeyResolve) { apiKeyResolve(key); apiKeyResolve = null; }
   refresh();
@@ -14642,10 +14655,10 @@ function railInit() {
   rail.setAttribute('data-collapsed', collapsed);
   document.body.classList.toggle('rail-collapsed', collapsed === '1');
   const state = railLoadSectionState();
+  if (!Object.prototype.hasOwnProperty.call(state, 'more')) state.more = true;
   Object.keys(state).forEach(function (name) {
-    if (!state[name]) return;
     const sec = document.querySelector('.apple-rail-section[data-section="' + name + '"]');
-    if (sec) sec.classList.add('rail-section-collapsed');
+    if (sec) sec.classList.toggle('rail-section-collapsed', !!state[name]);
   });
 }
 
@@ -14672,6 +14685,214 @@ function syncTopNavActive(page) {
   });
 }
 
+/* ── Machina mega menu + chapter bar ─────────────────────────── */
+var MEGA_MENUS = {
+  compute: {
+    title: 'Browse Compute',
+    items: [
+      { label: 'Virtual machines', hint: 'Fleet roster and day-2 actions', page: 'vms' },
+      { label: 'Hosts', hint: 'Cluster nodes and capacity', page: 'nodes' },
+      { label: 'Images & ISOs', hint: 'Golden images and media', page: 'images' },
+      { label: 'VM Center', hint: 'Inventory cards and console', page: 'vcentre' },
+      { label: 'ConsoleHub', hint: 'VNC, RDP, SSH, serial', page: 'console-hub' },
+      { label: 'Template Foundry', hint: 'Catalog and one-click create', page: 'app-store' }
+    ]
+  },
+  platform: {
+    title: 'Browse Platform',
+    items: [
+      { label: 'Settings', hint: 'Appearance and API keys', page: 'settings' },
+      { label: 'Integrations', hint: 'Optional backend wiring', page: 'integrations' },
+      { label: 'Catalog', hint: 'VMTemplate and VMProfile sync', page: 'catalog' },
+      { label: 'Stack Health', hint: 'KubeVirt and CDI readiness', page: 'stack-health' },
+      { label: 'GitOps', hint: 'Sync and drift', page: 'gitops' },
+      { label: 'Helm', hint: 'Release inventory', page: 'helm' }
+    ]
+  },
+  security: {
+    title: 'Browse Security',
+    items: [
+      { label: 'Security Center', hint: 'Posture and hardening', page: 'security' },
+      { label: 'SOC', hint: 'Detections and hunts', page: 'soc' },
+      { label: 'RBAC', hint: 'Roles and bindings', page: 'rbac' },
+      { label: 'Compliance', hint: 'Framework findings', page: 'compliance' },
+      { label: 'Audit', hint: 'Event-derived accountability', page: 'audit' },
+      { label: 'Network Policies', hint: 'Ingress and egress rules', page: 'network-policies' }
+    ]
+  },
+  resilience: {
+    title: 'Browse Resilience',
+    items: [
+      { label: 'Snapshots', hint: 'Point-in-time protection', page: 'snapshots' },
+      { label: 'Backups', hint: 'Coverage and restore', page: 'backups' },
+      { label: 'Disaster recovery', hint: 'Export and failover', page: 'dr' },
+      { label: 'Storage', hint: 'PVCs and capacity', page: 'storage' }
+    ]
+  },
+  observe: {
+    title: 'Browse Observe',
+    items: [
+      { label: 'Monitoring', hint: 'Stack health and signals', page: 'monitoring' },
+      { label: 'Events', hint: 'Operational context', page: 'events' },
+      { label: 'Alerts', hint: 'Severity and triage', page: 'alerts' },
+      { label: 'Topology', hint: 'Placement and edges', page: 'topology' },
+      { label: 'Metrics', hint: 'Capacity totals', page: 'metrics' },
+      { label: 'Network Intel', hint: 'PacketWolf flows', page: 'network-intel' }
+    ]
+  }
+};
+
+var CHAPTER_LINKS = {
+  dashboard: [
+    { label: 'Overview', page: 'dashboard' },
+    { label: 'Guests', page: 'vms' },
+    { label: 'Hosts', page: 'nodes' },
+    { label: 'Storage', page: 'storage' },
+    { label: 'Networking', page: 'cilium' },
+    { label: 'Activity', page: 'events' }
+  ],
+  vms: [
+    { label: 'Roster', page: 'vms' },
+    { label: 'VM Center', page: 'vcentre' },
+    { label: 'Console', page: 'console-hub' },
+    { label: 'Templates', page: 'app-store' },
+    { label: 'Snapshots', page: 'snapshots' }
+  ],
+  'console-hub': [
+    { label: 'Console', page: 'console-hub' },
+    { label: 'Fleet', page: 'vms' },
+    { label: 'Events', page: 'events' }
+  ],
+  default: [
+    { label: 'Mission Control', page: 'dashboard' },
+    { label: 'Virtual machines', page: 'vms' },
+    { label: 'Monitoring', page: 'stack-health' },
+    { label: 'Settings', page: 'settings' }
+  ]
+};
+
+var _megaOpen = null;
+var _megaTimer = null;
+
+function megaCancelLeave() {
+  clearTimeout(_megaTimer);
+}
+
+function megaEnter(id) {
+  clearTimeout(_megaTimer);
+  megaOpen(id);
+}
+
+function megaLeave() {
+  clearTimeout(_megaTimer);
+  _megaTimer = setTimeout(megaClose, 140);
+}
+
+function megaToggle(id) {
+  if (_megaOpen === id) megaClose();
+  else megaOpen(id);
+}
+
+function megaOpen(id) {
+  var menu = MEGA_MENUS[id];
+  var panel = document.getElementById('apple-mega');
+  var list = document.getElementById('apple-mega-list');
+  var title = document.getElementById('apple-mega-title');
+  var scrim = document.getElementById('apple-mega-scrim');
+  if (!menu || !panel || !list) return;
+  _megaOpen = id;
+  if (title) title.textContent = menu.title;
+  list.innerHTML = menu.items.map(function (it) {
+    return '<button type="button" class="apple-mega-link" onclick="megaGo(\'' + it.page + '\')"><b>' +
+      String(it.label).replace(/</g, '&lt;') + '</b><small>' +
+      String(it.hint || '').replace(/</g, '&lt;') + '</small></button>';
+  }).join('');
+  panel.hidden = false;
+  if (scrim) scrim.hidden = false;
+  document.querySelectorAll('.apple-topnav-item[data-mega]').forEach(function (btn) {
+    btn.setAttribute('aria-expanded', btn.dataset.mega === id ? 'true' : 'false');
+  });
+}
+
+function megaClose() {
+  clearTimeout(_megaTimer);
+  _megaOpen = null;
+  var panel = document.getElementById('apple-mega');
+  var scrim = document.getElementById('apple-mega-scrim');
+  if (panel) panel.hidden = true;
+  if (scrim) scrim.hidden = true;
+  document.querySelectorAll('.apple-topnav-item[data-mega]').forEach(function (btn) {
+    btn.setAttribute('aria-expanded', 'false');
+  });
+}
+
+function megaGo(page) {
+  megaClose();
+  navGo(page);
+}
+
+function updateChapterBar(page) {
+  page = page || (typeof currentPage !== 'undefined' ? currentPage : 'dashboard');
+  var titleEl = document.getElementById('apple-chapter-title');
+  var subEl = document.getElementById('apple-chapter-sub');
+  var linksEl = document.getElementById('apple-chapter-links');
+  var cta = document.getElementById('apple-chapter-cta');
+  var label = (typeof navPageLabel === 'function' ? navPageLabel(page) : page) || page;
+  if (page === 'dashboard') label = 'Mission Control';
+  if (page === 'vms') label = 'Virtual machines';
+  if (titleEl) {
+    var sub = document.getElementById('apple-chapter-sub');
+    var subText = sub ? sub.textContent : 'Private cloud';
+    titleEl.innerHTML = '';
+    titleEl.appendChild(document.createTextNode(label + ' '));
+    var span = document.createElement('span');
+    span.id = 'apple-chapter-sub';
+    span.textContent = subText;
+    titleEl.appendChild(span);
+    subEl = span;
+  }
+  if (subEl) {
+    var ns = (typeof currentNamespace !== 'undefined' && currentNamespace) ? currentNamespace : 'all';
+    try {
+      var sel = document.getElementById('ns-selector');
+      if (sel && sel.value) ns = sel.value;
+    } catch (eNs) {}
+    subEl.textContent = ns === 'all' ? 'Private cloud' : String(ns);
+  }
+  var links = CHAPTER_LINKS[page] || CHAPTER_LINKS.default;
+  if (linksEl) {
+    linksEl.innerHTML = links.map(function (l) {
+      var cur = l.page === page ? ' aria-current="page"' : '';
+      return '<button type="button"' + cur + ' onclick="navGo(\'' + l.page + '\')">' +
+        String(l.label).replace(/</g, '&lt;') + '</button>';
+    }).join('');
+  }
+  if (cta) {
+    if (page === 'console-hub') {
+      cta.textContent = 'Open Fleet';
+      cta.onclick = function () { navGo('vms'); };
+    } else if (page === 'snapshots' || page === 'backups') {
+      cta.textContent = 'Create snapshot';
+      cta.onclick = function () { if (typeof openSnapModalPick === 'function') openSnapModalPick(); else navGo('snapshots'); };
+    } else {
+      cta.textContent = 'Create VM';
+      cta.onclick = function () { openCreateModal(); };
+    }
+  }
+}
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') megaClose();
+});
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () {
+    updateChapterBar(typeof currentPage !== 'undefined' ? currentPage : 'dashboard');
+  });
+} else {
+  setTimeout(function () { updateChapterBar(typeof currentPage !== 'undefined' ? currentPage : 'dashboard'); }, 0);
+}
+
 function filterRailNav(query) {
   const q = (query || '').trim().toLowerCase();
   document.querySelectorAll('.apple-rail-section[data-section]').forEach(function (sec) {
@@ -14693,6 +14914,21 @@ else railInit();
 function updateFinderBadges() {
   const vmBadge = document.getElementById('rail-badge-vms') || document.getElementById('finder-badge-vms');
   if (vmBadge) vmBadge.textContent = (vmData && vmData.length > 0) ? String(vmData.length) : '';
+  const tasks = document.getElementById('apple-topnav-tasks');
+  if (tasks) {
+    var n = 0;
+    try {
+      var badge = document.getElementById('mac-nc-badge');
+      if (badge && badge.style.display !== 'none') n = parseInt(badge.textContent, 10) || 0;
+    } catch (e) {}
+    if (n > 0) {
+      tasks.hidden = false;
+      tasks.innerHTML = '<i></i>' + n + (n === 1 ? ' alert' : ' alerts');
+    } else {
+      tasks.hidden = true;
+      tasks.innerHTML = '';
+    }
+  }
 }
 
 function vmSkeletonHtml(n) {
@@ -14725,7 +14961,7 @@ function renderComingSoon(containerId, title, description, icon) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = '<div class="coming-soon-state vmr-empty-state">' +
-    '<div class="cs-icon-wrap">' + (icon || '◫') + '</div>' +
+    '<div class="cs-icon-wrap veyron-ico veyron-ico--lg veyron-ico--action">' + (icon || '◫') + '</div>' +
     '<h2>' + esc(title) + '</h2>' +
     '<p>' + esc(description) + '</p>' +
     '<span class="coming-soon-tag">Coming soon</span>' +
@@ -14906,7 +15142,7 @@ function toggleFinderSection(name) {
 
 function filterFinderNav(query) {
   filterRailNav(query);
-  const input = document.getElementById('apple-rail-filter-input');
+  const input = document.getElementById('apple-topnav-search-input') || document.getElementById('apple-rail-filter-input');
   if (input && input.value !== (query || '')) input.value = query || '';
 }
 
@@ -15278,7 +15514,7 @@ function vmCard(vm, showActions) {
     'ondragover="vmCardDragOver(event)" ondragleave="vmCardDragLeave(event)" ondrop="vmCardDrop(event,' + jsArgs(ns, vm.name) + ')" ' +
     'style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' +
     onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' oncontextmenu="showVmGlassCtxMenu(event,' + jsArgs(ns, vm.name) + ')" onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()">' +
-    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + vmGenomeStrip(vm) + idSig(vm.status) + vmMomentum(ns, vm.name) + vmLastActionChip(ns, vm.name) + '</div>' +
+    '<div class="vm-card-top"><div class="vm-card-icon" data-os="' + esc(family) + '">' + icon + '</div>' + retireBadge + vmGenomeStrip(vm) + idSig(vm.status) + vmMomentum(ns, vm.name) + vmLastActionChip(ns, vm.name) + '</div>' +
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + highlightMatch(vm.name, activeSearchQuery()) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmGpuBadge(vm) + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
@@ -15299,7 +15535,7 @@ function vmListEmptyHtml(filteredEmpty) {
   const noFleet = !vmData || vmData.length === 0;
   if (noFleet) {
     let html = '<div class="empty-state vmr-empty-panel">' +
-      '<div class="icon-wrap">&#9781;</div>' +
+      '<div class="icon-wrap veyron-ico veyron-ico--lg veyron-ico--action">&#9781;</div>' +
       '<p style="font-size:1rem;font-weight:600;color:var(--text-bright);margin:0 0 8px">No virtual machines yet</p>' +
       '<p class="sub" style="margin:0">Create your first VM from a template to get started.</p>' +
       '<div class="empty-state-actions">' +
@@ -15310,7 +15546,7 @@ function vmListEmptyHtml(filteredEmpty) {
     return html + '</div></div>';
   }
   return '<div class="empty-state vmr-empty-panel">' +
-    '<div class="icon-wrap">&#128269;</div>' +
+    '<div class="icon-wrap veyron-ico veyron-ico--lg veyron-ico--info">&#128269;</div>' +
     '<p style="margin:0 0 6px;font-weight:600;color:var(--text-bright)">No VMs match your filter</p>' +
     '<p class="sub" style="margin:0">Try clearing the search or changing the status filter.</p>' +
     '<div class="empty-state-actions">' +
@@ -15395,18 +15631,137 @@ async function vmAction(ns, name, action, ev) {
 async function vmDelete(ns, name) {
   openGlassConfirm({
     title: 'Delete VM',
-    body: 'Delete VM "' + name + '"? This cannot be undone.',
+    body: 'Delete VM "' + name + '"? You will have a few seconds to undo.',
     confirmLabel: 'Delete',
     destructive: true,
-    onConfirm: async function() {
-      try {
-        await apiJson('/api/v1/vms/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), {method:'DELETE'});
-        toast(name+' deleted', 'success');
-        logVmAction(ns, name, 'delete', 'ok');
-        setTimeout(refresh, 1500);
-      } catch(e) { logVmAction(ns, name, 'delete', 'error'); await translateApiError(e.message, 'vm_delete'); }
+    onConfirm: function() {
+      veyronRunUndoable(
+        'Deleting ' + name + '…',
+        async function() {
+          try {
+            await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), { method: 'DELETE' });
+            toast(name + ' deleted', 'success');
+            logVmAction(ns, name, 'delete', 'ok');
+            setTimeout(refresh, 1500);
+          } catch (e) {
+            logVmAction(ns, name, 'delete', 'error');
+            await translateApiError(e.message, 'vm_delete');
+          }
+        }
+      );
     }
   });
+}
+
+/* ── Fabric-style undo grace period ── */
+var _veyronUndo = { timer: null, tick: null, commit: null, secondsLeft: 0, total: 5 };
+
+function veyronClearUndoTimers() {
+  if (_veyronUndo.timer) clearTimeout(_veyronUndo.timer);
+  if (_veyronUndo.tick) clearInterval(_veyronUndo.tick);
+  _veyronUndo.timer = null;
+  _veyronUndo.tick = null;
+}
+
+function veyronFlushUndo() {
+  veyronClearUndoTimers();
+  var commit = _veyronUndo.commit;
+  _veyronUndo.commit = null;
+  var bar = document.getElementById('veyron-undo-bar');
+  if (bar) bar.hidden = true;
+  if (commit) void commit();
+}
+
+function veyronUndoPending() {
+  veyronClearUndoTimers();
+  _veyronUndo.commit = null;
+  var bar = document.getElementById('veyron-undo-bar');
+  if (bar) bar.hidden = true;
+  toast('Delete cancelled', 'info');
+}
+
+function veyronRunUndoable(label, commit, seconds) {
+  var secs = typeof seconds === 'number' ? seconds : 5;
+  if (_veyronUndo.commit) veyronFlushUndo();
+  _veyronUndo.commit = commit;
+  _veyronUndo.secondsLeft = secs;
+  _veyronUndo.total = secs;
+  var bar = document.getElementById('veyron-undo-bar');
+  var labelEl = document.getElementById('veyron-undo-label');
+  var ring = document.getElementById('veyron-undo-ring-fg');
+  if (labelEl) labelEl.textContent = label;
+  if (bar) bar.hidden = false;
+  var circumference = 2 * Math.PI * 10;
+  function paintRing() {
+    if (!ring) return;
+    var progress = _veyronUndo.secondsLeft / _veyronUndo.total;
+    ring.style.strokeDasharray = String(circumference);
+    ring.style.strokeDashoffset = String(circumference * (1 - progress));
+  }
+  paintRing();
+  _veyronUndo.tick = setInterval(function() {
+    _veyronUndo.secondsLeft -= 1;
+    paintRing();
+    if (_veyronUndo.secondsLeft <= 0) veyronFlushUndo();
+  }, 1000);
+}
+
+/* ── Getting Started + capabilities strip ── */
+function updateGettingStartedVisibility() {
+  var page = document.getElementById('page-dashboard');
+  var panel = document.getElementById('veyron-getting-started');
+  if (!page || !panel) return;
+  var vms = typeof vmData !== 'undefined' && Array.isArray(vmData) ? vmData : (window.lastVMs || []);
+  var loaded = !!window._vmsLoaded;
+  var empty = loaded && vms.length === 0;
+  panel.hidden = !empty;
+  page.classList.toggle('veyron-fleet-empty', empty);
+}
+
+function _capsSetTile(key, phase, detail) {
+  var tile = document.querySelector('#veyron-caps-grid [data-cap="' + key + '"]');
+  if (!tile) return;
+  var pill = tile.querySelector('[data-cap-pill]');
+  var det = tile.querySelector('[data-cap-detail]');
+  if (pill) {
+    pill.textContent = phase.label;
+    pill.className = 'apple-caps-pill ' + phase.cls;
+  }
+  if (det && detail) det.textContent = detail;
+}
+
+function _capsPhase(ok, warn) {
+  if (ok) return { label: 'Live', cls: 'is-live' };
+  if (warn) return { label: 'Limited', cls: 'is-warn' };
+  return { label: 'Off', cls: 'is-off' };
+}
+
+async function loadCapabilitiesStrip() {
+  var grid = document.getElementById('veyron-caps-grid');
+  if (!grid) return;
+  try {
+    var data = await apiJson('/api/v1/platform/capabilities');
+    var day2 = data.day2_ops || {};
+    var comps = data.components || {};
+    var storage = data.storage || {};
+    var nodes = data.nodes || {};
+    var kv = data.kubevirt_version || '';
+    _capsSetTile('kubevirt', _capsPhase(!!kv), kv ? ('v' + String(kv).replace(/^v/, '')) : 'Not detected');
+    _capsSetTile('cdi', _capsPhase(!!comps.cdi), comps.cdi ? 'Import & clone ready' : 'CDI missing');
+    _capsSetTile('snapshots', _capsPhase(!!day2.snapshots), day2.snapshots ? 'VolumeSnapshotClass ready' : 'No snapshot class');
+    var sc = storage.default_storage_class || '';
+    var scOk = !!sc && !storage.default_storage_class_node_local;
+    var scWarn = !!sc && !!storage.default_storage_class_node_local;
+    _capsSetTile('storage', _capsPhase(scOk, scWarn), sc ? (sc + (scWarn ? ' · node-local' : '')) : 'No default StorageClass');
+    _capsSetTile('migration', _capsPhase(!!day2.live_migration), day2.live_migration ? 'Multi-node + RWX' : 'Needs ≥2 nodes + RWX');
+    var kvm = nodes.kvm_capable || 0;
+    var ncount = nodes.count || 0;
+    _capsSetTile('kvm', _capsPhase(kvm > 0, ncount > 0 && kvm === 0), kvm + '/' + ncount + ' nodes with KVM');
+  } catch (e) {
+    ['kubevirt', 'cdi', 'snapshots', 'storage', 'migration', 'kvm'].forEach(function(k) {
+      _capsSetTile(k, { label: '—', cls: 'is-off' }, 'Could not load capabilities');
+    });
+  }
 }
 
 // ── SSH / remote shell hints (guest IP from VMI; user is a best-effort guess) ──
@@ -16502,8 +16857,10 @@ function renderFoundryVmr() {
       '<button type="button" class="vmr-foundry-rail-item active" data-osfamily="" onclick="filterFoundryByFamily(this,\'\')">' +
       '<span>All</span><span class="vmr-foundry-rail-count">' + count + '</span></button>' +
       families.map(function(f) {
+        const key = (f || 'other').toLowerCase();
         return '<button type="button" class="vmr-foundry-rail-item" data-osfamily="' + esc(f) + '" onclick="filterFoundryByFamily(this,' + jsArgs(f) + ')">' +
-          '<span>' + (osIcon[f.toLowerCase()] || '◫') + ' ' + esc(f) + '</span><span class="vmr-foundry-rail-count">' + (counts[f] || 0) + '</span></button>';
+          '<span class="vmr-foundry-os-chip" data-os="' + esc(key) + '">' + (osIcon[key] || '◫') + '</span> ' +
+          '<span>' + esc(f) + '</span><span class="vmr-foundry-rail-count">' + (counts[f] || 0) + '</span></button>';
       }).join('');
   } else if (rail) {
     rail.innerHTML = '';
@@ -17082,7 +17439,7 @@ function pinnedVmCard(vm) {
       : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ',event)') + '>Start</button>');
   const tintP = osFamilyTint(family);
   return '<div class="vm-card"' + (tintP ? ' style="background-image:linear-gradient(' + tintP + ',' + tintP + ')"' : '') + '>' +
-    '<div class="vm-card-top"><div class="vm-card-icon">' + osFamilyIcon(family) + '</div>' + idSig(vm.status || 'Unknown') + '</div>' +
+    '<div class="vm-card-top"><div class="vm-card-icon" data-os="' + esc(family) + '">' + osFamilyIcon(family) + '</div>' + idSig(vm.status || 'Unknown') + '</div>' +
     '<div class="vm-card-name">' + esc(name) + '</div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + '</div>' +
@@ -17832,7 +18189,7 @@ function renderCopilotResultInto(el, data, meta) {
     html += '</ul></details>';
   }
   if (data.yaml_preview) {
-    html += '<pre id="copilot-yaml-preview" style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.75rem;overflow:auto;max-height:240px">' + esc(data.yaml_preview) + '</pre>';
+    html += '<pre id="copilot-yaml-preview" class="veyron-tty" style="margin-top:12px;padding:12px;border-radius:12px;font-size:.75rem;overflow:auto;max-height:240px">' + esc(data.yaml_preview) + '</pre>';
     html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
     html += '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('copyToClipboard(document.getElementById(' + jsArgs('copilot-yaml-preview') + ').textContent)') + '>Copy YAML</button>';
     html += '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('copilotSaveBlueprint()') + '>Save as Blueprint</button>';
@@ -18051,14 +18408,35 @@ function renderSpotlightEmptyState() {
 }
 
 function openSpotlight() {
+  openSpotlightFromTopnav(true);
+}
+
+function openSpotlightFromTopnav(clearQuery) {
   const modal = document.getElementById('spotlight-modal');
   const input = document.getElementById('spotlight-input');
+  const top = document.getElementById('apple-topnav-search-input');
   if (!modal || !input) return;
   modal.classList.add('open');
-  input.value = '';
+  const seed = (!clearQuery && top && top.value) ? top.value.trim() : '';
+  input.value = seed;
   spotlightActiveIndex = 0;
-  renderSpotlightEmptyState();
-  setTimeout(() => input.focus(), 50);
+  if (seed) {
+    if (typeof runSpotlightSearch === 'function') runSpotlightSearch(seed);
+    else renderSpotlightEmptyState();
+  } else {
+    renderSpotlightEmptyState();
+  }
+  setTimeout(function () { input.focus(); }, 50);
+}
+
+function topnavSearchKey(ev) {
+  if (ev.key === 'Escape') {
+    ev.target.blur();
+    return;
+  }
+  if (ev.key === 'Enter' || ev.key === '/' || (ev.key.length === 1 && !ev.metaKey && !ev.ctrlKey && !ev.altKey)) {
+    openSpotlightFromTopnav();
+  }
 }
 
 function closeSpotlight() {
@@ -18643,7 +19021,7 @@ async function fetchVMs(opts) {
       const dashVmList = document.getElementById('dash-vm-list');
       if (dashVmList) {
         dashVmList.innerHTML = vmData.length === 0
-          ? '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p><button class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="openCreateModal()">+ Create a VM</button></div>'
+          ? '<div class="empty-state"><div class="icon veyron-ico veyron-ico--lg veyron-ico--action">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p><button class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="openCreateModal()">+ Create a VM</button></div>'
           : vmData.slice(0, 10).map(v => dashVmRow(v)).join('');
       }
     }
@@ -18703,6 +19081,13 @@ async function fetchVMs(opts) {
     updateFinderBadges();
     window._vmsRefreshedAt = Date.now();
     updateVmFreshness();
+    try { if (typeof updateGettingStartedVisibility === 'function') updateGettingStartedVisibility(); } catch (e) {}
+    try {
+      if (!window._capsStripLoaded && typeof loadCapabilitiesStrip === 'function') {
+        window._capsStripLoaded = true;
+        loadCapabilitiesStrip();
+      }
+    } catch (e) {}
   } catch (e) {
     console.error('fetchVMs', e);
     const freshnessEl = document.getElementById('vms-freshness');
@@ -18716,8 +19101,9 @@ async function fetchVMs(opts) {
     window._vmsLoaded = true;
     if (currentPage === 'vms') {
       const el = document.getElementById('vm-full-list');
-      if (el) el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>' + esc(msg) + '</p><p class="sub">Check API pod logs · workspace · KubeVirt RBAC</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchVMs()">&#8635; Retry</button></div>';
+      if (el) el.innerHTML = '<div class="empty-state"><div class="icon veyron-ico veyron-ico--lg veyron-ico--caution">&#9881;</div><p>' + esc(msg) + '</p><p class="sub">Check API pod logs · workspace · KubeVirt RBAC</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchVMs()">&#8635; Retry</button></div>';
     }
+    try { if (typeof updateGettingStartedVisibility === 'function') updateGettingStartedVisibility(); } catch (e2) {}
   }
 }
 
@@ -18732,7 +19118,7 @@ async function fetchEvents(full, opts) {
     updateEventTicker(events);
     const renderEvents = (items, target) => {
       if (!target) return;
-      if (items.length===0) { target.innerHTML='<div class="empty-state"><div class="icon">&#9889;</div><p>No signals intercepted</p></div>'; return; }
+      if (items.length===0) { target.innerHTML='<div class="empty-state"><div class="icon veyron-ico veyron-ico--lg veyron-ico--info">&#9889;</div><p>No signals intercepted</p></div>'; return; }
       target.innerHTML = items.map(e => {
         const isWarn = e.type==='Warning';
         const cls = isWarn?'warn':'info';
@@ -18879,7 +19265,7 @@ async function fetchSnapshots(opts) {
       }
     }
     if (snaps.length === 0) {
-      el.innerHTML = '<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot for a VM — the name is filled from the VM you last opened on the VMs page, or pick from the list.</p><p style="margin-top:14px"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create snapshot</button></p></div>';
+      el.innerHTML = '<div class="empty-state"><div class="icon veyron-ico veyron-ico--lg veyron-ico--action">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot for a VM — the name is filled from the VM you last opened on the VMs page, or pick from the list.</p><p style="margin-top:14px"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create snapshot</button></p></div>';
       return;
     }
     renderSnapList('');
@@ -20896,7 +21282,7 @@ function syncVmSelectionUi() {
   document.body.classList.toggle('vm-focus-active', !!selectedVmKey);
   document.body.setAttribute('data-focus', selectedVmKey ? 'on' : 'off');
   var split = document.getElementById('vm-workspace');
-  if (split) split.setAttribute('data-rail', 'open');
+  if (split) split.setAttribute('data-rail', selectedVmKey ? 'open' : 'closed');
   const ws = document.getElementById('vm-workspace');
   if (ws) ws.classList.toggle('mac-inspector-open', !!selectedVmKey);
   const inspTitle = document.getElementById('vm-inspector-title');
@@ -23394,7 +23780,7 @@ async function fetchNodes(opts) {
     window.lastNodes = nodes;
     const el = document.getElementById('node-list');
     if (nodes.length === 0) {
-      if (el) el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No nodes found</p></div>';
+      if (el) el.innerHTML = '<div class="empty-state"><div class="icon veyron-ico veyron-ico--lg veyron-ico--info">&#9881;</div><p>No nodes found</p></div>';
       if (typeof renderNodesDeviationBar === 'function') renderNodesDeviationBar();
       return;
     }
@@ -23484,6 +23870,12 @@ function syncNodeSelectionUi() {
     el.classList.toggle('selected', el.getAttribute('data-node-name') === selectedNodeName);
   });
   positionNodeFocusPaneInline();
+  var ws = document.getElementById('node-workspace');
+  if (ws) {
+    ws.classList.toggle('mac-inspector-open', !!selectedNodeName);
+    ws.setAttribute('data-rail', selectedNodeName ? 'open' : 'closed');
+  }
+  document.body.classList.toggle('node-focus-active', !!selectedNodeName);
 }
 
 function renderNodeRail(node, pods) {
@@ -23676,7 +24068,7 @@ async function fetchPods(opts) {
     const el = document.getElementById('pod-list');
     if (pods.length === 0) {
       if (summaryEl) summaryEl.innerHTML = renderGlassStatPills([{ label: 'Pods', value: 0 }]);
-      el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No pods found</p></div>';
+      el.innerHTML = '<div class="empty-state"><div class="icon veyron-ico veyron-ico--lg veyron-ico--info">&#9881;</div><p>No pods found</p></div>';
       return;
     }
     const running = pods.filter(p => p.phase === 'Running').length;
@@ -23972,6 +24364,10 @@ function setMacConsoleStatus(kind, text, tone) {
   if (!el) return;
   el.textContent = text;
   el.className = 'mac-console-status' + (tone === 'connected' ? ' connected' : tone === 'error' ? ' error' : '');
+  if (kind === 'serial') {
+    const live = document.getElementById('serial-zf-live');
+    if (live) live.hidden = tone !== 'connected';
+  }
 }
 
 function macConsoleNavigateBack() {
@@ -24241,6 +24637,8 @@ function openSerialConsole(ns, name) {
   macConsoleMinimized = null;
   document.getElementById('serial-minimized-pill')?.classList.remove('visible');
   document.getElementById('serial-title').textContent = name + ' · ' + ns;
+  const zfTitle = document.getElementById('serial-zf-title');
+  if (zfTitle) zfTitle.textContent = name + ' · serial';
   const minLabel = document.getElementById('serial-minimized-label');
   if (minLabel) minLabel.textContent = 'Serial · ' + name;
   updateMacConsoleBackButton('serial');
@@ -25332,6 +25730,7 @@ window.addEventListener('load', async () => {
   fetchNamespaces();
   fetchClusterContext();
   fetchIntegrations();
+  try { if (typeof loadCapabilitiesStrip === 'function') loadCapabilitiesStrip(); } catch (e) {}
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
   if (freshnessTimer) clearInterval(freshnessTimer);
   freshnessTimer = setInterval(updateVmFreshness, 15000);
@@ -26300,21 +26699,30 @@ async function triggerGitOpsSync() {
   }
 }
 
-async function resizePvc(ns, name, currentSize) {
-  const newSize = window.prompt('Resize PVC "' + name + '" (current: ' + (currentSize || 'unknown') + ')\nEnter new size (e.g. 20Gi, 100Gi):', currentSize || '');
-  if (!newSize || newSize.trim() === (currentSize || '').trim()) return;
-  try {
-    const data = await apiJson('/api/v1/storage/pvcs/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ new_size: newSize.trim() })
-    });
-    if (data.error) { toast('Resize failed: ' + data.error, 'error'); return; }
-    toast('PVC "' + name + '" resize requested → ' + newSize.trim(), 'success');
-    setTimeout(fetchStorage, 1500);
-  } catch(e) {
-    toast('Resize failed: ' + (e.message || String(e)), 'error');
-  }
+function resizePvc(ns, name, currentSize) {
+  openGlassPrompt({
+    title: 'Resize PVC "' + name + '"',
+    submitLabel: 'Resize',
+    fields: [
+      { id: 'size', label: 'New size (current: ' + (currentSize || 'unknown') + ', e.g. 20Gi, 100Gi)', value: currentSize || '', required: true }
+    ],
+    onSubmit: async function (vals) {
+      const newSize = (vals.size || '').trim();
+      if (!newSize || newSize === (currentSize || '').trim()) return;
+      try {
+        const data = await apiJson('/api/v1/storage/pvcs/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_size: newSize })
+        });
+        if (data.error) { toast('Resize failed: ' + data.error, 'error'); return; }
+        toast('PVC "' + name + '" resize requested → ' + newSize, 'success');
+        setTimeout(fetchStorage, 1500);
+      } catch(e) {
+        toast('Resize failed: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 let _azHistory = [];
@@ -26891,6 +27299,14 @@ function openGlassPrompt(opts) {
       control = '<textarea class="form-input" data-field-id="' + esc(f.id) + '" rows="' + (f.rows || 3) + '" placeholder="' + esc(f.placeholder || '') + '"' + req + '>' + esc(f.value || '') + '</textarea>';
     } else if (f.type === 'number') {
       control = '<input type="number" class="form-input" data-field-id="' + esc(f.id) + '" value="' + esc(String(f.value != null ? f.value : '')) + '" placeholder="' + esc(f.placeholder || '') + '"' + req + '>';
+    } else if (f.type === 'select') {
+      const opts = (f.options || []).map(function(o) {
+        const val = (o && typeof o === 'object') ? o.value : o;
+        const label = (o && typeof o === 'object') ? o.label : o;
+        const sel = (String(val) === String(f.value)) ? ' selected' : '';
+        return '<option value="' + esc(String(val)) + '"' + sel + '>' + esc(String(label)) + '</option>';
+      }).join('');
+      control = '<select class="form-input form-select" data-field-id="' + esc(f.id) + '"' + req + '>' + opts + '</select>';
     } else {
       control = '<input type="text" class="form-input" data-field-id="' + esc(f.id) + '" value="' + esc(f.value || '') + '" placeholder="' + esc(f.placeholder || '') + '"' + req + '>';
     }
@@ -27442,6 +27858,8 @@ function toggleConsoleStream() {
   _consoleStreaming = !_consoleStreaming;
   var btn = document.getElementById('console-stream-btn');
   if (btn) btn.textContent = _consoleStreaming ? 'Pause' : 'Start';
+  var live = document.getElementById('console-logs-live');
+  if (live) live.hidden = !_consoleStreaming;
   if (_consoleStreaming) scheduleConsolePoll();
   else if (_consolePollTimer) { clearTimeout(_consolePollTimer); _consolePollTimer = null; }
 }
@@ -28361,11 +28779,20 @@ async function openClusterSwitcher() {
     return;
   }
   const current = sel.value;
-  const choice = window.prompt('Switch cluster context to one of:\n' + names.join('\n'), current);
-  if (!choice || choice === current) return;
-  if (names.indexOf(choice) === -1) { toast('Unknown cluster context: ' + choice, 'error'); return; }
-  sel.value = choice;
-  await activateClusterContext();
+  openGlassPrompt({
+    title: 'Switch cluster context',
+    submitLabel: 'Switch',
+    fields: [
+      { id: 'choice', label: 'Cluster context', type: 'select', value: current, options: names }
+    ],
+    onSubmit: async function (vals) {
+      const choice = vals.choice;
+      if (!choice || choice === current) return;
+      if (names.indexOf(choice) === -1) { toast('Unknown cluster context: ' + choice, 'error'); return; }
+      sel.value = choice;
+      await activateClusterContext();
+    }
+  });
 }
 
 async function fetchIncidents() {
@@ -28478,31 +28905,49 @@ async function fetchBudgets() {
 }
 
 function createBudgetDialog() {
-  const name = window.prompt('Budget name:');
-  if (!name || !name.trim()) return;
-  const ns = window.prompt('Namespace:', 'default');
-  if (!ns) return;
-  const limit = parseFloat(window.prompt('Monthly limit (USD):', '100'));
-  if (isNaN(limit) || limit <= 0) { toast('Invalid limit', 'error'); return; }
-  apiJson('/api/v1/costs/budgets', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: name.trim(), namespace: ns.trim(), monthly_limit: limit, alert_threshold_percent: 80 })
-  }).then(function() {
-    toast('Budget created', 'success');
-    fetchBudgets();
-  }).catch(function(e) { toast(e.message || String(e), 'error'); });
+  openGlassPrompt({
+    title: 'Create budget',
+    submitLabel: 'Create',
+    fields: [
+      { id: 'name', label: 'Budget name', required: true },
+      { id: 'ns', label: 'Namespace', value: 'default', required: true },
+      { id: 'limit', label: 'Monthly limit (USD)', type: 'number', value: '100', required: true }
+    ],
+    onSubmit: function (vals) {
+      const name = (vals.name || '').trim();
+      const ns = (vals.ns || '').trim();
+      const limit = parseFloat(vals.limit);
+      if (!name) return;
+      if (!ns) return;
+      if (isNaN(limit) || limit <= 0) { toast('Invalid limit', 'error'); return; }
+      apiJson('/api/v1/costs/budgets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, namespace: ns, monthly_limit: limit, alert_threshold_percent: 80 })
+      }).then(function() {
+        toast('Budget created', 'success');
+        fetchBudgets();
+      }).catch(function(e) { toast(e.message || String(e), 'error'); });
+    }
+  });
 }
 
-async function deleteBudget(name) {
-  if (!window.confirm('Delete budget "' + name + '"?')) return;
-  try {
-    await apiJson('/api/v1/costs/budgets/' + encodeURIComponent(name), { method: 'DELETE' });
-    toast('Budget deleted', 'success');
-    fetchBudgets();
-  } catch (e) {
-    toast('Delete failed: ' + (e.message || String(e)), 'error');
-  }
+function deleteBudget(name) {
+  openGlassConfirm({
+    title: 'Delete budget',
+    body: 'Delete budget "' + name + '"?',
+    confirmLabel: 'Delete',
+    destructive: true,
+    onConfirm: async function () {
+      try {
+        await apiJson('/api/v1/costs/budgets/' + encodeURIComponent(name), { method: 'DELETE' });
+        toast('Budget deleted', 'success');
+        fetchBudgets();
+      } catch (e) {
+        toast('Delete failed: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 // ── Disks ─────────────────────────────────────────────────────────────────────
@@ -28542,20 +28987,29 @@ function filterDisksView(query) {
     : '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching disks</td></tr>';
 }
 
-async function expandDisk(diskName, currentSize) {
-  const newSize = window.prompt('Expand disk "' + diskName + '" (current: ' + (currentSize || '?') + ')\nEnter new size (e.g. 20Gi, 200Gi):', currentSize || '');
-  if (!newSize || newSize.trim() === (currentSize || '').trim()) return;
-  try {
-    await apiJson('/api/v1/disks/expand', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ disk_name: diskName, new_size: newSize.trim() })
-    });
-    toast('Disk "' + diskName + '" expanding → ' + newSize.trim(), 'success');
-    setTimeout(fetchDisks, 2000);
-  } catch (e) {
-    toast('Expand failed: ' + (e.message || String(e)), 'error');
-  }
+function expandDisk(diskName, currentSize) {
+  openGlassPrompt({
+    title: 'Expand disk "' + diskName + '"',
+    submitLabel: 'Expand',
+    fields: [
+      { id: 'size', label: 'New size (current: ' + (currentSize || '?') + ', e.g. 20Gi, 200Gi)', value: currentSize || '', required: true }
+    ],
+    onSubmit: async function (vals) {
+      const newSize = (vals.size || '').trim();
+      if (!newSize || newSize === (currentSize || '').trim()) return;
+      try {
+        await apiJson('/api/v1/disks/expand', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ disk_name: diskName, new_size: newSize })
+        });
+        toast('Disk "' + diskName + '" expanding → ' + newSize, 'success');
+        setTimeout(fetchDisks, 2000);
+      } catch (e) {
+        toast('Expand failed: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 // ── Logs query ───────────────────────────────────────────────────────────────
@@ -28643,15 +29097,22 @@ async function fetchMigrations() {
   }
 }
 
-async function cancelMigration(id) {
-  if (!window.confirm('Cancel migration "' + id + '"?')) return;
-  try {
-    await apiJson('/api/v1/migrations/' + encodeURIComponent(id), { method: 'DELETE' });
-    toast('Migration cancelled', 'success');
-    fetchMigrations();
-  } catch (e) {
-    toast('Cancel failed: ' + (e.message || String(e)), 'error');
-  }
+function cancelMigration(id) {
+  openGlassConfirm({
+    title: 'Cancel migration',
+    body: 'Cancel migration "' + id + '"?',
+    confirmLabel: 'Cancel migration',
+    destructive: true,
+    onConfirm: async function () {
+      try {
+        await apiJson('/api/v1/migrations/' + encodeURIComponent(id), { method: 'DELETE' });
+        toast('Migration cancelled', 'success');
+        fetchMigrations();
+      } catch (e) {
+        toast('Cancel failed: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 // ── Tenants ──────────────────────────────────────────────────────────────────
@@ -28707,35 +29168,56 @@ function filterTenantsView(query) {
 }
 
 function createTenantDialog() {
-  const id = window.prompt('Tenant ID (alphanumeric + dashes):');
-  if (!id || !id.trim()) return;
-  if (!/^[a-zA-Z0-9-]+$/.test(id.trim())) { toast('ID must be alphanumeric with dashes only', 'error'); return; }
-  const name = window.prompt('Display name:');
-  if (!name) return;
-  const email = window.prompt('Owner email:');
-  if (!email) return;
-  const cpuQ = window.prompt('CPU quota (cores):', '20') || '20';
-  const memQ = window.prompt('Memory quota:', '64Gi') || '64Gi';
-  const maxVms = parseInt(window.prompt('Max VMs:', '50') || '50', 10) || 50;
-  apiJson('/api/v1/tenants', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: id.trim(), display_name: name, owner_email: email, cpu_quota: cpuQ, memory_quota: memQ, max_vms: maxVms, bootstrap_namespace: true })
-  }).then(function() {
-    toast('Tenant "' + id.trim() + '" created', 'success');
-    fetchTenants();
-  }).catch(function(e) { toast(e.message || String(e), 'error'); });
+  openGlassPrompt({
+    title: 'Create tenant',
+    submitLabel: 'Create',
+    fields: [
+      { id: 'id', label: 'Tenant ID (alphanumeric + dashes)', required: true },
+      { id: 'name', label: 'Display name', required: true },
+      { id: 'email', label: 'Owner email', required: true },
+      { id: 'cpuQ', label: 'CPU quota (cores)', value: '20' },
+      { id: 'memQ', label: 'Memory quota', value: '64Gi' },
+      { id: 'maxVms', label: 'Max VMs', type: 'number', value: '50' }
+    ],
+    onSubmit: function (vals) {
+      const id = (vals.id || '').trim();
+      if (!id) return;
+      if (!/^[a-zA-Z0-9-]+$/.test(id)) { toast('ID must be alphanumeric with dashes only', 'error'); return; }
+      const name = vals.name;
+      if (!name) return;
+      const email = vals.email;
+      if (!email) return;
+      const cpuQ = vals.cpuQ || '20';
+      const memQ = vals.memQ || '64Gi';
+      const maxVms = parseInt(vals.maxVms || '50', 10) || 50;
+      apiJson('/api/v1/tenants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id, display_name: name, owner_email: email, cpu_quota: cpuQ, memory_quota: memQ, max_vms: maxVms, bootstrap_namespace: true })
+      }).then(function() {
+        toast('Tenant "' + id + '" created', 'success');
+        fetchTenants();
+      }).catch(function(e) { toast(e.message || String(e), 'error'); });
+    }
+  });
 }
 
-async function deleteTenant(id) {
-  if (!window.confirm('Delete tenant "' + id + '" and its ConfigMap? (Namespace is NOT deleted)')) return;
-  try {
-    await apiJson('/api/v1/tenants/' + encodeURIComponent(id), { method: 'DELETE' });
-    toast('Tenant deleted', 'success');
-    fetchTenants();
-  } catch (e) {
-    toast('Delete failed: ' + (e.message || String(e)), 'error');
-  }
+function deleteTenant(id) {
+  openGlassConfirm({
+    title: 'Delete tenant',
+    body: 'Delete tenant "' + id + '" and its ConfigMap? (Namespace is NOT deleted)',
+    confirmLabel: 'Delete',
+    destructive: true,
+    onConfirm: async function () {
+      try {
+        await apiJson('/api/v1/tenants/' + encodeURIComponent(id), { method: 'DELETE' });
+        toast('Tenant deleted', 'success');
+        fetchTenants();
+      } catch (e) {
+        toast('Delete failed: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 // ── Snapshots export ─────────────────────────────────────────────────────────
@@ -28777,18 +29259,24 @@ async function fetchSocPlaybooks() {
   }
 }
 
-async function triggerSocPlaybook(id) {
-  if (!window.confirm('Run playbook "' + id + '"?')) return;
-  try {
-    const res = await apiJson('/api/v1/soc/playbooks/trigger', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playbook_id: id })
-    });
-    toast('Playbook "' + id + '" triggered' + (res.message ? ': ' + res.message : ''), 'success');
-  } catch (e) {
-    toast('Trigger failed: ' + (e.message || String(e)), 'error');
-  }
+function triggerSocPlaybook(id) {
+  openGlassConfirm({
+    title: 'Run playbook',
+    body: 'Run playbook "' + id + '"?',
+    confirmLabel: 'Run',
+    onConfirm: async function () {
+      try {
+        const res = await apiJson('/api/v1/soc/playbooks/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playbook_id: id })
+        });
+        toast('Playbook "' + id + '" triggered' + (res.message ? ': ' + res.message : ''), 'success');
+      } catch (e) {
+        toast('Trigger failed: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 // ── RDP-capable VMs ──────────────────────────────────────────────────────────
@@ -28916,20 +29404,31 @@ async function fetchNads() {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchNads');
   }
 }
-async function openAttachNadDialog(nadNs, nadName) {
-  const vmNs = window.prompt('VM Namespace:', nadNs || 'default');
-  if (!vmNs) return;
-  const vmName = window.prompt('VM Name:');
-  if (!vmName) return;
-  const iface = window.prompt('Interface name (leave blank for auto):') || '';
-  try {
-    const body = { nad_namespace: nadNs, nad_name: nadName };
-    if (iface) body.interface_name = iface;
-    const result = await apiJson('/api/v1/vms/' + encodeURIComponent(vmNs) + '/' + encodeURIComponent(vmName) + '/network/multus', { method: 'POST', body: JSON.stringify(body) });
-    showToast((result && result.message) ? result.message : 'NAD attached — restart VM to apply', 'ok');
-  } catch (e) {
-    showToast('Attach failed: ' + (e.message || String(e)), 'error');
-  }
+function openAttachNadDialog(nadNs, nadName) {
+  openGlassPrompt({
+    title: 'Attach NAD "' + nadName + '"',
+    submitLabel: 'Attach',
+    fields: [
+      { id: 'vmNs', label: 'VM Namespace', value: nadNs || 'default', required: true },
+      { id: 'vmName', label: 'VM Name', required: true },
+      { id: 'iface', label: 'Interface name (leave blank for auto)' }
+    ],
+    onSubmit: async function (vals) {
+      const vmNs = vals.vmNs;
+      if (!vmNs) return;
+      const vmName = vals.vmName;
+      if (!vmName) return;
+      const iface = vals.iface || '';
+      try {
+        const body = { nad_namespace: nadNs, nad_name: nadName };
+        if (iface) body.interface_name = iface;
+        const result = await apiJson('/api/v1/vms/' + encodeURIComponent(vmNs) + '/' + encodeURIComponent(vmName) + '/network/multus', { method: 'POST', body: JSON.stringify(body) });
+        showToast((result && result.message) ? result.message : 'NAD attached — restart VM to apply', 'ok');
+      } catch (e) {
+        showToast('Attach failed: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 // ── RDP Sessions ─────────────────────────────────────────────────
@@ -28984,7 +29483,7 @@ async function fetchWindowsSetupPlan() {
       }).join('') +
       '</ol>' +
       '<details style="margin:0 16px 12px"><summary style="font-size:.82rem;cursor:pointer;color:var(--text-muted)">Sample VeyronVM YAML</summary>' +
-      '<pre style="font-size:.76rem;overflow-x:auto;margin:6px 0 0;background:var(--panel);border-radius:6px;padding:10px">' + esc(plan.sample_veyronvm_yaml || '') + '</pre></details>';
+      '<pre style="font-size:.76rem;overflow-x:auto;margin:6px 0 0;border-radius:12px;padding:10px" class="veyron-tty">' + esc(plan.sample_veyronvm_yaml || '') + '</pre></details>';
   } catch (e) {
     if (body) body.innerHTML = '<p style="color:var(--critical);padding:12px">' + esc(e.message || String(e)) + '</p>';
   }
@@ -29788,5 +30287,199 @@ function closeMacShortcuts() {
   else document.addEventListener('DOMContentLoaded', function(){ setTimeout(function(){ try{ window.renderHoloFleetOrb(); }catch(e){} }, 600); });
 })();
 </script>
+
+<!-- API KEY MODAL — Apple Store chapter login (Veyron · h2kvm PremiumLoginShell parity) -->
+<div class="modal-overlay mac-signin-overlay" id="apikey-modal">
+  <div class="login-page login-store-page">
+    <div class="login-store-scroll" id="login-store-scroll">
+      <section class="login-chapter login-chapter-hero" data-tone="sky" aria-label="Veyron">
+        <div class="login-chapter-inner">
+          <div class="login-brand-lockup">
+            <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" class="login-zyvor-mark" aria-label="zyvor.dev" title="zyvor.dev">
+              <span class="zyvor-lockup zyvor-lockup-lg">
+                <svg class="zyvor-mark" viewBox="0 0 18 18" width="36" height="36" focusable="false" aria-hidden="true"><path d="M2 2h14L6.6 16H16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+                <span class="zyvor-wordmark">zyvor</span>
+                <span class="zyvor-product-muted">Veyron</span>
+              </span>
+            </a>
+          </div>
+          <p class="login-wordmark">Veyron</p>
+          <h1 class="login-hero-title">Private cloud.<br>One console.</h1>
+          <p class="login-tagline">You are signing in to <strong>Veyron</strong> — the KubeVirt control plane for virtual machines, snapshots, networking, and day-2 ops.</p>
+          <div class="login-pill-row" aria-label="Product capabilities">
+            <span class="login-pill" data-tone="sky"><span class="login-pill-dot" aria-hidden="true"></span>Virtual Machines</span>
+            <span class="login-pill" data-tone="emerald"><span class="login-pill-dot" aria-hidden="true"></span>Snapshots &amp; DR</span>
+            <span class="login-pill" data-tone="violet"><span class="login-pill-dot" aria-hidden="true"></span>RDP &amp; Console</span>
+            <span class="login-pill" data-tone="amber"><span class="login-pill-dot" aria-hidden="true"></span>Ask Zyra</span>
+          </div>
+          <div class="login-cta">
+            <button type="button" class="login-cta-primary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Sign in</button>
+            <button type="button" class="login-cta-secondary" onclick="document.getElementById('login-chapter-signin').scrollIntoView({behavior:'smooth'})">Continue</button>
+          </div>
+          <p class="login-chapter-note">KubeVirt · Kubernetes · Cilium · CDI</p>
+        </div>
+      </section>
+      <section class="login-chapter login-chapter-sign-in" id="login-chapter-signin" aria-label="Sign in to Veyron">
+        <div class="login-chapter-inner login-sign-in-inner">
+          <div class="login-brand-lockup login-brand-lockup-compact">
+            <span class="zyvor-lockup zyvor-lockup-md" aria-hidden="true">
+              <svg class="zyvor-mark" viewBox="0 0 18 18" width="28" height="28" focusable="false"><path d="M2 2h14L6.6 16H16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+              <span class="zyvor-wordmark">zyvor</span>
+              <span class="zyvor-product-muted">Veyron</span>
+            </span>
+          </div>
+          <h2 class="login-form-heading">Sign in to Veyron</h2>
+          <p class="login-form-sub" id="login-form-sub">Continue to your private cloud console.</p>
+          <p class="login-cluster-badge" id="login-cluster-badge" hidden></p>
+          <div class="login-card" id="login-glass-card">
+            <div style="margin-bottom:16px" id="login-mode-header">
+              <span id="login-mode-badge" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6e6e73">Username &amp; password</span>
+              <p class="login-panel-sub" id="login-panel-sub" style="margin:6px 0 0;font-size:.84rem;color:#6e6e73">Sign in with your username and password</p>
+            </div>
+            <div id="apikey-error" role="alert" style="display:none;align-items:flex-start;gap:8px;background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.35);border-radius:12px;padding:10px 12px;margin-bottom:16px;font-size:.8rem;color:#ff3b30;line-height:1.45">
+              <span id="apikey-error-msg">Invalid username or password.</span>
+            </div>
+            <div id="oidc-login-section" style="display:none;margin-bottom:16px">
+              <button type="button" class="login-btn-secondary" style="width:100%;text-align:center" onclick="startOidcLogin()">Sign in with SSO</button>
+              <div class="auth-divider">or sign in below</div>
+            </div>
+
+            <!-- Password mode: step identify -->
+            <div id="login-step-identify" class="login-apple-step">
+              <div class="login-apple-fields" style="margin-bottom:16px" id="login-username-row">
+                <label for="login-username-input">Username</label>
+                <div style="position:relative">
+                  <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <input type="text" class="login-input" id="login-username-input" placeholder="e.g. jordan" autocomplete="username" autofocus>
+                </div>
+              </div>
+              <button type="button" class="login-btn-primary" id="login-continue-btn" onclick="loginContinueIdentify()">
+                <span>Continue</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+            </div>
+
+            <!-- Password mode: step password -->
+            <div id="login-step-password" class="login-apple-step login-step-hidden">
+              <button type="button" class="login-apple-identity" id="login-identity-chip" onclick="loginBackIdentify()" aria-label="Change account">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                <span class="truncate" id="login-identity-name"></span>
+              </button>
+              <div class="login-apple-fields" style="margin-bottom:12px">
+                <label for="apikey-input" id="apikey-input-label">Password</label>
+                <div style="position:relative">
+                  <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <input type="password" class="login-input" id="apikey-input" placeholder="Enter your password" autocomplete="current-password">
+                  <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide" aria-label="Show/hide password">&#128065;</button>
+                </div>
+              </div>
+              <div class="remember-row">
+                <input type="checkbox" id="apikey-remember">
+                <label for="apikey-remember">Remember me on this device</label>
+              </div>
+              <button type="button" class="login-btn-primary" id="login-submit-btn" onclick="submitApiKey()">
+                <span id="login-submit-label">Sign in to Veyron</span>
+              </button>
+              <p class="login-trust-line">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                Secured with cluster authentication
+              </p>
+            </div>
+
+            <!-- API key mode (single step) -->
+            <div id="login-step-apikey" class="login-apple-step login-step-hidden">
+              <div style="margin-bottom:12px">
+                <label for="apikey-input-apikey" id="apikey-input-label-alt">API key</label>
+                <div style="position:relative">
+                  <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <input type="password" class="login-input" id="apikey-input-apikey" placeholder="Enter your API key" autocomplete="off">
+                  <button class="eye-btn" type="button" onclick="toggleKeyVisibility('apikey-input-apikey')" title="Show/hide" aria-label="Show/hide API key">&#128065;</button>
+                </div>
+              </div>
+              <div class="remember-row">
+                <input type="checkbox" id="apikey-remember-apikey">
+                <label for="apikey-remember-apikey">Remember me on this device</label>
+              </div>
+              <button type="button" class="login-btn-primary" onclick="submitApiKey()">
+                <span>Connect to Veyron</span>
+              </button>
+            </div>
+
+            <p style="text-align:center;margin:16px 0 0">
+              <button type="button" id="login-mode-toggle" onclick="toggleLoginMode()" style="background:none;border:none;color:#6e6e73;font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0">Use an API key instead</button>
+            </p>
+          </div>
+          <p class="login-hint" id="login-apikey-hint">Use a cluster operator account or API key issued for this Veyron deployment.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+// macOS-Terminal-style cloud-init editor: a syntax-highlighted <pre> laid behind a
+// transparent-text <textarea> (mirrors the CloudInitStudio treatment already shipped for
+// the sibling machina product) — black background, monospace, colorful YAML tokens instead
+// of a plain form field.
+(function () {
+  var CI_TOKEN_RE = /(#.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(^\s*-\s)|(^[\s-]*[A-Za-z0-9_.-]+(?=\s*:))|(:\s*)|(\b-?\d+(?:\.\d+)?\b)/gm;
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function highlightCloudInit(text) {
+    if (!text) return '';
+    var out = '';
+    var last = 0;
+    text.replace(CI_TOKEN_RE, function (match, comment, str, listMarker, key, colon, num, offset) {
+      out += escapeHtml(text.slice(last, offset));
+      if (comment) out += '<span class="tty-tok-comment">' + escapeHtml(comment) + '</span>';
+      else if (str) out += '<span class="tty-tok-string">' + escapeHtml(str) + '</span>';
+      else if (listMarker) out += '<span class="tty-tok-list">' + escapeHtml(listMarker) + '</span>';
+      else if (key) out += '<span class="tty-tok-key">' + escapeHtml(key) + '</span>';
+      else if (num) out += '<span class="tty-tok-number">' + escapeHtml(num) + '</span>';
+      else out += escapeHtml(match);
+      last = offset + match.length;
+      return match;
+    });
+    out += escapeHtml(text.slice(last));
+    return out + '\n';
+  }
+
+  function initCloudInitTerminalEditor(id) {
+    var textarea = document.getElementById(id);
+    if (!textarea || textarea.dataset.termInit) return;
+    textarea.dataset.termInit = '1';
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'term-cloudinit-editor';
+    var pre = document.createElement('pre');
+    pre.className = 'term-cloudinit-highlight';
+    pre.setAttribute('aria-hidden', 'true');
+
+    textarea.parentNode.insertBefore(wrapper, textarea);
+    wrapper.appendChild(pre);
+    wrapper.appendChild(textarea);
+    textarea.classList.add('term-cloudinit-input');
+
+    function sync() {
+      pre.innerHTML = highlightCloudInit(textarea.value);
+      pre.scrollTop = textarea.scrollTop;
+      pre.scrollLeft = textarea.scrollLeft;
+    }
+    textarea.addEventListener('input', sync);
+    textarea.addEventListener('scroll', sync);
+    sync();
+  }
+
+  function boot() {
+    ['crd-vm-cloudinit', 'vm-cloudinit', 'forge-wiz-cloudinit'].forEach(initCloudInitTerminalEditor);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
 </body>
 </html>
