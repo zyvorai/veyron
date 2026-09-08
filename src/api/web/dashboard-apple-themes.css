@@ -241,42 +241,84 @@ h1, h2, .id-sec-h h2, .page-header h1, .iw-home-title, .apple-chapter-title {
   letter-spacing: -0.022em;
 }
 
-/* Marketing chapter primitives (tv-home rhythm) */
+/* Chapter primitives — a compact, left-aligned utility-page header by default (this class
+   is used by EVERY page's header, not just landing pages, despite .apple-hero-band's own
+   comment below saying it's meant to be "opt-in... on flagship heroes only, not every
+   chapter"). Real Apple-caliber apps (macOS System Settings, App Store) reserve big
+   centered editorial type for actual landing pages and use a compact left-aligned title
+   for utility/list pages. Mission Control (the one true landing page, wrapped in
+   .apple-home-hero instead of .apple-chapter) restates the original marketing-scale
+   sizing below so it keeps its "Your fleet. One console." treatment. */
 .apple-chapter {
-  text-align: center;
-  padding: clamp(2.5rem, 8vh, 5rem) clamp(1.25rem, 5vw, 3rem);
+  text-align: left;
+  padding: clamp(1.25rem, 3vh, 2rem) clamp(1.25rem, 5vw, 3rem);
   max-width: 72rem;
   margin: 0 auto;
 }
 .apple-chapter-kicker {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: -0.03em;
-  color: var(--ink);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--ink-2);
 }
 .apple-chapter-title {
-  margin: 0.4rem 0 0;
+  margin: 0.3rem 0 0;
   font-family: var(--font-hero);
-  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  font-size: clamp(1.5rem, 2.4vw, 1.875rem);
   font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 1.05;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   color: var(--ink);
   text-wrap: balance;
 }
 .apple-chapter-lede {
-  margin: 1rem auto 0;
-  max-width: 36rem;
-  font-size: clamp(1.05rem, 2vw, 1.3125rem);
-  line-height: 1.47;
-  letter-spacing: -0.011em;
+  margin: 0.4rem 0 0;
+  max-width: 44rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  letter-spacing: -0.006em;
   color: var(--ink-2);
 }
 .apple-chapter-cta {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+/* Mission Control's landing hero — restate the original marketing-scale, centered sizing
+   here, scoped so no other page (which all use .apple-chapter, not .apple-home-hero) is
+   affected. */
+.apple-home-hero.apple-chapter,
+.apple-home-hero {
+  text-align: center;
+  padding: clamp(2.5rem, 8vh, 5rem) clamp(1.25rem, 5vw, 3rem);
+}
+.apple-home-hero .apple-chapter-kicker {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-transform: none;
+  color: var(--ink);
+}
+.apple-home-hero .apple-chapter-title {
+  margin: 0.4rem 0 0;
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+.apple-home-hero .apple-chapter-lede {
+  margin: 1rem auto 0;
+  max-width: 36rem;
+  font-size: clamp(1.05rem, 2vw, 1.3125rem);
+  line-height: 1.47;
+  letter-spacing: -0.011em;
+}
+.apple-home-hero .apple-chapter-cta {
   justify-content: center;
   gap: 0.85rem;
   margin-top: 1.75rem;
@@ -292,7 +334,10 @@ h1, h2, .id-sec-h h2, .page-header h1, .iw-home-title, .apple-chapter-title {
   position: relative !important;
   overflow: hidden;
 }
-.apple-hero-band::before {
+/* The soft AirPods-style glow only fits the big centered landing hero (.apple-home-hero) —
+   every other page's compact, left-aligned header doesn't need a giant decorative radial
+   behind a small title, so it's scoped out of the default case. */
+.apple-home-hero.apple-hero-band::before {
   content: '';
   position: absolute;
   top: 50%;
