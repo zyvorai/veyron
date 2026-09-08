@@ -9,6 +9,8 @@ import {
 import { api, getApiKey, setApiKey } from './api.js';
 import Sparkline from './Sparkline.jsx';
 
+const machineWord = (n) => `${n} machine${n === 1 ? '' : 's'}`;
+
 const SC = { Running: 'var(--green)', Stopped: 'var(--gray)', Degraded: 'var(--orange)', Paused: 'var(--yellow)', Provisioning: 'var(--accent)', Failed: 'var(--red)', Migrating: 'var(--accent)' };
 const Status = ({ s }) => <span className="st" style={{ '--c': SC[s] || 'var(--gray)' }}><i />{s || 'Unknown'}</span>;
 
@@ -336,7 +338,7 @@ export default function App() {
         )}
         <div className="title">
           {page === 'mission' ? 'Mission Control' : 'Virtual machines'}
-          <small>{page === 'vms' ? `${filtered.length} machines` : 'Veyron'}</small>
+          <small>{page === 'vms' ? machineWord(filtered.length) : 'Veyron'}</small>
         </div>
         <label className="tsearch"><Search size={14} /><input value={q} onChange={(e) => { setQ(e.target.value); if (page !== 'vms') setPage('vms'); }} placeholder="Search" /></label>
         <span className="live"><i />Live</span>
@@ -412,7 +414,7 @@ export default function App() {
               </div>
             )}
             <div className="statusbar">
-              <span>{selected.size ? `${selected.size} of ${filtered.length} selected` : `${filtered.length} machines`}</span>
+              <span>{selected.size ? `${selected.size} of ${filtered.length} selected` : machineWord(filtered.length)}</span>
               <span>{nodes.length} hosts</span>
               <span>{vms.filter((v) => v.status === 'Running').length} running</span>
             </div>
