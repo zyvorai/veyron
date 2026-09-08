@@ -36,22 +36,62 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Full-screen overlay hosts the store login */
+/* Full-screen overlay hosts the store login — opaque Fabric-style product page */
 #apikey-modal.mac-signin-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 100000;
   padding: 0;
   margin: 0;
-  background: #fff;
+  background: #fff !important;
   align-items: stretch;
   justify-content: stretch;
+  flex-direction: column;
 }
 #apikey-modal.mac-signin-overlay.open {
   display: flex !important;
 }
 #apikey-modal .signin-theme-picker { display: none !important; }
+
+/* When signed out: only the login chapters exist visually (hide dashboard shell) */
+html.veyron-signin,
+html.veyron-signin body {
+  background: #fff !important;
+  overflow: hidden !important;
+}
+html.veyron-signin body.veyron-signin > *:not(#apikey-modal),
+html.veyron-signin body > .apple-topnav,
+html.veyron-signin body > .apple-rail,
+html.veyron-signin body > .apple-rail-backdrop,
+html.veyron-signin body > .container,
+html.veyron-signin body > .cloudos-main,
+html.veyron-signin body > .mac-dock,
+html.veyron-signin body > .mac-menubar,
+html.veyron-signin body > .mac-desktop-tabs,
+html.veyron-signin body > .vmr-primary-tabs,
+html.veyron-signin body > .browse-mega-menu,
+html.veyron-signin body > .classic-nav-backdrop,
+html.veyron-signin body > .cloudos-browse-rail,
+html.veyron-signin body > .mac-control-center,
+html.veyron-signin body > .mac-notification-center,
+html.veyron-signin #orbit-stage,
+html.veyron-signin #orbit-hud {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+html.veyron-signin #apikey-modal.mac-signin-overlay {
+  display: flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100000 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+}
 
 .login-page {
   isolation: isolate;
@@ -576,69 +616,89 @@ a.login-cta-secondary:hover {
   display: contents;
 }
 
-/* ---- macOS Terminal.app console / logs ---- */
-.console-app {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 0;
-  min-height: calc(100vh - 8rem);
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  border-radius: 12px;
-  overflow: hidden;
-  background: #1c1c1e;
-  color: #f5f5f7;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
-  color-scheme: dark;
+/* ---- Apple full-bleed console / logs ---- */
+.console-app,
+.console-app.apple-console-fullbleed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: calc(100vh - 12rem);
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  color: var(--ink, #1d1d1f);
+  box-shadow: none;
+  color-scheme: light dark;
 }
-.console-sidebar {
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  background: #2c2c2e;
-  padding: 0.75rem 0;
-  overflow-y: auto;
-  font-family: var(--font-display);
+.console-sources-band {
+  padding: 12px 0;
 }
-.console-sidebar-title {
-  padding: 0.35rem 1rem 0.65rem;
-  font-size: 0.68rem;
+.console-sources-band .console-sidebar-title {
+  padding: 0 0 10px;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--ink-3, #6e6e73);
+}
+.console-source-chips,
+.console-source-list-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 .console-source {
-  display: block;
-  width: 100%;
-  text-align: left;
+  display: inline-flex;
+  width: auto;
+  text-align: center;
   border: none;
-  background: transparent;
-  color: #f5f5f7;
-  padding: 0.45rem 1rem;
+  background: var(--panel-2, #f5f5f7);
+  color: var(--ink-2, #6e6e73);
+  border-radius: 980px;
+  padding: 8px 14px;
   font-size: 0.8125rem;
-  font-family: inherit;
+  font-weight: 500;
   cursor: pointer;
-  border-radius: 0;
 }
-.console-source:hover { background: rgba(10, 132, 255, 0.16); }
 .console-source.active {
-  background: rgba(10, 132, 255, 0.28);
-  color: #64d2ff;
-  font-weight: 600;
+  background: var(--apple-action, #0071e3);
+  color: #fff;
+}
+.console-sidebar {
+  display: contents;
 }
 .console-main {
   display: flex;
   flex-direction: column;
+  gap: 12px;
   min-width: 0;
-  min-height: 0;
-  background: #1c1c1e;
+}
+.console-logs-terminal {
+  border-radius: 1.25rem;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  min-height: 420px;
+}
+.zf-terminal-titlebar .zf-traffic { display: none; }
+.console-source:hover { background: rgba(0, 0, 0, 0.06); color: var(--ink, #1d1d1f); }
+html[data-theme='dark'] .console-source {
+  background: #2c2c2e;
+  color: #f5f5f7;
+}
+html[data-theme='dark'] .console-source.active {
+  background: #2997ff;
+  color: #fff;
 }
 .console-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-  padding: 0.65rem 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: #2c2c2e;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--hairline);
+  background: transparent;
 }
 .console-toolbar .toolbar-input,
 .console-toolbar input,
@@ -705,8 +765,7 @@ a.login-cta-secondary:hover {
 }
 
 @media (max-width: 900px) {
-  .console-app { grid-template-columns: 1fr; }
-  .console-sidebar { max-height: 160px; border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+  .console-app { display: flex; flex-direction: column; }
   .console-row { grid-template-columns: 1fr; gap: 0.15rem; }
 }
 

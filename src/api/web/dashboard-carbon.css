@@ -248,13 +248,20 @@ body.mac-desktop-root[data-wallpaper='midnight'],
 body.mac-desktop-root[data-wallpaper='ocean'] {
   background: var(--zs-void) !important;
 }
+/* Light theme: wallpaper must not force Carbon void behind the frosted topnav */
+html[data-theme='light'] body.mac-desktop-root[data-wallpaper='tahoe'],
+html[data-theme='light'] body.mac-desktop-root[data-wallpaper='aurora'],
+html[data-theme='light'] body.mac-desktop-root[data-wallpaper='midnight'],
+html[data-theme='light'] body.mac-desktop-root[data-wallpaper='ocean'],
+html.light-theme body.mac-desktop-root[data-wallpaper] {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%) !important;
+}
 
-/* ---- Topbar: chassis rail -------------------------------- */
+/* ---- Topbar: chassis rail (legacy mac-menubar only; never .apple-topnav) ---- */
 html[data-theme='tahoe'] .mac-menubar.navbar,
 html[data-theme='carbon'] .mac-menubar.navbar,
 html[data-theme='tahoe'] body.mac-desktop-root .mac-menubar.navbar,
-html[data-theme='tahoe'] body.mac-desktop-root header.mac-menubar,
-[data-shell-region="topbar"] {
+html[data-theme='tahoe'] body.mac-desktop-root header.mac-menubar {
   background: linear-gradient(180deg, var(--zs-carbon), var(--zs-void)) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -418,6 +425,10 @@ html[data-theme='carbon'] :focus-visible {
 [data-shell-region="rail-footer"] { border-color: var(--zs-rule); }
 
 /* ---- Scrollbars ------------------------------------------ */
+html[data-theme='tahoe'] [data-shell-scroll],
+html[data-theme='carbon'] [data-shell-scroll] {
+  scrollbar-color: #232833 transparent;
+}
 html[data-theme='tahoe'] [data-shell-scroll]::-webkit-scrollbar,
 html[data-theme='carbon'] [data-shell-scroll]::-webkit-scrollbar {
   width: 10px;

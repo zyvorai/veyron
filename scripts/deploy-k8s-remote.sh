@@ -414,11 +414,13 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: veyron-api
+      app.kubernetes.io/name: veyron
+      app.kubernetes.io/component: api
   template:
     metadata:
       labels:
-        app: veyron-api
+        app.kubernetes.io/name: veyron
+        app.kubernetes.io/component: api
       annotations:
         veyron.io/deployed-at: "${DEPLOY_STAMP}"
     spec:
@@ -534,7 +536,8 @@ metadata:
 spec:
   type: NodePort
   selector:
-    app: veyron-api
+    app.kubernetes.io/name: veyron
+    app.kubernetes.io/component: api
   ports:
     - name: https
       port: 443

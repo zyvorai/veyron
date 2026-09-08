@@ -151,41 +151,49 @@ body.mac-desktop-root .cloudos-main:has([data-shell-region="page"].active) {
 [data-shell-scroll="both"] { overflow-x: auto; }
 [data-shell-scroll="none"] { overflow: hidden; }
 
-[data-shell-region="split"] {
+[data-shell-region="split"],
+[data-shell-region="stack"] {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--zs-rail-w, 420px);
-  grid-template-rows: minmax(0, 1fr);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  overflow: visible;
   align-self: stretch;
-  border-block: 1px solid var(--zs-rule, var(--hairline, rgba(255, 255, 255, 0.055)));
+  border-block: none;
 }
 
-/* List/rail panes must shrink so [data-shell-scroll] can scroll */
+/* List panes full-bleed; inspector becomes a sheet (see apple-themes) */
 [data-shell-region="split"] > .vm-list-pane,
+[data-shell-region="stack"] > .vm-list-pane,
 [data-shell-region="split"] > [data-shell-region="rail"],
-[data-shell-region="split"] > aside {
+[data-shell-region="stack"] > [data-shell-region="rail"],
+[data-shell-region="split"] > aside,
+[data-shell-region="stack"] > aside {
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
 
-[data-shell-region="split"][data-rail="closed"] {
-  grid-template-columns: minmax(0, 1fr) 0;
+[data-shell-region="split"][data-rail="closed"],
+[data-shell-region="stack"][data-rail="closed"] {
+  grid-template-columns: none;
 }
 
-[data-shell-region="split"][data-rail="closed"] > [data-shell-region="rail"] {
+[data-shell-region="split"][data-rail="closed"] > [data-shell-region="rail"],
+[data-shell-region="stack"][data-rail="closed"] > [data-shell-region="rail"] {
   display: none;
 }
 
-[data-shell-region="split"] > * {
+[data-shell-region="split"] > *,
+[data-shell-region="stack"] > * {
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
@@ -196,7 +204,7 @@ body.mac-desktop-root .cloudos-main:has([data-shell-region="page"].active) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-inline-start: 1px solid var(--zs-rule, var(--hairline, rgba(255, 255, 255, 0.08)));
+  border-inline-start: none;
 }
 
 [data-shell-region="rail-header"] { flex: 0 0 auto; }
@@ -216,27 +224,31 @@ body.mac-desktop-root .cloudos-main:has([data-shell-region="page"].active) {
 
 @media (max-width: 1024px) {
   [data-shell-region="split"],
-  [data-shell-region="split"][data-rail="closed"] {
-    grid-template-columns: minmax(0, 1fr);
+  [data-shell-region="stack"],
+  [data-shell-region="split"][data-rail="closed"],
+  [data-shell-region="stack"][data-rail="closed"] {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
   }
 
   [data-shell-region="rail"] {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-end: 0;
-    width: min(420px, 92vw);
-    z-index: 40;
-    background: var(--zs-carbon, var(--panel, #10151F));
-    transform: translateX(100%);
-    transition: transform 180ms ease;
+    /* Sheet styling owned by dashboard-apple-themes.css */
+    position: fixed;
+    inset: 0;
+    width: auto;
+    z-index: 520;
+    transform: none;
+    transition: none;
   }
 
-  [data-shell-region="split"][data-rail="open"] { position: relative; }
-  [data-shell-region="split"][data-rail="open"] [data-shell-region="rail"] {
-    transform: translateX(0);
+  [data-shell-region="split"][data-rail="open"],
+  [data-shell-region="stack"][data-rail="open"] {
+    position: relative;
   }
 
-  [data-shell-region="split"] > *:not([data-shell-region="rail"]) {
+  [data-shell-region="split"] > *:not([data-shell-region="rail"]),
+  [data-shell-region="stack"] > *:not([data-shell-region="rail"]) {
     overflow: visible;
   }
 }
