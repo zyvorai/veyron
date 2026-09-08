@@ -56,7 +56,6 @@ ring = { version = "0.17", optional = true }
 guestkit-agent-protocol = { path = "guestkit/crates/guestkit-agent-protocol" }
 guestkit = { path = "guestkit", default-features = false, features = ["guest-inspect"] }
 once_cell = "1.19"
-include_dir = "0.7"
 
 # TUI dependencies
 ratatui = "0.28"

@@ -2,17 +2,6 @@
 # Multi-stage build for minimal production image
 # Run scripts/prepare-guestkit-docker.sh before docker build (copies ../guestkit -> ./guestkit).
 
-# Phase 1 of the React migration — builds the new /console app (see frontend/). Its output
-# (frontend/dist/) is embedded into the Rust binary via include_dir! the same way
-# dashboard.html is embedded via include_str!, so this stage must run and be copied into the
-# Rust builder stage's build context *before* `cargo build` runs below.
-FROM docker.io/library/node:22-slim AS frontend-builder
-WORKDIR /frontend
-COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm install
-COPY frontend/ ./
-RUN npm run build
-
 FROM docker.io/library/rust:1.94-slim-bookworm AS builder
 
 # Keep in lockstep with KUBEVIRT_VERSION in scripts/cluster/versions.env — virtctl
@@ -53,7 +42,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     && rm -rf src target/x86_64-unknown-linux-musl/release/veyron target/x86_64-unknown-linux-musl/release/deps/veyron-*
 
 COPY src/ src/
-COPY --from=frontend-builder /frontend/dist ./frontend/dist
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/build/target,sharing=locked \
     touch src/main.rs src/lib.rs \

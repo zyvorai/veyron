@@ -6,7 +6,7 @@ Customer tarballs from `scripts/package-binary-remote.sh` must **never** require
 
 | Type | Products | What ships | Customer runs |
 |------|----------|------------|---------------|
-| **A — Native binary** | Veyron, v9s, machina, guestkit, transiva, packetwolf, ragnarok, Axiom, IronWolf | Single executable(s), optional `web/dist` or `frontend/dist`, env example | `./install.sh` → `./binary` or systemd via `install-full.sh` (machina) |
+| **A — Native binary** | Veyron, v9s, machina, guestkit, transiva, packetwolf, ragnarok, Axiom, IronWolf | Single executable(s), optional `web/dist`, env example | `./install.sh` → `./binary` or systemd via `install-full.sh` (machina) |
 | **B — Container extract** | Veyron, v9s | Binary + UI from OCI image build (still type A at install time) | Same as A |
 | **C — Python venv bundle** | **h2kvm**, **forge** | `venv/` with `pip install` already done, wrapper scripts in `bin/`, static UI | `./install.sh`; run `./bin/*` (uses bundled `venv/`) |
 | **D — Go multi-binary** | transiva | `bin/hypervisord`, `hyperctl`, … + `dashboard/` | `./bin/hypervisord` |

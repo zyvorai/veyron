@@ -9,8 +9,6 @@ Veyron — Kubernetes-native KubeVirt VM command center
 | Main README | [README.md](../README.md) |
 | **Licensing & trial token** | [LICENSING.md](LICENSING.md) |
 | **Handbook (product · admin · FAQ · troubleshooting)** | [handbook/README.md](handbook/README.md) |
-| **CloudOS dashboard shell** | [CLOUDOS_VISION.md](CLOUDOS_VISION.md) |
-| **React console** (`/console`, Phase 1 migration) | `CLAUDE.md` § React console · `frontend/` |
 | **Ask Zyra AI assistant** | [VEYRON_AI.md](VEYRON_AI.md) |
 | **User journeys & acceptance criteria** | [User Stories](USER_STORIES.md) |
 
