@@ -65,6 +65,17 @@ html.light-theme {
   --plasma-line: rgba(0, 113, 227, 0.4);
   --deck-temp: #0071e3;
   --deck-temp-glow: rgba(0, 113, 227, 0.14);
+  /* Sibling accent-token families from older shells (Instrument Deck / Zeus Carbon)
+     were never remapped onto Apple Blue the way --plasma is here, so CTAs/toggles/
+     marker-bars referencing them (e.g. #page-vms .btn-create, .card-title::before)
+     rendered violet instead of blue for no semantic reason. Alias them here, last in
+     the cascade, so every existing consumer inherits Apple Blue with no per-call-site
+     edits. */
+  --zs-plasma: var(--plasma);
+  --zs-plasma-dim: var(--plasma-glow);
+  --molten: var(--plasma);
+  --primary-blue: var(--plasma);
+  --primary-purple: var(--plasma-deep);
   --ink: #1d1d1f;
   --ink-2: #6e6e73;
   --ink-3: #86868b;
@@ -146,6 +157,11 @@ html.theme-holo {
   --plasma-line: rgba(41, 151, 255, 0.4);
   --deck-temp: #2997ff;
   --deck-temp-glow: rgba(41, 151, 255, 0.16);
+  --zs-plasma: var(--plasma);
+  --zs-plasma-dim: var(--plasma-glow);
+  --molten: var(--plasma);
+  --primary-blue: var(--plasma);
+  --primary-purple: var(--plasma-deep);
   --ink: #f5f5f7;
   --ink-2: #a1a1a6;
   --ink-3: #6e6e73;

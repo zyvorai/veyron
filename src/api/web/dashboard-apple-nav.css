@@ -120,6 +120,7 @@ html[data-theme='dark'] .zyvor-wordmark {
   align-items: stretch;
   gap: 0;
   min-width: 0;
+  overflow: hidden;
 }
 .apple-topnav-item {
   position: relative;
@@ -136,6 +137,15 @@ html[data-theme='dark'] .zyvor-wordmark {
   letter-spacing: -0.01em;
   transition: color 0.18s;
   white-space: nowrap;
+  /* .apple-topnav-primary shrinks (flex: 1 1 auto; min-width: 0) but these buttons
+     used the default flex-shrink:1 with a nowrap-text min-content floor — once the
+     row got squeezed narrower than that floor, the last item ("Observe") painted
+     straight over the search box next to it instead of shrinking. Clip + ellipsis
+     so a tight row truncates a label instead of visually overlapping its neighbor. */
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 html[data-theme='dark'] .apple-topnav-item {
   color: rgba(245, 245, 247, 0.92) !important;
@@ -214,10 +224,13 @@ html[data-theme='dark'] .apple-topnav-search:focus-within {
   color: #f5f5f7;
 }
 html[data-theme='dark'] .apple-topnav-search input { color: #f5f5f7; }
-@media (max-width: 1100px) {
+@media (max-width: 1650px) {
+  #auth-session-label.auth-session { display: none; }
+}
+@media (max-width: 1500px) {
   .apple-topnav-search { min-width: 112px; max-width: 150px; }
 }
-@media (max-width: 820px) {
+@media (max-width: 1300px) {
   .apple-topnav-search { display: none; }
 }
 .apple-topnav-live {
@@ -380,10 +393,12 @@ body.mac-desktop-root .apple-mega {
   right: 0;
   top: var(--apple-topnav-h);
   z-index: 499;
-  background: var(--gbar-bar);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  /* Was var(--gbar-bar) — the same ~72%-alpha translucent value as the topnav bar
+     chrome itself, so bold page content underneath visibly bled through the "frosted"
+     panel. Apple.com's own mega-menu is a solid panel, not a glass effect. */
+  background: var(--panel, #fff);
   border-bottom: 1px solid var(--hairline);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   transform-origin: top;
   animation: apple-mega-in 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -437,10 +452,17 @@ body.mac-desktop-root .apple-mega {
 .apple-mega-link:hover b { color: var(--apple-action, #0071e3); }
 body.mac-desktop-root .apple-mega-scrim {
   position: fixed;
-  inset: var(--apple-topnav-h) 0 0 0;
+  /* Left inset excludes the rail's own width (mirrors .cloudos-main's margin-left
+     switch below) — this scrim used to span the full viewport including the rail
+     column, so opening any mega-menu also dimmed/ghosted the left rail nav, which
+     isn't supposed to be part of what a mega-menu obscures. */
+  inset: var(--apple-topnav-h) 0 0 var(--apple-rail-w-expanded);
   z-index: 498;
   background: rgba(0, 0, 0, 0.4);
   animation: apple-mega-fade 0.25s;
+}
+body.mac-desktop-root.rail-collapsed .apple-mega-scrim {
+  inset: var(--apple-topnav-h) 0 0 var(--apple-rail-w-collapsed);
 }
 @keyframes apple-mega-fade {
   from { opacity: 0; }
