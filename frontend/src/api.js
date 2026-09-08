@@ -64,6 +64,7 @@ function asArray(j) {
 export const api = {
   listVms: (ns) => request(`/api/v1/vms${ns && ns !== 'all' ? `?namespace=${encodeURIComponent(ns)}` : ''}`).then(asArray),
   listNodes: () => request('/api/v1/nodes').then(asArray),
+  listPods: (ns) => request(`/api/v1/pods${ns && ns !== 'all' ? `?namespace=${encodeURIComponent(ns)}` : ''}`).then(asArray),
   vmAction: (ns, name, action) =>
     request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/${encodeURIComponent(action)}`, { method: 'POST' }),
   deleteVm: (ns, name) => request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`, { method: 'DELETE' }),
