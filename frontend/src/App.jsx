@@ -168,7 +168,7 @@ function Mission({ vms, nodes, go }) {
       <section className="mhero">
         <small>Veyron · Private cloud · {nodes.length} hosts</small>
         <h1>{word}</h1>
-        <p>{run} of {vms.length} machines running. {attn.length ? `${attn.length} things need a look.` : 'Nothing needs a look.'}</p>
+        <p>{run} of {vms.length} machines running. {attn.length ? `${attn.length} ${attn.length === 1 ? 'thing needs' : 'things need'} a look.` : 'Nothing needs a look.'}</p>
         <div className="acts">
           <button className="pill" onClick={() => go('vms')}>Virtual machines<ChevronRight size={16} /></button>
         </div>
