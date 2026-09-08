@@ -27,7 +27,7 @@ const NAV = [
     { id: 'vms', l: 'Virtual machines', I: Monitor, internal: true },
     { id: 'hosts', l: 'Hosts', I: Server, internal: true },
     { id: 'images', l: 'Images & ISOs', I: Disc3, href: '/dashboard#images' },
-    { id: 'pods', l: 'Pods', I: Boxes, href: '/dashboard#pods' },
+    { id: 'pods', l: 'Pods', I: Boxes, internal: true },
   ] },
   { g: 'Storage & network', items: [
     { id: 'storage', l: 'Storage', I: HardDrive, href: '/dashboard#storage' },
@@ -174,6 +174,73 @@ function HostInspector({ host, hide }) {
   );
 }
 
+const POD_COLS = [
+  ['name', 'Name'], ['phase', 'Status'], ['namespace', 'Namespace'], ['node_name', 'Node'],
+  ['ip', 'IP'], ['restarts', 'Restarts', 'n'], ['age', 'Age'],
+];
+const POD_SC = { Running: 'var(--green)', Pending: 'var(--yellow)', Succeeded: 'var(--gray)', Failed: 'var(--red)', Unknown: 'var(--gray)' };
+
+function PodsTable({ rows, focus, onRow, sort, setSort }) {
+  const sorted = useMemo(() => {
+    const arr = [...rows];
+    arr.sort((a, b) => {
+      const av = a[sort.k], bv = b[sort.k];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return (av > bv ? 1 : av < bv ? -1 : 0) * sort.d;
+    });
+    return arr;
+  }, [rows, sort]);
+  const key = (r) => `${r.namespace || 'default'}/${r.name}`;
+  return (
+    <table className="vt">
+      <thead>
+        <tr>
+          {POD_COLS.map((c) => (
+            <th key={c[0]} className={c[2] === 'n' ? 'num' : ''} onClick={() => setSort((s) => ({ k: c[0], d: s.k === c[0] ? -s.d : 1 }))}>
+              {c[1]}
+              {sort.k === c[0] && <span className="s"><ChevronDown size={11} style={{ transform: sort.d < 0 ? 'rotate(180deg)' : '' }} /></span>}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {sorted.map((r) => (
+          <tr key={key(r)} aria-selected={focus === key(r)} className={focus === key(r) ? 'focus' : ''} onClick={() => onRow(r)}>
+            <td className="name">{r.name}</td>
+            <td><span className="st" style={{ '--c': POD_SC[r.phase] || 'var(--gray)' }}><i />{r.phase || 'Unknown'}</span></td>
+            <td className="dim">{r.namespace}</td>
+            <td className="mono dim">{r.node_name ?? '—'}</td>
+            <td className="mono dim">{r.ip ?? '—'}</td>
+            <td className="num">{r.restarts ?? 0}</td>
+            <td className="num dim">{r.age ?? '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function PodInspector({ pod, hide }) {
+  if (!pod) return <aside className={`insp ${hide ? 'hide' : ''}`}><div className="empty"><div><b>No selection</b>Select a pod to inspect it.</div></div></aside>;
+  const rows = [
+    ['Status', <span key="s" className="st" style={{ '--c': POD_SC[pod.phase] || 'var(--gray)' }}><i />{pod.phase}</span>],
+    ['Namespace', pod.namespace],
+    ['Node', pod.node_name ?? '—'],
+    ['IP', pod.ip ?? '—'],
+    ['Containers', (pod.containers || []).join(', ') || '—'],
+    ['Restarts', pod.restarts ?? 0],
+    ['Age', pod.age ?? '—'],
+  ];
+  return (
+    <aside className={`insp ${hide ? 'hide' : ''}`}>
+      <div className="insp-h"><h2>{pod.name}</h2><div className="kind">Pod · {pod.phase}</div></div>
+      <div className="form" style={{ paddingTop: 16 }}>{rows.map(([l, v]) => <div className="frow" key={l}><label>{l}</label><span className="mono">{v}</span></div>)}</div>
+    </aside>
+  );
+}
+
 function Inspector({ vm, hide, history, onAct, busy }) {
   const [tab, setTab] = useState('General');
   if (!vm) return <aside className={`insp ${hide ? 'hide' : ''}`}><div className="empty"><div><b>No selection</b>Select a machine to inspect it.</div></div></aside>;
@@ -288,6 +355,9 @@ export default function App() {
   const [page, setPage] = useState('mission');
   const [vms, setVms] = useState([]);
   const [nodes, setNodes] = useState([]);
+  const [pods, setPods] = useState([]);
+  const [podSort, setPodSort] = useState({ k: 'name', d: 1 });
+  const [podFocus, setPodFocus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const [view, setView] = useState('list');
@@ -307,9 +377,10 @@ export default function App() {
   const load = useCallback(async () => {
     if (!authed) return;
     try {
-      const [vmList, nodeList] = await Promise.all([api.listVms('all'), api.listNodes()]);
+      const [vmList, nodeList, podList] = await Promise.all([api.listVms('all'), api.listNodes(), api.listPods('all')]);
       setVms(vmList);
       setNodes(nodeList);
+      setPods(podList);
       setErr(null);
       vmList.forEach((v) => {
         const key = `${v.namespace || 'default'}/${v.name}`;
@@ -410,8 +481,13 @@ export default function App() {
           </div>
         )}
         <div className="title">
-          {page === 'mission' ? 'Mission Control' : page === 'hosts' ? 'Hosts' : 'Virtual machines'}
-          <small>{page === 'vms' ? machineWord(filtered.length) : page === 'hosts' ? `${nodes.length} host${nodes.length === 1 ? '' : 's'}` : 'Veyron'}</small>
+          {page === 'mission' ? 'Mission Control' : page === 'hosts' ? 'Hosts' : page === 'pods' ? 'Pods' : 'Virtual machines'}
+          <small>
+            {page === 'vms' ? machineWord(filtered.length)
+              : page === 'hosts' ? `${nodes.length} host${nodes.length === 1 ? '' : 's'}`
+              : page === 'pods' ? `${pods.length} pod${pods.length === 1 ? '' : 's'}`
+              : 'Veyron'}
+          </small>
         </div>
         <label className="tsearch"><Search size={14} /><input value={q} onChange={(e) => { setQ(e.target.value); if (page === 'mission') setPage('vms'); }} placeholder="Search" /></label>
         <span className="live"><i />Live</span>
@@ -430,7 +506,7 @@ export default function App() {
               {g.items.map((it) => {
                 const Icon = it.I;
                 if (it.internal) {
-                  const count = it.id === 'vms' ? vms.length : it.id === 'hosts' ? nodes.length : null;
+                  const count = it.id === 'vms' ? vms.length : it.id === 'hosts' ? nodes.length : it.id === 'pods' ? pods.length : null;
                   return (
                     <button key={it.id} className="srow" aria-current={page === it.id ? 'page' : undefined} onClick={() => setPage(it.id)}>
                       <Icon size={15} strokeWidth={1.9} />{it.l}
@@ -467,6 +543,21 @@ export default function App() {
             <div className="statusbar">
               <span>{nodes.length} host{nodes.length === 1 ? '' : 's'}</span>
               <span>{vms.filter((v) => v.status === 'Running').length} VMs running</span>
+            </div>
+          </div>
+        ) : page === 'pods' ? (
+          <div className="center">
+            <div className="list">
+              {pods.length === 0 ? (
+                <div className="empty" style={{ height: 300 }}><div><b>No pods</b>Nothing matches this view.</div></div>
+              ) : (
+                <PodsTable rows={pods} focus={podFocus} onRow={(r) => setPodFocus(`${r.namespace || 'default'}/${r.name}`)} sort={podSort} setSort={setPodSort} />
+              )}
+            </div>
+            <div className="statusbar">
+              <span>{pods.length} pod{pods.length === 1 ? '' : 's'}</span>
+              <span>{pods.filter((p) => p.phase === 'Running').length} running</span>
+              <span>{pods.reduce((a, p) => a + (p.restarts || 0), 0)} total restarts</span>
             </div>
           </div>
         ) : (
@@ -513,6 +604,9 @@ export default function App() {
         )}
         {page === 'hosts' && !loading && !err && (
           <HostInspector host={nodes.find((n) => n.name === hostFocus)} hide={!showInsp} />
+        )}
+        {page === 'pods' && !loading && !err && (
+          <PodInspector pod={pods.find((p) => `${p.namespace || 'default'}/${p.name}` === podFocus)} hide={!showInsp} />
         )}
         {sheetVm && <ConsoleSheet vm={sheetVm} onClose={() => setSheetVm(null)} />}
       </div>
