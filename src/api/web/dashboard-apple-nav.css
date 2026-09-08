@@ -328,7 +328,7 @@ html[data-theme='dark'] .apple-topnav-ns-select {
   cursor: pointer;
   margin-left: 4px;
 }
-.apple-topnav-new:hover { background: #0077ed; }
+.apple-topnav-new:hover { background: #ff6b2c; }
 .apple-topnav-avatar {
   width: 28px;
   height: 28px;
@@ -547,7 +547,7 @@ html[data-theme='dark'] body.mac-desktop-root .apple-chapter-bar {
   cursor: pointer;
   white-space: nowrap;
 }
-.apple-chapter-bar-cta:hover { background: #0077ed; }
+.apple-chapter-bar-cta:hover { background: #ff6b2c; }
 
 /* ── Side rail ──────────────────────────────────────────────────────────── */
 
