@@ -258,14 +258,14 @@ html.veyron-signin #apikey-modal.mac-signin-overlay {
   font-size: 0.8125rem;
   font-weight: 500;
   color: hsl(240 6% 10%);
-  background: var(--tone-wash, hsl(211 100% 45% / 0.08));
-  border: 1px solid color-mix(in srgb, var(--tone-color, hsl(211 100% 45%)) 28%, transparent);
+  background: var(--tone-wash, hsl(18 100% 54% / 0.08));
+  border: 1px solid color-mix(in srgb, var(--tone-color, hsl(18 100% 54%)) 28%, transparent);
 }
 .login-pill-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--tone-color, hsl(211 100% 45%));
+  background: var(--tone-color, hsl(18 100% 54%));
   flex-shrink: 0;
 }
 .login-form-sub {
@@ -342,26 +342,26 @@ a.login-cta-secondary {
 .login-cta-primary,
 a.login-cta-primary {
   border: none;
-  background: hsl(211 100% 45%);
+  background: hsl(18 100% 54%);
   color: hsl(0 0% 100%);
   box-shadow: 0 1px 0 hsl(0 0% 100% / 0.18) inset;
 }
 .login-cta-primary:hover,
 a.login-cta-primary:hover {
-  background: hsl(211 100% 40%);
+  background: hsl(18 100% 49%);
   color: hsl(0 0% 100%);
 }
 
 .login-cta-secondary,
 a.login-cta-secondary {
-  border: 1px solid hsl(211 100% 45%);
+  border: 1px solid hsl(18 100% 54%);
   background: hsl(0 0% 100%);
-  color: hsl(211 100% 45%);
+  color: hsl(18 100% 54%);
 }
 .login-cta-secondary:hover,
 a.login-cta-secondary:hover {
-  background: hsl(211 100% 45% / 0.06);
-  color: hsl(211 100% 40%);
+  background: hsl(18 100% 54% / 0.06);
+  color: hsl(18 100% 49%);
 }
 
 .login-cta-primary:active,
@@ -465,8 +465,8 @@ a.login-cta-secondary:hover {
 .login-input::placeholder { color: hsl(240 3% 46%); opacity: 0.85; }
 .login-input:focus {
   outline: none;
-  border-color: hsl(211 100% 45%);
-  box-shadow: 0 0 0 3px hsl(211 100% 45% / 0.18);
+  border-color: hsl(18 100% 54%);
+  box-shadow: 0 0 0 3px hsl(18 100% 54% / 0.18);
 }
 
 .login-field-icon {
@@ -496,13 +496,13 @@ a.login-cta-secondary:hover {
   color: hsl(0 0% 100%);
   border-radius: 980px;
   border: none;
-  background: hsl(211 100% 45%);
+  background: hsl(18 100% 54%);
   box-shadow: 0 1px 0 hsl(0 0% 100% / 0.18) inset;
   font-family: inherit;
   cursor: pointer;
   transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
 }
-.login-btn-primary:hover:not(:disabled) { background: hsl(211 100% 40%); filter: none; }
+.login-btn-primary:hover:not(:disabled) { background: hsl(18 100% 49%); filter: none; }
 .login-btn-primary:active:not(:disabled) { transform: scale(0.98); }
 .login-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -515,16 +515,16 @@ a.login-cta-secondary:hover {
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: hsl(211 100% 45%);
+  color: hsl(18 100% 54%);
   border-radius: 980px;
-  border: 1px solid hsl(211 100% 45%);
+  border: 1px solid hsl(18 100% 54%);
   background: hsl(0 0% 100%);
   text-decoration: none;
   font-family: inherit;
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.login-btn-secondary:hover { background: hsl(211 100% 45% / 0.06); }
+.login-btn-secondary:hover { background: hsl(18 100% 54% / 0.06); }
 
 .login-hint {
   color: hsl(240 3% 46%);
@@ -825,13 +825,13 @@ html[data-theme='dark'] .login-tagline strong {
 html[data-theme='dark'] .login-pill,
 html[data-theme='dark'] .login-product-pill {
   color: hsl(240 6% 10%) !important;
-  background: var(--tone-wash, hsl(211 100% 45% / 0.08)) !important;
+  background: var(--tone-wash, hsl(18 100% 54% / 0.08)) !important;
 }
 html[data-theme='dark'] .login-cta-secondary,
 html[data-theme='dark'] .login-btn-secondary {
   background: #fff !important;
-  border-color: hsl(211 100% 45%) !important;
-  color: hsl(211 100% 45%) !important;
+  border-color: hsl(18 100% 54%) !important;
+  color: hsl(18 100% 54%) !important;
 }
 html[data-theme='dark'] .login-card {
   background: #fff !important;
@@ -845,8 +845,8 @@ html[data-theme='dark'] .login-page .login-input {
   border-color: hsl(240 5% 84%) !important;
 }
 html[data-theme='dark'] .login-input:focus {
-  border-color: hsl(211 100% 45%) !important;
-  box-shadow: 0 0 0 3px hsl(211 100% 45% / 0.18) !important;
+  border-color: hsl(18 100% 54%) !important;
+  box-shadow: 0 0 0 3px hsl(18 100% 54% / 0.18) !important;
 }
 html[data-theme='dark'] .login-apple-identity {
   background: #fff !important;
