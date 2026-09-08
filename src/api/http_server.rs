@@ -33,6 +33,7 @@ pub mod web {
         response::{Html, IntoResponse},
         routing::{delete, get, post, put},
     };
+    use include_dir::{Dir, include_dir};
     use k8s_openapi::api::core::v1::{PersistentVolumeClaim, Service};
     use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
     use once_cell::sync::Lazy;
@@ -793,6 +794,8 @@ pub mod web {
                 // Dashboard & static assets
                 .route("/", get(root_redirect))
                 .route("/dashboard", get(dashboard_handler))
+                .route("/console", get(console_handler))
+                .route("/console/assets/*file", get(console_asset_handler))
                 .route("/assets/novnc.min.js", get(novnc_handler))
                 .route("/assets/three.module.min.js", get(three_handler))
                 .route("/assets/dashboard-veyron-3d.js", get(veyron_3d_handler))
@@ -1278,6 +1281,64 @@ pub mod web {
             ],
             Html(DASHBOARD_HTML.as_str()),
         )
+    }
+
+    // Phase 1 of the React migration (see docs/ or the session's plan): a React app built by
+    // `frontend/` (Vite) and embedded into the binary the same way dashboard.html is, served
+    // additively at /console alongside the existing vanilla dashboard at /dashboard. Neither
+    // route touches the other — /dashboard and its 65 pages are completely unaffected.
+    //
+    // NOTE for local `cargo build`: frontend/dist/ must exist before this compiles (it's
+    // gitignored, like every other build output) — run `cd frontend && npm install && npm run
+    // build` once first. The Docker build (see Dockerfile's frontend-builder stage) does this
+    // automatically; only a bare local `cargo build` needs the manual step.
+    static CONSOLE_DIST: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/frontend/dist");
+
+    fn console_mime(path: &str) -> &'static str {
+        if path.ends_with(".js") {
+            "application/javascript"
+        } else if path.ends_with(".css") {
+            "text/css"
+        } else if path.ends_with(".svg") {
+            "image/svg+xml"
+        } else if path.ends_with(".json") {
+            "application/json"
+        } else {
+            "application/octet-stream"
+        }
+    }
+
+    async fn console_handler() -> impl IntoResponse {
+        match CONSOLE_DIST.get_file("index.html") {
+            Some(f) => (
+                [
+                    (header::CONTENT_TYPE, "text/html; charset=utf-8"),
+                    (header::CACHE_CONTROL, "no-cache, no-store, must-revalidate"),
+                ],
+                f.contents(),
+            )
+                .into_response(),
+            None => (
+                StatusCode::NOT_FOUND,
+                "Console build not found — run `npm run build` in frontend/ before `cargo build`.",
+            )
+                .into_response(),
+        }
+    }
+
+    async fn console_asset_handler(Path(file): Path<String>) -> impl IntoResponse {
+        let rel = format!("assets/{file}");
+        match CONSOLE_DIST.get_file(&rel) {
+            Some(f) => (
+                [
+                    (header::CONTENT_TYPE, console_mime(&rel)),
+                    (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+                ],
+                f.contents(),
+            )
+                .into_response(),
+            None => StatusCode::NOT_FOUND.into_response(),
+        }
     }
 
     async fn novnc_handler() -> impl IntoResponse {
