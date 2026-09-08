@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { api, getApiKey, setApiKey } from './api.js';
 import Sparkline from './Sparkline.jsx';
+import { ResourceTable, ResourceInspector } from './Resource.jsx';
 
 const machineWord = (n) => `${n} machine${n === 1 ? '' : 's'}`;
 
@@ -30,9 +31,9 @@ const NAV = [
     { id: 'pods', l: 'Pods', I: Boxes, internal: true },
   ] },
   { g: 'Storage & network', items: [
-    { id: 'storage', l: 'Storage', I: HardDrive, href: '/dashboard#storage' },
-    { id: 'snapshots', l: 'Snapshots', I: SnapIcon, href: '/dashboard#snapshots' },
-    { id: 'backups', l: 'Backups', I: Archive, href: '/dashboard#backups' },
+    { id: 'storage', l: 'Storage', I: HardDrive, internal: true },
+    { id: 'snapshots', l: 'Snapshots', I: SnapIcon, internal: true },
+    { id: 'backups', l: 'Backups', I: Archive, internal: true },
     { id: 'topology', l: 'Topology', I: Waypoints, href: '/dashboard#topology' },
   ] },
   { g: 'Operate', items: [
@@ -103,143 +104,71 @@ const ACT = {
   snapshot: ['Snapshot', Camera], delete: ['Delete', Trash2],
 };
 
-const HOST_COLS = [
-  ['name', 'Name'], ['status', 'Status'], ['roles', 'Role'], ['cpu_capacity', 'vCPU', 'n'],
-  ['memory_capacity', 'Memory'], ['os_image', 'OS'], ['age', 'Age'],
-];
-const HOST_SC = { Ready: 'var(--green)', NotReady: 'var(--red)', SchedulingDisabled: 'var(--orange)' };
+// Column/field definitions for every read-only resource page (Hosts, Pods, Storage,
+// Snapshots, Backups) — the table/sort/inspector plumbing itself lives once in
+// Resource.jsx; each resource below is just its shape.
 const memGiB = (ki) => {
   const n = parseFloat(String(ki || '').replace('Ki', ''));
   return Number.isFinite(n) ? `${Math.round(n / 1024 / 1024)}Gi` : '—';
 };
 
-function HostsTable({ rows, focus, onRow, sort, setSort }) {
-  const sorted = useMemo(() => {
-    const arr = [...rows];
-    arr.sort((a, b) => {
-      const av = a[sort.k], bv = b[sort.k];
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1;
-      if (bv == null) return -1;
-      return (av > bv ? 1 : av < bv ? -1 : 0) * sort.d;
-    });
-    return arr;
-  }, [rows, sort]);
-  return (
-    <table className="vt">
-      <thead>
-        <tr>
-          {HOST_COLS.map((c) => (
-            <th key={c[0]} className={c[2] === 'n' ? 'num' : ''} onClick={() => setSort((s) => ({ k: c[0], d: s.k === c[0] ? -s.d : 1 }))}>
-              {c[1]}
-              {sort.k === c[0] && <span className="s"><ChevronDown size={11} style={{ transform: sort.d < 0 ? 'rotate(180deg)' : '' }} /></span>}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map((r) => (
-          <tr key={r.name} aria-selected={focus === r.name} className={focus === r.name ? 'focus' : ''} onClick={() => onRow(r)}>
-            <td className="name">{r.name}</td>
-            <td><span className="st" style={{ '--c': HOST_SC[r.status] || 'var(--gray)' }}><i />{r.status || 'Unknown'}</span></td>
-            <td className="dim">{(r.roles || []).join(', ') || 'worker'}</td>
-            <td className="num">{r.cpu_capacity ?? '—'}</td>
-            <td className="dim">{memGiB(r.memory_capacity)}</td>
-            <td className="dim">{r.os_image ?? '—'}</td>
-            <td className="num dim">{r.age ?? '—'}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
+const HOST_SC = { Ready: 'var(--green)', NotReady: 'var(--red)', SchedulingDisabled: 'var(--orange)' };
+const HOST_COLS = [
+  ['name', 'Name'],
+  ['status', 'Status'],
+  { 0: 'roles', 1: 'Role', render: (r) => (r.roles || []).join(', ') || 'worker' },
+  ['cpu_capacity', 'vCPU', 'n'],
+  { 0: 'memory_capacity', 1: 'Memory', render: (r) => memGiB(r.memory_capacity) },
+  ['os_image', 'OS'],
+  ['age', 'Age'],
+];
+const HOST_FIELDS = [
+  ['Role', (h) => (h.roles || []).join(', ') || 'worker'],
+  ['CPU', (h) => `${h.cpu_allocatable ?? h.cpu_capacity ?? '—'} allocatable / ${h.cpu_capacity ?? '—'} total`],
+  ['Memory', (h) => memGiB(h.memory_capacity)],
+  ['Kubelet', 'kubelet_version'], ['OS image', 'os_image'], ['Kernel', 'kernel_version'], ['Age', 'age'],
+];
 
-function HostInspector({ host, hide }) {
-  if (!host) return <aside className={`insp ${hide ? 'hide' : ''}`}><div className="empty"><div><b>No selection</b>Select a host to inspect it.</div></div></aside>;
-  const rows = [
-    ['Status', <span key="s" className="st" style={{ '--c': HOST_SC[host.status] || 'var(--gray)' }}><i />{host.status}</span>],
-    ['Role', (host.roles || []).join(', ') || 'worker'],
-    ['CPU', `${host.cpu_allocatable ?? host.cpu_capacity ?? '—'} allocatable / ${host.cpu_capacity ?? '—'} total`],
-    ['Memory', memGiB(host.memory_capacity)],
-    ['Kubelet', host.kubelet_version ?? '—'],
-    ['OS image', host.os_image ?? '—'],
-    ['Kernel', host.kernel_version ?? '—'],
-    ['Age', host.age ?? '—'],
-  ];
-  return (
-    <aside className={`insp ${hide ? 'hide' : ''}`}>
-      <div className="insp-h"><h2>{host.name}</h2><div className="kind">Node · {host.status}</div></div>
-      <div className="form" style={{ paddingTop: 16 }}>{rows.map(([l, v]) => <div className="frow" key={l}><label>{l}</label><span className="mono">{v}</span></div>)}</div>
-    </aside>
-  );
-}
-
+const POD_SC = { Running: 'var(--green)', Pending: 'var(--yellow)', Succeeded: 'var(--gray)', Failed: 'var(--red)', Unknown: 'var(--gray)' };
 const POD_COLS = [
   ['name', 'Name'], ['phase', 'Status'], ['namespace', 'Namespace'], ['node_name', 'Node'],
   ['ip', 'IP'], ['restarts', 'Restarts', 'n'], ['age', 'Age'],
 ];
-const POD_SC = { Running: 'var(--green)', Pending: 'var(--yellow)', Succeeded: 'var(--gray)', Failed: 'var(--red)', Unknown: 'var(--gray)' };
+const POD_FIELDS = [
+  ['Namespace', 'namespace'], ['Node', 'node_name'], ['IP', 'ip'],
+  ['Containers', (p) => (p.containers || []).join(', ') || '—'], ['Restarts', (p) => p.restarts ?? 0], ['Age', 'age'],
+];
 
-function PodsTable({ rows, focus, onRow, sort, setSort }) {
-  const sorted = useMemo(() => {
-    const arr = [...rows];
-    arr.sort((a, b) => {
-      const av = a[sort.k], bv = b[sort.k];
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1;
-      if (bv == null) return -1;
-      return (av > bv ? 1 : av < bv ? -1 : 0) * sort.d;
-    });
-    return arr;
-  }, [rows, sort]);
-  const key = (r) => `${r.namespace || 'default'}/${r.name}`;
-  return (
-    <table className="vt">
-      <thead>
-        <tr>
-          {POD_COLS.map((c) => (
-            <th key={c[0]} className={c[2] === 'n' ? 'num' : ''} onClick={() => setSort((s) => ({ k: c[0], d: s.k === c[0] ? -s.d : 1 }))}>
-              {c[1]}
-              {sort.k === c[0] && <span className="s"><ChevronDown size={11} style={{ transform: sort.d < 0 ? 'rotate(180deg)' : '' }} /></span>}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map((r) => (
-          <tr key={key(r)} aria-selected={focus === key(r)} className={focus === key(r) ? 'focus' : ''} onClick={() => onRow(r)}>
-            <td className="name">{r.name}</td>
-            <td><span className="st" style={{ '--c': POD_SC[r.phase] || 'var(--gray)' }}><i />{r.phase || 'Unknown'}</span></td>
-            <td className="dim">{r.namespace}</td>
-            <td className="mono dim">{r.node_name ?? '—'}</td>
-            <td className="mono dim">{r.ip ?? '—'}</td>
-            <td className="num">{r.restarts ?? 0}</td>
-            <td className="num dim">{r.age ?? '—'}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
+const PVC_SC = { Bound: 'var(--green)', Pending: 'var(--yellow)', Lost: 'var(--red)' };
+const PVC_COLS = [
+  ['name', 'Name'], ['status', 'Status'], ['namespace', 'Namespace'], ['capacity', 'Size'], ['storage_class', 'Class'],
+];
+const PVC_FIELDS = [['Namespace', 'namespace'], ['Size', 'capacity'], ['Storage class', 'storage_class']];
 
-function PodInspector({ pod, hide }) {
-  if (!pod) return <aside className={`insp ${hide ? 'hide' : ''}`}><div className="empty"><div><b>No selection</b>Select a pod to inspect it.</div></div></aside>;
-  const rows = [
-    ['Status', <span key="s" className="st" style={{ '--c': POD_SC[pod.phase] || 'var(--gray)' }}><i />{pod.phase}</span>],
-    ['Namespace', pod.namespace],
-    ['Node', pod.node_name ?? '—'],
-    ['IP', pod.ip ?? '—'],
-    ['Containers', (pod.containers || []).join(', ') || '—'],
-    ['Restarts', pod.restarts ?? 0],
-    ['Age', pod.age ?? '—'],
-  ];
-  return (
-    <aside className={`insp ${hide ? 'hide' : ''}`}>
-      <div className="insp-h"><h2>{pod.name}</h2><div className="kind">Pod · {pod.phase}</div></div>
-      <div className="form" style={{ paddingTop: 16 }}>{rows.map(([l, v]) => <div className="frow" key={l}><label>{l}</label><span className="mono">{v}</span></div>)}</div>
-    </aside>
-  );
-}
+const SNAP_SC = { Ready: 'var(--green)', InProgress: 'var(--yellow)', Failed: 'var(--red)' };
+const SNAP_COLS = [
+  ['name', 'Name'], ['status', 'Status'], ['vm_name', 'Machine'], ['namespace', 'Namespace'],
+  ['ready', 'Ready', null, (r) => (r.ready ? 'Yes' : 'No')], ['age', 'Age'],
+];
+const SNAP_FIELDS = [['Machine', 'vm_name'], ['Namespace', 'namespace'], ['Ready', (s) => (s.ready ? 'Yes' : 'No')], ['Age', 'age']];
+
+const BACKUP_COLS = [
+  ['name', 'Name'], ['status', 'Status'], ['namespace', 'Namespace'], ['created', 'Created'],
+];
+const BACKUP_SC = { Completed: 'var(--green)', InProgress: 'var(--yellow)', Failed: 'var(--red)' };
+const BACKUP_FIELDS = [['Namespace', 'namespace'], ['Created', 'created']];
+
+const nsKey = (r) => `${r.namespace || 'default'}/${r.name}`;
+
+// Config for every generic read-only list page: how to pull its rows out of the
+// loaded data, its table columns, its inspector fields, and its row identity.
+const LIST_PAGES = {
+  hosts: { title: 'Hosts', noun: 'host', kind: 'Node', rows: ({ nodes }) => nodes, cols: HOST_COLS, statusKey: 'status', statusMap: HOST_SC, rowKey: (r) => r.name, fields: HOST_FIELDS },
+  pods: { title: 'Pods', noun: 'pod', kind: 'Pod', rows: ({ pods }) => pods, cols: POD_COLS, statusKey: 'phase', statusMap: POD_SC, rowKey: nsKey, fields: POD_FIELDS },
+  storage: { title: 'Storage', noun: 'volume', kind: 'PersistentVolumeClaim', rows: ({ pvcs }) => pvcs, cols: PVC_COLS, statusKey: 'status', statusMap: PVC_SC, rowKey: nsKey, fields: PVC_FIELDS },
+  snapshots: { title: 'Snapshots', noun: 'snapshot', kind: 'Snapshot', rows: ({ snapshots }) => snapshots, cols: SNAP_COLS, statusKey: 'status', statusMap: SNAP_SC, rowKey: nsKey, fields: SNAP_FIELDS },
+  backups: { title: 'Backups', noun: 'backup', kind: 'Backup', rows: ({ backups }) => backups, cols: BACKUP_COLS, statusKey: 'status', statusMap: BACKUP_SC, rowKey: nsKey, fields: BACKUP_FIELDS },
+};
 
 function Inspector({ vm, hide, history, onAct, busy }) {
   const [tab, setTab] = useState('General');
@@ -356,16 +285,21 @@ export default function App() {
   const [vms, setVms] = useState([]);
   const [nodes, setNodes] = useState([]);
   const [pods, setPods] = useState([]);
-  const [podSort, setPodSort] = useState({ k: 'name', d: 1 });
-  const [podFocus, setPodFocus] = useState(null);
+  const [pvcs, setPvcs] = useState([]);
+  const [snapshots, setSnapshots] = useState([]);
+  const [backups, setBackups] = useState([]);
+  // Generic per-page focus (which row is selected/inspected) for every simple
+  // read-only list page (hosts, pods, storage, snapshots, backups) — sort is
+  // self-contained inside ResourceTable, so this is the only state each new
+  // resource type needs. Avoids a new pair of useState hooks per resource.
+  const [listFocus, setListFocusState] = useState({});
+  const setListFocus = (id, focus) => setListFocusState((s) => ({ ...s, [id]: focus }));
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const [view, setView] = useState('list');
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState(new Set());
   const [focus, setFocus] = useState(null);
-  const [hostSort, setHostSort] = useState({ k: 'name', d: 1 });
-  const [hostFocus, setHostFocus] = useState(null);
   const [menu, setMenu] = useState(null);
   const [sheetVm, setSheetVm] = useState(null);
   const [showSrc, setShowSrc] = useState(true);
@@ -377,10 +311,15 @@ export default function App() {
   const load = useCallback(async () => {
     if (!authed) return;
     try {
-      const [vmList, nodeList, podList] = await Promise.all([api.listVms('all'), api.listNodes(), api.listPods('all')]);
+      const [vmList, nodeList, podList, pvcList, snapList, backupList] = await Promise.all([
+        api.listVms('all'), api.listNodes(), api.listPods('all'), api.listPvcs(), api.listSnapshots(), api.listBackups(),
+      ]);
       setVms(vmList);
       setNodes(nodeList);
       setPods(podList);
+      setPvcs(pvcList);
+      setSnapshots(snapList);
+      setBackups(backupList);
       setErr(null);
       vmList.forEach((v) => {
         const key = `${v.namespace || 'default'}/${v.name}`;
@@ -481,11 +420,10 @@ export default function App() {
           </div>
         )}
         <div className="title">
-          {page === 'mission' ? 'Mission Control' : page === 'hosts' ? 'Hosts' : page === 'pods' ? 'Pods' : 'Virtual machines'}
+          {page === 'mission' ? 'Mission Control' : LIST_PAGES[page] ? LIST_PAGES[page].title : 'Virtual machines'}
           <small>
             {page === 'vms' ? machineWord(filtered.length)
-              : page === 'hosts' ? `${nodes.length} host${nodes.length === 1 ? '' : 's'}`
-              : page === 'pods' ? `${pods.length} pod${pods.length === 1 ? '' : 's'}`
+              : LIST_PAGES[page] ? (() => { const n = LIST_PAGES[page].rows({ nodes, pods, pvcs, snapshots, backups }).length; return `${n} ${LIST_PAGES[page].noun}${n === 1 ? '' : 's'}`; })()
               : 'Veyron'}
           </small>
         </div>
@@ -506,7 +444,7 @@ export default function App() {
               {g.items.map((it) => {
                 const Icon = it.I;
                 if (it.internal) {
-                  const count = it.id === 'vms' ? vms.length : it.id === 'hosts' ? nodes.length : it.id === 'pods' ? pods.length : null;
+                  const count = it.id === 'vms' ? vms.length : LIST_PAGES[it.id] ? LIST_PAGES[it.id].rows({ nodes, pods, pvcs, snapshots, backups }).length : null;
                   return (
                     <button key={it.id} className="srow" aria-current={page === it.id ? 'page' : undefined} onClick={() => setPage(it.id)}>
                       <Icon size={15} strokeWidth={1.9} />{it.l}
@@ -531,35 +469,25 @@ export default function App() {
           <div className="center"><div className="empty"><div><b>Couldn't load data</b>{err}<div style={{ marginTop: 10 }}><button className="btn" onClick={load}><RefreshCw size={12} />Retry</button></div></div></div></div>
         ) : page === 'mission' ? (
           <Mission vms={vms} nodes={nodes} go={go} />
-        ) : page === 'hosts' ? (
-          <div className="center">
-            <div className="list">
-              {nodes.length === 0 ? (
-                <div className="empty" style={{ height: 300 }}><div><b>No hosts</b>Nothing matches this view.</div></div>
-              ) : (
-                <HostsTable rows={nodes} focus={hostFocus} onRow={(r) => setHostFocus(r.name)} sort={hostSort} setSort={setHostSort} />
-              )}
-            </div>
-            <div className="statusbar">
-              <span>{nodes.length} host{nodes.length === 1 ? '' : 's'}</span>
-              <span>{vms.filter((v) => v.status === 'Running').length} VMs running</span>
-            </div>
-          </div>
-        ) : page === 'pods' ? (
-          <div className="center">
-            <div className="list">
-              {pods.length === 0 ? (
-                <div className="empty" style={{ height: 300 }}><div><b>No pods</b>Nothing matches this view.</div></div>
-              ) : (
-                <PodsTable rows={pods} focus={podFocus} onRow={(r) => setPodFocus(`${r.namespace || 'default'}/${r.name}`)} sort={podSort} setSort={setPodSort} />
-              )}
-            </div>
-            <div className="statusbar">
-              <span>{pods.length} pod{pods.length === 1 ? '' : 's'}</span>
-              <span>{pods.filter((p) => p.phase === 'Running').length} running</span>
-              <span>{pods.reduce((a, p) => a + (p.restarts || 0), 0)} total restarts</span>
-            </div>
-          </div>
+        ) : LIST_PAGES[page] ? (
+          (() => {
+            const cfg = LIST_PAGES[page];
+            const rows = cfg.rows({ nodes, pods, pvcs, snapshots, backups });
+            const focusKey = listFocus[page];
+            return (
+              <div className="center">
+                <div className="list">
+                  {rows.length === 0 ? (
+                    <div className="empty" style={{ height: 300 }}><div><b>No {cfg.noun}s</b>Nothing matches this view.</div></div>
+                  ) : (
+                    <ResourceTable rows={rows} cols={cfg.cols} rowKey={cfg.rowKey} statusKey={cfg.statusKey} statusMap={cfg.statusMap}
+                      focus={focusKey} onRow={(r) => setListFocus(page, cfg.rowKey(r))} />
+                  )}
+                </div>
+                <div className="statusbar"><span>{rows.length} {cfg.noun}{rows.length === 1 ? '' : 's'}</span></div>
+              </div>
+            );
+          })()
         ) : (
           <div className="center">
             <div className="list">
@@ -602,12 +530,15 @@ export default function App() {
         {page === 'vms' && !loading && !err && (
           <Inspector vm={focusVm} hide={!showInsp} history={history.current} busy={busy} onAct={(a) => act(a, new Set([focus]))} />
         )}
-        {page === 'hosts' && !loading && !err && (
-          <HostInspector host={nodes.find((n) => n.name === hostFocus)} hide={!showInsp} />
-        )}
-        {page === 'pods' && !loading && !err && (
-          <PodInspector pod={pods.find((p) => `${p.namespace || 'default'}/${p.name}` === podFocus)} hide={!showInsp} />
-        )}
+        {LIST_PAGES[page] && !loading && !err && (() => {
+          const cfg = LIST_PAGES[page];
+          const rows = cfg.rows({ nodes, pods, pvcs, snapshots, backups });
+          const item = rows.find((r) => cfg.rowKey(r) === listFocus[page]);
+          return (
+            <ResourceInspector item={item} hide={!showInsp} kind={cfg.kind} statusKey={cfg.statusKey} statusMap={cfg.statusMap}
+              fields={cfg.fields} title={(r) => r.name} emptyLabel={`Select a ${cfg.noun} to inspect it.`} />
+          );
+        })()}
         {sheetVm && <ConsoleSheet vm={sheetVm} onClose={() => setSheetVm(null)} />}
       </div>
 
