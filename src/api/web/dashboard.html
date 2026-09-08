@@ -7370,7 +7370,7 @@ html.light-theme body.mac-desktop-root::before {
   </header>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
-#page-gallery-wall{--gw-void:#05070d;--gw-abyss:#080b13;--gw-deep:#0b0f1a;--gw-panel:#0f1422;--gw-panel2:#141b2c;--gw-raised:#1a2336;--gw-raised2:#212c44;--gw-line:#1c2536;--gw-line2:#28344c;--gw-lineb:#37496c;--gw-ink:#eef3fb;--gw-ink2:#a3b3cd;--gw-ink3:#63749a;--gw-ink4:#3f4d6b;--gw-bolt:#4f8bff;--gw-bolt2:#7aa2ff;--gw-boltd:#2f5fd0;--gw-arc:#9a7cff;--gw-arc2:#b69dff;--gw-ok:#3ddc8f;--gw-ok-bg:rgba(61,220,143,.09);--gw-ok-ln:rgba(61,220,143,.3);--gw-warn:#ffb648;--gw-warn-bg:rgba(255,182,72,.1);--gw-warn-ln:rgba(255,182,72,.32);--gw-crit:#ff5d6c;--gw-crit-bg:rgba(255,93,108,.1);--gw-crit-ln:rgba(255,93,108,.34);--gw-idle:#63749a;--gw-ease:cubic-bezier(.2,.8,.2,1);--gw-ease-out:cubic-bezier(.16,1,.3,1)}
+#page-gallery-wall{--gw-void:#05070d;--gw-abyss:#080b13;--gw-deep:#0b0f1a;--gw-panel:#0f1422;--gw-panel2:#141b2c;--gw-raised:#1a2336;--gw-raised2:#212c44;--gw-line:#1c2536;--gw-line2:#28344c;--gw-lineb:#37496c;--gw-ink:#eef3fb;--gw-ink2:#a3b3cd;--gw-ink3:#63749a;--gw-ink4:#3f4d6b;--gw-bolt:#4f8bff;--gw-bolt2:#7aa2ff;--gw-bolt3:#2f9bff;--gw-boltd:#2f5fd0;--gw-arc:#9a7cff;--gw-arc2:#b69dff;--gw-ok:#3ddc8f;--gw-ok-bg:rgba(61,220,143,.09);--gw-ok-ln:rgba(61,220,143,.3);--gw-warn:#ffb648;--gw-warn-bg:rgba(255,182,72,.1);--gw-warn-ln:rgba(255,182,72,.32);--gw-crit:#ff5d6c;--gw-crit-bg:rgba(255,93,108,.1);--gw-crit-ln:rgba(255,93,108,.34);--gw-idle:#63749a;--gw-ease:cubic-bezier(.2,.8,.2,1);--gw-ease-out:cubic-bezier(.16,1,.3,1)}
 #page-gallery-wall .gw-wrap{font-family:'Inter',-apple-system,sans-serif;color:var(--gw-ink);padding:0 0 48px;-webkit-font-smoothing:antialiased;letter-spacing:.1px}
 #page-gallery-wall .gw-wrap.incident{--gw-hero-em:var(--gw-crit)}
 #page-gallery-wall .gw-top{display:flex;align-items:center;gap:14px;margin-bottom:24px}
@@ -7892,9 +7892,9 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
       </div>
     </div>
     <div class="gw-stat"><div class="gw-sl"><span class="gw-tk" style="background:var(--gw-bolt)"></span>Compute</div><div class="gw-sn" id="gw-s-compute">—<small>%</small></div><canvas class="gw-spk" data-gk="compute" data-gc="79,139,255"></canvas></div>
-    <div class="gw-stat"><div class="gw-sl"><span class="gw-tk" style="background:var(--gw-arc)"></span>Memory</div><div class="gw-sn" id="gw-s-mem">—<small>%</small></div><canvas class="gw-spk" data-gk="mem" data-gc="154,124,255"></canvas></div>
-    <div class="gw-stat"><div class="gw-sl"><span class="gw-tk" style="background:var(--gw-ok)"></span>Network</div><div class="gw-sn" id="gw-s-net">—<small>MB/s</small></div><canvas class="gw-spk" data-gk="net" data-gc="61,220,143"></canvas></div>
-    <div class="gw-stat" id="gw-store-card"><div class="gw-sl"><span class="gw-tk" style="background:var(--gw-ok)"></span>Storage</div><div class="gw-sn" id="gw-s-store">—<small>%</small></div><canvas class="gw-spk" data-gk="store" data-gc="61,220,143"></canvas></div>
+    <div class="gw-stat"><div class="gw-sl"><span class="gw-tk" style="background:var(--gw-bolt3)"></span>Memory</div><div class="gw-sn" id="gw-s-mem">—<small>%</small></div><canvas class="gw-spk" data-gk="mem" data-gc="47,155,255"></canvas></div>
+    <div class="gw-stat"><div class="gw-sl"><span class="gw-tk" style="background:var(--gw-boltd)"></span>Network</div><div class="gw-sn" id="gw-s-net">—<small>MB/s</small></div><canvas class="gw-spk" data-gk="net" data-gc="47,95,208"></canvas></div>
+    <div class="gw-stat" id="gw-store-card"><div class="gw-sl"><span class="gw-tk" style="background:var(--gw-bolt2)"></span>Storage</div><div class="gw-sn" id="gw-s-store">—<small>%</small></div><canvas class="gw-spk" data-gk="store" data-gc="122,162,255"></canvas></div>
   </div>
 
   <!-- incident banner -->
@@ -8358,7 +8358,7 @@ body.mac-desktop-root .iw-cc-readouts .iw-home-stat:hover{
 
 <!-- VM Center page (route id: vcentre) -->
 <div class="page section-shell" id="page-vcentre" data-section="compute">
-<div class="space-y animate-fade-in" style="padding:28px">
+<div class="space-y animate-fade-in">
   <header class="apple-chapter apple-hero-band">
     <p class="apple-chapter-kicker">VM Center</p>
     <h1 class="apple-chapter-title">Familiar ops.</h1>
