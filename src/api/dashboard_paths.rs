@@ -14,6 +14,8 @@ pub fn is_auth_exempt_path(path: &str) -> bool {
         || path == "/"
         || path == "/dashboard"
         || path.starts_with("/assets/")
+        || path == "/console"
+        || path.starts_with("/console/assets/")
 }
 
 /// Dashboard API prefixes exempt from the global rate limiter.
@@ -101,6 +103,8 @@ mod tests {
             "/",
             "/dashboard",
             "/assets/novnc.min.js",
+            "/console",
+            "/console/assets/index-abc123.js",
             "/api/v1/health",
             "/api/v1/platform/guestkit/binary",
             "/api/v1/auth/oidc/config",
