@@ -25,7 +25,7 @@ const NAV = [
   ] },
   { g: 'Compute', items: [
     { id: 'vms', l: 'Virtual machines', I: Monitor, internal: true },
-    { id: 'nodes', l: 'Hosts', I: Server, href: '/dashboard#nodes' },
+    { id: 'hosts', l: 'Hosts', I: Server, internal: true },
     { id: 'images', l: 'Images & ISOs', I: Disc3, href: '/dashboard#images' },
     { id: 'pods', l: 'Pods', I: Boxes, href: '/dashboard#pods' },
   ] },
@@ -102,6 +102,77 @@ const ACT = {
   pause: ['Pause', Pause], migrate: ['Migrate', ArrowLeftRight], console: ['Console', Terminal],
   snapshot: ['Snapshot', Camera], delete: ['Delete', Trash2],
 };
+
+const HOST_COLS = [
+  ['name', 'Name'], ['status', 'Status'], ['roles', 'Role'], ['cpu_capacity', 'vCPU', 'n'],
+  ['memory_capacity', 'Memory'], ['os_image', 'OS'], ['age', 'Age'],
+];
+const HOST_SC = { Ready: 'var(--green)', NotReady: 'var(--red)', SchedulingDisabled: 'var(--orange)' };
+const memGiB = (ki) => {
+  const n = parseFloat(String(ki || '').replace('Ki', ''));
+  return Number.isFinite(n) ? `${Math.round(n / 1024 / 1024)}Gi` : '—';
+};
+
+function HostsTable({ rows, focus, onRow, sort, setSort }) {
+  const sorted = useMemo(() => {
+    const arr = [...rows];
+    arr.sort((a, b) => {
+      const av = a[sort.k], bv = b[sort.k];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return (av > bv ? 1 : av < bv ? -1 : 0) * sort.d;
+    });
+    return arr;
+  }, [rows, sort]);
+  return (
+    <table className="vt">
+      <thead>
+        <tr>
+          {HOST_COLS.map((c) => (
+            <th key={c[0]} className={c[2] === 'n' ? 'num' : ''} onClick={() => setSort((s) => ({ k: c[0], d: s.k === c[0] ? -s.d : 1 }))}>
+              {c[1]}
+              {sort.k === c[0] && <span className="s"><ChevronDown size={11} style={{ transform: sort.d < 0 ? 'rotate(180deg)' : '' }} /></span>}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {sorted.map((r) => (
+          <tr key={r.name} aria-selected={focus === r.name} className={focus === r.name ? 'focus' : ''} onClick={() => onRow(r)}>
+            <td className="name">{r.name}</td>
+            <td><span className="st" style={{ '--c': HOST_SC[r.status] || 'var(--gray)' }}><i />{r.status || 'Unknown'}</span></td>
+            <td className="dim">{(r.roles || []).join(', ') || 'worker'}</td>
+            <td className="num">{r.cpu_capacity ?? '—'}</td>
+            <td className="dim">{memGiB(r.memory_capacity)}</td>
+            <td className="dim">{r.os_image ?? '—'}</td>
+            <td className="num dim">{r.age ?? '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function HostInspector({ host, hide }) {
+  if (!host) return <aside className={`insp ${hide ? 'hide' : ''}`}><div className="empty"><div><b>No selection</b>Select a host to inspect it.</div></div></aside>;
+  const rows = [
+    ['Status', <span key="s" className="st" style={{ '--c': HOST_SC[host.status] || 'var(--gray)' }}><i />{host.status}</span>],
+    ['Role', (host.roles || []).join(', ') || 'worker'],
+    ['CPU', `${host.cpu_allocatable ?? host.cpu_capacity ?? '—'} allocatable / ${host.cpu_capacity ?? '—'} total`],
+    ['Memory', memGiB(host.memory_capacity)],
+    ['Kubelet', host.kubelet_version ?? '—'],
+    ['OS image', host.os_image ?? '—'],
+    ['Kernel', host.kernel_version ?? '—'],
+    ['Age', host.age ?? '—'],
+  ];
+  return (
+    <aside className={`insp ${hide ? 'hide' : ''}`}>
+      <div className="insp-h"><h2>{host.name}</h2><div className="kind">Node · {host.status}</div></div>
+      <div className="form" style={{ paddingTop: 16 }}>{rows.map(([l, v]) => <div className="frow" key={l}><label>{l}</label><span className="mono">{v}</span></div>)}</div>
+    </aside>
+  );
+}
 
 function Inspector({ vm, hide, history, onAct, busy }) {
   const [tab, setTab] = useState('General');
@@ -223,6 +294,8 @@ export default function App() {
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState(new Set());
   const [focus, setFocus] = useState(null);
+  const [hostSort, setHostSort] = useState({ k: 'name', d: 1 });
+  const [hostFocus, setHostFocus] = useState(null);
   const [menu, setMenu] = useState(null);
   const [sheetVm, setSheetVm] = useState(null);
   const [showSrc, setShowSrc] = useState(true);
@@ -337,10 +410,10 @@ export default function App() {
           </div>
         )}
         <div className="title">
-          {page === 'mission' ? 'Mission Control' : 'Virtual machines'}
-          <small>{page === 'vms' ? machineWord(filtered.length) : 'Veyron'}</small>
+          {page === 'mission' ? 'Mission Control' : page === 'hosts' ? 'Hosts' : 'Virtual machines'}
+          <small>{page === 'vms' ? machineWord(filtered.length) : page === 'hosts' ? `${nodes.length} host${nodes.length === 1 ? '' : 's'}` : 'Veyron'}</small>
         </div>
-        <label className="tsearch"><Search size={14} /><input value={q} onChange={(e) => { setQ(e.target.value); if (page !== 'vms') setPage('vms'); }} placeholder="Search" /></label>
+        <label className="tsearch"><Search size={14} /><input value={q} onChange={(e) => { setQ(e.target.value); if (page === 'mission') setPage('vms'); }} placeholder="Search" /></label>
         <span className="live"><i />Live</span>
         <button className="tb" title="Notifications"><Bell size={15} />{vms.filter((v) => v.status === 'Degraded' || v.status === 'Failed').length > 0 && <span className="badge">{vms.filter((v) => v.status === 'Degraded' || v.status === 'Failed').length}</span>}</button>
         <button className="tb" onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}>{theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}</button>
@@ -357,7 +430,7 @@ export default function App() {
               {g.items.map((it) => {
                 const Icon = it.I;
                 if (it.internal) {
-                  const count = it.id === 'vms' ? vms.length : null;
+                  const count = it.id === 'vms' ? vms.length : it.id === 'hosts' ? nodes.length : null;
                   return (
                     <button key={it.id} className="srow" aria-current={page === it.id ? 'page' : undefined} onClick={() => setPage(it.id)}>
                       <Icon size={15} strokeWidth={1.9} />{it.l}
@@ -382,6 +455,20 @@ export default function App() {
           <div className="center"><div className="empty"><div><b>Couldn't load data</b>{err}<div style={{ marginTop: 10 }}><button className="btn" onClick={load}><RefreshCw size={12} />Retry</button></div></div></div></div>
         ) : page === 'mission' ? (
           <Mission vms={vms} nodes={nodes} go={go} />
+        ) : page === 'hosts' ? (
+          <div className="center">
+            <div className="list">
+              {nodes.length === 0 ? (
+                <div className="empty" style={{ height: 300 }}><div><b>No hosts</b>Nothing matches this view.</div></div>
+              ) : (
+                <HostsTable rows={nodes} focus={hostFocus} onRow={(r) => setHostFocus(r.name)} sort={hostSort} setSort={setHostSort} />
+              )}
+            </div>
+            <div className="statusbar">
+              <span>{nodes.length} host{nodes.length === 1 ? '' : 's'}</span>
+              <span>{vms.filter((v) => v.status === 'Running').length} VMs running</span>
+            </div>
+          </div>
         ) : (
           <div className="center">
             <div className="list">
@@ -423,6 +510,9 @@ export default function App() {
 
         {page === 'vms' && !loading && !err && (
           <Inspector vm={focusVm} hide={!showInsp} history={history.current} busy={busy} onAct={(a) => act(a, new Set([focus]))} />
+        )}
+        {page === 'hosts' && !loading && !err && (
+          <HostInspector host={nodes.find((n) => n.name === hostFocus)} hide={!showInsp} />
         )}
         {sheetVm && <ConsoleSheet vm={sheetVm} onClose={() => setSheetVm(null)} />}
       </div>
