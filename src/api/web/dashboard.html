@@ -4498,20 +4498,20 @@ html.light-theme body.mac-desktop-root::before {
   background: linear-gradient(135deg, var(--zs-amber-dim), var(--zs-forged) 55%) !important;
 }
 #page-vms .vmr-fleet-kpis .warn .gsv { color: var(--zs-amber) !important; }
+/* vCPUs/Memory used to get an arbitrary light-blue/purple "rainbow KPI" tint by
+   position (nth-child) — no semantic meaning, just decorative inconsistency next
+   to Running/Stopped's real green/amber status colors. Unified to Apple Blue. */
 #page-vms .vmr-fleet-kpis .tahoe-stat-pill:nth-child(3),
-#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(3) {
-  border-left-color: #5B9FD4 !important;
-  background: linear-gradient(135deg, rgba(91, 159, 212, 0.14), var(--zs-forged) 55%) !important;
-}
-#page-vms .vmr-fleet-kpis .tahoe-stat-pill:nth-child(3) .gsv,
-#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(3) .gsv { color: #8EC5F2 !important; }
+#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(3),
 #page-vms .vmr-fleet-kpis .tahoe-stat-pill:nth-child(4),
 #page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(4) {
-  border-left-color: #C084FC !important;
-  background: linear-gradient(135deg, rgba(192, 132, 252, 0.14), var(--zs-forged) 55%) !important;
+  border-left-color: var(--plasma) !important;
+  background: linear-gradient(135deg, var(--plasma-glow), var(--zs-forged) 55%) !important;
 }
+#page-vms .vmr-fleet-kpis .tahoe-stat-pill:nth-child(3) .gsv,
+#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(3) .gsv,
 #page-vms .vmr-fleet-kpis .tahoe-stat-pill:nth-child(4) .gsv,
-#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(4) .gsv { color: #D8B4FE !important; }
+#page-vms .vmr-fleet-kpis .glass-stat-pill:nth-child(4) .gsv { color: var(--plasma) !important; }
 
 /* Hero + deviation bar color */
 #page-vms .vmr-devbar-verdict { color: #3DDC97; text-shadow: 0 0 24px rgba(61, 220, 151, 0.35); }
