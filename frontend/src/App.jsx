@@ -38,7 +38,7 @@ const NAV = [
   ] },
   { g: 'Operate', items: [
     { id: 'monitoring', l: 'Monitoring', I: Radar, href: '/dashboard#monitoring' },
-    { id: 'alerts', l: 'Alerts', I: AlertIcon, href: '/dashboard#alerts' },
+    { id: 'alerts', l: 'Alerts', I: AlertIcon, internal: true },
     { id: 'security', l: 'Security', I: Shield, href: '/dashboard#security' },
   ] },
   { g: 'System', items: [
@@ -148,7 +148,7 @@ const PVC_FIELDS = [['Namespace', 'namespace'], ['Size', 'capacity'], ['Storage 
 const SNAP_SC = { Ready: 'var(--green)', InProgress: 'var(--yellow)', Failed: 'var(--red)' };
 const SNAP_COLS = [
   ['name', 'Name'], ['status', 'Status'], ['vm_name', 'Machine'], ['namespace', 'Namespace'],
-  ['ready', 'Ready', null, (r) => (r.ready ? 'Yes' : 'No')], ['age', 'Age'],
+  { 0: 'ready', 1: 'Ready', render: (r) => (r.ready ? 'Yes' : 'No') }, ['age', 'Age'],
 ];
 const SNAP_FIELDS = [['Machine', 'vm_name'], ['Namespace', 'namespace'], ['Ready', (s) => (s.ready ? 'Yes' : 'No')], ['Age', 'age']];
 
@@ -157,6 +157,15 @@ const BACKUP_COLS = [
 ];
 const BACKUP_SC = { Completed: 'var(--green)', InProgress: 'var(--yellow)', Failed: 'var(--red)' };
 const BACKUP_FIELDS = [['Namespace', 'namespace'], ['Created', 'created']];
+
+const ALERT_SC = { firing: 'var(--red)', resolved: 'var(--gray)', pending: 'var(--yellow)' };
+const ALERT_COLS = [
+  ['name', 'Name'], ['status', 'Status'], ['severity', 'Severity'], ['source', 'Source'], ['fired_at', 'Fired'],
+];
+const ALERT_FIELDS = [
+  ['Severity', 'severity'], ['Source', 'source'], ['Fired', 'fired_at'], ['Resolved', (a) => a.resolved_at ?? '—'],
+  ['Message', 'message'],
+];
 
 const nsKey = (r) => `${r.namespace || 'default'}/${r.name}`;
 
@@ -168,6 +177,7 @@ const LIST_PAGES = {
   storage: { title: 'Storage', noun: 'volume', kind: 'PersistentVolumeClaim', rows: ({ pvcs }) => pvcs, cols: PVC_COLS, statusKey: 'status', statusMap: PVC_SC, rowKey: nsKey, fields: PVC_FIELDS },
   snapshots: { title: 'Snapshots', noun: 'snapshot', kind: 'Snapshot', rows: ({ snapshots }) => snapshots, cols: SNAP_COLS, statusKey: 'status', statusMap: SNAP_SC, rowKey: nsKey, fields: SNAP_FIELDS },
   backups: { title: 'Backups', noun: 'backup', kind: 'Backup', rows: ({ backups }) => backups, cols: BACKUP_COLS, statusKey: 'status', statusMap: BACKUP_SC, rowKey: nsKey, fields: BACKUP_FIELDS },
+  alerts: { title: 'Alerts', noun: 'alert', kind: 'Alert', rows: ({ alerts }) => alerts, cols: ALERT_COLS, statusKey: 'status', statusMap: ALERT_SC, rowKey: (r) => r.id, fields: ALERT_FIELDS },
 };
 
 function Inspector({ vm, hide, history, onAct, busy }) {
@@ -288,6 +298,7 @@ export default function App() {
   const [pvcs, setPvcs] = useState([]);
   const [snapshots, setSnapshots] = useState([]);
   const [backups, setBackups] = useState([]);
+  const [alerts, setAlerts] = useState([]);
   // Generic per-page focus (which row is selected/inspected) for every simple
   // read-only list page (hosts, pods, storage, snapshots, backups) — sort is
   // self-contained inside ResourceTable, so this is the only state each new
@@ -311,8 +322,8 @@ export default function App() {
   const load = useCallback(async () => {
     if (!authed) return;
     try {
-      const [vmList, nodeList, podList, pvcList, snapList, backupList] = await Promise.all([
-        api.listVms('all'), api.listNodes(), api.listPods('all'), api.listPvcs(), api.listSnapshots(), api.listBackups(),
+      const [vmList, nodeList, podList, pvcList, snapList, backupList, alertList] = await Promise.all([
+        api.listVms('all'), api.listNodes(), api.listPods('all'), api.listPvcs(), api.listSnapshots(), api.listBackups(), api.listAlerts(),
       ]);
       setVms(vmList);
       setNodes(nodeList);
@@ -320,6 +331,7 @@ export default function App() {
       setPvcs(pvcList);
       setSnapshots(snapList);
       setBackups(backupList);
+      setAlerts(alertList);
       setErr(null);
       vmList.forEach((v) => {
         const key = `${v.namespace || 'default'}/${v.name}`;
@@ -344,6 +356,7 @@ export default function App() {
   }, [authed, load]);
 
   const filtered = useMemo(() => vms.filter((v) => !q || `${v.name} ${v.node || ''} ${v.namespace || ''}`.toLowerCase().includes(q.toLowerCase())), [vms, q]);
+  const resourceData = useMemo(() => ({ nodes, pods, pvcs, snapshots, backups, alerts }), [nodes, pods, pvcs, snapshots, backups, alerts]);
   const focusVm = vms.find((v) => `${v.namespace || 'default'}/${v.name}` === focus);
 
   const go = (p, vm) => {
@@ -423,7 +436,7 @@ export default function App() {
           {page === 'mission' ? 'Mission Control' : LIST_PAGES[page] ? LIST_PAGES[page].title : 'Virtual machines'}
           <small>
             {page === 'vms' ? machineWord(filtered.length)
-              : LIST_PAGES[page] ? (() => { const n = LIST_PAGES[page].rows({ nodes, pods, pvcs, snapshots, backups }).length; return `${n} ${LIST_PAGES[page].noun}${n === 1 ? '' : 's'}`; })()
+              : LIST_PAGES[page] ? (() => { const n = LIST_PAGES[page].rows(resourceData).length; return `${n} ${LIST_PAGES[page].noun}${n === 1 ? '' : 's'}`; })()
               : 'Veyron'}
           </small>
         </div>
@@ -444,7 +457,7 @@ export default function App() {
               {g.items.map((it) => {
                 const Icon = it.I;
                 if (it.internal) {
-                  const count = it.id === 'vms' ? vms.length : LIST_PAGES[it.id] ? LIST_PAGES[it.id].rows({ nodes, pods, pvcs, snapshots, backups }).length : null;
+                  const count = it.id === 'vms' ? vms.length : LIST_PAGES[it.id] ? LIST_PAGES[it.id].rows(resourceData).length : null;
                   return (
                     <button key={it.id} className="srow" aria-current={page === it.id ? 'page' : undefined} onClick={() => setPage(it.id)}>
                       <Icon size={15} strokeWidth={1.9} />{it.l}
@@ -472,7 +485,7 @@ export default function App() {
         ) : LIST_PAGES[page] ? (
           (() => {
             const cfg = LIST_PAGES[page];
-            const rows = cfg.rows({ nodes, pods, pvcs, snapshots, backups });
+            const rows = cfg.rows(resourceData);
             const focusKey = listFocus[page];
             return (
               <div className="center">
@@ -532,7 +545,7 @@ export default function App() {
         )}
         {LIST_PAGES[page] && !loading && !err && (() => {
           const cfg = LIST_PAGES[page];
-          const rows = cfg.rows({ nodes, pods, pvcs, snapshots, backups });
+          const rows = cfg.rows(resourceData);
           const item = rows.find((r) => cfg.rowKey(r) === listFocus[page]);
           return (
             <ResourceInspector item={item} hide={!showInsp} kind={cfg.kind} statusKey={cfg.statusKey} statusMap={cfg.statusMap}
