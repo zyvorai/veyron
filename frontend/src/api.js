@@ -68,6 +68,7 @@ export const api = {
   listPvcs: () => request('/api/v1/storage/pvcs').then(asArray),
   listSnapshots: () => request('/api/v1/snapshots').then(asArray),
   listBackups: () => request('/api/v1/backups').then(asArray),
+  listAlerts: () => request('/api/v1/alerts').then(asArray),
   vmAction: (ns, name, action) =>
     request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/${encodeURIComponent(action)}`, { method: 'POST' }),
   deleteVm: (ns, name) => request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`, { method: 'DELETE' }),
