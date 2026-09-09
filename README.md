@@ -43,7 +43,7 @@ Rogue VM management for **KubeVirt** — forged in Rust. Declarative VM builder,
 |-------|-------------------|
 | **Rust core** | CLI, library, API server — `src/` |
 | **Operator** | Go controller-runtime — `operator/` |
-| **Web** | HTTP API only (`api-serve`) — no browser UI |
+| **Web** | HTTP API + React console at `/console` (`frontend/`) |
 | **Templates** | 44 OS images + 8 resource profiles |
 | **Blueprints** | LAMP, K8s, 3-tier, CI/CD stacks |
 | **Terraform** | Provider — `terraform-provider-veyron/` |
@@ -62,9 +62,10 @@ cargo build --release
 # Deploy blueprint stack
 ./target/release/veyron blueprint deploy lamp --namespace dev
 
-# HTTP API
+# HTTP API + React console
 ./target/release/veyron serve
 # → https://localhost:8080/api/v1/health
+# → https://localhost:8080/console
 
 # GitOps export
 ./target/release/veyron gitops-export --namespace production -o manifests/

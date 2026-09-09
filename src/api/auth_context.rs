@@ -68,9 +68,9 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     if path.starts_with("/api/v1/dr/") {
         return ApiRole::Admin;
     }
-    // Node maintenance (cordon/uncordon/drain) affects cluster-wide scheduling.
+    // Node maintenance (cordon/uncordon/drain/reboot) affects cluster-wide scheduling.
     if path.starts_with("/api/v1/nodes/")
-        && (path.ends_with("/cordon") || path.ends_with("/uncordon"))
+        && (path.ends_with("/cordon") || path.ends_with("/uncordon") || path.ends_with("/reboot"))
     {
         return ApiRole::Admin;
     }

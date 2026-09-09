@@ -146,6 +146,17 @@ cargo fmt --all
 cargo clippy --all-targets -- -D warnings
 ```
 
+### React console (`frontend/`)
+
+Browser UI at `/console` (Vite + React). Build before local `cargo build --features web` (Docker runs this automatically):
+
+```bash
+cd frontend
+npm install
+npm run dev      # Vite dev server, proxies /api to https://127.0.0.1:5151
+npm run build    # -> frontend/dist/, embedded via include_dir!
+```
+
 ### Useful local commands
 
 ```bash

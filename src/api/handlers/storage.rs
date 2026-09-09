@@ -8,7 +8,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
-    routing::{get, patch},
+    routing::{get, patch, post},
 };
 use serde::{Deserialize, Serialize};
 
@@ -69,12 +69,30 @@ pub struct PvcResizeRequest {
     pub new_size: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct CreatePvcRequest {
+    pub name: String,
+    #[serde(default = "default_pvc_ns")]
+    pub namespace: String,
+    pub size: String,
+    #[serde(default)]
+    pub storage_class: Option<String>,
+}
+
+fn default_pvc_ns() -> String {
+    "default".to_string()
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/storage/pools", get(list_storage_pools))
         .route("/storage/usage", get(get_storage_usage))
-        .route("/storage/pvcs/:ns/:name", patch(resize_pvc))
+        .route("/storage/pvcs", post(create_pvc))
+        .route(
+            "/storage/pvcs/:ns/:name",
+            patch(resize_pvc).delete(delete_pvc),
+        )
         .route(
             "/storage/orphans",
             get(list_orphan_pvcs).delete(reclaim_orphan_pvcs),
@@ -483,5 +501,65 @@ async fn resize_pvc(
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
         ),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn create_pvc(
+    State(state): State<SharedState>,
+    Json(req): Json<CreatePvcRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    if req.name.is_empty() || req.size.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "name and size are required" })),
+        );
+    }
+    let kube = { state.read().await.kube_client.clone() };
+    match kube
+        .create_pvc(
+            &req.namespace,
+            &req.name,
+            &req.size,
+            req.storage_class.as_deref(),
+        )
+        .await
+    {
+        Ok(pvc) => (
+            StatusCode::CREATED,
+            Json(serde_json::json!({
+                "status": "created",
+                "pvc": pvc.metadata.name,
+                "namespace": req.namespace,
+                "size": req.size,
+            })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn delete_pvc(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let kube = { state.read().await.kube_client.clone() };
+    match kube.delete_pvc(&ns, &name).await {
+        Ok(()) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "status": "deleted", "pvc": name, "namespace": ns })),
+        ),
+        Err(e) => {
+            let msg = e.to_string();
+            let code = if msg.contains("NotFound") || msg.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            (code, Json(serde_json::json!({ "error": msg })))
+        }
     }
 }

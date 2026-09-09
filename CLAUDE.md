@@ -100,7 +100,7 @@ The **operator** uses **`operator/config/rbac/role.yaml`** (and **`charts/veyron
 
 ## Architecture
 
-Veyron is a dual-mode binary: a **CLI tool** and an **HTTP API** for managing KubeVirt VMs on Kubernetes (no browser UI).
+Veyron is a dual-mode binary: a **CLI tool** and an **HTTP API + React console** for managing KubeVirt VMs on Kubernetes.
 
 ### Kubernetes operator (`operator/`)
 
@@ -124,6 +124,14 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
   - **Self-healing** (`handlers/self_healing.rs`): `POST /self-healing/run` (dry-run unless `?heal=true`), `GET/POST /self-healing/policy` (ConfigMap `veyron.io/type=self-healing`); a lease-guarded `self_healing_tick` in the scheduler loop restarts Failed/Unknown VMIs when enabled (per-VM cooldown).
   - **Data/DR**: `POST /dr/failback` (`handlers/dr.rs`); `app_consistent` flag on `POST /snapshots`; `GET`/`DELETE /storage/orphans` (reclaim, dry-run unless `?confirm=true`); `POST /velero/{backups,restores}` (`handlers/velero.rs`, `VELERO_NAMESPACE`); `POST /vms/:ns/:name/disks/:volume/migrate` (storage-class migration via KubeVirt `updateVolumesStrategy: Migration`, dry-run default).
   - **Platform** (`handlers/operators.rs`): `GET /platform/versions` (KubeVirt/CDI installed versions), `POST /platform/upgrade` (patch CR `imageTag`, dry-run default, needs `kubevirts: patch` RBAC); `GET /capacity/headroom` (`handlers/capacity.rs`), `GET /disks/conversion/capabilities`.
+
+### React console (`frontend/`)
+
+Vite + React + JSX app served at **`GET /console`** (+ `/console/assets/*`), embedded via `include_dir!("frontend/dist")` in `http_server.rs`. Auth-exempt shell; API calls use `X-API-Key` from `localStorage['veyron_api_key']`.
+
+- Resource-registry UI: Mission Control, ConsoleHub, VMs, Hosts, Images, Pods, Templates, Capsules (empty), Storage, Snapshots, Backups, Networks, Settings
+- Build: `cd frontend && npm install && npm run build` before local `cargo build --features web` (Dockerfile `frontend-builder` stage does this)
+- Dev: `cd frontend && npm run dev` (proxies `/api` to `https://127.0.0.1:5151`)
 
 **SharedState pattern** used by every handler:
 ```rust

@@ -97,7 +97,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
             DiskSource::ContainerDisk { image } => Volume {
                 name: disk.name.clone(),
                 container_disk: Some(ContainerDiskSource {
-                    image: image.clone(),
+                    image: crate::kube::resolve_container_disk_image(image),
                     image_pull_policy: Some("IfNotPresent".to_string()),
                 }),
                 ..Default::default()
@@ -971,6 +971,42 @@ mod tests {
         assert_eq!(
             volumes[0].container_disk.as_ref().unwrap().image,
             "quay.io/containerdisks/fedora:39"
+        );
+    }
+
+    #[test]
+    fn test_broken_alpine_container_disk_rewritten() {
+        let config = VMConfigBuilder::new("alpine-vm")
+            .namespace("default")
+            .cpu(1, 1, 1)
+            .memory("512Mi")
+            .add_container_disk("rootdisk", "quay.io/containerdisks/alpine:3.19", 1)
+            .add_pod_network("default")
+            .build();
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let volumes = vm.spec.template.spec.volumes.as_ref().unwrap();
+        assert_eq!(
+            volumes[0].container_disk.as_ref().unwrap().image,
+            "quay.io/kubevirt/cirros-container-disk-demo:latest"
+        );
+    }
+
+    #[test]
+    fn test_broken_rocky_container_disk_rewritten() {
+        let config = VMConfigBuilder::new("rocky-vm")
+            .namespace("default")
+            .cpu(2, 1, 1)
+            .memory("4Gi")
+            .add_container_disk("rootdisk", "quay.io/containerdisks/rockylinux:9", 1)
+            .add_pod_network("default")
+            .build();
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let volumes = vm.spec.template.spec.volumes.as_ref().unwrap();
+        assert_eq!(
+            volumes[0].container_disk.as_ref().unwrap().image,
+            "quay.io/containerdisks/almalinux:9"
         );
     }
 

@@ -6,7 +6,8 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::get,
+    http::StatusCode,
+    routing::{delete, get},
 };
 use serde::{Deserialize, Serialize};
 
@@ -43,6 +44,7 @@ pub fn router(state: SharedState) -> Router {
         .route("/pods", get(list_pods))
         .route("/pods/:name", get(get_pod))
         .route("/pods/:name/logs", get(get_pod_logs))
+        .route("/pods/:ns/:name", delete(delete_pod))
         .with_state(state)
 }
 
@@ -190,4 +192,38 @@ async fn get_pod_logs(
     }
 
     Json(vec![])
+}
+
+#[cfg(feature = "web")]
+pub async fn delete_pod(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    use k8s_openapi::api::core::v1::Pod;
+    use kube::api::{Api, DeleteParams};
+
+    if ns.is_empty() || name.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "namespace and name required" })),
+        ));
+    }
+    let client = { state.read().await.kube_client.client() };
+    let api: Api<Pod> = Api::namespaced(client, &ns);
+    match api.delete(&name, &DeleteParams::default()).await {
+        Ok(_) => Ok(Json(serde_json::json!({
+            "status": "deleted",
+            "name": name,
+            "namespace": ns,
+        }))),
+        Err(e) => {
+            let msg = e.to_string();
+            let code = if msg.contains("NotFound") || msg.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            Err((code, Json(serde_json::json!({ "error": msg }))))
+        }
+    }
 }

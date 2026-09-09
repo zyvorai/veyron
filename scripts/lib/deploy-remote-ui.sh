@@ -157,7 +157,7 @@ deploy_complete() {
     echo ""
 
     pkg_box_begin "Open in browser"
-    pkg_box_line "Dashboard:  https://${host}:${node_port}/dashboard" "${PKG_C_BOLD}${PKG_C_GREEN}"
+    pkg_box_line "Console:    https://${host}:${node_port}/console" "${PKG_C_BOLD}${PKG_C_GREEN}"
     pkg_box_line "Health:     https://${host}:${node_port}/api/v1/health" "${PKG_C_CYAN}"
     if [[ -n "${http_redirect_port}" ]]; then
         pkg_box_line "HTTP redirect: node port ${http_redirect_port}" "${PKG_C_DIM}"
@@ -165,8 +165,7 @@ deploy_complete() {
     pkg_box_end
 
     pkg_box_begin "Credentials & ops"
-    pkg_box_line "API key: ${api_key}" "${PKG_C_YELLOW}"
-    pkg_box_line "Dashboard login: admin / ${api_key}" "${PKG_C_YELLOW}"
+    pkg_box_line "Console login: admin / ${api_key}" "${PKG_C_YELLOW}"
     pkg_box_line "Total time: $(deploy_format_duration "${total}")" "${PKG_C_DIM}"
     pkg_box_line "Container listens on :5151 · use NodePort ${node_port} externally" "${PKG_C_DIM}"
     pkg_box_end

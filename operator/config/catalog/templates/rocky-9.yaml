@@ -24,7 +24,7 @@ spec:
       bootOrder: 1
       source:
         type: containerDisk
-        image: quay.io/containerdisks/rockylinux:9
+        image: quay.io/containerdisks/almalinux:9
       deviceType: disk
     - name: datadisk
       size: '20Gi'

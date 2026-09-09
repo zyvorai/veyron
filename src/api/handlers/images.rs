@@ -7,9 +7,9 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Query, State},
+    extract::{Path, Query, State},
     http::StatusCode,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
 
@@ -123,6 +123,7 @@ pub fn router(state: SharedState) -> Router {
         .route("/images/upload", post(upload_data_volume))
         .route("/images/publish", post(publish_image))
         .route("/images/datasources", get(list_data_sources))
+        .route("/images/:ns/:name", delete(delete_image))
         .with_state(state)
 }
 
@@ -710,4 +711,76 @@ async fn import_data_volume(
             Json(serde_json::json!({ "error": e.to_string() })),
         )),
     }
+}
+
+/// `DELETE /api/v1/images/:ns/:name` — remove a catalog PVC / DataVolume / DataSource by name.
+#[cfg(feature = "web")]
+async fn delete_image(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> ImageResult {
+    use k8s_openapi::api::core::v1::PersistentVolumeClaim;
+    use kube::api::{Api, DeleteParams, DynamicObject};
+
+    if ns.is_empty() || name.is_empty() {
+        return Err(bad_request("namespace and name required"));
+    }
+    let client = { state.read().await.client().client() };
+    let mut deleted = Vec::new();
+    let mut errors = Vec::new();
+
+    let dv_api: Api<DynamicObject> =
+        Api::namespaced_with(client.clone(), &ns, &datavolume_api_resource());
+    match dv_api.delete(&name, &DeleteParams::default()).await {
+        Ok(_) => deleted.push("DataVolume"),
+        Err(e) => {
+            let msg = e.to_string();
+            if !msg.contains("NotFound") && !msg.contains("not found") {
+                errors.push(format!("DataVolume: {msg}"));
+            }
+        }
+    }
+
+    let ds_api: Api<DynamicObject> =
+        Api::namespaced_with(client.clone(), &ns, &datasource_api_resource());
+    match ds_api.delete(&name, &DeleteParams::default()).await {
+        Ok(_) => deleted.push("DataSource"),
+        Err(e) => {
+            let msg = e.to_string();
+            if !msg.contains("NotFound") && !msg.contains("not found") {
+                errors.push(format!("DataSource: {msg}"));
+            }
+        }
+    }
+
+    let pvc_api: Api<PersistentVolumeClaim> = Api::namespaced(client, &ns);
+    match pvc_api.delete(&name, &DeleteParams::default()).await {
+        Ok(_) => deleted.push("PVC"),
+        Err(e) => {
+            let msg = e.to_string();
+            if !msg.contains("NotFound") && !msg.contains("not found") {
+                errors.push(format!("PVC: {msg}"));
+            }
+        }
+    }
+
+    if deleted.is_empty() && !errors.is_empty() {
+        return Err(upstream_error(errors.join("; ")));
+    }
+    if deleted.is_empty() {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({ "error": format!("image '{ns}/{name}' not found") })),
+        ));
+    }
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "deleted",
+            "name": name,
+            "namespace": ns,
+            "deleted": deleted,
+            "warnings": errors,
+        })),
+    ))
 }

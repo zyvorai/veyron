@@ -303,15 +303,17 @@ windows-2019    # Stable server
 
 ## 🔧 Container Disk Images
 
-Most templates use **containerdisks** from `quay.io/containerdisks/`:
+Most templates use **containerdisks** from `quay.io/containerdisks/` (public tags only):
 
-- `ubuntu:22.04`, `ubuntu:24.04`, `ubuntu:25.04` (tested); older template keys may map to these tags
+- `ubuntu:22.04`, `ubuntu:24.04` (tested)
 - `fedora:latest` (tested) for Fedora Cloud–style templates
 - `centos-stream:9` (tested); stream-8 template may map to `:9`
-- `debian:12`, `debian:13` (tested); debian-11 template may map to `:12`
-- `almalinux:9`, `almalinux:8`
-- `rockylinux:9`, `rockylinux:8`
-- `alpine:3.19`
+- `debian:12` (tested); debian-11 template may map to `:12`
+- `almalinux:9` (tested). The `:8` tag is gone — AlmaLinux 8 templates use `:9`
+- `opensuse-leap:15.6`, `opensuse-tumbleweed:1.0.0`
+- **Alpine** and **Rocky** images on quay are auth-gated (401). At convert time
+  `resolve_container_disk_image` remaps them: alpine → `quay.io/kubevirt/cirros-container-disk-demo:latest`,
+  rocky → `almalinux:9`
 
 Some require blank disks (bring your own ISO):
 - RHEL (requires subscription)
