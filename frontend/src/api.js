@@ -315,6 +315,7 @@ export function mapNetwork(raw, i) {
   return {
     id: `${ns}/${name}`,
     name,
+    ns,
     type: raw.type || raw.cni || 'NAD',
     cidr: raw.cidr || raw.config?.cidr || '—',
     vlan: raw.vlan ?? '—',
@@ -366,8 +367,8 @@ export const api = {
   listPods: (ns = 'all') => request(`/api/v1/pods${nsQ(ns)}`).then(asArray),
   listPvcs: (ns = 'all') => request(`/api/v1/storage/pvcs${nsQ(ns)}`).then(asArray),
   listStorageClasses: () => request('/api/v1/storage/classes').then(asArray),
-  listSnapshots: () => request('/api/v1/snapshots').then(asArray),
-  listBackups: () => request('/api/v1/backups').then(asArray),
+  listSnapshots: () => request('/api/v1/snapshots?namespace=all').then(asArray),
+  listBackups: () => request('/api/v1/backups?namespace=all').then(asArray),
   listImages: () => request('/api/v1/images/catalog').then(asArray),
   listNads: (ns = 'all') => request(`/api/v1/network/nads${nsQ(ns)}`).then(asArray),
   listTemplates: () => request('/api/v1/templates').then(asArray),
@@ -475,4 +476,283 @@ export const api = {
     const q = ns ? `?namespace=${encodeURIComponent(ns)}` : '';
     return unwrap(await request(`/api/v1/metrics/${encodeURIComponent(vm)}${q}`)) || null;
   },
+  getExpose: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/expose`).then(unwrap),
+  putExpose: (ns, name, body) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/expose`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteExpose: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/expose`, {
+      method: 'DELETE',
+    }),
+  getRdpExpose: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/rdp-expose`).then(unwrap),
+  putRdpExpose: (ns, name, body) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/rdp-expose`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteRdpExpose: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/rdp-expose`, {
+      method: 'DELETE',
+    }),
+  hotplugVm: (ns, name, { sockets, memory } = {}) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/hotplug`, {
+      method: 'POST',
+      body: JSON.stringify({ sockets, memory }),
+    }),
+  setRunStrategy: (ns, name, strategy) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/run-strategy`, {
+      method: 'PUT',
+      body: JSON.stringify({ strategy }),
+    }),
+  guestSoftReboot: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/guest/softreboot`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  guestFreeze: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/guest/freeze`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  guestUnfreeze: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/guest/unfreeze`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  getGuestStatus: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/guest/status`).then(unwrap),
+  bulkVmAction: (namespace, names, action) =>
+    request('/api/v1/vms/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ namespace, names, action }),
+    }),
+
+  getDrift: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/drift`).then(unwrap),
+  remediateDrift: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/drift/remediate`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  getInternet: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/network/internet`).then(unwrap),
+  putInternet: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/network/internet`, {
+      method: 'PUT',
+      body: JSON.stringify({}),
+    }),
+  deleteInternet: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/network/internet`, {
+      method: 'DELETE',
+    }),
+  guestPatch: (ns, name, body = {}) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/guest/patch`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  disksReclaim: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/disks/reclaim`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  enableRdpGuest: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/guest-agent/enable-rdp`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  disableRdpGuest: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/guest-agent/disable-rdp`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  runSelfHealing: (heal = false) =>
+    request(`/api/v1/self-healing/run?heal=${heal ? 'true' : 'false'}`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  markNotificationsRead: (ids) =>
+    request('/api/v1/notifications/read', {
+      method: 'POST',
+      body: JSON.stringify({ notification_ids: ids }),
+    }),
+  publishImage: (body) => request('/api/v1/images/publish', { method: 'POST', body: JSON.stringify(body) }),
+  listDataSources: () => request('/api/v1/images/datasources').then(asArray),
+  listCatalogTemplates: async () => {
+    const body = await request('/api/v1/crds/templates');
+    const data = unwrap(body) || body;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.items)) return data.items;
+    return asArray(body);
+  },
+  listCatalogProfiles: async () => {
+    const body = await request('/api/v1/crds/profiles');
+    const data = unwrap(body) || body;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.items)) return data.items;
+    return asArray(body);
+  },
+  listGpus: async () => {
+    const body = await request('/api/v1/gpus');
+    const data = unwrap(body) || body;
+    return data;
+  },
+  listAlerts: () => request('/api/v1/alerts?namespace=all').then(asArray),
+  resolveAlert: (id) =>
+    request(`/api/v1/alerts/${encodeURIComponent(id)}/resolve`, { method: 'PUT', body: JSON.stringify({}) }),
+  listSocDetections: () => request('/api/v1/soc/detections').then(asArray),
+  ackSocDetection: (id) =>
+    request(`/api/v1/soc/detections/${encodeURIComponent(id)}/ack`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  atlasStatus: async () => unwrap(await request('/api/v1/atlas/status')) || {},
+  listAtlasVolumes: () => request('/api/v1/atlas/volumes').then(asArray),
+  listAtlasSnapshots: () => request('/api/v1/atlas/snapshots').then(asArray),
+  restoreAtlasSnapshot: (id) =>
+    request(`/api/v1/atlas/snapshots/${encodeURIComponent(id)}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  cloneAtlasSnapshot: (id) =>
+    request(`/api/v1/atlas/snapshots/${encodeURIComponent(id)}/clone`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  deleteAtlasSnapshot: (id) =>
+    request(`/api/v1/atlas/snapshots/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  atlasVmCephSnapshot: (ns, name) =>
+    request(`/api/v1/atlas/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/ceph-snapshot`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  listMigrations: () => request('/api/v1/migrations').then(asArray),
+  cancelMigration: (id) =>
+    request(`/api/v1/migrations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  capacityHeadroom: async () => unwrap(await request('/api/v1/capacity/headroom')) || {},
+  topologyMap: async () => unwrap(await request('/api/v1/topology/map')) || {},
+  veleroStatus: async () => unwrap(await request('/api/v1/velero/status')) || {},
+  createVeleroBackup: (body) =>
+    request('/api/v1/velero/backups', { method: 'POST', body: JSON.stringify(body) }),
+  createVeleroRestore: (body) =>
+    request('/api/v1/velero/restores', { method: 'POST', body: JSON.stringify(body) }),
+  drFailback: (body) => request('/api/v1/dr/failback', { method: 'POST', body: JSON.stringify(body) }),
+  packetwolfStatus: async () => unwrap(await request('/api/v1/packetwolf/status')) || {},
 };
+
+export function mapGpu(raw, i) {
+  const node = raw.node || raw.name || `gpu-${i}`;
+  const resources = raw.resources || [];
+  const first = resources[0] || {};
+  const alloc = resources.reduce((a, r) => a + (Number(r.allocatable) || 0), 0);
+  return {
+    id: node,
+    name: node,
+    status: alloc > 0 ? 'Ready' : 'Empty',
+    product: raw.labels?.product || first.resource_name || '—',
+    memory: raw.labels?.memory || '—',
+    count: alloc || raw.labels?.count || 0,
+    kind: first.kind || first.classification || '—',
+    resources: resources.map((r) => r.resource_name || r.name).filter(Boolean).join(', ') || '—',
+  };
+}
+
+export function mapAlert(raw, i) {
+  const id = raw.id || `alert-${i}`;
+  return {
+    id,
+    name: raw.name || raw.reason || id,
+    status: raw.status || 'firing',
+    severity: raw.severity || 'warning',
+    message: raw.message || '—',
+    source: raw.source || '—',
+    age: raw.fired_at || raw.age || '—',
+  };
+}
+
+export function mapSoc(raw, i) {
+  const id = raw.id || raw.detection_id || `soc-${i}`;
+  return {
+    id,
+    name: raw.title || raw.name || raw.rule || id,
+    status: raw.status || (raw.acked ? 'Acked' : 'Open'),
+    severity: raw.severity || raw.level || '—',
+    message: raw.message || raw.summary || '—',
+    source: raw.source || raw.rule_id || '—',
+    age: raw.created_at || raw.timestamp || raw.age || '—',
+  };
+}
+
+export function mapAtlasVol(raw, i) {
+  const id = raw.id || raw.volume_id || `vol-${i}`;
+  return {
+    id,
+    name: raw.name || raw.pvc_name || id,
+    status: raw.status || raw.state || '—',
+    ns: raw.namespace || '—',
+    size: raw.size || raw.capacity || '—',
+    backend: raw.backend || raw.pool || '—',
+    pvc: raw.pvc_name || raw.pvc || '—',
+  };
+}
+
+export function mapAtlasSnap(raw, i) {
+  const id = raw.id || raw.snapshot_id || `asnap-${i}`;
+  return {
+    id,
+    name: raw.name || id,
+    status: raw.status || '—',
+    volume: raw.volume_id || raw.volume || '—',
+    size: raw.size || '—',
+    age: raw.created_at || raw.age || '—',
+  };
+}
+
+export function mapMigration(raw, i) {
+  const id = raw.id || raw.name || `mig-${i}`;
+  return {
+    id,
+    name: id,
+    status: raw.status || 'Unknown',
+    vm: raw.vm_name || raw.vm || '—',
+    source: raw.source_node || '—',
+    target: raw.target_node || '—',
+    type: raw.migration_type || 'live',
+    progress: raw.progress_percent != null ? `${raw.progress_percent}%` : '—',
+    age: raw.started_at || '—',
+  };
+}
+
+export function mapCatalogTemplate(raw, i) {
+  const name = raw.name || `tpl-${i}`;
+  return {
+    id: name,
+    name,
+    os: raw.family || raw.os || raw.description || '—',
+    cpu: '—',
+    ram: 0,
+    disk: 0,
+    uses: '—',
+    ci: '—',
+    catalog: true,
+    tags: (raw.tags || []).join(', ') || '—',
+  };
+}
+
+export function mapDataSource(raw, i) {
+  const name = raw.name || raw.metadata?.name || `ds-${i}`;
+  const ns = raw.namespace || raw.metadata?.namespace || 'default';
+  return {
+    id: `${ns}/${name}`,
+    name,
+    ns,
+    cls: ns,
+    prov: raw.source || raw.pvc || '—',
+    total: raw.size || '—',
+    used: 0,
+    vols: '—',
+  };
+}
