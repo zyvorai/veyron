@@ -2,17 +2,20 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   ChevronLeft, Search, Plus, List, LayoutGrid, Terminal, Trash2,
   Sparkles, Settings, Bell, X, Info, RefreshCw, Sun, Moon, PanelLeft, PanelRight,
-  Download,
+  Download, Activity,
 } from 'lucide-react';
 import {
   api, getToken, clearSession, getAuthUser, getSavedTheme, setSavedTheme,
   mapVm, mapNode, mapPod, mapPvc, mapClass,
   mapSnapshot, mapBackup, mapImage, mapNetwork, mapTemplate,
+  mapGpu, mapAlert, mapSoc, mapAtlasVol, mapAtlasSnap, mapMigration,
+  mapCatalogTemplate, mapDataSource,
 } from './api.js';
-import { emptyData, NAV, RES_META, PAGE_ORDER } from './resources.js';
+import { emptyData, NAV, RES_META, PAGE_ORDER, CHAPTER_PAGES, CHAPTER_ICONS } from './resources.js';
 import { Table } from './Table.jsx';
 import { Inspector, ACT } from './Inspector.jsx';
 import { Mission, ConsoleHub, SettingsPage, ConsoleSheet, NewSheet, Login } from './pages.jsx';
+import { MonitoringPage, TopologyPage, DrPage, PacketWolfPage } from './chapters.jsx';
 import { Status } from './status.jsx';
 import { usePageSwipe } from './usePageSwipe.js';
 
@@ -99,6 +102,10 @@ export default function App() {
     await Promise.all([
       settle('vms', () => api.listVms('all'), mapVm, 'vms'),
       settle('hosts', () => api.listNodes(), mapNode, 'hosts'),
+      settle('gpus', async () => {
+        const data = await api.listGpus();
+        return Array.isArray(data?.nodes) ? data.nodes : Array.isArray(data) ? data : [];
+      }, mapGpu, 'gpus'),
       settle('pods', () => api.listPods('all'), mapPod, 'pods'),
       settle('pvcs', () => api.listPvcs('all'), mapPvc, 'pvcs', async (n) => {
         try {
@@ -114,9 +121,63 @@ export default function App() {
       }),
       settle('snapshots', () => api.listSnapshots(), mapSnapshot, 'snapshots'),
       settle('backups', () => api.listBackups(), mapBackup, 'backups'),
-      settle('images', () => api.listImages(), mapImage, 'images'),
+      settle('images', () => api.listImages(), mapImage, 'images', async (n) => {
+        try {
+          const ds = await api.listDataSources();
+          n.images.extra = {
+            title: RES_META.images.extraTitle,
+            cols: RES_META.images.extraCols,
+            rows: (ds || []).map(mapDataSource),
+          };
+        } catch {
+          n.images.extra = { title: RES_META.images.extraTitle, cols: RES_META.images.extraCols, rows: [] };
+        }
+      }),
       settle('networks', () => api.listNads('all'), mapNetwork, 'networks'),
-      settle('templates', () => api.listTemplates(), mapTemplate, 'templates'),
+      settle('templates', async () => {
+        try {
+          const catalog = await api.listCatalogTemplates();
+          if (catalog?.length) return catalog;
+        } catch {
+          /* fall through to builtins */
+        }
+        return api.listTemplates();
+      }, (raw, i) => {
+        if (raw.family != null || raw.tags != null) return mapCatalogTemplate(raw, i);
+        return mapTemplate(raw, i);
+      }, 'templates', async (n) => {
+        try {
+          const profiles = await api.listCatalogProfiles();
+          n.templates.extra = {
+            title: RES_META.templates.extraTitle,
+            cols: RES_META.templates.extraCols,
+            rows: (profiles || []).map((p, i) => ({
+              id: p.name || `p-${i}`,
+              name: p.name || `profile-${i}`,
+              os: p.family || p.description || '—',
+              cpu: p.cpu ?? p.cpus ?? '—',
+              ram: p.memory || p.ram || '—',
+            })),
+          };
+        } catch {
+          n.templates.extra = { title: RES_META.templates.extraTitle, cols: RES_META.templates.extraCols, rows: [] };
+        }
+      }),
+      settle('migrations', () => api.listMigrations(), mapMigration, 'migrations'),
+      settle('alerts', () => api.listAlerts(), mapAlert, 'alerts'),
+      settle('soc', () => api.listSocDetections(), mapSoc, 'soc'),
+      settle('atlas', () => api.listAtlasVolumes(), mapAtlasVol, 'atlas', async (n) => {
+        try {
+          const snaps = await api.listAtlasSnapshots();
+          n.atlas.extra = {
+            title: RES_META.atlas.extraTitle,
+            cols: RES_META.atlas.extraCols,
+            rows: (snaps || []).map(mapAtlasSnap),
+          };
+        } catch {
+          n.atlas.extra = { title: RES_META.atlas.extraTitle, cols: RES_META.atlas.extraCols, rows: [] };
+        }
+      }),
       api.health().then(() => setHealthOk(true)).catch(() => setHealthOk(false)),
       api.listNotifications().then(setNotifications).catch(() => setNotifications([])),
     ]);
@@ -225,11 +286,21 @@ export default function App() {
   const act = async (a, ids = selected) => {
     setMenu(null);
     if (a === 'console') {
+      if (!focus && !(ids instanceof Set && ids.size)) {
+        showToast('Select a VM first', true);
+        return;
+      }
       setSheetMode('console');
       setSheet('console');
       return;
     }
     if (a === 'logs') {
+      const logTarget = (res?.rows || []).find((r) => ids.has(r.id)) || focusRow;
+      if (!logTarget || res?.kind !== 'Pod') {
+        showToast('Select a pod first', true);
+        return;
+      }
+      setFocus(logTarget.id);
       setSheetMode('logs');
       setSheet('console');
       return;
@@ -243,16 +314,29 @@ export default function App() {
 
     try {
       if (page === 'vms') {
-        for (const t of targets) {
-          const ns = t.ns || 'default';
-          if (a === 'delete') await api.deleteVm(ns, t.name);
-          else if (a === 'snapshot') await api.createSnapshot(ns, t.name);
-          else if (a === 'clone') await api.cloneVm(ns, t.name, `${t.name}-clone`);
-          else if (['start', 'stop', 'restart', 'migrate', 'pause', 'unpause'].includes(a)) {
-            await api.vmAction(ns, t.name, a);
-          } else {
-            showToast(`Unsupported VM action: ${a}`, true);
-            return;
+        const powerBulk = ['start', 'stop', 'restart', 'migrate', 'delete'];
+        if (targets.length > 1 && powerBulk.includes(a)) {
+          const byNs = new Map();
+          for (const t of targets) {
+            const ns = t.ns || 'default';
+            if (!byNs.has(ns)) byNs.set(ns, []);
+            byNs.get(ns).push(t.name);
+          }
+          for (const [ns, names] of byNs) {
+            await api.bulkVmAction(ns, names, a);
+          }
+        } else {
+          for (const t of targets) {
+            const ns = t.ns || 'default';
+            if (a === 'delete') await api.deleteVm(ns, t.name);
+            else if (a === 'snapshot') await api.createSnapshot(ns, t.name);
+            else if (a === 'clone') await api.cloneVm(ns, t.name, `${t.name}-clone`);
+            else if (['start', 'stop', 'restart', 'migrate', 'pause', 'unpause'].includes(a)) {
+              await api.vmAction(ns, t.name, a);
+            } else {
+              showToast(`Unsupported VM action: ${a}`, true);
+              return;
+            }
           }
         }
       } else if (page === 'hosts') {
@@ -296,8 +380,10 @@ export default function App() {
             const m = cur.match(/([\d.]+)\s*(Gi|G|Mi|Ti)?/i);
             const n = m ? parseFloat(m[1]) : 10;
             const unit = m?.[2] || 'Gi';
-            const next = `${Math.ceil(n * 1.5)}${unit.startsWith('G') || unit.startsWith('g') ? 'Gi' : unit}`;
-            await api.resizePvc(t.ns || 'default', t.name, next);
+            const sug = `${Math.ceil(n * 1.5)}${unit.startsWith('G') || unit.startsWith('g') ? 'Gi' : unit}`;
+            const next = window.prompt(`New size for ${t.name}`, sug);
+            if (!next) return;
+            await api.resizePvc(t.ns || 'default', t.name, next.trim());
           } else if (a === 'delete') await api.deletePvc(t.ns || 'default', t.name);
           else {
             showToast(`Unsupported storage action: ${a}`, true);
@@ -307,7 +393,15 @@ export default function App() {
       } else if (page === 'images') {
         for (const t of targets) {
           if (a === 'delete') await api.deleteImage(t.ns || 'default', t.name);
-          else {
+          else if (a === 'publish') {
+            const ds = window.prompt('DataSource catalog name', t.name);
+            if (!ds) return;
+            await api.publishImage({
+              name: t.name,
+              namespace: t.ns || 'default',
+              data_source: ds.trim(),
+            });
+          } else {
             showToast(`Unsupported image action: ${a}`, true);
             return;
           }
@@ -333,12 +427,44 @@ export default function App() {
           if (a === 'clone') {
             const name = `${t.name}-${Date.now().toString(36).slice(-4)}`;
             await api.createVm({ name, template: t.name, namespace: 'default', start: false });
-          } else if (a === 'delete') await api.deleteTemplate(t.name);
-          else {
+          } else if (a === 'delete') {
+            if (!t.catalog) {
+              showToast('Builtin templates cannot be deleted', true);
+              return;
+            }
+            await api.deleteTemplate(t.name);
+          } else {
             showToast(`Unsupported template action: ${a}`, true);
             return;
           }
         }
+      } else if (page === 'alerts') {
+        for (const t of targets) {
+          if (a === 'resolve') await api.resolveAlert(t.id);
+          else {
+            showToast(`Unsupported alert action: ${a}`, true);
+            return;
+          }
+        }
+      } else if (page === 'soc') {
+        for (const t of targets) {
+          if (a === 'ack') await api.ackSocDetection(t.id);
+          else {
+            showToast(`Unsupported SOC action: ${a}`, true);
+            return;
+          }
+        }
+      } else if (page === 'migrations') {
+        for (const t of targets) {
+          if (a === 'delete') await api.cancelMigration(t.id || t.name);
+          else {
+            showToast(`Unsupported migration action: ${a}`, true);
+            return;
+          }
+        }
+      } else if (page === 'atlas') {
+        showToast('Use Atlas snapshot actions from the snapshots table below, or Ceph snap in VM Ops', true);
+        return;
       } else {
         showToast(`${a} on ${page}: no API for this action`, true);
         return;
@@ -354,7 +480,7 @@ export default function App() {
     }
   };
 
-  const create = async ({ name, template, host, cls, size, url, cidr }) => {
+  const create = async ({ name, template, cls, size, url, cidr }) => {
     try {
       const kind = (res || data.vms).kind;
       if (kind === 'VirtualMachine') {
@@ -367,7 +493,6 @@ export default function App() {
         if (size && size !== '10 Gi') {
           body.disk_size = String(size).replace(/\s+/g, '');
         }
-        void host;
         await api.createVm(body);
         setSheet(null);
         await load();
@@ -460,21 +585,32 @@ export default function App() {
         ? 'ConsoleHub'
         : page === 'settings'
           ? 'Settings'
-          : res?.l || 'Veyron';
+          : page === 'monitoring'
+            ? 'Monitoring'
+            : page === 'topology'
+              ? 'Topology'
+              : page === 'dr'
+                ? 'DR & Velero'
+                : page === 'network-brain'
+                  ? 'PacketWolf'
+                  : res?.l || 'Veyron';
 
   const navIcon = (id, I) => {
     if (id === 'mission') return Sparkles;
     if (id === 'console') return Terminal;
     if (id === 'settings') return Settings;
+    if (CHAPTER_ICONS[id]) return CHAPTER_ICONS[id];
     return I || RES_META[id]?.I || MonitorFallback;
   };
 
   const sheetTarget =
     sheetMode === 'logs'
-      ? focusRow || data.pods.rows[0]
+      ? focusRow
       : focusRow?.name
         ? focusRow
-        : data.vms.rows[0];
+        : null;
+
+  const canCreate = !!(res?.canCreate || (!res && page === 'mission'));
 
   return (
     <div className="vy" data-theme={theme}>
@@ -536,7 +672,14 @@ export default function App() {
           className="tb"
           onClick={(e) => {
             e.stopPropagation();
-            setShowBell((s) => !s);
+            setShowBell((s) => {
+              const next = !s;
+              if (next && notifications.length) {
+                const ids = notifications.map((n) => n.id).filter(Boolean);
+                if (ids.length) api.markNotificationsRead(ids).catch(() => {});
+              }
+              return next;
+            });
           }}
           title="Notifications"
         >
@@ -549,16 +692,18 @@ export default function App() {
         <button className="tb" onClick={() => setShowInsp(!showInsp)}>
           <PanelRight size={16} />
         </button>
-        <button
-          className="primary"
-          onClick={() => {
-            if (!res) setPage('vms');
-            setSheet('new');
-          }}
-        >
-          <Plus size={14} />
-          New
-        </button>
+        {canCreate && (
+          <button
+            className="primary"
+            onClick={() => {
+              if (!res) setPage('vms');
+              setSheet('new');
+            }}
+          >
+            <Plus size={14} />
+            New
+          </button>
+        )}
         <div
           className="avatar"
           title={user?.display_name || user?.username ? `Sign out (${user.display_name || user.username})` : 'Sign out'}
@@ -633,6 +778,14 @@ export default function App() {
               />
             ) : page === 'settings' ? (
               <SettingsPage theme={theme} setTheme={setTheme} />
+            ) : page === 'monitoring' ? (
+              <MonitoringPage />
+            ) : page === 'topology' ? (
+              <TopologyPage />
+            ) : page === 'dr' ? (
+              <DrPage showToast={showToast} />
+            ) : page === 'network-brain' ? (
+              <PacketWolfPage />
             ) : page === 'console' ? (
               <div className="center">
                 <ConsoleHub
@@ -743,9 +896,8 @@ export default function App() {
                     <b>{selected.size} selected</b>
                     {res.acts
                       .filter((a) => a !== 'console' && a !== 'logs')
-                      .slice(0, 4)
                       .map((a) => {
-                        const [l, I] = ACT[a];
+                        const [l, I] = ACT[a] || [a, Activity];
                         return (
                           <button key={a} className="tb" onClick={() => act(a)}>
                             <I size={13} />
@@ -775,15 +927,25 @@ export default function App() {
           </div>
         </div>
 
-        {res && <Inspector res={res} row={focusRow} hide={!showInsp} onAct={(a) => act(a, new Set([focus]))} />}
+        {res && (
+          <Inspector
+            res={res}
+            row={focusRow}
+            hide={!showInsp}
+            onAct={(a) => act(a, new Set([focus].filter(Boolean)))}
+            onOpsDone={(l) => {
+              showToast(`${l} · done`);
+              load();
+            }}
+          />
+        )}
         {sheet === 'console' && sheetTarget && (
           <ConsoleSheet vm={sheetTarget} mode={sheetMode} onClose={() => setSheet(null)} />
         )}
-        {sheet === 'new' && (res || data.vms) && (
+        {sheet === 'new' && (res || data.vms)?.canCreate && (
           <NewSheet
             res={res || data.vms}
             templates={data.templates.rows}
-            hosts={data.hosts.rows}
             storageClasses={data.pvcs.extra?.rows || []}
             onClose={() => setSheet(null)}
             onCreate={create}
@@ -796,7 +958,7 @@ export default function App() {
           {(res.acts || [])
             .filter((a) => a !== 'delete')
             .map((a) => {
-              const [l, I] = ACT[a];
+              const [l, I] = ACT[a] || [a, Activity];
               return (
                 <button key={a} onClick={() => act(a)}>
                   <I size={14} />

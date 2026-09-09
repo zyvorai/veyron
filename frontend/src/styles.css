@@ -242,7 +242,51 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 13px; user-select:
 .frow:last-child { border-bottom: 0; }
 .frow label { color: var(--ink-3); text-align: right; }
 .frow span { overflow: hidden; text-overflow: ellipsis; }
-.insp-acts { display: grid; grid-auto-flow: column; gap: 6px; padding: 12px 16px; border-top: 1px solid var(--line); }
+.insp-acts {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px; border-top: 1px solid var(--line);
+  position: relative;
+}
+.insp-more { position: relative; }
+.insp-more-menu {
+  position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 20;
+  min-width: 160px; padding: 6px; border-radius: 10px; background: var(--menu);
+  box-shadow: 0 0 0 0.5px var(--line), 0 12px 28px rgba(0, 0, 0, 0.28);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.insp-more-menu button {
+  display: flex; align-items: center; gap: 8px; width: 100%; height: 28px; padding: 0 10px;
+  border-radius: 6px; font-size: 12.5px;
+}
+.insp-more-menu button:hover { background: var(--hover); }
+.insp-more-menu button.danger { color: var(--red); }
+
+.ops { flex: 1; overflow: auto; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+.ops-err {
+  padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--red) 16%, transparent);
+  color: var(--red); font-size: 12px;
+}
+.ops-block h4 {
+  display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+  color: var(--ink-2); margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.ops-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 32px; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--line);
+}
+.ops-row small { display: block; color: var(--ink-3); font-size: 11px; margin-top: 2px; }
+.ops-hint { display: block; color: var(--ink-3); font-size: 12px; margin-bottom: 8px; }
+.ops-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.ops-fields {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;
+}
+.ops-fields label {
+  display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ink-3);
+}
+.ops-fields input, .ops-fields select {
+  height: 28px; padding: 0 8px; border-radius: 7px; background: var(--ctl);
+  box-shadow: 0 0 0 0.5px var(--ctl-line); color: var(--ink); font: inherit;
+}
+
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 28px; padding: 0 10px;
   border-radius: 7px; font-size: 12.5px; font-weight: 500; background: var(--ctl);
@@ -478,6 +522,7 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 13px; user-select:
 
 .hub-page { flex: 1; overflow: auto; background: var(--pane); }
 .hub-page .apple-chapter { padding-top: 40px; padding-bottom: 24px; }
+.chapter-page { flex: 1; overflow: auto; background: var(--void); }
 
 .spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

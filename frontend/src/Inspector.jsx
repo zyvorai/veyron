@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Play, Square, Pause, ArrowLeftRight, Terminal, Camera, Trash2, RefreshCw,
-  Activity, Copy, HardDrive, Ban, CheckCircle,
+  Activity, Copy, HardDrive, Ban, CheckCircle, Network, Monitor, Zap,
 } from 'lucide-react';
 import { Status, Spark } from './status.jsx';
 import { api } from './api.js';
@@ -23,18 +23,338 @@ export const ACT = {
   restore: ['Restore', RefreshCw],
   run: ['Run now', Play],
   pause: ['Pause', Pause],
+  unpause: ['Unpause', Play],
+  publish: ['Publish', HardDrive],
+  resolve: ['Resolve', CheckCircle],
+  ack: ['Acknowledge', CheckCircle],
 };
 
-export function Inspector({ res, row, hide, onAct }) {
+const RUN_STRATEGIES = ['Always', 'Manual', 'Halted', 'RerunOnFailure'];
+
+function resolveActs(res, row) {
+  let acts = (res.acts || []).slice();
+  const prefer = ['console', 'logs', 'start', 'stop', 'pause', 'unpause', 'cordon', 'uncordon'];
+  acts.sort((a, b) => {
+    const ia = prefer.indexOf(a);
+    const ib = prefer.indexOf(b);
+    if (ia === -1 && ib === -1) return 0;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  acts = acts.map((a) => {
+    if (a === 'start' && row.status === 'Running') return 'stop';
+    if (a === 'stop' && row.status !== 'Running') return 'start';
+    if (a === 'pause' && /paus/i.test(String(row.status || ''))) return 'unpause';
+    if (a === 'unpause' && !/paus/i.test(String(row.status || ''))) return 'pause';
+    if (a === 'cordon' && row.status === 'Cordoned') return 'uncordon';
+    if (a === 'uncordon' && row.status !== 'Cordoned') return 'cordon';
+    return a;
+  });
+  return acts.filter((a, i, s) => s.indexOf(a) === i);
+}
+
+function VmOps({ row, onDone }) {
+  const ns = row.ns || 'default';
+  const name = row.name;
+  const [expose, setExpose] = useState(null);
+  const [rdp, setRdp] = useState(null);
+  const [guest, setGuest] = useState(null);
+  const [inet, setInet] = useState(null);
+  const [drift, setDrift] = useState(null);
+  const [strategy, setStrategy] = useState('Always');
+  const [sockets, setSockets] = useState(String(parseInt(String(row.cpu), 10) || 2));
+  const [memory, setMemory] = useState(`${Number(row.ram) || 2}Gi`);
+  const [busy, setBusy] = useState('');
+  const [err, setErr] = useState('');
+
+  const refresh = async () => {
+    const [ex, rd, gs, net, dr] = await Promise.all([
+      api.getExpose(ns, name).catch(() => null),
+      api.getRdpExpose(ns, name).catch(() => null),
+      api.getGuestStatus(ns, name).catch(() => null),
+      api.getInternet(ns, name).catch(() => null),
+      api.getDrift(ns, name).catch(() => null),
+    ]);
+    setExpose(ex);
+    setRdp(rd);
+    setGuest(gs);
+    setInet(net);
+    setDrift(dr);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    setErr('');
+    (async () => {
+      try {
+        await refresh();
+      } catch (e) {
+        if (!cancelled) setErr(e.message || String(e));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [row.id]);
+
+  const run = async (label, fn) => {
+    setBusy(label);
+    setErr('');
+    try {
+      await fn();
+      await refresh();
+      onDone?.(label);
+    } catch (e) {
+      setErr(e.message || String(e));
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const sshOn = !!(expose?.enabled || expose?.service);
+  const rdpOn = !!(rdp?.enabled || rdp?.service);
+  const inetOn = !!(inet?.enabled || inet?.allowed || inet?.policy);
+  const drifted = !!(drift?.drift_detected);
+
+  return (
+    <div className="ops">
+      {err && <div className="ops-err">{err}</div>}
+      <div className="ops-block">
+        <h4>
+          <Network size={13} /> Access
+        </h4>
+        <div className="ops-row">
+          <span>
+            SSH expose
+            <small>{sshOn ? expose?.service_type || expose?.type || 'on' : 'off'}</small>
+          </span>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() =>
+              run(
+                sshOn ? 'SSH off' : 'SSH on',
+                () =>
+                  sshOn
+                    ? api.deleteExpose(ns, name)
+                    : api.putExpose(ns, name, {
+                        enabled: true,
+                        service_type: 'ClusterIP',
+                        ports: [{ port: 22, target_port: 22 }],
+                      }),
+              )
+            }
+          >
+            {busy === 'SSH on' || busy === 'SSH off' ? '…' : sshOn ? 'Disable' : 'Enable'}
+          </button>
+        </div>
+        <div className="ops-row">
+          <span>
+            RDP expose
+            <small>{rdpOn ? rdp?.service_type || 'ClusterIP' : 'off'}</small>
+          </span>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() =>
+              run(
+                rdpOn ? 'RDP off' : 'RDP on',
+                () =>
+                  rdpOn
+                    ? api.deleteRdpExpose(ns, name)
+                    : api.putRdpExpose(ns, name, {
+                        enabled: true,
+                        service_type: 'ClusterIP',
+                      }),
+              )
+            }
+          >
+            {busy.startsWith('RDP') ? '…' : rdpOn ? 'Disable' : 'Enable'}
+          </button>
+        </div>
+        <div className="ops-row">
+          <span>
+            Internet egress
+            <small>{inetOn ? 'allowed' : 'restricted / unknown'}</small>
+          </span>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() =>
+              run(
+                inetOn ? 'Internet off' : 'Internet on',
+                () => (inetOn ? api.deleteInternet(ns, name) : api.putInternet(ns, name)),
+              )
+            }
+          >
+            {busy.startsWith('Internet') ? '…' : inetOn ? 'Revoke' : 'Allow'}
+          </button>
+        </div>
+        <div className="ops-acts" style={{ marginTop: 8 }}>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() => run('Enable RDP guest', () => api.enableRdpGuest(ns, name))}
+          >
+            Enable RDP in guest
+          </button>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() => run('Disable RDP guest', () => api.disableRdpGuest(ns, name))}
+          >
+            Disable RDP in guest
+          </button>
+        </div>
+      </div>
+
+      <div className="ops-block">
+        <h4>
+          <Monitor size={13} /> Guest
+        </h4>
+        <small className="ops-hint">
+          {guest
+            ? `Agent: ${guest.agent_connected ?? guest.status ?? guest.connected ?? 'ok'}`
+            : 'Guest status unavailable'}
+        </small>
+        <div className="ops-acts">
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() => run('Soft reboot', () => api.guestSoftReboot(ns, name))}
+          >
+            Soft reboot
+          </button>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() => run('Freeze', () => api.guestFreeze(ns, name))}
+          >
+            Freeze
+          </button>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() => run('Unfreeze', () => api.guestUnfreeze(ns, name))}
+          >
+            Unfreeze
+          </button>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() => {
+              if (!window.confirm(`Patch OS packages inside ${name}?`)) return;
+              run('Guest patch', () => api.guestPatch(ns, name, { snapshot_first: true }));
+            }}
+          >
+            Guest patch
+          </button>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() => run('Reclaim', () => api.disksReclaim(ns, name))}
+          >
+            fstrim reclaim
+          </button>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={() => run('Ceph snap', () => api.atlasVmCephSnapshot(ns, name))}
+          >
+            Atlas Ceph snap
+          </button>
+        </div>
+      </div>
+
+      <div className="ops-block">
+        <h4>Drift</h4>
+        <small className="ops-hint">
+          {drift
+            ? drifted
+              ? drift.drift_message || 'Drift detected'
+              : 'In sync with VeyronVM desired state'
+            : 'No VeyronVM drift status (unmanaged VM)'}
+        </small>
+        <button
+          className="btn"
+          disabled={!!busy || !drift}
+          onClick={() => run('Remediate', () => api.remediateDrift(ns, name))}
+        >
+          Remediate drift
+        </button>
+      </div>
+
+      <div className="ops-block">
+        <h4>
+          <Zap size={13} /> Hotplug
+        </h4>
+        <div className="ops-fields">
+          <label>
+            Sockets
+            <input value={sockets} onChange={(e) => setSockets(e.target.value)} />
+          </label>
+          <label>
+            Memory
+            <input value={memory} onChange={(e) => setMemory(e.target.value)} placeholder="4Gi" />
+          </label>
+        </div>
+        <button
+          className="btn primary"
+          disabled={!!busy}
+          onClick={() => {
+            const s = parseInt(sockets, 10);
+            if (!window.confirm(`Hotplug ${name} to ${s || '?'} sockets / ${memory}?`)) return;
+            run('Hotplug', () =>
+              api.hotplugVm(ns, name, {
+                sockets: Number.isFinite(s) ? s : undefined,
+                memory: memory || undefined,
+              }),
+            );
+          }}
+        >
+          {busy === 'Hotplug' ? 'Applying…' : 'Apply hotplug'}
+        </button>
+      </div>
+
+      <div className="ops-block">
+        <h4>Run strategy</h4>
+        <div className="ops-fields">
+          <label>
+            Strategy
+            <select value={strategy} onChange={(e) => setStrategy(e.target.value)}>
+              {RUN_STRATEGIES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <button
+          className="btn"
+          disabled={!!busy}
+          onClick={() => run('Run strategy', () => api.setRunStrategy(ns, name, strategy))}
+        >
+          Set strategy
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function Inspector({ res, row, hide, onAct, onOpsDone }) {
   const [tab, setTab] = useState('Info');
   const [events, setEvents] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [loadingExtra, setLoadingExtra] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     setTab('Info');
     setEvents([]);
     setMetrics(null);
+    setMoreOpen(false);
     if (!row || res?.kind !== 'VirtualMachine') return;
     let cancelled = false;
     setLoadingExtra(true);
@@ -79,31 +399,11 @@ export function Inspector({ res, row, hide, onAct }) {
         ])
       : [['Events', loadingExtra ? 'Loading…' : 'No recent events']];
 
-  const tabs = {
-    Info: infoRows,
-    Events: eventRows,
-  };
-
-  let acts = (res.acts || []).slice();
-  // Prefer console/logs early so Running VMs still show Console (slice would
-  // otherwise keep only start/stop/restart/pause).
-  const prefer = ['console', 'logs', 'start', 'stop', 'cordon', 'uncordon'];
-  acts.sort((a, b) => {
-    const ia = prefer.indexOf(a);
-    const ib = prefer.indexOf(b);
-    if (ia === -1 && ib === -1) return 0;
-    if (ia === -1) return 1;
-    if (ib === -1) return -1;
-    return ia - ib;
-  });
-  acts = acts.slice(0, 4).map((a) => {
-    if (a === 'start' && row.status === 'Running') return 'stop';
-    if (a === 'stop' && row.status !== 'Running') return 'start';
-    if (a === 'cordon' && row.status === 'Cordoned') return 'uncordon';
-    if (a === 'uncordon' && row.status !== 'Cordoned') return 'cordon';
-    return a;
-  });
-  acts = acts.filter((a, i, s) => s.indexOf(a) === i);
+  const isVm = res.kind === 'VirtualMachine';
+  const tabNames = isVm ? ['Info', 'Events', 'Ops'] : ['Info', 'Events'];
+  const acts = resolveActs(res, row);
+  const primary = acts.slice(0, 4);
+  const more = acts.slice(4);
 
   const cpuPct = metrics?.cpu_usage_percent;
   const memPct = metrics?.memory_usage_percent;
@@ -150,23 +450,28 @@ export function Inspector({ res, row, hide, onAct }) {
         </div>
       )}
       <div className="itabs" role="tablist">
-        {Object.keys(tabs).map((t) => (
+        {tabNames.map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>
             {t}
           </button>
         ))}
       </div>
-      <div className="form">
-        {tabs[tab].map(([l, v], i) => (
-          <div className="frow" key={`${l}-${i}`}>
-            <label>{l}</label>
-            <span className="mono">{String(v ?? '—')}</span>
-          </div>
-        ))}
-      </div>
+      {tab === 'Ops' && isVm ? (
+        <VmOps row={row} onDone={(l) => onOpsDone?.(l)} />
+      ) : (
+        <div className="form">
+          {(tab === 'Events' ? eventRows : infoRows).map(([l, v], i) => (
+            <div className="frow" key={`${l}-${i}`}>
+              <label>{l}</label>
+              <span className="mono">{String(v ?? '—')}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="insp-acts">
-        {acts.map((a) => {
-          const [l, I] = ACT[a] || [a, Activity];
+        {primary.map((a) => {
+          const [l0, I] = ACT[a] || [a, Activity];
+          const l = a === 'clone' && res.kind === 'Template' ? 'Create VM' : l0;
           return (
             <button
               key={a}
@@ -178,6 +483,34 @@ export function Inspector({ res, row, hide, onAct }) {
             </button>
           );
         })}
+        {more.length > 0 && (
+          <div className="insp-more">
+            <button className="btn" onClick={() => setMoreOpen((o) => !o)}>
+              More
+            </button>
+            {moreOpen && (
+              <div className="insp-more-menu">
+                {more.map((a) => {
+                  const [l0, I] = ACT[a] || [a, Activity];
+                  const l = a === 'clone' && res.kind === 'Template' ? 'Create VM' : l0;
+                  return (
+                    <button
+                      key={a}
+                      className={a === 'delete' ? 'danger' : ''}
+                      onClick={() => {
+                        setMoreOpen(false);
+                        onAct(a);
+                      }}
+                    >
+                      <I size={13} />
+                      {l}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </aside>
   );

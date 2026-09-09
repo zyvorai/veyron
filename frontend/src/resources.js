@@ -1,5 +1,6 @@
 import {
   Monitor, Server, Disc3, Hexagon, Package, HardDrive, Camera, Archive, Network,
+  Cpu, Bell, Shield, Database, ArrowLeftRight, Activity, Map, Cloud, Radar,
 } from 'lucide-react';
 
 /** Schema only — rows come from the API. */
@@ -26,7 +27,8 @@ export const RES_META = {
       ['Namespace', 'ns'],
     ],
     spark: true,
-    acts: ['start', 'stop', 'restart', 'pause', 'migrate', 'console', 'snapshot', 'clone', 'delete'],
+    acts: ['start', 'stop', 'restart', 'pause', 'unpause', 'migrate', 'console', 'snapshot', 'clone', 'delete'],
+    canCreate: true,
   },
   hosts: {
     l: 'Hosts',
@@ -50,6 +52,27 @@ export const RES_META = {
     ],
     acts: ['cordon', 'uncordon', 'reboot'],
   },
+  gpus: {
+    l: 'GPUs',
+    I: Cpu,
+    kind: 'GPU',
+    cols: [
+      ['name', 'Node'],
+      ['status', 'Status', 'st'],
+      ['product', 'Product', 'm'],
+      ['count', 'Alloc', 'n'],
+      ['kind', 'Type', 'm'],
+      ['memory', 'Memory', 'm'],
+    ],
+    insp: [
+      ['Product', 'product'],
+      ['Type', 'kind'],
+      ['Resources', 'resources'],
+      ['Memory', 'memory'],
+      ['Allocatable', 'count'],
+    ],
+    acts: [],
+  },
   images: {
     l: 'Images & ISOs',
     I: Disc3,
@@ -68,7 +91,15 @@ export const RES_META = {
       ['Source', 'src'],
       ['Namespace', 'ns'],
     ],
-    acts: ['delete'],
+    acts: ['publish', 'delete'],
+    canCreate: true,
+    extraTitle: 'DataSources',
+    extraCols: [
+      ['name', 'Name'],
+      ['cls', 'Namespace', 'm'],
+      ['prov', 'Source', 'm'],
+      ['total', 'Size', 'n'],
+    ],
   },
   pods: {
     l: 'Pods',
@@ -107,8 +138,38 @@ export const RES_META = {
       ['OS', 'os'],
       ['Cloud-init', 'ci'],
       ['Used by', 'uses'],
+      ['Tags', 'tags'],
     ],
     acts: ['clone', 'delete'],
+    extraTitle: 'VMProfiles',
+    extraCols: [
+      ['name', 'Name'],
+      ['os', 'Family', 'm'],
+      ['cpu', 'vCPU', 'n'],
+      ['ram', 'Memory', 'n'],
+    ],
+  },
+  migrations: {
+    l: 'Migrations',
+    I: ArrowLeftRight,
+    kind: 'Migration',
+    cols: [
+      ['name', 'ID'],
+      ['status', 'Status', 'st'],
+      ['vm', 'VM', 'm'],
+      ['source', 'Source', 'm'],
+      ['target', 'Target', 'm'],
+      ['progress', 'Progress', 'n'],
+      ['age', 'Started', 'n'],
+    ],
+    insp: [
+      ['VM', 'vm'],
+      ['Source', 'source'],
+      ['Target', 'target'],
+      ['Type', 'type'],
+      ['Progress', 'progress'],
+    ],
+    acts: ['delete'],
   },
   pvcs: {
     l: 'Storage',
@@ -131,6 +192,7 @@ export const RES_META = {
       ['Size', 'size'],
     ],
     acts: ['resize', 'delete'],
+    canCreate: true,
     extraTitle: 'Storage pools',
     extraCols: [
       ['name', 'Name'],
@@ -178,6 +240,34 @@ export const RES_META = {
     ],
     acts: ['run', 'restore', 'delete'],
   },
+  atlas: {
+    l: 'Atlas',
+    I: Database,
+    kind: 'AtlasVolume',
+    cols: [
+      ['name', 'Name'],
+      ['status', 'Status', 'st'],
+      ['ns', 'Namespace', 'm'],
+      ['size', 'Size', 'n'],
+      ['backend', 'Backend', 'm'],
+      ['pvc', 'PVC', 'm'],
+    ],
+    insp: [
+      ['Namespace', 'ns'],
+      ['Backend', 'backend'],
+      ['PVC', 'pvc'],
+      ['Size', 'size'],
+    ],
+    acts: [],
+    extraTitle: 'Atlas snapshots',
+    extraCols: [
+      ['name', 'Name'],
+      ['status', 'Status', 'st'],
+      ['volume', 'Volume', 'm'],
+      ['size', 'Size', 'n'],
+      ['age', 'Taken', 'n'],
+    ],
+  },
   networks: {
     l: 'Networks',
     I: Network,
@@ -198,23 +288,98 @@ export const RES_META = {
       ['Namespace', 'ns'],
     ],
     acts: ['delete'],
+    canCreate: true,
+  },
+  alerts: {
+    l: 'Alerts',
+    I: Bell,
+    kind: 'Alert',
+    cols: [
+      ['name', 'Name'],
+      ['status', 'Status', 'st'],
+      ['severity', 'Severity', 'm'],
+      ['message', 'Message', 'm'],
+      ['source', 'Source', 'm'],
+      ['age', 'Fired', 'n'],
+    ],
+    insp: [
+      ['Severity', 'severity'],
+      ['Message', 'message'],
+      ['Source', 'source'],
+      ['Fired', 'age'],
+    ],
+    acts: ['resolve'],
+  },
+  soc: {
+    l: 'Security',
+    I: Shield,
+    kind: 'Detection',
+    cols: [
+      ['name', 'Name'],
+      ['status', 'Status', 'st'],
+      ['severity', 'Severity', 'm'],
+      ['message', 'Message', 'm'],
+      ['source', 'Source', 'm'],
+      ['age', 'Seen', 'n'],
+    ],
+    insp: [
+      ['Severity', 'severity'],
+      ['Message', 'message'],
+      ['Source', 'source'],
+      ['Seen', 'age'],
+    ],
+    acts: ['ack'],
   },
 };
 
 export function emptyData() {
   const out = {};
   for (const [k, meta] of Object.entries(RES_META)) {
-    out[k] = { ...meta, rows: [], extra: meta.extraTitle ? { title: meta.extraTitle, cols: meta.extraCols, rows: [] } : undefined };
+    out[k] = {
+      ...meta,
+      rows: [],
+      extra: meta.extraTitle
+        ? { title: meta.extraTitle, cols: meta.extraCols, rows: [] }
+        : undefined,
+    };
   }
   return out;
 }
 
 export const NAV = [
-  { g: 'Overview', items: [['mission', 'Mission Control'], ['console', 'ConsoleHub']] },
-  { g: 'Compute', items: [['vms'], ['hosts'], ['images'], ['pods'], ['templates']] },
-  { g: 'Storage & network', items: [['pvcs'], ['snapshots'], ['backups'], ['networks']] },
+  {
+    g: 'Overview',
+    items: [
+      ['mission', 'Mission Control'],
+      ['console', 'ConsoleHub'],
+      ['monitoring', 'Monitoring'],
+      ['topology', 'Topology'],
+    ],
+  },
+  {
+    g: 'Compute',
+    items: [['vms'], ['hosts'], ['gpus'], ['images'], ['pods'], ['templates'], ['migrations']],
+  },
+  {
+    g: 'Storage & network',
+    items: [['pvcs'], ['snapshots'], ['backups'], ['atlas'], ['networks'], ['network-brain', 'PacketWolf'], ['dr', 'DR & Velero']],
+  },
+  {
+    g: 'Security',
+    items: [['alerts'], ['soc']],
+  },
   { g: 'System', items: [['settings', 'Settings']] },
 ];
 
 /** Flat page order for 1:1 swipe navigation (matches sidebar top→bottom). */
 export const PAGE_ORDER = NAV.flatMap((g) => g.items.map(([id]) => id));
+
+export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'network-brain']);
+
+// Icons for chapter pages in the rail
+export const CHAPTER_ICONS = {
+  monitoring: Activity,
+  topology: Map,
+  dr: Cloud,
+  'network-brain': Radar,
+};

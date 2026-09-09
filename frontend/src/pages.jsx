@@ -142,15 +142,15 @@ export function Mission({ data, go, hostCount, onCreate }) {
               <b>Create a machine</b>
               <p>From a template in under a minute.</p>
             </button>
-            <button className="apple-tile" onClick={() => go('console')}>
-              <Terminal size={22} />
-              <b>Open a console</b>
-              <p>Serial or VNC to any running guest.</p>
-            </button>
-            <button className="apple-tile" onClick={() => go('backups')}>
+            <button className="apple-tile" onClick={() => go('monitoring')}>
               <Archive size={22} />
-              <b>Check backups</b>
-              <p>Review backup jobs and targets.</p>
+              <b>Check capacity</b>
+              <p>Headroom and platform versions.</p>
+            </button>
+            <button className="apple-tile" onClick={() => go('alerts')}>
+              <Terminal size={22} />
+              <b>Review alerts</b>
+              <p>Warning events across the cluster.</p>
             </button>
           </div>
         </div>
@@ -209,17 +209,19 @@ export function SettingsPage({ theme, setTheme }) {
   const [policyBusy, setPolicyBusy] = useState(false);
   const [integrations, setIntegrations] = useState([]);
   const [about, setAbout] = useState({ versions: null, caps: null });
+  const [headroom, setHeadroom] = useState(null);
   const [err, setErr] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [p, integ, versions, caps] = await Promise.all([
+        const [p, integ, versions, caps, hr] = await Promise.all([
           api.getSelfHealingPolicy().catch(() => ({ enabled: false })),
           api.integrationsStatus().catch(() => ({ integrations: [] })),
           api.platformVersions().catch(() => null),
           api.platformCapabilities().catch(() => null),
+          api.capacityHeadroom().catch(() => null),
         ]);
         if (cancelled) return;
         setPolicy({
@@ -230,6 +232,7 @@ export function SettingsPage({ theme, setTheme }) {
         const list = Array.isArray(integ?.integrations) ? integ.integrations : Array.isArray(integ) ? integ : [];
         setIntegrations(list);
         setAbout({ versions, caps });
+        setHeadroom(hr);
       } catch (e) {
         if (!cancelled) setErr(e.message || String(e));
       }
@@ -346,6 +349,52 @@ export function SettingsPage({ theme, setTheme }) {
               <i />
             </button>
           </div>
+          <div className="srow2">
+            <div>
+              <b>Run self-healing now</b>
+              <small>Dry-run reports unhealthy VMIs; heal restarts them.</small>
+            </div>
+            <div className="r" style={{ display: 'flex', gap: 6 }}>
+              <button
+                className="btn"
+                disabled={policyBusy}
+                onClick={async () => {
+                  setPolicyBusy(true);
+                  setErr('');
+                  try {
+                    const r = await api.runSelfHealing(false);
+                    setErr('');
+                    alert(`Dry-run: unhealthy=${r?.unhealthy ?? '?'} (heal=${r?.healed ?? 0})`);
+                  } catch (e) {
+                    setErr(e.message || String(e));
+                  } finally {
+                    setPolicyBusy(false);
+                  }
+                }}
+              >
+                Dry-run
+              </button>
+              <button
+                className="btn"
+                disabled={policyBusy}
+                onClick={async () => {
+                  if (!window.confirm('Heal unhealthy VMIs now?')) return;
+                  setPolicyBusy(true);
+                  setErr('');
+                  try {
+                    const r = await api.runSelfHealing(true);
+                    alert(`Healed ${r?.healed ?? 0} of ${r?.unhealthy ?? '?'}`);
+                  } catch (e) {
+                    setErr(e.message || String(e));
+                  } finally {
+                    setPolicyBusy(false);
+                  }
+                }}
+              >
+                Heal
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <div className="sgroup">
@@ -366,6 +415,17 @@ export function SettingsPage({ theme, setTheme }) {
               <small>{versionLine}</small>
             </div>
           </div>
+          {headroom && (
+            <div className="srow2">
+              <div>
+                <b>Capacity headroom</b>
+                <small>
+                  {JSON.stringify(headroom).slice(0, 120)}
+                  {JSON.stringify(headroom).length > 120 ? '…' : ''}
+                </small>
+              </div>
+            </div>
+          )}
           {about.caps && (
             <div className="srow2">
               <div>
@@ -442,10 +502,9 @@ export function ConsoleSheet({ vm, mode = 'console', onClose }) {
   );
 }
 
-export function NewSheet({ res, templates, hosts, storageClasses, onClose, onCreate }) {
+export function NewSheet({ res, templates, storageClasses, onClose, onCreate }) {
   const [name, setName] = useState('');
   const [template, setTemplate] = useState(templates?.[0]?.name || '');
-  const [host, setHost] = useState('Auto');
   const [cls, setCls] = useState(storageClasses?.[0]?.name || '');
   const [size, setSize] = useState(res.kind === 'Image' ? '20Gi' : '10Gi');
   const [url, setUrl] = useState('');
@@ -453,8 +512,7 @@ export function NewSheet({ res, templates, hosts, storageClasses, onClose, onCre
 
   const canCreate =
     !!name &&
-    (res.kind !== 'Image' || !!url.trim()) &&
-    (res.kind !== 'Network' || true);
+    (res.kind !== 'Image' || !!url.trim());
 
   return (
     <div className="scrim" onClick={onClose}>
@@ -472,30 +530,19 @@ export function NewSheet({ res, templates, hosts, storageClasses, onClose, onCre
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder={`e.g. ${res.rows[0]?.name || 'name'}`} />
           </div>
           {res.kind === 'VirtualMachine' && (
-            <>
-              <div className="field">
-                <label>Template</label>
-                <select value={template} onChange={(e) => setTemplate(e.target.value)}>
-                  {(templates || []).length === 0 && <option value="">(no templates)</option>}
-                  {(templates || []).map((t) => (
-                    <option key={t.id || t.name} value={t.name}>
-                      {t.name}
-                      {t.cpu != null ? ` · ${t.cpu} vCPU` : ''}
-                      {t.ram != null ? ` · ${t.ram} GiB` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Host</label>
-                <select value={host} onChange={(e) => setHost(e.target.value)}>
-                  <option>Auto</option>
-                  {(hosts || []).map((h) => (
-                    <option key={h.id || h.name}>{h.name}</option>
-                  ))}
-                </select>
-              </div>
-            </>
+            <div className="field">
+              <label>Template</label>
+              <select value={template} onChange={(e) => setTemplate(e.target.value)}>
+                {(templates || []).length === 0 && <option value="">(no templates)</option>}
+                {(templates || []).map((t) => (
+                  <option key={t.id || t.name} value={t.name}>
+                    {t.name}
+                    {t.cpu != null ? ` · ${t.cpu} vCPU` : ''}
+                    {t.ram != null ? ` · ${t.ram} GiB` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
           {(res.kind === 'PersistentVolumeClaim' || res.kind === 'Image') && (
             <>
@@ -540,7 +587,7 @@ export function NewSheet({ res, templates, hosts, storageClasses, onClose, onCre
           <button
             className="btn primary"
             disabled={!canCreate}
-            onClick={() => onCreate({ name, template, host, cls, size, url, cidr })}
+            onClick={() => onCreate({ name, template, cls, size, url, cidr })}
           >
             Create
           </button>
