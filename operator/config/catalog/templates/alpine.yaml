@@ -24,7 +24,7 @@ spec:
       bootOrder: 1
       source:
         type: containerDisk
-        image: quay.io/containerdisks/alpine:3.19
+        image: quay.io/kubevirt/cirros-container-disk-demo:latest
       deviceType: disk
     - name: datadisk
       size: '10Gi'

@@ -1,8 +1,13 @@
-# CloudOS / dashboard UI — removed
+# CloudOS / console UI
 
-Veyron no longer ships a browser dashboard or React console. Operate the cluster via the **CLI** and **HTTP API** (`veyron serve` / `api-serve`).
+Veyron’s browser UI is the **React console** at **`/console`** (`frontend/`), embedded into the API binary via `include_dir!`.
 
-- Health: `GET /api/v1/health`
-- Auth: `X-API-Key` or OIDC bearer (see `CLAUDE.md` / `docs/SOC.md` as applicable)
+Operate the cluster via:
 
-Historical design notes for the retired CloudOS SPA are gone with `src/api/web/` and `frontend/`.
+- **Console**: `https://<host>:30151/console` (API key login)
+- **HTTP API**: `GET /api/v1/health`, VM/lifecycle routes under `/api/v1/…`
+- **CLI**: `veyron` commands
+
+Auth: `X-API-Key` (stored by the console as `localStorage['veyron_api_key']`) or OIDC bearer — see `CLAUDE.md`.
+
+The old single-file CloudOS `dashboard.html` SPA was removed; do not restore it.

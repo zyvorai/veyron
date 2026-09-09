@@ -12,7 +12,7 @@ use axum::{
     Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
 
@@ -209,6 +209,7 @@ pub fn router(state: SharedState) -> Router {
             "/crds/templates",
             get(list_catalog_templates).post(create_catalog_template),
         )
+        .route("/crds/templates/:name", delete(delete_catalog_template))
         .route(
             "/crds/profiles",
             get(list_catalog_profiles).post(create_catalog_profile),
@@ -1020,6 +1021,35 @@ async fn create_catalog_template(
         Err(e) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("create VMTemplate: {e}"),
+        )),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn delete_catalog_template(
+    State(state): State<SharedState>,
+    Path(name): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    use kube::Api;
+    use kube::api::DeleteParams;
+
+    if name.trim().is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "name required".to_string()));
+    }
+    let s = state.read().await;
+    let api: Api<VMTemplate> = Api::all(s.client().client());
+    match api.delete(name.trim(), &DeleteParams::default()).await {
+        Ok(_) => Ok(Json(serde_json::json!({
+            "status": "deleted",
+            "name": name.trim(),
+        }))),
+        Err(kube::Error::Api(e)) if e.code == 404 => Err((
+            StatusCode::NOT_FOUND,
+            format!("VMTemplate '{name}' not found (embedded Rust templates cannot be deleted)"),
+        )),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("delete VMTemplate: {e}"),
         )),
     }
 }

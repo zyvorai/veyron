@@ -33,6 +33,7 @@ pub mod web {
         response::IntoResponse,
         routing::{delete, get, post, put},
     };
+    use include_dir::{Dir, include_dir};
     use k8s_openapi::api::core::v1::{PersistentVolumeClaim, Service};
     use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
     use serde::{Deserialize, Serialize};
@@ -790,6 +791,11 @@ pub mod web {
         let timed_rest =
             Router::new()
                 .route("/", get(root_handler))
+                .route("/console", get(console_handler))
+                .route("/console/", get(console_handler))
+                .route("/console/assets/*file", get(console_asset_handler))
+                .route("/dashboard", get(console_redirect_handler))
+                .route("/dashboard/", get(console_redirect_handler))
                 // VM endpoints
                 .route("/api/v1/vms", get(list_vms_handler))
                 .route("/api/v1/vms", post(create_vm_handler))
@@ -978,6 +984,14 @@ pub mod web {
                 )
                 .route("/api/v1/pods", get(list_pods_handler))
                 .route("/api/v1/pods/:name/logs", get(get_pod_logs_handler))
+                .route(
+                    "/api/v1/pods/:ns/:name",
+                    delete(crate::api::handlers::pods::delete_pod),
+                )
+                .route(
+                    "/api/v1/nodes/:name/reboot",
+                    post(crate::api::handlers::nodes::reboot_node),
+                )
                 .route("/api/v1/profiles", get(list_profiles_handler))
                 .route("/api/v1/namespaces", get(list_namespaces_handler))
                 .route("/api/v1/activity", get(activity_feed_handler))
@@ -1220,7 +1234,65 @@ pub mod web {
             "service": "veyron",
             "api": "/api/v1",
             "health": "/api/v1/health",
+            "console": "/console",
         }))
+    }
+
+    // React console (frontend/) — Vite build embedded via include_dir!, served at /console.
+    // Local cargo build needs `cd frontend && npm run build` first; Docker runs that stage.
+    static CONSOLE_DIST: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/frontend/dist");
+
+    fn console_mime(path: &str) -> &'static str {
+        if path.ends_with(".js") {
+            "application/javascript"
+        } else if path.ends_with(".css") {
+            "text/css"
+        } else if path.ends_with(".svg") {
+            "image/svg+xml"
+        } else if path.ends_with(".json") {
+            "application/json"
+        } else if path.ends_with(".html") {
+            "text/html; charset=utf-8"
+        } else {
+            "application/octet-stream"
+        }
+    }
+
+    async fn console_handler() -> impl IntoResponse {
+        match CONSOLE_DIST.get_file("index.html") {
+            Some(f) => (
+                [
+                    (header::CONTENT_TYPE, "text/html; charset=utf-8"),
+                    (header::CACHE_CONTROL, "no-cache, no-store, must-revalidate"),
+                ],
+                f.contents(),
+            )
+                .into_response(),
+            None => (
+                StatusCode::NOT_FOUND,
+                "Console build not found — run `npm run build` in frontend/ before `cargo build`.",
+            )
+                .into_response(),
+        }
+    }
+
+    async fn console_redirect_handler() -> impl IntoResponse {
+        axum::response::Redirect::temporary("/console")
+    }
+
+    async fn console_asset_handler(Path(file): Path<String>) -> impl IntoResponse {
+        let rel = format!("assets/{file}");
+        match CONSOLE_DIST.get_file(&rel) {
+            Some(f) => (
+                [
+                    (header::CONTENT_TYPE, console_mime(&rel)),
+                    (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+                ],
+                f.contents(),
+            )
+                .into_response(),
+            None => StatusCode::NOT_FOUND.into_response(),
+        }
     }
 
     fn req_ctx(method: HttpMethod, path: &str) -> RequestContext {
@@ -4910,6 +4982,12 @@ pub mod web {
                         let allocatable = node.status.as_ref().and_then(|s| s.allocatable.as_ref());
                         let node_info = node.status.as_ref().and_then(|s| s.node_info.as_ref());
 
+                        let unschedulable = node
+                            .spec
+                            .as_ref()
+                            .and_then(|s| s.unschedulable)
+                            .unwrap_or(false);
+
                         NodeItem {
                             name,
                             status,
@@ -4942,6 +5020,7 @@ pub mod web {
                                 .as_ref()
                                 .map(|t| format_age(&t.0))
                                 .unwrap_or_default(),
+                            unschedulable,
                         }
                     })
                     .collect();
@@ -5416,6 +5495,8 @@ pub mod web {
         os_image: String,
         kernel_version: String,
         age: String,
+        /// True when the node is cordoned (`spec.unschedulable`).
+        unschedulable: bool,
     }
 
     #[derive(Serialize)]

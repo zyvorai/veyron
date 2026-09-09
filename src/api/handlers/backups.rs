@@ -7,7 +7,7 @@ use axum::{
     Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
 
@@ -50,6 +50,7 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/backups", get(list_backups).post(create_backup))
         .route("/backups/:id/restore", post(restore_backup))
+        .route("/backups/:id", delete(delete_backup))
         .with_state(state)
 }
 
@@ -144,6 +145,37 @@ async fn restore_backup(State(state): State<SharedState>, Path(id): Path<String>
             }
         },
         Err(_) => StatusCode::NOT_FOUND,
+    }
+}
+
+#[cfg(feature = "web")]
+async fn delete_backup(
+    State(state): State<SharedState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    use crate::snapshots::SnapshotManager;
+
+    let s = state.read().await;
+    let ns = s.namespace.clone();
+    let manager = SnapshotManager::from_client(s.client().client(), &ns);
+    match manager.delete_snapshot(&id).await {
+        Ok(_) => Ok(Json(serde_json::json!({
+            "status": "deleted",
+            "id": id,
+            "namespace": ns,
+        }))),
+        Err(e) => {
+            // anyhow Display is only the outer context ("Failed to delete snapshot…");
+            // walk the chain / alternate format so kube NotFound surfaces.
+            let msg = format!("{e:#}");
+            let lower = msg.to_ascii_lowercase();
+            if lower.contains("notfound") || lower.contains("not found") {
+                Err(StatusCode::NOT_FOUND)
+            } else {
+                log::error!("Failed to delete backup '{}': {}", id, e);
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+        }
     }
 }
 

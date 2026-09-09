@@ -2107,12 +2107,40 @@ impl KubeClient {
 
 /// Apply `ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY` to mirror quay.io/* images to a private prefix.
 /// E.g. `quay.io/containerdisks/fedora:39` → `myregistry.example.com/containerdisks/fedora:39`.
+///
+/// Also rewrites known-dead public refs (quay returns 401/404 for some containerdisks
+/// repos/tags as of 2026 — alpine and rockylinux went private; almalinux:8 was removed).
 pub fn resolve_container_disk_image(image: &str) -> String {
+    let image = rewrite_broken_container_disk(image);
     if let Ok(registry) = std::env::var("ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY") {
         let reg = registry.trim_end_matches('/');
         if let Some(path) = image.strip_prefix("quay.io/") {
             return format!("{}/{}", reg, path);
         }
+    }
+    image
+}
+
+/// Public, pullable substitutes for quay.io/containerdisks images that are no longer public.
+fn rewrite_broken_container_disk(image: &str) -> String {
+    // Tiny alpine containerdisks repo is auth-gated (401). Cirros is the standard
+    // KubeVirt demo disk and is already cached on most lab nodes.
+    if image.starts_with("quay.io/containerdisks/alpine:")
+        || image == "quay.io/containerdisks/alpine"
+    {
+        return "quay.io/kubevirt/cirros-container-disk-demo:latest".to_string();
+    }
+    // rockylinux repo is auth-gated; AlmaLinux is the public RHEL-compatible twin.
+    if image.starts_with("quay.io/containerdisks/rockylinux:")
+        || image == "quay.io/containerdisks/rockylinux"
+    {
+        return "quay.io/containerdisks/almalinux:9".to_string();
+    }
+    // almalinux:8 tag no longer exists (404); pin to the published :9 stream.
+    if image == "quay.io/containerdisks/almalinux:8"
+        || image.starts_with("quay.io/containerdisks/almalinux:8-")
+    {
+        return "quay.io/containerdisks/almalinux:9".to_string();
     }
     image.to_string()
 }
@@ -2202,6 +2230,7 @@ mod tests {
     #[test]
     fn test_vm_conversion() {
         use crate::config::VMConfigBuilder;
+        use crate::kube::converter::vm_config_to_kubevirt;
 
         let config = VMConfigBuilder::new("test")
             .namespace("default")
@@ -2213,5 +2242,25 @@ mod tests {
 
         let vm = vm_config_to_kubevirt(&config).unwrap();
         assert_eq!(vm.metadata.name, Some("test".to_string()));
+    }
+
+    #[test]
+    fn rewrite_broken_quay_containerdisks() {
+        assert_eq!(
+            resolve_container_disk_image("quay.io/containerdisks/alpine:3.19"),
+            "quay.io/kubevirt/cirros-container-disk-demo:latest"
+        );
+        assert_eq!(
+            resolve_container_disk_image("quay.io/containerdisks/rockylinux:8"),
+            "quay.io/containerdisks/almalinux:9"
+        );
+        assert_eq!(
+            resolve_container_disk_image("quay.io/containerdisks/almalinux:8"),
+            "quay.io/containerdisks/almalinux:9"
+        );
+        assert_eq!(
+            resolve_container_disk_image("quay.io/containerdisks/ubuntu:22.04"),
+            "quay.io/containerdisks/ubuntu:22.04"
+        );
     }
 }

@@ -4,7 +4,7 @@
 
 //! Path rules shared by API middleware (auth + rate limits).
 
-/// Routes reachable without an API key (health, guestkit bootstrap, auth).
+/// Routes reachable without an API key (health, guestkit bootstrap, auth, console shell).
 pub fn is_auth_exempt_path(path: &str) -> bool {
     path == "/api/v1/health"
         || path == "/api/v1/platform/guestkit/binary"
@@ -12,6 +12,12 @@ pub fn is_auth_exempt_path(path: &str) -> bool {
         || path == "/api/v1/auth/oidc/token"
         || path == "/api/v1/auth/login"
         || path == "/"
+        || path == "/console"
+        || path == "/console/"
+        || path.starts_with("/console/")
+        || path == "/favicon.ico"
+        || path == "/dashboard"
+        || path == "/dashboard/"
 }
 
 /// API prefixes exempt from the global rate limiter for high-frequency GET polling.
@@ -96,6 +102,9 @@ mod tests {
     fn auth_exempt_includes_health_and_auth() {
         for path in [
             "/",
+            "/console",
+            "/console/",
+            "/console/assets/index-abc123.js",
             "/api/v1/health",
             "/api/v1/platform/guestkit/binary",
             "/api/v1/auth/oidc/config",
@@ -106,8 +115,8 @@ mod tests {
         }
         assert!(!is_auth_exempt_path("/api/v1/vms"));
         assert!(!is_auth_exempt_path("/api/v1/auth/users"));
-        assert!(!is_auth_exempt_path("/dashboard"));
-        assert!(!is_auth_exempt_path("/assets/novnc.min.js"));
+        assert!(is_auth_exempt_path("/dashboard"));
+        assert!(is_auth_exempt_path("/dashboard/"));
     }
 
     #[test]

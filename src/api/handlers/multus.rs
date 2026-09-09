@@ -9,7 +9,7 @@ use axum::{
     Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
 
@@ -44,10 +44,38 @@ pub struct AttachMultusResponse {
     pub message: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateNadRequest {
+    pub name: String,
+    #[serde(default = "default_nad_ns")]
+    pub namespace: String,
+    /// CNI JSON config string (e.g. bridge/macvlan). Optional — a simple bridge stub is used when empty.
+    #[serde(default)]
+    pub config: Option<String>,
+    #[serde(default)]
+    pub cidr: Option<String>,
+}
+
+fn default_nad_ns() -> String {
+    "default".to_string()
+}
+
+#[cfg(feature = "web")]
+fn nad_api_resource() -> kube::api::ApiResource {
+    kube::api::ApiResource {
+        group: "k8s.cni.cncf.io".to_string(),
+        version: "v1".to_string(),
+        api_version: "k8s.cni.cncf.io/v1".to_string(),
+        kind: "NetworkAttachmentDefinition".to_string(),
+        plural: "network-attachment-definitions".to_string(),
+    }
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
-        .route("/network/nads", get(list_nads))
+        .route("/network/nads", get(list_nads).post(create_nad))
+        .route("/network/nads/:ns/:name", delete(delete_nad))
         .route("/vms/:ns/:name/network/multus", post(attach_multus_to_vm))
         .with_state(state)
 }
@@ -57,19 +85,12 @@ async fn list_nads(
     State(state): State<SharedState>,
     Query(q): Query<NadQuery>,
 ) -> Json<Vec<NadRecord>> {
-    use kube::api::{Api, ApiResource, DynamicObject, ListParams};
+    use kube::api::{Api, DynamicObject, ListParams};
 
     let s = state.read().await;
     let client = s.client().client();
     let scope = q.namespace.clone().unwrap_or_else(|| "all".to_string());
-
-    let ar = ApiResource {
-        group: "k8s.cni.cncf.io".to_string(),
-        version: "v1".to_string(),
-        api_version: "k8s.cni.cncf.io/v1".to_string(),
-        kind: "NetworkAttachmentDefinition".to_string(),
-        plural: "network-attachment-definitions".to_string(),
-    };
+    let ar = nad_api_resource();
 
     let api: Api<DynamicObject> = if scope == "all" {
         Api::all_with(client, &ar)
@@ -111,6 +132,92 @@ async fn list_nads(
         .collect();
 
     Json(rows)
+}
+
+#[cfg(feature = "web")]
+async fn create_nad(
+    State(state): State<SharedState>,
+    Json(req): Json<CreateNadRequest>,
+) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
+    use kube::api::{DynamicObject, PostParams};
+
+    if req.name.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "name required" })),
+        ));
+    }
+    let config = req.config.clone().filter(|c| !c.is_empty()).unwrap_or_else(|| {
+        let cidr = req.cidr.as_deref().unwrap_or("10.244.100.0/24");
+        format!(
+            r#"{{"cniVersion":"0.3.1","type":"bridge","bridge":"br-{}","ipam":{{"type":"host-local","subnet":"{}"}}}}"#,
+            req.name, cidr
+        )
+    });
+
+    let doc = serde_json::json!({
+        "apiVersion": "k8s.cni.cncf.io/v1",
+        "kind": "NetworkAttachmentDefinition",
+        "metadata": {
+            "name": req.name,
+            "namespace": req.namespace,
+            "labels": { "veyron.io/managed": "true" }
+        },
+        "spec": { "config": config }
+    });
+
+    let client = { state.read().await.client().client() };
+    let api: kube::Api<DynamicObject> =
+        kube::Api::namespaced_with(client, &req.namespace, &nad_api_resource());
+    let obj: DynamicObject = serde_json::from_value(doc).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+    })?;
+
+    match api.create(&PostParams::default(), &obj).await {
+        Ok(created) => Ok((
+            StatusCode::CREATED,
+            Json(serde_json::json!({
+                "status": "created",
+                "name": created.metadata.name,
+                "namespace": req.namespace,
+            })),
+        )),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn delete_nad(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    use kube::api::{DeleteParams, DynamicObject};
+
+    let client = { state.read().await.client().client() };
+    let api: kube::Api<DynamicObject> =
+        kube::Api::namespaced_with(client, &ns, &nad_api_resource());
+    match api.delete(&name, &DeleteParams::default()).await {
+        Ok(_) => Ok(Json(serde_json::json!({
+            "status": "deleted",
+            "name": name,
+            "namespace": ns,
+        }))),
+        Err(e) => {
+            let msg = e.to_string();
+            let code = if msg.contains("NotFound") || msg.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            Err((code, Json(serde_json::json!({ "error": msg }))))
+        }
+    }
 }
 
 #[cfg(feature = "web")]

@@ -41,6 +41,7 @@ pub fn router(state: SharedState) -> Router {
         .route("/nodes/:name", get(get_node))
         .route("/nodes/:name/cordon", post(cordon_node))
         .route("/nodes/:name/uncordon", post(uncordon_node))
+        .route("/nodes/:name/reboot", post(reboot_node))
         .with_state(state)
 }
 
@@ -60,6 +61,164 @@ pub async fn uncordon_node(
     Path(name): Path<String>,
 ) -> impl IntoResponse {
     set_schedulable(state, name, true).await
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RebootNodeRequest {
+    /// Must be true — host reboot is destructive.
+    #[serde(default)]
+    pub confirm: bool,
+}
+
+/// Cordon the node, then launch a privileged one-shot Job that reboots the host via nsenter.
+#[cfg(feature = "web")]
+pub async fn reboot_node(
+    State(state): State<SharedState>,
+    Path(name): Path<String>,
+    Json(req): Json<RebootNodeRequest>,
+) -> impl IntoResponse {
+    use k8s_openapi::api::batch::v1::{Job, JobSpec};
+    use k8s_openapi::api::core::v1::{
+        Container, HostPathVolumeSource, PodSpec, PodTemplateSpec, SecurityContext, Volume,
+        VolumeMount,
+    };
+    use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
+    use kube::api::{Api, PostParams};
+
+    if !req.confirm {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "error": "confirm:true required to reboot a node"
+            })),
+        )
+            .into_response();
+    }
+    if name.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "node name required" })),
+        )
+            .into_response();
+    }
+
+    let kube = { state.read().await.kube_client.clone() };
+    if let Err(e) = kube.set_node_schedulable(&name, false).await {
+        return (
+            StatusCode::BAD_GATEWAY,
+            Json(serde_json::json!({ "error": format!("cordon before reboot failed: {e}") })),
+        )
+            .into_response();
+    }
+
+    let job_name = format!(
+        "veyron-reboot-{}",
+        name.replace('.', "-")
+            .chars()
+            .take(40)
+            .collect::<String>()
+            .to_lowercase()
+    );
+    let job = Job {
+        metadata: ObjectMeta {
+            name: Some(job_name.clone()),
+            namespace: Some("veyron-system".to_string()),
+            labels: Some(
+                [
+                    ("app.kubernetes.io/name".to_string(), "veyron".to_string()),
+                    ("veyron.io/node-reboot".to_string(), name.clone()),
+                ]
+                .into_iter()
+                .collect(),
+            ),
+            ..Default::default()
+        },
+        spec: Some(JobSpec {
+            ttl_seconds_after_finished: Some(300),
+            backoff_limit: Some(0),
+            template: PodTemplateSpec {
+                metadata: Some(ObjectMeta {
+                    labels: Some(
+                        [("veyron.io/node-reboot".to_string(), name.clone())]
+                            .into_iter()
+                            .collect(),
+                    ),
+                    ..Default::default()
+                }),
+                spec: Some(PodSpec {
+                    restart_policy: Some("Never".to_string()),
+                    node_name: Some(name.clone()),
+                    host_pid: Some(true),
+                    host_network: Some(true),
+                    containers: vec![Container {
+                        name: "reboot".to_string(),
+                        image: Some("busybox:1.36".to_string()),
+                        command: Some(vec![
+                            "nsenter".to_string(),
+                            "--target".to_string(),
+                            "1".to_string(),
+                            "--mount".to_string(),
+                            "--uts".to_string(),
+                            "--ipc".to_string(),
+                            "--net".to_string(),
+                            "--pid".to_string(),
+                            "--".to_string(),
+                            "reboot".to_string(),
+                        ]),
+                        security_context: Some(SecurityContext {
+                            privileged: Some(true),
+                            ..Default::default()
+                        }),
+                        volume_mounts: Some(vec![VolumeMount {
+                            name: "host-root".to_string(),
+                            mount_path: "/host".to_string(),
+                            ..Default::default()
+                        }]),
+                        ..Default::default()
+                    }],
+                    volumes: Some(vec![Volume {
+                        name: "host-root".to_string(),
+                        host_path: Some(HostPathVolumeSource {
+                            path: "/".to_string(),
+                            type_: Some("Directory".to_string()),
+                        }),
+                        ..Default::default()
+                    }]),
+                    tolerations: Some(vec![k8s_openapi::api::core::v1::Toleration {
+                        operator: Some("Exists".to_string()),
+                        ..Default::default()
+                    }]),
+                    ..Default::default()
+                }),
+            },
+            ..Default::default()
+        }),
+        status: None,
+    };
+
+    let api: Api<Job> = Api::namespaced(kube.client(), "veyron-system");
+    // Best-effort delete of a previous reboot job with the same name
+    let _ = api
+        .delete(&job_name, &kube::api::DeleteParams::default())
+        .await;
+    match api.create(&PostParams::default(), &job).await {
+        Ok(_) => (
+            StatusCode::ACCEPTED,
+            Json(serde_json::json!({
+                "ok": true,
+                "node": name,
+                "action": "reboot",
+                "job": job_name,
+                "message": "Node cordoned; reboot Job scheduled"
+            })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            Json(serde_json::json!({ "error": format!("reboot job create failed: {e}") })),
+        )
+            .into_response(),
+    }
 }
 
 #[cfg(feature = "web")]

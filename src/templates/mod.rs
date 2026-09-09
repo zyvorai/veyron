@@ -508,11 +508,12 @@ fn almalinux_8_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/almalinux:8", 1)
+        .add_container_disk("rootdisk", "quay.io/containerdisks/almalinux:9", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "almalinux")
         .label("os.version", "8")
+        // quay no longer publishes almalinux:8; root disk uses the public :9 tag.
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
@@ -529,11 +530,12 @@ fn rocky_9_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/rockylinux:9", 1)
+        .add_container_disk("rootdisk", "quay.io/containerdisks/almalinux:9", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "rocky")
         .label("os.version", "9")
+        // quay.io/containerdisks/rockylinux is auth-gated; AlmaLinux is the public twin.
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
@@ -546,11 +548,12 @@ fn rocky_8_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/rockylinux:8", 1)
+        .add_container_disk("rootdisk", "quay.io/containerdisks/almalinux:9", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "rocky")
         .label("os.version", "8")
+        // quay.io/containerdisks/rockylinux is auth-gated; AlmaLinux is the public twin.
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
@@ -567,7 +570,7 @@ fn opensuse_leap_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_blank_disk("rootdisk", "20Gi", 1)
+        .add_container_disk("rootdisk", "quay.io/containerdisks/opensuse-leap:15.6", 1)
         .add_pod_network("default")
         .label("os", "opensuse")
         .label("os.version", "leap")
@@ -583,7 +586,7 @@ fn opensuse_tumbleweed_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_blank_disk("rootdisk", "20Gi", 1)
+        .add_container_disk("rootdisk", "quay.io/containerdisks/opensuse-tumbleweed:1.0.0", 1)
         .add_pod_network("default")
         .label("os", "opensuse")
         .label("os.version", "tumbleweed")
@@ -603,7 +606,12 @@ fn alpine_template() -> VMConfig {
         .namespace("default")
         .cpu(1, 1, 1)
         .memory("512Mi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/alpine:3.19", 1)
+        // quay.io/containerdisks/alpine is auth-gated (401); Cirros is the public KubeVirt demo disk.
+        .add_container_disk(
+            "rootdisk",
+            "quay.io/kubevirt/cirros-container-disk-demo:latest",
+            1,
+        )
         .add_blank_disk("datadisk", "10Gi", 2)
         .add_pod_network("default")
         .label("os", "alpine")

@@ -109,6 +109,13 @@ rules:
   - apiGroups: [""]
     resources: ["pods/exec", "pods/attach", "pods/portforward"]
     verbs: ["create", "get"]
+  # Console / API: delete pods + host-reboot Jobs in veyron-system
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
     resources: ["namespaces"]
     verbs: ["create"]

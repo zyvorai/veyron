@@ -2,6 +2,14 @@
 # Multi-stage build for minimal production image
 # Run scripts/prepare-guestkit-docker.sh before docker build (copies ../guestkit -> ./guestkit).
 
+# React console (frontend/) — Vite build embedded via include_dir! into the Rust binary.
+FROM docker.io/library/node:22-slim AS frontend-builder
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
 FROM docker.io/library/rust:1.94-slim-bookworm AS builder
 
 # Keep in lockstep with KUBEVIRT_VERSION in scripts/cluster/versions.env — virtctl
@@ -42,6 +50,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     && rm -rf src target/x86_64-unknown-linux-musl/release/veyron target/x86_64-unknown-linux-musl/release/deps/veyron-*
 
 COPY src/ src/
+COPY --from=frontend-builder /frontend/dist ./frontend/dist
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/build/target,sharing=locked \
     touch src/main.rs src/lib.rs \
