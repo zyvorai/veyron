@@ -14,7 +14,9 @@ Using Keycloak as the example (the steps are conceptually the same for Auth0/Okt
 2. Create a client, e.g. `veyron`:
    - **Client authentication: On** (a *confidential* client) — the recommended choice. Client authentication **Off** (public) also works with no secret needed, PKCE alone secures it.
    - **Standard flow**: enabled.
-   - **Valid redirect URIs**: the exact dashboard URL you'll sign in at, e.g. `https://veyron.yourcompany.com/dashboard`.
+   - **Valid redirect URIs**: your OIDC callback consumer's URL — the console's login screen does
+     not yet drive this flow itself (see the note in step 3 below); if you're building a custom
+     client against `POST /api/v1/auth/oidc/token`, use that client's own redirect URL.
    - **Web origins**: the same origin, e.g. `https://veyron.yourcompany.com`.
 3. If you created a confidential client, copy its **client secret** from the Credentials tab.
 4. Add group-membership info to the token: Keycloak includes a group-membership mapper on the client's own "dedicated" scope automatically — confirm it's there (Client → Client scopes → `<client>-dedicated` → mappers) with **Token Claim Name: `groups`**.
@@ -62,31 +64,31 @@ helm upgrade --install veyron charts/veyron -n veyron \
 
 ## 3. Try it
 
-1. Open your Veyron dashboard.
-2. Click **Sign in with SSO** on the login screen.
-3. Log in at your IdP. You'll land back on the Veyron dashboard signed in, with your access level set from your group membership (shown top-right, e.g. `SSO session · you`).
-4. Confirm the local admin login (**Use an API key instead**, or the plain username/password form) still works — that stays available as a fallback even with SSO turned on.
+The React console's login screen currently takes username/password only — it does not yet have
+a "Sign in with SSO" button. What you've configured above is real, live backend support for the
+OIDC authorization-code + PKCE flow, consumable today by:
+
+1. `GET /api/v1/auth/oidc/config` — confirm `"enabled": true` and the fields your client needs.
+2. Your own OIDC client (or a future console build) driving the redirect to your IdP, then
+   `POST /api/v1/auth/oidc/token` with the returned `code` + `code_verifier` to exchange for a
+   Veyron bearer token — validated the same way as a username/password session from then on,
+   with your access level set from your IdP group membership.
+3. The console's own username/password login (`admin` + your configured password, or any other
+   local account) keeps working unchanged — that's the only sign-in path the console UI exposes
+   right now.
 
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
-| "Sign in with SSO" button doesn't appear | The API doesn't have `VEYRON_OIDC_CLIENT_ID` + issuer/authorization URL configured yet, or the API hasn't picked up the config (restart the API pod after changing a Secret). |
-| Redirect to the IdP works and login succeeds, but you land back at the Veyron login screen instead of signed in | Most commonly a missing client secret on a confidential IdP client — double-check the Client secret setting. |
+| `GET /api/v1/auth/oidc/config` returns `"enabled": false` | The API doesn't have `VEYRON_OIDC_CLIENT_ID` + issuer/authorization URL configured yet, or the API hasn't picked up the config (restart the API pod after changing a Secret). |
+| `POST /api/v1/auth/oidc/token` returns `unauthorized_client` / `invalid_client` | Most commonly a missing `client_secret` on a confidential IdP client — double-check the Client secret setting; a confidential client must authenticate itself at the token endpoint, PKCE alone isn't enough. |
 | IdP shows "HTTPS required" or a similar TLS error | Your IdP is enforcing TLS on its endpoints but isn't reachable over HTTPS from where Veyron is running — put TLS in front of it, or (non-production/lab only) relax that requirement. |
 | IdP rejects the whole login with an "invalid scope" error | A custom claim name (like `groups`) was added to the requested OAuth scopes — remove it. Group info doesn't need to be requested as a scope; the group mapper on the client's own scope already includes it in every token. |
 | Everyone lands as read-only regardless of their IdP group | Group names must match your **Admin groups** / **Write groups** settings exactly (case-insensitive) — check the exact group name in your IdP against what you configured. |
-
-## Operate from the console (UX)
-
-1. Open this route from the nav or command palette and wait for live API data.
-2. Use filters/search when present; drill into a row for detail.
-3. For mutating actions: confirm role gates and impact before applying.
-4. **Empty / fail:** Check service health, auth, and that required CRDs/backends for this domain are installed.
-5. **Success:** Live data loads; created/updated objects appear without error toasts.
 
 ## Related pages
 
 - [Admin Basics](admin-basics.md)
 - [Getting Started](getting-started.md)
-- [RBAC](pages/security/rbac.md)
+- [Settings](pages/system/settings.md)

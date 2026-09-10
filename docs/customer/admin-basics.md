@@ -17,7 +17,9 @@
   / `veyron-write,veyron-editors`). Confidential IdP clients (Keycloak's default) also need
   `VEYRON_OIDC_CLIENT_SECRET`. Full walkthrough: [Setting Up SSO](sso-setup.md).
 - WebSocket consoles use one-shot tickets: `POST /api/v1/ws/ticket`.
-- Shell HTML (`/`, `/dashboard`, `/assets/*`) and health/OIDC bootstrap paths are auth-exempt.
+- Shell HTML (`/`, `/console`, `/console/assets/*`) and health/OIDC bootstrap paths are auth-exempt.
+- The console's login screen takes username/password only (`POST /api/v1/auth/login`); API keys
+  and OIDC are for API/CLI clients and programmatic flows — see [Getting Started](getting-started.md).
 
 ### Default credentials
 
@@ -85,12 +87,5 @@ OpenAPI: `/api/openapi.json`. Route dump: `veyron api-routes`.
 ## Related
 
 - [Getting Started](getting-started.md)
-
-## Operate from the console (UX)
-
-1. Open this route from the nav or command palette and wait for live API data.
-2. Use filters/search when present; drill into a row for detail.
-3. For mutating actions: confirm role gates and impact before applying.
-4. **Empty / fail:** Check service health, auth, and that required CRDs/backends for this domain are installed.
-5. **Success:** Live data loads; created/updated objects appear without error toasts.
+- [Using the Console](using-the-console.md)
 

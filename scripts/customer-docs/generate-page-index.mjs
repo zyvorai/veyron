@@ -37,7 +37,7 @@ for (const r of routes) {
 const lines = [
   `# ${PRODUCT} — Complete page index`,
   '',
-  'Every primary navigable dashboard route.',
+  'Every primary navigable console page.',
   '',
   `_Generated: ${new Date().toISOString().slice(0, 10)} · ${routes.length} routes_`,
   '',

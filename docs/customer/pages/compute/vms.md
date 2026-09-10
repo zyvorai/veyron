@@ -1,32 +1,62 @@
-# VMs
+# Virtual machines
 
 ## Purpose
 
-VirtualMachine inventory — create, power, migrate, and inspect KubeVirt VMs.
+VirtualMachine inventory — create, start/stop/pause/restart, migrate, snapshot, clone, and
+inspect KubeVirt VMs.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
-- Prefer **Mission Control** (`/dashboard`) first if you are unsure where to start
-- Confirm API auth and namespace scope if lists look empty
+- Your daily home base for the VM fleet: power state, sizing, and network address at a glance
+- Creating a new VM from a template
+- Running day-2 lifecycle actions (stop, pause, snapshot, clone) on an existing VM
 
 ## How to get there
 
-- Route: `/dashboard#vms`
-- Nav: **Compute → VMs** (Browse mega-menu, Finder, or Spotlight `⌘K`)
+- Left rail: **Compute → Virtual machines**
+- Use the top-bar **Search** to jump here directly
+- Toggle **list/grid** view with the icon next to the page title
 
-## Operate from the console (UX)
+## What you'll see
 
-1. Open `/dashboard#vms` and wait for live API data.
-2. Use filters (namespace, label, status) when the page provides them.
-3. Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).
-4. For mutating actions (create VM, migrate, apply policy): review impact and role gates first.
+Columns (list view):
 
-If the page stays empty, check API health, auth (`VEYRON_API_KEY` / OIDC), KubeVirt CRDs, and that the workload namespace is selected.
+| Column | Shows |
+|---|---|
+| Name | VM name |
+| Status | Power/health state (Running, Stopped, Starting, …) |
+| vCPU | Allocated virtual CPUs |
+| Memory | Allocated memory, in GiB |
+| Disk | Root disk size, in GB |
+| Host | The node the VM's virt-launcher pod is running on |
+| IP | Guest network address |
+| Uptime | Age since the VM last started |
+
+Select a row to open the **Inspector** (right panel):
+
+- Guest OS
+- Host
+- IP
+- Uptime
+- Namespace
+
+## What you can do
+
+- **start** — power on a stopped VM
+- **stop** — graceful power-off
+- **restart** — graceful restart (stop, then start)
+- **pause** — freeze the running VM in place without powering off
+- **unpause** — resume a paused VM
+- **migrate** — live-migrate to another node (needs a second schedulable node with matching capacity)
+- **console** — open a VNC/serial console session
+- **snapshot** — take a point-in-time disk snapshot
+- **clone** — create a new VM from this one
+- **delete** — remove the VM
+- The **+ New** button in the top bar opens the create-VM form (name + template)
 
 ## Related pages
 
-- [Getting Started](../../getting-started.md)
-- [Mission Control](../favorites/dashboard.md)
-- [VMs](../compute/vms.md)
 - [Page index](../../PAGE_INDEX.md)
+- [Getting started](../../getting-started.md)
+- [Template Foundry](../compute/templates.md)
+- [Snapshots](../storage-network/snapshots.md)
