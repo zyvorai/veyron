@@ -101,7 +101,14 @@ html, body, #root { height: 100%; margin: 0; }
   letter-spacing: -0.008em;
   -webkit-font-smoothing: antialiased;
 }
-.vy button, .vy input { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+/* :where(.vy) drops the specificity of the .vy wrapper to 0, leaving only the bare
+   `button`/`input` type-selector (0,0,1) — so ANY single-class button style (.btn, .pill,
+   .gcard, .sw, etc., all (0,1,0)) reliably wins on its own, with no risk of silently losing
+   background/color to this reset. Was `.vy button, .vy input` (0,1,1), which beats a bare
+   single class on specificity — real, long-silent bug: .primary and .pill rendered with NO
+   background at all (only ever noticed once a dark hero background exposed it), and .gcard/
+   .apple-tile/.sw had the same latent issue. */
+:where(.vy) button, :where(.vy) input { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
 .vy :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 6px; }
 .vy h1, .vy h2, .vy h3, .vy p { margin: 0; }
 .mono { font-family: var(--mono); font-size: 12px; }
@@ -144,7 +151,10 @@ html, body, #root { height: 100%; margin: 0; }
 .live { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); padding: 0 6px; }
 .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 .live.warn i { background: var(--orange); }
-.primary {
+/* .vy-scoped (not bare) so this beats the `.vy button` reset's specificity (0,1,1) —
+   a bare single-class selector like `.primary` (0,1,0) silently loses that tiebreak and
+   renders backgroundless; only found because a dark hero background finally exposed it. */
+.vy .primary {
   display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 22px; border-radius: 980px;
   background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 500;
 }
@@ -333,13 +343,16 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
   box-shadow: 0 0 0 0.5px var(--ctl-line); color: var(--ink); font: inherit;
 }
 
-.btn {
+/* .vy-scoped — see .vy .primary above for why a bare `.btn` loses its background to the
+   `.vy button` reset (this specific case was masked because .ctl happens to render close to
+   white against most panel backgrounds, and .box-shadow still drew an edge either way). */
+.vy .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 44px; padding: 0 22px;
   border-radius: 980px; font-size: 14px; font-weight: 500; background: var(--ctl);
   box-shadow: 0 0 0 0.5px var(--ctl-line), 0 1px 1px rgba(0, 0, 0, 0.06);
 }
-.btn.primary { background: var(--accent); color: #fff; box-shadow: none; }
-.btn.danger { color: var(--red); }
+.vy .btn.primary { background: var(--accent); color: #fff; box-shadow: none; }
+.vy .btn.danger { color: var(--red); }
 .empty { flex: 1; display: grid; place-items: center; text-align: center; color: var(--ink-3); font-size: 15px; padding: 48px 24px; }
 .empty b {
   display: block; color: var(--ink); font-weight: 600; margin-bottom: 8px;
@@ -438,15 +451,37 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .apple-band-paper { background: var(--paper); }
 .apple-band-void { background: var(--void); }
 .mwrap { max-width: 980px; margin: 0 auto; padding: 0 32px; }
+/* Photographic-style hero card (apple.com/airpods composition): rounded card floating with
+   margin off the page edges, tone-driven gradient mesh standing in for product photography
+   (Veyron has no literal hero image), content bottom-anchored over a legibility scrim. */
 .mhero {
-  text-align: center;
-  padding: clamp(56px, 10vh, 96px) 16px 48px;
   position: relative;
+  overflow: hidden;
+  margin: var(--space-lg);
+  border-radius: 28px;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  text-align: left;
+  padding: var(--space-2xl);
+  background:
+    radial-gradient(ellipse 60% 55% at 22% 18%, color-mix(in srgb, var(--tone-color, var(--accent)) 55%, transparent), transparent 70%),
+    radial-gradient(ellipse 55% 60% at 84% 86%, color-mix(in srgb, var(--tone-color, var(--accent)) 32%, transparent), transparent 70%),
+    #05070a;
 }
 .mhero::before {
   content: "";
-  position: absolute; inset: 8% 18% auto; height: 42%;
-  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--tone-color, var(--accent)) 18%, transparent), transparent 70%);
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 26px 26px;
+  pointer-events: none; z-index: 0;
+}
+.mhero::after {
+  content: "";
+  position: absolute; left: 0; right: 0; bottom: 0; height: 60%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
   pointer-events: none; z-index: 0;
 }
 .tone-swatch { display: flex; justify-content: center; gap: 8px; padding-bottom: var(--space-md); }
@@ -454,35 +489,40 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .mhero > * { position: relative; z-index: 1; }
 .mhero .brand-word {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 9vw, 5.25rem);
+  font-size: clamp(2.75rem, 7vw, 4.5rem);
   font-weight: 600;
   letter-spacing: -0.055em;
   line-height: 1;
   margin: 0;
+  color: #fff;
 }
 .mhero .punch {
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 4.5vw, 2.75rem);
+  font-size: clamp(1.5rem, 3.5vw, 2.125rem);
   font-weight: 600;
   letter-spacing: -0.04em;
   line-height: 1.08;
-  margin: 10px 0 14px;
-  color: var(--ink-2);
+  margin: 8px 0 12px;
+  color: rgba(255, 255, 255, 0.86);
 }
-.mhero .punch.attn { color: var(--orange); }
+.mhero .punch.attn { color: var(--tone-color, var(--orange)); }
 .mhero p {
   font-family: var(--font-text);
-  font-size: 19px; color: var(--ink-2); max-width: 42ch; margin: 0 auto; line-height: 1.4;
+  font-size: 17px; color: rgba(255, 255, 255, 0.68); max-width: 42ch; margin: 0; line-height: 1.4;
   letter-spacing: -0.011em;
 }
-.mhero .acts { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 28px; flex-wrap: wrap; }
-.pill {
+.mhero .acts { display: flex; justify-content: flex-start; align-items: center; gap: 18px; margin-top: 24px; flex-wrap: wrap; }
+.mhero .acts .link { color: #fff; }
+.mhero .acts .link:hover { color: rgba(255, 255, 255, 0.8); }
+/* .vy-scoped — same specificity fix as .vy .primary/.vy .btn above. This one was the most
+   visible instance: Mission Control's "Create a machine" CTA rendered with no fill at all. */
+.vy .pill {
   height: 44px; padding: 0 22px; border-radius: 980px; background: var(--accent); color: #fff;
   font-size: 16px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
 }
-.pill:hover { filter: brightness(1.06); }
-.link { font-size: 16px; color: var(--accent); display: inline-flex; align-items: center; gap: 2px; }
-.link:hover { text-decoration: underline; }
+.vy .pill:hover { filter: brightness(1.06); }
+.vy .link { font-size: 16px; color: var(--accent); display: inline-flex; align-items: center; gap: 2px; }
+.vy .link:hover { text-decoration: underline; }
 .specs {
   display: grid; grid-template-columns: repeat(4, 1fr);
   max-width: 980px; margin: 0 auto; padding: 36px 32px 40px;
