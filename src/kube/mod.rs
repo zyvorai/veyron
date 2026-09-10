@@ -651,12 +651,16 @@ impl KubeClient {
         }
     }
 
-    /// Start a VM (set running: true)
+    /// Start a VM (set running: true). Also clears runStrategy — KubeVirt's
+    /// admission webhook rejects a spec with both fields set ("Running and
+    /// RunStrategy are mutually exclusive"), and a prior PUT .../run-strategy
+    /// call leaves runStrategy on the object otherwise.
     pub async fn start_vm(&self, namespace: &str, name: &str) -> Result<VirtualMachine> {
         let vms: Api<VirtualMachine> = self.vm_api(namespace);
         let patch = json!({
             "spec": {
-                "running": true
+                "running": true,
+                "runStrategy": null
             }
         });
         let pp = PatchParams::default();
@@ -701,12 +705,13 @@ impl KubeClient {
         }
     }
 
-    /// Stop a VM (set running: false)
+    /// Stop a VM (set running: false). Also clears runStrategy — see start_vm.
     pub async fn stop_vm(&self, namespace: &str, name: &str) -> Result<VirtualMachine> {
         let vms: Api<VirtualMachine> = self.vm_api(namespace);
         let patch = json!({
             "spec": {
-                "running": false
+                "running": false,
+                "runStrategy": null
             }
         });
         let pp = PatchParams::default();
