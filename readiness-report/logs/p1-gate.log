@@ -1,0 +1,32 @@
+Veyron customer-site preflight → https://80.79.5.173:30151
+────────────────────────────────────────────────
+  [0;32m✔[0m API reachable
+  [0;33m![0m Using the DEFAULT API key 'Admin@321' — set VEYRON_API_KEY / veyron-api-key Secret before go-live
+  [0;32m✔[0m Readiness endpoint healthy
+
+Acceptance gate (target cluster):
+────────────────────────────────────────────────
+
+  Platform: kubevirt=v1.9.0 nodes=1 kvm_capable=1
+  [0;32m✔[0m KubeVirt installed and reporting a version
+  [0;32m✔[0m Hardware virtualization exposed to KubeVirt
+  [0;32m✔[0m A default StorageClass exists
+  [0;31m✘[0m [0;31mDefault StorageClass is shared (not node-local)[0m — default is 'local-path' — node-local storage pins each VM to one node, breaks live migration, and loses the disk if that node dies
+  [0;31m✘[0m [0;31mA shared (non-node-local) StorageClass exists[0m
+  [0;32m✔[0m A VolumeSnapshotClass object exists
+  [0;32m✔[0m VolumeSnapshotClass driver matches a StorageClass provisioner
+  [0;33m![0m [0;33mLive CPU/memory hotplug[0m — enable KubeVirt feature gate VMLiveUpdateFeatures
+  [0;33m![0m [0;33mStorage-class disk migration[0m — enable KubeVirt feature gate VolumesUpdateStrategy
+  [0;33m![0m [0;33mLive migration[0m — needs >=2 nodes (have 1) and RWX storage (rwx_capable=False)
+  [0;33m![0m [0;33mWindows golden-image workflow[0m — needs CDI + a shared StorageClass
+  [0;33m![0m [0;33mPersistent TPM/EFI state (Windows 11, BitLocker)[0m — needs feature gate VMPersistentState + vmStateStorageClass (currently None)
+  [0;33m![0m [0;33mVelero off-cluster backups[0m — optional
+
+  StorageClasses: local-path* (node-local)   (* = default)
+
+  [0;31mGATE FAILED[0m — 2 blocking issue(s): Default StorageClass is shared (not node-local); A shared (non-node-local) StorageClass exists
+
+  [0;33m![0m Skipped functional smoke test (pass --smoke to run verify-veyron-remote.sh, ~2-3 min)
+────────────────────────────────────────────────
+  [0;31m✘[0m Preflight FAILED — the cluster is not ready for go-live (see blocking issues above).
+  [0;31m✘[0m Remediate with: ./scripts/cluster/adapt-existing-cluster.sh <host> <user> --apply

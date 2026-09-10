@@ -1,28 +1,8 @@
 /* Apple Store chapter login — full-bleed white hero matching gallery screenshot.
    Brand → huge title → lede → side-by-side Action Blue pills → quiet note. */
 
-/* Vision Pro–derived tone system: one accent per source/target platform —
-   solid, tint (wash), and glow (radial depth) variants. Bind with
-   data-tone="…" on a wrapper; consumed by .login-hero-glow and .login-pill. */
-.login-page {
-  --tone-sky: #0071e3;
-  --tone-sky-tint: rgba(0, 113, 227, 0.1);
-  --tone-sky-glow: rgba(0, 113, 227, 0.22);
-  --tone-violet: #7c3aed;
-  --tone-violet-tint: rgba(124, 58, 237, 0.1);
-  --tone-violet-glow: rgba(124, 58, 237, 0.22);
-  --tone-emerald: #248a3d;
-  --tone-emerald-tint: rgba(36, 138, 61, 0.1);
-  --tone-emerald-glow: rgba(36, 138, 61, 0.22);
-  --tone-amber: #bf7a00;
-  --tone-amber-tint: rgba(191, 122, 0, 0.12);
-  --tone-amber-glow: rgba(191, 122, 0, 0.24);
-}
-
-[data-tone='sky']     { --tone-color: var(--tone-sky);     --tone-wash: var(--tone-sky-tint);     --tone-glow: var(--tone-sky-glow); }
-[data-tone='violet']  { --tone-color: var(--tone-violet);  --tone-wash: var(--tone-violet-tint);  --tone-glow: var(--tone-violet-glow); }
-[data-tone='emerald'] { --tone-color: var(--tone-emerald); --tone-wash: var(--tone-emerald-tint); --tone-glow: var(--tone-emerald-glow); }
-[data-tone='amber']   { --tone-color: var(--tone-amber);   --tone-wash: var(--tone-amber-tint);   --tone-glow: var(--tone-amber-glow); }
+/* Tone system (--tone-sky/-violet/-emerald/-amber/-rose, [data-tone] mapping) now lives
+   globally in styles.css (always loaded) — consumed here by .login-hero-glow and .login-pill. */
 
 @keyframes login-fade-in-up {
   from { opacity: 0; transform: translateY(10px); }
@@ -91,7 +71,7 @@ html[data-ui-shell='default'] .login-page,
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: clamp(2rem, 6vh, 4rem) clamp(1.25rem, 5vw, 3rem);
+  padding: clamp(2.5rem, 7vh, 5rem) clamp(1.5rem, 6vw, 3.5rem);
 }
 
 .login-chapter-hero {
@@ -120,7 +100,7 @@ html[data-ui-shell='default'] .login-page,
 
 .login-chapter-inner {
   width: 100%;
-  max-width: 44rem;
+  max-width: 50rem;
   margin-inline: auto;
   display: flex;
   flex-direction: column;
@@ -129,7 +109,7 @@ html[data-ui-shell='default'] .login-page,
 }
 
 .login-sign-in-inner {
-  max-width: 26rem;
+  max-width: 30rem;
 }
 
 .login-mark,

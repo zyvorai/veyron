@@ -1,0 +1,49 @@
+{
+  "verdict": "NO-GO",
+  "cluster": {
+    "host": "80.79.5.173:30151",
+    "node_count": 0,
+    "kubevirt_version": "v1.9.0",
+    "kubevirt_baseline": "v1.8.4",
+    "cdi_version": "v1.66.0",
+    "cdi_baseline": "v1.65.0",
+    "ceph_health": "absent",
+    "tls_issuer": "CN=veyron, O=veyron"
+  },
+  "summary": {
+    "passed": 1,
+    "failed": 1,
+    "warnings": 0,
+    "skipped": 0,
+    "p1_gate_passed": false,
+    "skip_buckets": {}
+  },
+  "phases": [
+    {
+      "phase": "P0-node",
+      "pass": 1
+    },
+    {
+      "phase": "P1-gate",
+      "fail": 1
+    }
+  ],
+  "checks": [
+    {
+      "phase": "P0-node",
+      "check": "P0 node preflight (exit 0)",
+      "status": "pass",
+      "detail": "",
+      "http": "",
+      "reason": ""
+    },
+    {
+      "phase": "P1-gate",
+      "check": "P1 acceptance gate (exit 1)",
+      "status": "fail",
+      "detail": "see /Users/ssahani/tt/veyron/readiness-report/logs/p1-gate.log",
+      "http": "",
+      "reason": ""
+    }
+  ]
+}

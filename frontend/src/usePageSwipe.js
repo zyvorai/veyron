@@ -50,11 +50,11 @@ export function usePageSwipe({ page, onPage, enabled = true, disabled = false })
         locked: null, // null | 'h' | 'v'
         width: root.clientWidth || 1,
       };
-      try {
-        root.setPointerCapture?.(e.pointerId);
-      } catch {
-        /* ignore */
-      }
+      // Pointer capture is deferred to onMove, once horizontal drag intent is
+      // confirmed — capturing here on every pointerdown redirects the plain
+      // click/tap that follows (mouseup + click are retargeted to whichever
+      // element holds pointer capture) away from the row/button actually
+      // pressed, to this swipe root, silently swallowing ordinary clicks.
     };
 
     const onMove = (e) => {
@@ -67,6 +67,11 @@ export function usePageSwipe({ page, onPage, enabled = true, disabled = false })
         if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         d.locked = Math.abs(dx) > Math.abs(dy) * 1.15 ? 'h' : 'v';
         if (d.locked === 'v') return;
+        try {
+          root.setPointerCapture?.(d.id);
+        } catch {
+          /* ignore */
+        }
       }
       if (d.locked !== 'h') return;
       e.preventDefault();

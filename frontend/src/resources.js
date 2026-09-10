@@ -349,6 +349,7 @@ export function emptyData() {
 export const NAV = [
   {
     g: 'Overview',
+    tone: 'sky',
     items: [
       ['mission', 'Mission Control'],
       ['console', 'ConsoleHub'],
@@ -358,21 +359,27 @@ export const NAV = [
   },
   {
     g: 'Compute',
+    tone: 'violet',
     items: [['vms'], ['hosts'], ['gpus'], ['images'], ['pods'], ['templates'], ['migrations']],
   },
   {
     g: 'Storage & network',
+    tone: 'amber',
     items: [['pvcs'], ['snapshots'], ['backups'], ['atlas'], ['networks'], ['network-brain', 'PacketWolf'], ['dr', 'DR & Velero']],
   },
   {
     g: 'Security',
+    tone: 'rose',
     items: [['alerts'], ['soc']],
   },
-  { g: 'System', items: [['settings', 'Settings']] },
+  { g: 'System', tone: 'graphite', items: [['settings', 'Settings']] },
 ];
 
 /** Flat page order for 1:1 swipe navigation (matches sidebar top→bottom). */
 export const PAGE_ORDER = NAV.flatMap((g) => g.items.map(([id]) => id));
+
+/** Section-identity tone per page id, derived from NAV group membership. */
+export const TONE_BY_PAGE = Object.fromEntries(NAV.flatMap((g) => g.items.map(([id]) => [id, g.tone || null])));
 
 export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'network-brain']);
 

@@ -2,23 +2,12 @@ import { useEffect, useState } from 'react';
 import { Activity, Map, Cloud, Radar, RefreshCw, ChevronRight } from 'lucide-react';
 import { api } from './api.js';
 import { Status } from './status.jsx';
+import { PageHero } from './PageHero.jsx';
 
 function ChapterShell({ kicker, title, lede, children, onRefresh, busy }) {
   return (
     <div className="chapter-page">
-      <div className="apple-chapter">
-        <div className="kicker">{kicker}</div>
-        <h2>{title}</h2>
-        <p>{lede}</p>
-        {onRefresh && (
-          <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 16 }}>
-            <button className="btn" disabled={busy} onClick={onRefresh}>
-              <RefreshCw size={13} className={busy ? 'spin' : ''} />
-              Refresh
-            </button>
-          </div>
-        )}
-      </div>
+      <PageHero kicker={kicker} title={title} lede={lede} onRefresh={onRefresh} busy={busy} />
       {children}
     </div>
   );
