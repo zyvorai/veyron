@@ -327,6 +327,17 @@ spec:
             - secretRef:
                 name: veyron-integrations
                 optional: true
+            # Atlas storage control-plane bearer token (VEYRON_ATLAS_TOKEN, VEYRON_ATLAS_TENANT).
+            # Deliberately separate from veyron-integrations: bootstrap-integrations.sh fully
+            # regenerates that Secret from auto-detected service URLs on every deploy (it has no
+            # way to auto-detect a minted Atlas token), which silently wiped the token here on
+            # every redeploy until this was split out. Mint via Atlas's own
+            # /api/atlas/v1/auth/tokens with the bootstrap-admin-token, then:
+            #   kubectl -n veyron-system create secret generic veyron-atlas-auth \
+            #     --from-literal=VEYRON_ATLAS_TOKEN=<jwt> --from-literal=VEYRON_ATLAS_TENANT=global
+            - secretRef:
+                name: veyron-atlas-auth
+                optional: true
             # Enterprise SSO (Keycloak/Auth0/Okta) — absent unless the
             # veyron-oidc Secret exists (created by --with-oidc in
             # deploy-all-remote.sh). See contrib/veyron-oidc-keycloak.env.example.
