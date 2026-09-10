@@ -145,7 +145,7 @@ html, body, #root { height: 100%; margin: 0; }
 .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 .live.warn i { background: var(--orange); }
 .primary {
-  display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 20px; border-radius: 9px;
+  display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 22px; border-radius: 980px;
   background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 500;
 }
 .avatar {
@@ -334,8 +334,8 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 }
 
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 22px;
-  border-radius: 9px; font-size: 14px; font-weight: 500; background: var(--ctl);
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 44px; padding: 0 22px;
+  border-radius: 980px; font-size: 14px; font-weight: 500; background: var(--ctl);
   box-shadow: 0 0 0 0.5px var(--ctl-line), 0 1px 1px rgba(0, 0, 0, 0.06);
 }
 .btn.primary { background: var(--accent); color: #fff; box-shadow: none; }
