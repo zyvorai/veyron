@@ -344,6 +344,15 @@ spec:
             - secretRef:
                 name: veyron-oidc
                 optional: true
+            # Multi-key RBAC (VEYRON_API_KEYS="name:key:role,..."), so the readiness gate's P3
+            # RBAC matrix can prove role enforcement instead of skipping it. Deliberately
+            # separate from veyron-integrations for the same reason as veyron-atlas-auth above.
+            # Mint via:
+            #   kubectl -n veyron-system create secret generic veyron-rbac-keys \
+            #     --from-literal=VEYRON_API_KEYS="ro:<key1>:readonly,wr:<key2>:write,admin:<key3>:admin"
+            - secretRef:
+                name: veyron-rbac-keys
+                optional: true
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001

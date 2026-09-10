@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`veyron-rbac-keys` Secret + `deploy/k8s.yaml` `envFrom` entry** for `VEYRON_API_KEYS` — lets a deployment provide readonly/write/admin-role keys without them being wiped by `bootstrap-integrations.sh`'s full regeneration of `veyron-integrations` (same pattern as `veyron-atlas-auth`/`veyron-oidc`). Added after `scripts/customer-readiness.sh`'s P3 RBAC matrix skipped enforcement checks on a deployment that only had a single admin `VEYRON_API_KEY` configured; verified live that a readonly key gets `403` on mutating routes and a write key gets `403` on admin-only routes once the three-role secret is present.
+
+### Changed
+
+- **Pinned KubeVirt/CDI baseline bumped v1.8.4/v1.65.0 → v1.9.0/v1.66.0** (`scripts/cluster/versions.env`) after a full `customer-readiness.sh` go-live gate (P0-P7) plus repeated VM-lifecycle E2E runs passed cleanly against the newer versions on 2026-09-10. `K3S_VERSION` left unchanged pending a check of KubeVirt 1.9.x's own tested-Kubernetes-version window.
+
 ### Fixed
 
 - **Real errors silently collapsed into generic/misleading results across the dashboard, API, CLI, and operator** — a recurring pattern: a specific, actionable failure (a ResourceQuota rejection, an admission-webhook denial, a Kubernetes NotFound/Forbidden/Conflict, a real network error) was discarded and replaced with a bare "Internal server error", a false-success response, or a misleading "not configured"/empty UI state, making real problems indistinguishable from healthy-empty states. Fixed across ~30 sites:

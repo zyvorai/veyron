@@ -10,7 +10,7 @@
 #
 # Environment:
 #   VEYRON_SKIP_CDI=1       — exit 0 without doing anything
-#   VEYRON_CDI_VERSION=v1.65.0 — release tag (must match your KubeVirt line)
+#   VEYRON_CDI_VERSION=v1.66.0 — release tag (must match your KubeVirt line)
 # ============================================================================
 
 set -euo pipefail
