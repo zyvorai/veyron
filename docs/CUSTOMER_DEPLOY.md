@@ -16,9 +16,9 @@ version truth for every installer and bundle. Do not pin components anywhere els
 
 | Component | Baseline | Why this version |
 |---|---|---|
-| Kubernetes / k3s | `v1.35.6+k3s1` | KubeVirt supports the latest **three** Kubernetes releases as of its own release, so KubeVirt 1.8.x is tested on **1.33–1.35**. A newer k3s leaves that window. |
-| KubeVirt | `v1.8.4` | current stable |
-| CDI | `v1.65.0` | current stable |
+| Kubernetes / k3s | `v1.35.6+k3s1` | KubeVirt supports the latest **three** Kubernetes releases as of its own release — check `scripts/cluster/versions.env`'s comment for the exact window validated against the KubeVirt version below. A newer k3s can leave that window. |
+| KubeVirt | `v1.9.0` | validated via a full go-live readiness gate + VM-lifecycle E2E, 2026-09-10 |
+| CDI | `v1.66.0` | validated alongside KubeVirt v1.9.0, 2026-09-10 |
 | Cilium | `1.19.5` | current stable |
 | Storage | shared CSI with clone + snapshot + expand | node-local storage pins each VM to one node |
 

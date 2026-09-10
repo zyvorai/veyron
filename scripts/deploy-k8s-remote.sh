@@ -14,7 +14,7 @@
 #
 # Optional environment (local):
 #   VEYRON_SKIP_CDI=1       — do not install CDI when the DataVolume CRD is missing
-#   VEYRON_CDI_VERSION=v1.65.0 — CDI release tag (default below); must match KubeVirt/CDI compatibility on your cluster
+#   VEYRON_CDI_VERSION=v1.66.0 — CDI release tag (default below); must match KubeVirt/CDI compatibility on your cluster
 #   VEYRON_CONTAINER_RUNTIME_IMPORT — full shell command that reads OCI/docker tar on stdin (default: k3s ctr import, or ctr -n k8s.io for plain kubectl)
 #   VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1 — do not apply deploy/k8s/bootstrap/cilium-veyron-egress.yaml when Cilium is installed
 #   VEYRON_REQUIRE_KUBEVIRT=1 — fail deploy if KubeVirt VM CRD is missing (after rsync; remote kubectl check)
