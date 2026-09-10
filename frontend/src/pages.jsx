@@ -14,6 +14,7 @@ import {
   LoginError,
 } from './PremiumLoginShell.jsx';
 import { VncConsole, LogsPanel } from './VncConsole.jsx';
+import { PageHero } from './PageHero.jsx';
 
 export function Mission({ data, go, hostCount, onCreate }) {
   const vms = data.vms?.rows || [];
@@ -24,6 +25,7 @@ export function Mission({ data, go, hostCount, onCreate }) {
     ...(data.pvcs?.rows || []).filter((p) => p.status === 'Pending').map((p) => ['pvcs', p]),
   ];
   const word = attn.some(([, r]) => ['Degraded', 'Failed'].includes(r.status)) ? 'Attention' : 'Operational';
+  const tone = word === 'Attention' ? 'amber' : 'emerald';
   const why = {
     Degraded: 'Needs attention',
     Provisioning: 'Still provisioning',
@@ -34,7 +36,7 @@ export function Mission({ data, go, hostCount, onCreate }) {
   const memGiB = vms.filter((v) => v.status === 'Running').reduce((a, v) => a + (Number(v.ram) || 0), 0);
 
   return (
-    <div className="mission">
+    <div className="mission" data-tone={tone}>
       <section className="apple-band-void">
         <div className="mhero">
           <h1 className="brand-word">Veyron</h1>
@@ -68,6 +70,12 @@ export function Mission({ data, go, hostCount, onCreate }) {
           </div>
         </div>
       </section>
+
+      <div className="tone-swatch" aria-hidden="true">
+        {['sky', 'violet', 'amber', 'rose', 'emerald'].map((t) => (
+          <i key={t} data-tone={t} />
+        ))}
+      </div>
 
       <section className="apple-band-paper">
         <div className="specs">
@@ -163,11 +171,7 @@ export function ConsoleHub({ vms, onOpen, onCreate }) {
   const live = (vms || []).filter((v) => v.status === 'Running');
   return (
     <div className="hub-page">
-      <div className="apple-chapter">
-        <div className="kicker">Display</div>
-        <h2>Consoles</h2>
-        <p>Open a live display to any running guest.</p>
-      </div>
+      <PageHero kicker="Display" title="Consoles" lede="Open a live display to any running guest." />
       {live.length === 0 ? (
         <div className="empty" style={{ minHeight: 280 }}>
           <div>
@@ -308,11 +312,7 @@ export function SettingsPage({ theme, setTheme }) {
   return (
     <div className="settings">
       {err && <div className="toast err" style={{ position: 'relative', top: 0, marginBottom: 12 }}>{err}</div>}
-      <header className="settings-hero">
-        <div className="kicker">This console</div>
-        <h1>Settings</h1>
-        <p>Theme, self-healing, and how this console connects to the cluster.</p>
-      </header>
+      <PageHero kicker="This console" title="Settings" lede="Theme, self-healing, and how this console connects to the cluster." />
       <div className="sgroup">
         <h3>Appearance</h3>
         <div className="sbox">

@@ -1,0 +1,2 @@
+{"phase":"P0-node","check":"P0 node preflight (exit 0)","status":"pass","detail":"","http":"","reason":""}
+{"phase":"P1-gate","check":"P1 acceptance gate (exit 1)","status":"fail","detail":"see /Users/ssahani/tt/veyron/readiness-report/logs/p1-gate.log","http":"","reason":""}

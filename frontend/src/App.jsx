@@ -11,9 +11,10 @@ import {
   mapGpu, mapAlert, mapSoc, mapAtlasVol, mapAtlasSnap, mapMigration,
   mapCatalogTemplate, mapDataSource,
 } from './api.js';
-import { emptyData, NAV, RES_META, PAGE_ORDER, CHAPTER_PAGES, CHAPTER_ICONS } from './resources.js';
+import { emptyData, NAV, RES_META, PAGE_ORDER, CHAPTER_PAGES, CHAPTER_ICONS, TONE_BY_PAGE } from './resources.js';
 import { Table } from './Table.jsx';
 import { Inspector, ACT } from './Inspector.jsx';
+import { PageHero } from './PageHero.jsx';
 import { Mission, ConsoleHub, SettingsPage, ConsoleSheet, NewSheet, Login } from './pages.jsx';
 import { MonitoringPage, TopologyPage, DrPage, PacketWolfPage } from './chapters.jsx';
 import { Status } from './status.jsx';
@@ -744,7 +745,7 @@ export default function App() {
       <div className="body">
         <nav className={`source ${showSrc ? '' : 'hide'}`}>
           {NAV.map((g) => (
-            <div className="sg" key={g.g}>
+            <div className="sg" data-tone={g.tone} key={g.g}>
               <div className="sg-h">{g.g}</div>
               {g.items.map(([id, l]) => {
                 const r = data[id];
@@ -768,7 +769,7 @@ export default function App() {
         </nav>
 
         <div className="swipe-host">
-          <div className="swipe-track" ref={trackRef}>
+          <div className="swipe-track" data-tone={TONE_BY_PAGE[page]} data-page={page} ref={trackRef}>
             {page === 'mission' ? (
               <Mission
                 data={data}
@@ -806,15 +807,12 @@ export default function App() {
             ) : (
               <div className="center">
                 <div className="list">
-                  <div className="list-kicker">
-                    <div className="kicker">{res.kind}</div>
-                    <h1>{res.l}</h1>
-                    <p>
-                      {loading
-                        ? 'Loading…'
-                        : `${rows.length} ${res.l.toLowerCase()} in this view.`}
-                    </p>
-                  </div>
+                  <PageHero
+                    kicker={res.kind}
+                    title={res.l}
+                    lede={loading ? 'Loading…' : `${rows.length} ${res.l.toLowerCase()} in this view.`}
+                    dense
+                  />
                   {rows.length === 0 ? (
                     <div className="empty" style={{ minHeight: 320 }}>
                       <div>
