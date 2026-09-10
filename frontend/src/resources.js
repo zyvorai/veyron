@@ -383,6 +383,10 @@ export const TONE_BY_PAGE = Object.fromEntries(NAV.flatMap((g) => g.items.map(([
 
 export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'network-brain']);
 
+/** Immersive marketing-style pages that should render full-bleed — the left rail and
+ * Inspector auto-collapse here so the .apple-band sections span the true viewport width. */
+export const FULL_BLEED_PAGES = new Set(['mission', 'console', 'monitoring', 'topology', 'dr', 'network-brain']);
+
 // Icons for chapter pages in the rail
 export const CHAPTER_ICONS = {
   monitoring: Activity,

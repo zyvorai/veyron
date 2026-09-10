@@ -11,7 +11,7 @@ import {
   mapGpu, mapAlert, mapSoc, mapAtlasVol, mapAtlasSnap, mapMigration,
   mapCatalogTemplate, mapDataSource,
 } from './api.js';
-import { emptyData, NAV, RES_META, PAGE_ORDER, CHAPTER_PAGES, CHAPTER_ICONS, TONE_BY_PAGE } from './resources.js';
+import { emptyData, NAV, RES_META, PAGE_ORDER, CHAPTER_PAGES, CHAPTER_ICONS, TONE_BY_PAGE, FULL_BLEED_PAGES } from './resources.js';
 import { Table } from './Table.jsx';
 import { Inspector, ACT } from './Inspector.jsx';
 import { PageHero } from './PageHero.jsx';
@@ -193,6 +193,12 @@ export default function App() {
   useEffect(() => {
     if (authed) load();
   }, [authed, load]);
+
+  useEffect(() => {
+    const bleed = FULL_BLEED_PAGES.has(page);
+    setShowSrc(!bleed);
+    setShowInsp(!bleed);
+  }, [page]);
 
   const onLogin = async (username, password) => {
     try {

@@ -119,8 +119,8 @@ html, body, #root { height: 100%; margin: 0; }
 .brand b { font-size: 14px; font-weight: 600; }
 .brand small { color: var(--ink-3); font-size: 12px; margin-left: 2px; }
 .tb {
-  display: flex; align-items: center; justify-content: center; height: 32px; min-width: 32px;
-  padding: 0 9px; border-radius: 8px; color: var(--ink-2); gap: 5px; font-size: 13px; position: relative;
+  display: flex; align-items: center; justify-content: center; height: 32px; min-width: 36px;
+  padding: 0 12px; border-radius: 8px; color: var(--ink-2); gap: 5px; font-size: 13px; position: relative;
 }
 .tb:hover { background: var(--hover); color: var(--ink); }
 .tb:disabled { opacity: 0.35; pointer-events: none; }
@@ -145,7 +145,7 @@ html, body, #root { height: 100%; margin: 0; }
 .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 .live.warn i { background: var(--orange); }
 .primary {
-  display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 9px;
+  display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 20px; border-radius: 9px;
   background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 500;
 }
 .avatar {
@@ -334,7 +334,7 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 }
 
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 16px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 22px;
   border-radius: 9px; font-size: 14px; font-weight: 500; background: var(--ctl);
   box-shadow: 0 0 0 0.5px var(--ctl-line), 0 1px 1px rgba(0, 0, 0, 0.06);
 }
