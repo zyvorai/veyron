@@ -44,9 +44,17 @@ export function MonitoringPage() {
   }, []);
 
   const cards = [
-    ['CPU free', headroom?.cpu_available ?? headroom?.cpu?.available ?? headroom?.cpu_free ?? '—'],
-    ['Memory free', headroom?.memory_available ?? headroom?.memory?.available ?? headroom?.memory_free ?? '—'],
-    ['Nodes', headroom?.node_count ?? caps?.nodes ?? '—'],
+    [
+      'CPU free',
+      headroom?.cpu?.headroom != null ? `${headroom.cpu.headroom} ${headroom.cpu.unit || ''}`.trim() : '—',
+    ],
+    [
+      'Memory free',
+      headroom?.memory?.headroom != null
+        ? `${headroom.memory.headroom} ${headroom.memory.unit || ''}`.trim()
+        : '—',
+    ],
+    ['Nodes', headroom?.nodes ?? caps?.nodes?.count ?? '—'],
     ['Live migration', caps?.live_migration ? 'yes' : caps ? 'no' : '—'],
   ];
 
