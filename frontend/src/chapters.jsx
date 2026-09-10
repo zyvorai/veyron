@@ -83,14 +83,21 @@ export function MonitoringPage() {
           <h2>Platform stack</h2>
           <div className="rows">
             {versions ? (
-              Object.entries(versions).slice(0, 12).map(([k, v]) => (
-                <button type="button" key={k} disabled style={{ cursor: 'default' }}>
-                  <b>{k}</b>
-                  <span className="why mono">
-                    {typeof v === 'object' ? JSON.stringify(v).slice(0, 80) : String(v)}
-                  </span>
-                </button>
-              ))
+              Object.entries(versions).slice(0, 12).map(([k, v]) => {
+                let display;
+                if (v && typeof v === 'object') {
+                  const ver = v.operatorVersion || v.targetVersion || v.observedVersion;
+                  display = ver ? `${ver}${v.phase ? ` · ${v.phase}` : ''}` : JSON.stringify(v);
+                } else {
+                  display = String(v);
+                }
+                return (
+                  <button type="button" key={k} disabled style={{ cursor: 'default' }}>
+                    <b>{k}</b>
+                    <span className="why mono">{display}</span>
+                  </button>
+                );
+              })
             ) : (
               <button type="button" disabled>
                 <b>Loading…</b>
