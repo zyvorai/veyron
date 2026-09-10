@@ -178,6 +178,18 @@ function ageOf(obj) {
   return obj?.uptime || obj?.age || obj?.creation_timestamp || obj?.created || '—';
 }
 
+function fmtBytes(n) {
+  if (n == null || Number.isNaN(n)) return '—';
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
+  let v = n;
+  let i = 0;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i += 1;
+  }
+  return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
 export function mapVm(raw, i) {
   const name = raw.name || raw.metadata?.name || `vm-${i}`;
   const ns = raw.namespace || raw.metadata?.namespace || 'default';
@@ -692,9 +704,9 @@ export function mapAtlasVol(raw, i) {
     id,
     name: raw.name || raw.pvc_name || id,
     status: raw.status || raw.state || '—',
-    ns: raw.namespace || '—',
-    size: raw.size || raw.capacity || '—',
-    backend: raw.backend || raw.pool || '—',
+    ns: raw.kubernetes_namespace || raw.namespace || '—',
+    size: raw.size || (raw.size_bytes != null ? fmtBytes(raw.size_bytes) : raw.capacity || '—'),
+    backend: raw.pool_id || raw.backend || raw.cluster_id || '—',
     pvc: raw.pvc_name || raw.pvc || '—',
   };
 }
@@ -704,9 +716,9 @@ export function mapAtlasSnap(raw, i) {
   return {
     id,
     name: raw.name || id,
-    status: raw.status || '—',
+    status: raw.state || raw.status || '—',
     volume: raw.volume_id || raw.volume || '—',
-    size: raw.size || '—',
+    size: raw.size || (raw.size_bytes != null ? fmtBytes(raw.size_bytes) : '—'),
     age: raw.created_at || raw.age || '—',
   };
 }
@@ -733,8 +745,8 @@ export function mapCatalogTemplate(raw, i) {
     name,
     os: raw.family || raw.os || raw.description || '—',
     cpu: '—',
-    ram: 0,
-    disk: 0,
+    ram: '—',
+    disk: '—',
     uses: '—',
     ci: '—',
     catalog: true,
