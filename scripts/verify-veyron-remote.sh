@@ -134,7 +134,7 @@ echo ""
 
 echo "  (unauthenticated)"
 check_json_ok "GET /api/v1/health" "${BASE}/api/v1/health" no
-check_http_200 "GET /dashboard" "${BASE}/dashboard" no
+check_http_200 "GET /console" "${BASE}/console" no
 check_json_grep "GET /api/v1/auth/oidc/config" "${BASE}/api/v1/auth/oidc/config" '"enabled"'
 oidc_token_code=$(curl -skS --connect-timeout 15 --max-time 45 -o /dev/null -w '%{http_code}' \
     -X POST -H 'Content-Type: application/json' -d '{}' "${BASE}/api/v1/auth/oidc/token" || echo "000")
@@ -144,14 +144,7 @@ else
     echo "  ✗ POST /api/v1/auth/oidc/token (HTTP ${oidc_token_code})"
     FAIL=$((FAIL + 1))
 fi
-loc=$(curl -skI --connect-timeout 15 --max-time 45 "${BASE}/" | tr -d '\r' | awk -F': ' 'tolower($1)=="location"{print $2; exit}')
-loc_path="${loc%%\?*}"
-if [[ "${loc_path}" == */dashboard || "${loc_path}" == */dashboard/ ]]; then
-    echo "  ✔ GET / → ${loc}"
-else
-    echo "  ✗ GET / root redirect (got: ${loc:-none})"
-    FAIL=$((FAIL + 1))
-fi
+check_json_grep "GET / (service info)" "${BASE}/" '"console"\s*:\s*"/console"'
 
 echo "  (X-API-Key)"
 check_json_ok "GET /api/v1/templates" "${BASE}/api/v1/templates" yes
@@ -347,11 +340,9 @@ else
     echo "  ✗ GET /api/v1/dr/export (HTTP ${dr_code})"
     FAIL=$((FAIL + 1))
 fi
-check_html_contains "GET /dashboard (SOC page)" "${BASE}/dashboard" 'id="page-soc"'
-check_html_contains "GET /dashboard (Tahoe toolbar)" "${BASE}/dashboard" 'id="mac-page-toolbar"'
-check_html_contains "GET /dashboard (SF typography)" "${BASE}/dashboard" 'SF Pro Text'
+check_html_contains "GET /console (SPA root)" "${BASE}/console" 'id="root"'
 
-echo "  (dashboard shell — Template Foundry, Cost Explorer, Network Intelligence)"
+echo "  (console SPA — Template Foundry, Cost Explorer, Network Intelligence)"
 check_json_grep "GET /api/v1/experience/templates (store)" \
     "${BASE}/api/v1/experience/templates" '"templates"\s*:\s*\['
 tpl_body=$(curl -skS --connect-timeout 15 --max-time 45 \
@@ -387,10 +378,23 @@ else
 fi
 check_json_grep "GET /api/v1/cilium/flows" \
     "${BASE}/api/v1/cilium/flows?namespace=all" 'flow_source'
-check_html_contains "GET /dashboard (Template Foundry page)" "${BASE}/dashboard" 'id="page-app-store"'
-check_html_contains "GET /dashboard (Cost Explorer page)" "${BASE}/dashboard" 'id="page-costs"'
-check_html_contains "GET /dashboard (Network Intelligence loader)" "${BASE}/dashboard" 'fetchNetworkIntelData'
-check_http_200 "GET /dashboard" "${BASE}/dashboard" no
+# Console assets are content-hashed by the Vite build — extract the actual
+# filenames from the served shell rather than hardcoding them.
+console_html=$(curl -skS --connect-timeout 15 --max-time 45 "${BASE}/console" || true)
+js_asset=$(echo "${console_html}" | grep -oE '/console/assets/[A-Za-z0-9_.-]+\.js' | head -1)
+css_asset=$(echo "${console_html}" | grep -oE '/console/assets/[A-Za-z0-9_.-]+\.css' | head -1)
+if [[ -n "${js_asset}" ]]; then
+    check_http_200 "GET ${js_asset}" "${BASE}${js_asset}" no
+else
+    echo "  ✗ GET /console (no JS asset reference found in shell HTML)"
+    FAIL=$((FAIL + 1))
+fi
+if [[ -n "${css_asset}" ]]; then
+    check_http_200 "GET ${css_asset}" "${BASE}${css_asset}" no
+else
+    echo "  ✗ GET /console (no CSS asset reference found in shell HTML)"
+    FAIL=$((FAIL + 1))
+fi
 
 echo ""
 if [[ "${FAIL}" -eq 0 ]]; then
