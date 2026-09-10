@@ -19,8 +19,7 @@ function slug(path) {
   return path.replace(/^#?\/?/, '').replace(/\//g, '-') || 'dashboard'
 }
 
-function guideTemplate({ title, path, category, purpose }) {
-  const hash = path.startsWith('#') ? path : `#${path.replace(/^\//, '')}`
+function guideTemplate({ title, category, purpose }) {
   return `# ${title}
 
 ## Purpose
@@ -30,28 +29,28 @@ ${purpose}
 ## When to use it
 
 - Open this page when the job matches the purpose above
-- Prefer **Mission Control** (\`/dashboard\`) first if you are unsure where to start
+- Prefer **Mission Control** (Overview) first if you are unsure where to start
 - Confirm API auth and namespace scope if lists look empty
 
 ## How to get there
 
-- Route: \`/dashboard${hash}\`
-- Nav: **${category} → ${title}** (Browse mega-menu, Finder, or Spotlight \`⌘K\`)
+- Left rail: **${category} → ${title}**
+- Use the top-bar **Search** to jump here directly
 
 ## What you can do
 
-1. Open \`/dashboard${hash}\` and wait for live API data from the Veyron server.
+1. Open this page from the left rail and wait for live API data from the Veyron server.
 2. Use filters (namespace, label, status) when the page provides them.
-3. Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).
-4. For mutating actions (create VM, migrate, apply policy): review impact and role gates first.
+3. Select a row to open the Inspector for detail, then jump to related pages (console, snapshots).
+4. For mutating actions (create VM, migrate, delete): review impact and role gates first.
 
 If the page stays empty, check API health, auth (\`VEYRON_API_KEY\` / OIDC), KubeVirt CRDs, and that the workload namespace is selected.
 
 ## Related pages
 
 - [Getting Started](../../getting-started.md)
-- [Mission Control](../favorites/dashboard.md)
-- [VMs](../compute/vms.md)
+- [Mission Control](../overview/mission.md)
+- [Virtual machines](../compute/vms.md)
 - [Page index](../../PAGE_INDEX.md)
 `
 }

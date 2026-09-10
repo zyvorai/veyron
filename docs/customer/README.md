@@ -1,14 +1,16 @@
 # Veyron — Customer Documentation
 
-**Veyron** is the Kubernetes-native VM command center for **KubeVirt** — declarative VM builder, OS templates, blueprints, browser consoles, GitOps export, and Mission Control with 65+ dashboard pages.
+**Veyron** is the Kubernetes-native VM command center for **KubeVirt** — a Rust/Axum API, a CLI,
+and a React console for managing VM lifecycle, storage, networking, and day-2 operations.
 
 | You want to… | Open |
 |--------------|------|
 | Install and log in | [Getting Started](getting-started.md) |
-| Learn the shell | [Using the Dashboard](using-the-dashboard.md) |
+| Learn the console shell | [Using the Console](using-the-console.md) |
 | Follow a page, step by step | [Page-by-page guides](pages/README.md) |
-| Look up any screen by route | [Complete page index](PAGE_INDEX.md) |
+| Look up any page by id | [Complete page index](PAGE_INDEX.md) |
 | Deploy, auth, ports | [Admin basics](admin-basics.md) |
+| Set up SSO | [Setting Up SSO](sso-setup.md) |
 | Multi-page jobs | [Common workflows](workflows.md) |
 | Capability map | [Feature Guide](../veyron-customer-feature-guide.md) |
 
@@ -23,28 +25,31 @@ Output lands in [`pdf/`](pdf/):
 | PDF | Contents |
 |-----|----------|
 | `Veyron-Customer-README.pdf` | This overview |
-| `Veyron-Getting-Started.pdf` | Access, login, dashboard basics, workflows |
+| `Veyron-Getting-Started.pdf` | Access, login, console basics, workflows |
 | `Veyron-Page-by-Page.pdf` | Complete page manual |
 | `Veyron-Admin-Basics.pdf` | Deploy, auth, ports |
 
 ## Product at a glance
 
 ```text
-  Surfaces   →  CLI · TUI · Mission Control · REST API
+  Surfaces   →  CLI · TUI · React console (/console) · REST API
   GitOps     →  VeyronVM CRD · Go operator · Helm
   KubeVirt   →  lifecycle · snapshots · migrate · consoles
 ```
 
 ## Support surfaces (quick map)
 
-| Need | Typical path |
-|------|----------------|
-| Mission Control | `/dashboard` |
-| VMs | `/dashboard#vms` |
-| Consoles | `/dashboard#console-hub` |
-| Templates / blueprints | `/dashboard#app-store`, `/dashboard#blueprint-studio` |
-| Ask Zyra | `/dashboard#ask-zyra` |
-| Settings | `/dashboard#settings` |
+| Need | Open in the console |
+|------|----------------------|
+| Fleet overview | **Mission Control** (Overview) |
+| VMs | **Virtual machines** (Compute) |
+| Consoles | **ConsoleHub** (Overview) |
+| Templates | **Template Foundry** (Compute) |
+| Storage & Ceph | **Storage**, **Atlas** (Storage & network) |
+| Settings | **Settings** (System) |
+
+The console lives at `/console` and is a single left-rail navigation shell (no hash routing) —
+see [Using the Console](using-the-console.md).
 
 ---
 

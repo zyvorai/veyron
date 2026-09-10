@@ -2,31 +2,54 @@
 
 ## Purpose
 
-Pod inventory including virt-launcher pods.
+Pod inventory across all namespaces, including virt-launcher pods, with logs and delete.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
-- Prefer **Mission Control** (`/dashboard`) first if you are unsure where to start
-- Confirm API auth and namespace scope if lists look empty
+- Checking the platform's own component pods (CDI, cert-manager, Cilium, …) alongside VM
+  virt-launcher pods, in one place
+- Pulling logs off a crashing or restarting pod
+- Confirming restart counts before escalating a VM issue
 
 ## How to get there
 
-- Route: `/dashboard#pods`
-- Nav: **Compute → Pods** (Browse mega-menu, Finder, or Spotlight `⌘K`)
+- Left rail: **Compute → Pods**
+- Use the top-bar **Search** to jump here directly
+- Toggle **list/grid** view with the icon next to the page title
 
-## Operate from the console (UX)
+## What you'll see
 
-1. Open `/dashboard#pods` and wait for live API data.
-2. Use filters (namespace, label, status) when the page provides them.
-3. Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).
-4. For mutating actions (create VM, migrate, apply policy): review impact and role gates first.
+Columns (list view):
 
-If the page stays empty, check API health, auth (`VEYRON_API_KEY` / OIDC), KubeVirt CRDs, and that the workload namespace is selected.
+| Column | Shows |
+|---|---|
+| Name | Pod name |
+| Status | Phase (Running, Pending, …) |
+| Namespace | Owning namespace |
+| Ready | Ready container count |
+| Restarts | Restart count |
+| Node | Node the pod is scheduled on |
+| Age | Pod age |
+
+The Ready column currently always shows `—`: `GET /api/v1/pods` returns name/namespace/phase/
+node_name/ip/containers/restarts/age, but no container-readiness field, so there's nothing for
+the UI to show yet. This is a backend gap, not a display bug — Status and Restarts are accurate.
+
+Select a row to open the **Inspector** (right panel):
+
+- Namespace
+- Node
+- Image
+- Restarts
+
+## What you can do
+
+- **logs** — view the pod's container logs
+- **delete** — delete the pod (a controller-managed pod, like a virt-launcher, gets recreated)
 
 ## Related pages
 
-- [Getting Started](../../getting-started.md)
-- [Mission Control](../favorites/dashboard.md)
-- [VMs](../compute/vms.md)
 - [Page index](../../PAGE_INDEX.md)
+- [Getting started](../../getting-started.md)
+- [Virtual machines](vms.md)
+- [Hosts](hosts.md)

@@ -1,32 +1,51 @@
-# SOC
+# Security
 
 ## Purpose
 
-SOC-style security operations board.
+Security detections surfaced by the SOC (security operations) pipeline — a dedicated feed for
+security-relevant findings, separate from the general [Alerts](alerts.md) page.
 
 ## When to use it
 
-- Open this page when the job matches the purpose above
-- Prefer **Mission Control** (`/dashboard`) first if you are unsure where to start
-- Confirm API auth and namespace scope if lists look empty
+- You want a security-focused view rather than general operational alerts
+- You're triaging findings from Veyron's SOC detection rules or an integrated SIEM export
+- You're checking whether anything security-relevant has fired before a release or audit
 
 ## How to get there
 
-- Route: `/dashboard#soc`
-- Nav: **Security → SOC** (Browse mega-menu, Finder, or Spotlight `⌘K`)
+- Left rail: **Security → Security**
+- Use the top-bar **Search** to jump here directly
+- Toggle **list/grid** view with the icon next to the page title
 
-## Operate from the console (UX)
+## What you'll see
 
-1. Open `/dashboard#soc` and wait for live API data.
-2. Use filters (namespace, label, status) when the page provides them.
-3. Drill into a VM or resource row for detail, then jump to related surfaces (console, snapshots, policies).
-4. For mutating actions (create VM, migrate, apply policy): review impact and role gates first.
+Columns (list view):
 
-If the page stays empty, check API health, auth (`VEYRON_API_KEY` / OIDC), KubeVirt CRDs, and that the workload namespace is selected.
+| Column | Shows |
+|---|---|
+| Name | The detection name/rule that fired |
+| Status | Detection status |
+| Severity | Detection severity |
+| Message | The detection's description |
+| Source | Which detector/collector produced it |
+| Seen | When it was last observed |
+
+On a healthy cluster with no active detections, this page shows an empty state ("No detections").
+That's the normal, expected state — it means nothing has tripped a security detection rule, not
+that the page is broken.
+
+Select a row to open the **Inspector** (right panel):
+- Severity
+- Message
+- Source
+- Seen
+
+## What you can do
+
+- **ack** — acknowledge a detection, marking it reviewed.
 
 ## Related pages
 
-- [Getting Started](../../getting-started.md)
-- [Mission Control](../favorites/dashboard.md)
-- [VMs](../compute/vms.md)
 - [Page index](../../PAGE_INDEX.md)
+- [Getting started](../../getting-started.md)
+- [Alerts](alerts.md)

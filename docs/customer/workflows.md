@@ -2,31 +2,23 @@
 
 ## Create and console into a VM
 
-1. [Template Foundry](pages/platform/app-store.md) or [Blueprint Studio](pages/platform/blueprint-studio.md)
-2. [VMs](pages/compute/vms.md) — confirm Running
-3. [ConsoleHub](pages/favorites/console-hub.md) — open VNC/serial
+1. [Template Foundry](pages/compute/templates.md) — browse OS templates, or use **+ New** directly
+2. [Virtual machines](pages/compute/vms.md) — confirm the VM reaches **Running**
+3. [ConsoleHub](pages/overview/console.md), or the VM's own Inspector — open a console session
 
 ## Snapshot and protect
 
-1. [Snapshots](pages/storage/snapshots.md)
-2. [Backups](pages/storage/backups.md)
-3. [Disaster Recovery](pages/ops/dr.md) when configured
+1. [Snapshots](pages/storage-network/snapshots.md) — native KubeVirt VM snapshots
+2. [Atlas](pages/storage-network/atlas.md) — Ceph-backed snapshots/backups, when Atlas is configured
+3. [DR & Velero](pages/storage-network/dr.md) — cluster-level backup and failback, when Velero is configured
 
-## Investigate an incident
+## Investigate a firing alert
 
-1. [Mission Control](pages/favorites/dashboard.md)
-2. [Alerts](pages/observe/alerts.md) / [Incidents](pages/observe/incidents.md)
-3. [Ask Zyra](pages/ask-zyra/ask-zyra.md)
+1. [Mission Control](pages/overview/mission.md) — fleet-level "nothing needs a look" summary
+2. [Alerts](pages/security/alerts.md) — real Kubernetes/KubeVirt events surfaced as alerts
+3. [Security](pages/security/soc.md) — SOC-pipeline detections, when configured
 
 ## Related
 
 - [Getting Started](getting-started.md)
-
-## Operate from the console (UX)
-
-1. Open this route from the nav or command palette and wait for live API data.
-2. Use filters/search when present; drill into a row for detail.
-3. For mutating actions: confirm role gates and impact before applying.
-4. **Empty / fail:** Check service health, auth, and that required CRDs/backends for this domain are installed.
-5. **Success:** Live data loads; created/updated objects appear without error toasts.
-
+- [Page index](PAGE_INDEX.md)
