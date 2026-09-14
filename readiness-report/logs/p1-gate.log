@@ -11,22 +11,24 @@ Acceptance gate (target cluster):
   [0;32m✔[0m KubeVirt installed and reporting a version
   [0;32m✔[0m Hardware virtualization exposed to KubeVirt
   [0;32m✔[0m A default StorageClass exists
-  [0;31m✘[0m [0;31mDefault StorageClass is shared (not node-local)[0m — default is 'local-path' — node-local storage pins each VM to one node, breaks live migration, and loses the disk if that node dies
-  [0;31m✘[0m [0;31mA shared (non-node-local) StorageClass exists[0m
+  [0;32m✔[0m Default StorageClass is shared (not node-local)
+  [0;32m✔[0m A shared (non-node-local) StorageClass exists
   [0;32m✔[0m A VolumeSnapshotClass object exists
   [0;32m✔[0m VolumeSnapshotClass driver matches a StorageClass provisioner
-  [0;33m![0m [0;33mLive CPU/memory hotplug[0m — enable KubeVirt feature gate VMLiveUpdateFeatures
-  [0;33m![0m [0;33mStorage-class disk migration[0m — enable KubeVirt feature gate VolumesUpdateStrategy
-  [0;33m![0m [0;33mLive migration[0m — needs >=2 nodes (have 1) and RWX storage (rwx_capable=False)
-  [0;33m![0m [0;33mWindows golden-image workflow[0m — needs CDI + a shared StorageClass
-  [0;33m![0m [0;33mPersistent TPM/EFI state (Windows 11, BitLocker)[0m — needs feature gate VMPersistentState + vmStateStorageClass (currently None)
-  [0;33m![0m [0;33mVelero off-cluster backups[0m — optional
+  [0;32m✔[0m Live CPU/memory hotplug
+  [0;32m✔[0m Storage-class disk migration
+  [0;33m![0m [0;33mLive migration[0m — needs >=2 nodes (have 1) and RWX storage (rwx_capable=True)
+  [0;32m✔[0m Windows golden-image workflow
+  [0;32m✔[0m Persistent TPM/EFI state (Windows 11, BitLocker)
+  [0;32m✔[0m Velero off-cluster backups
 
-  StorageClasses: local-path* (node-local)   (* = default)
+  StorageClasses: ceph-rbd*, cephfs (rwx), local-path (node-local), zyvor-rbd-prod   (* = default)
 
-  [0;31mGATE FAILED[0m — 2 blocking issue(s): Default StorageClass is shared (not node-local); A shared (non-node-local) StorageClass exists
+  [0;32mGate passed[0m (1 capability gap(s) — see above)
 
   [0;33m![0m Skipped functional smoke test (pass --smoke to run verify-veyron-remote.sh, ~2-3 min)
 ────────────────────────────────────────────────
-  [0;31m✘[0m Preflight FAILED — the cluster is not ready for go-live (see blocking issues above).
-  [0;31m✘[0m Remediate with: ./scripts/cluster/adapt-existing-cluster.sh <host> <user> --apply
+  [0;32m✔[0m Preflight complete.
+  [0;32m✔[0m Full smoke test:  VEYRON_API_KEY=... /Users/ssahani/tt/veyron/scripts/preflight-veyron-remote.sh 80.79.5.173 30151 --smoke
+  [0;32m✔[0m Daily-ops E2E:    VEYRON_API_KEY=... ./scripts/test-vm-daily-ops-remote.sh 80.79.5.173 30151
+  [0;32m✔[0m Console sweep:    VEYRON_API_KEY=... ./scripts/dashboard-console-check.sh --host 80.79.5.173

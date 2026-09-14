@@ -5,7 +5,7 @@ KubeVirt node preflight → NLDW4-4-16-36
   [0;32m✔[0m /dev/vhost-net present
   [0;32m✔[0m /dev/net/tun present
   [0;32m✔[0m module kvm loaded
-  [0;33m![0m module vhost_net not in lsmod (may be built into the kernel)
+  [0;32m✔[0m module vhost_net loaded
   [0;33m![0m module tun not in lsmod (may be built into the kernel)
   virt-host-validate qemu:
       QEMU: Checking for hardware virtualization                                 : PASS
