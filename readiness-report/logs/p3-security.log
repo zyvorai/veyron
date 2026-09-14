@@ -1,0 +1,26 @@
+
+── P3 · Auth & TLS posture ──
+  ! Default API key 'CHANGE_ME' in use — rotate via VEYRON_API_KEY / veyron-api-key Secret before go-live
+  ✔ Unauthenticated GET /api/v1/vms rejected (HTTP 401)
+  ! Self-signed / dev TLS cert (issuer: CN=veyron, O=veyron) — install a trusted cert before go-live
+
+── P3 · RBAC enforcement matrix (auth_context.rs) ──
+  ✔ readonly key GET /vms → allowed
+  ✔ readonly key POST …/hotplug → 403 (write required)
+  ✔ write key POST /nodes/x/cordon → 403 (admin required)
+  ✔ write key POST /tenants → 403 (admin required)
+  ✔ write key POST …/restore → 403 (admin required)
+  ✔ write key POST /images/publish → 403 (fleet-wide blast radius; admin required)
+  ✔ write key POST /veyron/tenants alias → 403 (canonicalized to admin gate)
+  ✔ admin key GET /platform/versions → 200
+
+── P3 · Namespace scoping ──
+  ✔ created scoping probe VM veyron-readiness-scope-1789055309 in default
+  ✔ VM visible when querying its own namespace
+  ✔ namespace scoping holds — test VM not leaked into another namespace
+
+── P3 · Cross-namespace clone RBAC ──
+  ○ cross-ns golden-image clone RBAC (denied→allowed)
+      (opt_in_required:VEYRON_READY_ALLOW_CLONE_RBAC)
+
+P3 security: 12 passed, 0 failed, 2 warn, 1 skipped

@@ -1,0 +1,21 @@
+
+── P6 · Upgrade path ──
+  ✔ platform upgrade dry-run → 200
+  ○ real upgrade no-op bounce (assert VM survives)
+      (opt_in_required:VEYRON_READY_ALLOW_UPGRADE)
+
+── P6 · Monitoring actually scrapes ──
+  ✔ created monitoring test VM veyron-readiness-mon-1789055309 (Running)
+  ○ monitoring scrape
+      (no_prometheus_or_metric:HTTP 200)
+
+── P6 · Day-2 hotplug seen by guest ──
+  ✔ POST hotplug {sockets:2,memory:2Gi} accepted
+  ○ hotplug guest CPU visibility
+      (nproc_unreadable)
+
+── P6 · Version drift vs versions.env ──
+  ✔ KubeVirt version matches baseline (v1.9.0)
+  ✔ CDI version matches baseline (v1.66.0)
+
+P6 upgrade-ops: 5 passed, 0 failed, 0 warn, 3 skipped

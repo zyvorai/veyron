@@ -1,2 +1,48 @@
 {"phase":"P0-node","check":"P0 node preflight (exit 0)","status":"pass","detail":"","http":"","reason":""}
-{"phase":"P1-gate","check":"P1 acceptance gate (exit 1)","status":"fail","detail":"see /Users/ssahani/tt/veyron/readiness-report/logs/p1-gate.log","http":"","reason":""}
+{"phase":"P1-gate","check":"P1 acceptance gate (exit 0)","status":"pass","detail":"","http":"","reason":""}
+{"phase":"setup","check":"dedicated namespace unavailable — tests run in 'default' (resources still name-scoped veyron-readiness-* and cleaned up)","status":"warn","detail":"","http":"200","reason":""}
+{"phase":"P2-smoke","check":"P2 read-only smoke (exit 1)","status":"fail","detail":"see /Users/ssahani/tt/veyron/readiness-report/logs/p2-smoke.log","http":"200","reason":""}
+{"phase":"P3 · Auth & TLS posture","check":"Default API key 'CHANGE_ME' in use — rotate via VEYRON_API_KEY / veyron-api-key Secret before go-live","status":"warn","detail":"","http":"200","reason":""}
+{"phase":"P3 · Auth & TLS posture","check":"Unauthenticated GET /api/v1/vms rejected (HTTP 401)","status":"pass","detail":"","http":"401","reason":""}
+{"phase":"P3 · Auth & TLS posture","check":"Self-signed / dev TLS cert (issuer: CN=veyron, O=veyron) — install a trusted cert before go-live","status":"warn","detail":"","http":"401","reason":""}
+{"phase":"P3 · RBAC enforcement matrix (auth_context.rs)","check":"readonly key GET /vms → allowed","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P3 · RBAC enforcement matrix (auth_context.rs)","check":"readonly key POST …/hotplug → 403 (write required)","status":"pass","detail":"","http":"403","reason":""}
+{"phase":"P3 · RBAC enforcement matrix (auth_context.rs)","check":"write key POST /nodes/x/cordon → 403 (admin required)","status":"pass","detail":"","http":"403","reason":""}
+{"phase":"P3 · RBAC enforcement matrix (auth_context.rs)","check":"write key POST /tenants → 403 (admin required)","status":"pass","detail":"","http":"403","reason":""}
+{"phase":"P3 · RBAC enforcement matrix (auth_context.rs)","check":"write key POST …/restore → 403 (admin required)","status":"pass","detail":"","http":"403","reason":""}
+{"phase":"P3 · RBAC enforcement matrix (auth_context.rs)","check":"write key POST /images/publish → 403 (fleet-wide blast radius; admin required)","status":"pass","detail":"","http":"403","reason":""}
+{"phase":"P3 · RBAC enforcement matrix (auth_context.rs)","check":"write key POST /veyron/tenants alias → 403 (canonicalized to admin gate)","status":"pass","detail":"","http":"403","reason":""}
+{"phase":"P3 · RBAC enforcement matrix (auth_context.rs)","check":"admin key GET /platform/versions → 200","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P3 · Namespace scoping","check":"created scoping probe VM veyron-readiness-scope-1789055309 in default","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P3 · Namespace scoping","check":"VM visible when querying its own namespace","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P3 · Namespace scoping","check":"namespace scoping holds — test VM not leaked into another namespace","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P3 · Cross-namespace clone RBAC","check":"cross-ns golden-image clone RBAC (denied→allowed)","status":"skip","detail":"","http":"200","reason":"opt_in_required:VEYRON_READY_ALLOW_CLONE_RBAC"}
+{"phase":"P4 · Snapshot round-trip","check":"created snapshot test VM veyron-readiness-data-1789055309 (containerDisk)","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P4 · Snapshot round-trip","check":"test VM Running","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P4 · Snapshot round-trip","check":"in-guest data round-trip","status":"skip","detail":"","http":"200","reason":"no_pvc_backed_image:set VEYRON_READY_DATASOURCE"}
+{"phase":"P4 · Snapshot round-trip","check":"POST snapshot create veyron-readiness-data-1789055309-snap-rt","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P4 · Snapshot round-trip","check":"snapshot reached ready (online app-consistent freeze)","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P4 · Snapshot round-trip","check":"POST snapshot restore accepted","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P4 · Snapshot round-trip","check":"VM returned to Running after restore","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P4 · Snapshot round-trip","check":"post-restore data verification","status":"skip","detail":"","http":"200","reason":"no_pvc_backed_image"}
+{"phase":"P4 · DR export → apply → verify","check":"GET /dr/export returned veyron-readiness-data-1789055309 manifest + snapshot set","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P4 · DR export → apply → verify","check":"POST /dr/apply (dry-run reconstruction) accepted","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P4 · Orphan reclaim","check":"GET /storage/orphans (dry-run list) → 200","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P4 · Orphan reclaim","check":"orphan reclaim real delete (confirm=true)","status":"skip","detail":"","http":"200","reason":"opt_in_required:VEYRON_READY_ALLOW_ORPHAN_DELETE"}
+{"phase":"P4 · Velero off-cluster backup","check":"Velero backup→restore round-trip","status":"skip","detail":"","http":"200","reason":"opt_in_required:VEYRON_READY_ALLOW_VELERO"}
+{"phase":"P5 · Live migration","check":"live migration (node A→B, IP unchanged, guest connected)","status":"skip","detail":"","http":"200","reason":"single_node"}
+{"phase":"P5 · Live migration","check":"cordon/drain reschedule","status":"skip","detail":"","http":"200","reason":"single_node"}
+{"phase":"P5 · Self-healing","check":"self-healing dry-run report → 200 (0 unhealthy)","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P5 · Self-healing","check":"real self-healing (kill test VMI → assert recovery)","status":"skip","detail":"","http":"200","reason":"opt_in_required:VEYRON_READY_ALLOW_HEAL"}
+{"phase":"P5 · Ceph / storage health","check":"Ceph health","status":"skip","detail":"","http":"200","reason":"ceph_present_health_not_exposed:check ceph -s on the cluster"}
+{"phase":"P6 · Upgrade path","check":"platform upgrade dry-run → 200","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P6 · Upgrade path","check":"real upgrade no-op bounce (assert VM survives)","status":"skip","detail":"","http":"200","reason":"opt_in_required:VEYRON_READY_ALLOW_UPGRADE"}
+{"phase":"P6 · Monitoring actually scrapes","check":"created monitoring test VM veyron-readiness-mon-1789055309 (Running)","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P6 · Monitoring actually scrapes","check":"monitoring scrape","status":"skip","detail":"","http":"200","reason":"no_prometheus_or_metric:HTTP 200"}
+{"phase":"P6 · Day-2 hotplug seen by guest","check":"POST hotplug {sockets:2,memory:2Gi} accepted","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P6 · Day-2 hotplug seen by guest","check":"hotplug guest CPU visibility","status":"skip","detail":"","http":"500","reason":"nproc_unreadable"}
+{"phase":"P6 · Version drift vs versions.env","check":"KubeVirt version matches baseline (v1.9.0)","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P6 · Version drift vs versions.env","check":"CDI version matches baseline (v1.66.0)","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P7-lifecycle","check":"P7 lifecycle E2E (exit 0)","status":"pass","detail":"","http":"200","reason":""}
+{"phase":"P8-dashboard","check":"dashboard console sweep","status":"skip","detail":"","http":"200","reason":"console_check_missing"}
+{"phase":"P9-windows","check":"Windows golden-image E2E","status":"skip","detail":"","http":"200","reason":"not_requested:pass --full"}

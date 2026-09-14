@@ -2,21 +2,30 @@
   "verdict": "NO-GO",
   "cluster": {
     "host": "HOST:30151",
-    "node_count": 0,
+    "node_count": 1,
     "kubevirt_version": "v1.9.0",
-    "kubevirt_baseline": "v1.8.4",
+    "kubevirt_baseline": "v1.9.0",
     "cdi_version": "v1.66.0",
-    "cdi_baseline": "v1.65.0",
-    "ceph_health": "absent",
+    "cdi_baseline": "v1.66.0",
+    "ceph_health": "present",
     "tls_issuer": "CN=veyron, O=veyron"
   },
   "summary": {
-    "passed": 1,
+    "passed": 30,
     "failed": 1,
-    "warnings": 0,
-    "skipped": 0,
-    "p1_gate_passed": false,
-    "skip_buckets": {}
+    "warnings": 3,
+    "skipped": 14,
+    "p1_gate_passed": true,
+    "skip_buckets": {
+      "opt_in_required": 5,
+      "no_pvc_backed_image": 2,
+      "single_node": 2,
+      "ceph_present_health_not_exposed": 1,
+      "no_prometheus_or_metric": 1,
+      "nproc_unreadable": 1,
+      "console_check_missing": 1,
+      "not_requested": 1
+    }
   },
   "phases": [
     {
@@ -25,7 +34,94 @@
     },
     {
       "phase": "P1-gate",
+      "pass": 1
+    },
+    {
+      "phase": "setup",
+      "warn": 1
+    },
+    {
+      "phase": "P2-smoke",
       "fail": 1
+    },
+    {
+      "phase": "P3 \u00b7 Auth & TLS posture",
+      "warn": 2,
+      "pass": 1
+    },
+    {
+      "phase": "P3 \u00b7 RBAC enforcement matrix (auth_context.rs)",
+      "pass": 8
+    },
+    {
+      "phase": "P3 \u00b7 Namespace scoping",
+      "pass": 3
+    },
+    {
+      "phase": "P3 \u00b7 Cross-namespace clone RBAC",
+      "skip": 1
+    },
+    {
+      "phase": "P4 \u00b7 Snapshot round-trip",
+      "pass": 6,
+      "skip": 2
+    },
+    {
+      "phase": "P4 \u00b7 DR export \u2192 apply \u2192 verify",
+      "pass": 2
+    },
+    {
+      "phase": "P4 \u00b7 Orphan reclaim",
+      "pass": 1,
+      "skip": 1
+    },
+    {
+      "phase": "P4 \u00b7 Velero off-cluster backup",
+      "skip": 1
+    },
+    {
+      "phase": "P5 \u00b7 Live migration",
+      "skip": 2
+    },
+    {
+      "phase": "P5 \u00b7 Self-healing",
+      "pass": 1,
+      "skip": 1
+    },
+    {
+      "phase": "P5 \u00b7 Ceph / storage health",
+      "skip": 1
+    },
+    {
+      "phase": "P6 \u00b7 Upgrade path",
+      "pass": 1,
+      "skip": 1
+    },
+    {
+      "phase": "P6 \u00b7 Monitoring actually scrapes",
+      "pass": 1,
+      "skip": 1
+    },
+    {
+      "phase": "P6 \u00b7 Day-2 hotplug seen by guest",
+      "pass": 1,
+      "skip": 1
+    },
+    {
+      "phase": "P6 \u00b7 Version drift vs versions.env",
+      "pass": 2
+    },
+    {
+      "phase": "P7-lifecycle",
+      "pass": 1
+    },
+    {
+      "phase": "P8-dashboard",
+      "skip": 1
+    },
+    {
+      "phase": "P9-windows",
+      "skip": 1
     }
   ],
   "checks": [
@@ -39,11 +135,379 @@
     },
     {
       "phase": "P1-gate",
-      "check": "P1 acceptance gate (exit 1)",
-      "status": "fail",
-      "detail": "see /Users/ssahani/tt/veyron/readiness-report/logs/p1-gate.log",
+      "check": "P1 acceptance gate (exit 0)",
+      "status": "pass",
+      "detail": "",
       "http": "",
       "reason": ""
+    },
+    {
+      "phase": "setup",
+      "check": "dedicated namespace unavailable \u2014 tests run in 'default' (resources still name-scoped veyron-readiness-* and cleaned up)",
+      "status": "warn",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P2-smoke",
+      "check": "P2 read-only smoke (exit 1)",
+      "status": "fail",
+      "detail": "see /Users/ssahani/tt/veyron/readiness-report/logs/p2-smoke.log",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 Auth & TLS posture",
+      "check": "Default API key 'CHANGE_ME' in use \u2014 rotate via VEYRON_API_KEY / veyron-api-key Secret before go-live",
+      "status": "warn",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 Auth & TLS posture",
+      "check": "Unauthenticated GET /api/v1/vms rejected (HTTP 401)",
+      "status": "pass",
+      "detail": "",
+      "http": "401",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 Auth & TLS posture",
+      "check": "Self-signed / dev TLS cert (issuer: CN=veyron, O=veyron) \u2014 install a trusted cert before go-live",
+      "status": "warn",
+      "detail": "",
+      "http": "401",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 RBAC enforcement matrix (auth_context.rs)",
+      "check": "readonly key GET /vms \u2192 allowed",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 RBAC enforcement matrix (auth_context.rs)",
+      "check": "readonly key POST \u2026/hotplug \u2192 403 (write required)",
+      "status": "pass",
+      "detail": "",
+      "http": "403",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 RBAC enforcement matrix (auth_context.rs)",
+      "check": "write key POST /nodes/x/cordon \u2192 403 (admin required)",
+      "status": "pass",
+      "detail": "",
+      "http": "403",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 RBAC enforcement matrix (auth_context.rs)",
+      "check": "write key POST /tenants \u2192 403 (admin required)",
+      "status": "pass",
+      "detail": "",
+      "http": "403",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 RBAC enforcement matrix (auth_context.rs)",
+      "check": "write key POST \u2026/restore \u2192 403 (admin required)",
+      "status": "pass",
+      "detail": "",
+      "http": "403",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 RBAC enforcement matrix (auth_context.rs)",
+      "check": "write key POST /images/publish \u2192 403 (fleet-wide blast radius; admin required)",
+      "status": "pass",
+      "detail": "",
+      "http": "403",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 RBAC enforcement matrix (auth_context.rs)",
+      "check": "write key POST /veyron/tenants alias \u2192 403 (canonicalized to admin gate)",
+      "status": "pass",
+      "detail": "",
+      "http": "403",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 RBAC enforcement matrix (auth_context.rs)",
+      "check": "admin key GET /platform/versions \u2192 200",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 Namespace scoping",
+      "check": "created scoping probe VM veyron-readiness-scope-1789055309 in default",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 Namespace scoping",
+      "check": "VM visible when querying its own namespace",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 Namespace scoping",
+      "check": "namespace scoping holds \u2014 test VM not leaked into another namespace",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P3 \u00b7 Cross-namespace clone RBAC",
+      "check": "cross-ns golden-image clone RBAC (denied\u2192allowed)",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "opt_in_required:VEYRON_READY_ALLOW_CLONE_RBAC"
+    },
+    {
+      "phase": "P4 \u00b7 Snapshot round-trip",
+      "check": "created snapshot test VM veyron-readiness-data-1789055309 (containerDisk)",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P4 \u00b7 Snapshot round-trip",
+      "check": "test VM Running",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P4 \u00b7 Snapshot round-trip",
+      "check": "in-guest data round-trip",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "no_pvc_backed_image:set VEYRON_READY_DATASOURCE"
+    },
+    {
+      "phase": "P4 \u00b7 Snapshot round-trip",
+      "check": "POST snapshot create veyron-readiness-data-1789055309-snap-rt",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P4 \u00b7 Snapshot round-trip",
+      "check": "snapshot reached ready (online app-consistent freeze)",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P4 \u00b7 Snapshot round-trip",
+      "check": "POST snapshot restore accepted",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P4 \u00b7 Snapshot round-trip",
+      "check": "VM returned to Running after restore",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P4 \u00b7 Snapshot round-trip",
+      "check": "post-restore data verification",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "no_pvc_backed_image"
+    },
+    {
+      "phase": "P4 \u00b7 DR export \u2192 apply \u2192 verify",
+      "check": "GET /dr/export returned veyron-readiness-data-1789055309 manifest + snapshot set",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P4 \u00b7 DR export \u2192 apply \u2192 verify",
+      "check": "POST /dr/apply (dry-run reconstruction) accepted",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P4 \u00b7 Orphan reclaim",
+      "check": "GET /storage/orphans (dry-run list) \u2192 200",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P4 \u00b7 Orphan reclaim",
+      "check": "orphan reclaim real delete (confirm=true)",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "opt_in_required:VEYRON_READY_ALLOW_ORPHAN_DELETE"
+    },
+    {
+      "phase": "P4 \u00b7 Velero off-cluster backup",
+      "check": "Velero backup\u2192restore round-trip",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "opt_in_required:VEYRON_READY_ALLOW_VELERO"
+    },
+    {
+      "phase": "P5 \u00b7 Live migration",
+      "check": "live migration (node A\u2192B, IP unchanged, guest connected)",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "single_node"
+    },
+    {
+      "phase": "P5 \u00b7 Live migration",
+      "check": "cordon/drain reschedule",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "single_node"
+    },
+    {
+      "phase": "P5 \u00b7 Self-healing",
+      "check": "self-healing dry-run report \u2192 200 (0 unhealthy)",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P5 \u00b7 Self-healing",
+      "check": "real self-healing (kill test VMI \u2192 assert recovery)",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "opt_in_required:VEYRON_READY_ALLOW_HEAL"
+    },
+    {
+      "phase": "P5 \u00b7 Ceph / storage health",
+      "check": "Ceph health",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "ceph_present_health_not_exposed:check ceph -s on the cluster"
+    },
+    {
+      "phase": "P6 \u00b7 Upgrade path",
+      "check": "platform upgrade dry-run \u2192 200",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P6 \u00b7 Upgrade path",
+      "check": "real upgrade no-op bounce (assert VM survives)",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "opt_in_required:VEYRON_READY_ALLOW_UPGRADE"
+    },
+    {
+      "phase": "P6 \u00b7 Monitoring actually scrapes",
+      "check": "created monitoring test VM veyron-readiness-mon-1789055309 (Running)",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P6 \u00b7 Monitoring actually scrapes",
+      "check": "monitoring scrape",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "no_prometheus_or_metric:HTTP 200"
+    },
+    {
+      "phase": "P6 \u00b7 Day-2 hotplug seen by guest",
+      "check": "POST hotplug {sockets:2,memory:2Gi} accepted",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P6 \u00b7 Day-2 hotplug seen by guest",
+      "check": "hotplug guest CPU visibility",
+      "status": "skip",
+      "detail": "",
+      "http": "500",
+      "reason": "nproc_unreadable"
+    },
+    {
+      "phase": "P6 \u00b7 Version drift vs versions.env",
+      "check": "KubeVirt version matches baseline (v1.9.0)",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P6 \u00b7 Version drift vs versions.env",
+      "check": "CDI version matches baseline (v1.66.0)",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P7-lifecycle",
+      "check": "P7 lifecycle E2E (exit 0)",
+      "status": "pass",
+      "detail": "",
+      "http": "200",
+      "reason": ""
+    },
+    {
+      "phase": "P8-dashboard",
+      "check": "dashboard console sweep",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "console_check_missing"
+    },
+    {
+      "phase": "P9-windows",
+      "check": "Windows golden-image E2E",
+      "status": "skip",
+      "detail": "",
+      "http": "200",
+      "reason": "not_requested:pass --full"
     }
   ]
 }
