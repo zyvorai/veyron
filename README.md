@@ -131,4 +131,6 @@ See project docs for CI, testing, and contribution guidelines. Historical build 
 
 ## License
 
+Commercial subscriptions and support: see [docs/SUBSCRIPTION-MODEL.md](docs/SUBSCRIPTION-MODEL.md).
+
 See [LICENSE](LICENSE) or project-specific licensing files in `docs/legal/`.
