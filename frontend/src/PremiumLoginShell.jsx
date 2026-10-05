@@ -2,6 +2,7 @@
  * Centered sign-in composition — Netra / apple.com contract (../netra/web/src/components/Login.tsx).
  */
 import './login.css';
+import zyvorMark from './assets/zyvor-mark.svg';
 
 export function PremiumLoginShell({
   productName = 'Veyron',
@@ -15,9 +16,7 @@ export function PremiumLoginShell({
   return (
     <div className="login-shell" data-testid="premium-login-shell">
       <div className="login-info">
-        <div className="login-logo" aria-label={productName}>
-          V
-        </div>
+        <img src={zyvorMark} className="login-logo" alt={productName} />
         <p className="eyebrow">{eyebrow}</p>
         <h1>{heroTitle}</h1>
         {heroLede ? <p>{heroLede}</p> : null}

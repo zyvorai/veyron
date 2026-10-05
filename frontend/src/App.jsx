@@ -48,10 +48,7 @@ function downloadCsv(filename, cols, rows) {
 export default function App() {
   const [theme, setThemeState] = useState(() => {
     const saved = getSavedTheme();
-    if (saved === 'light' || saved === 'dark') return saved;
-    return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
+    return saved === 'light' ? 'light' : 'dark';
   });
   const setTheme = useCallback((t) => {
     setThemeState(t);

@@ -7,7 +7,7 @@ on:
     paths:
       - "docs/site/**"
       - "docs/assets/**"
-      - "docs/social/zyvor-mark.svg"
+      - "docs/social/zyvor-*.svg"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 

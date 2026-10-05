@@ -43,12 +43,7 @@
   height: 40px;
   border-radius: var(--radius-sm);
   margin: 0 auto 18px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(145deg, #2997ff, var(--apple-blue));
-  color: #fff;
-  font-weight: 800;
-  font-size: 18px;
+  display: block;
 }
 .login-info h1 {
   font-family: var(--font-display);

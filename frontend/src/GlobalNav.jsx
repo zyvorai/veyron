@@ -1,23 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Search, Bell, Sun, Moon, Plus, Menu, X, LogOut } from 'lucide-react';
 import { NAV, RES_META, pageLabel } from './resources.js';
+import zyvorLogomark from './assets/zyvor-logomark.svg';
 
 const OPEN_DELAY_MS = 120;
 const CLOSE_DELAY_MS = 450;
 
 export function ZyvorMark({ size = 22 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className="gn-mark">
-      <defs>
-        <linearGradient id="gnMark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#2997ff" />
-          <stop offset="1" stopColor="#0071e3" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="9" fill="url(#gnMark)" />
-      <path d="M9 10h14l-11 12h11" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <img src={zyvorLogomark} width={size} height={size} alt="" aria-hidden className="gn-mark" />;
 }
 
 /** apple.com-style global navigation: frosted bar, hover mega-menus, mobile sheet. */

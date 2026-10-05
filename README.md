@@ -83,10 +83,10 @@ To be fair about it: **per-VM memory is the same** (both run the same QEMU), and
 | Mission Control | Virtual machines |
 |---|---|
 | ![Mission Control: live fleet map, health headline, create button](docs/assets/console-mission.png) | ![Virtual machines list](docs/assets/console-vms.png) |
-| **Sign in** | **Dark theme, details panel** |
-| ![Sign in](docs/assets/console-login.png) | ![Dark theme with VM details panel](docs/assets/console-dark.png) |
+| **Sign in** | **VM details panel** |
+| ![Sign in](docs/assets/console-login.png) | ![VM details panel](docs/assets/console-dark.png) |
 
-A frosted top nav with mega-menus, a ⌘K palette for everything, a live fleet map, and a details panel that slides in from any row. Light and dark.
+A frosted top nav with mega-menus, a ⌘K palette for everything, a live fleet map, and a details panel that slides in from any row. Dark by default.
 
 ---
 

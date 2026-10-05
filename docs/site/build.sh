@@ -14,5 +14,5 @@ for f in console-mission.png console-vms.png console-dark.png console-login.png 
   [[ -f "$SRC/$f" ]] || { echo "missing docs/assets/$f" >&2; exit 1; }
   cp "$SRC/$f" "$OUT/$f"
 done
-cp "$HERE/../social/zyvor-mark.svg" "$OUT/zyvor-mark.svg"
+cp "$HERE/../social/zyvor-mark.svg" "$HERE/../social/zyvor-logomark.svg" "$OUT/"
 echo "docs/site ready ($(du -sk "$HERE" | cut -f1) KB)"

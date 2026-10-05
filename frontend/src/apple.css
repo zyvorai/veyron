@@ -20,7 +20,7 @@
 }
 .gn--open .gn-inner { background: var(--bg-elevated); border-bottom-color: transparent; }
 .gn-brand { display: inline-flex; align-items: center; gap: 9px; height: 48px; font-weight: 600; font-size: 15px; letter-spacing: -0.02em; margin-right: 10px; }
-.gn-mark { flex: none; filter: drop-shadow(0 2px 6px rgba(0, 113, 227, 0.35)); }
+.gn-mark { flex: none; display: block; }
 .gn-links { display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center; }
 .gn-group { display: flex; }
 .gn-links button {
