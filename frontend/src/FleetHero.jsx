@@ -22,8 +22,10 @@ export function FleetHero({ hosts, vms, onVm, onHost }) {
     const byHost = new Map();
     for (const h of hosts) byHost.set(h.name, []);
     const pending = [];
+    const parked = [];
     for (const v of vms) {
       if (byHost.has(v.host)) byHost.get(v.host).push(v);
+      else if (['Stopped', 'Halted', 'Paused'].includes(v.status)) parked.push(v);
       else pending.push(v);
     }
     let list = hosts.map((h) => ({ host: h, vms: byHost.get(h.name) || [] }));
@@ -40,6 +42,9 @@ export function FleetHero({ hosts, vms, onVm, onHost }) {
     }
     if (pending.length) {
       list.push({ host: { name: 'Scheduling', status: 'Pending', cpu: 0, synthetic: true }, vms: pending });
+    }
+    if (parked.length) {
+      list.push({ host: { name: 'Powered off', status: 'Stopped', cpu: 0, synthetic: true }, vms: parked });
     }
     if (!list.length) list = [{ host: { name: 'No hosts yet', status: 'Unknown', cpu: 0, synthetic: true }, vms: [] }];
     const n = list.length;

@@ -25,9 +25,12 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
   const attn = [
     ...vms.filter((v) => ['Degraded', 'Provisioning', 'Failed'].includes(v.status)).map((v) => ['vms', v]),
     ...hosts.filter((h) => ['Cordoned', 'NotReady'].includes(h.status)).map((h) => ['hosts', h]),
-    ...(data.pods?.rows || []).filter((p) => p.status === 'Failed').map((p) => ['pods', p]),
     ...(data.pvcs?.rows || []).filter((p) => p.status === 'Pending').map((p) => ['pvcs', p]),
   ];
+  const failedPods = (data.pods?.rows || []).filter((p) => p.status === 'Failed').length;
+  const attnRows = failedPods
+    ? [...attn.slice(0, 7), ['pods', { id: 'failed-pods', name: `${failedPods.toLocaleString()} failed pod${failedPods === 1 ? '' : 's'}`, status: 'Failed', why: 'Evicted or crashed — safe to clean up' }]]
+    : attn;
   const why = {
     Degraded: 'Needs attention',
     Provisioning: 'Still provisioning',
@@ -45,7 +48,9 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
     ? 'Your private cloud is ready.'
     : attn.length
       ? `${attn.length} thing${attn.length === 1 ? '' : 's'} need${attn.length === 1 ? 's' : ''} a look.`
-      : 'Everything’s running.';
+      : run === vms.length
+        ? 'Everything’s running.'
+        : 'Everything’s healthy.';
   const templates = (data.templates?.rows || []).filter((t) => !/^(ubuntu|debian|fedora|centos|almalinux|rocky|opensuse|windows)$/.test(t.name));
   const seenFamily = new Set();
   const featured = templates
@@ -108,20 +113,20 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
       <section className="story-band">
         <Reveal className="apple-chapter">
           <div className="kicker">Fleet</div>
-          <h2>{attn.length ? 'Needs attention.' : 'All clear.'}</h2>
+          <h2>{attnRows.length ? 'Needs attention.' : 'All clear.'}</h2>
           <p>Anything that isn’t in the state you asked for shows up here first.</p>
           <div className="rows">
-            {attn.length === 0 ? (
+            {attnRows.length === 0 ? (
               <div className="rows-clear">
                 <CheckCircle size={20} />
                 <span>No degraded, failed or pending resources.</span>
               </div>
             ) : (
-              attn.slice(0, 8).map(([k, r]) => (
-                <button key={`${k}-${r.id}`} onClick={() => go(k, r.id)}>
+              attnRows.slice(0, 8).map(([k, r]) => (
+                <button key={`${k}-${r.id}`} onClick={() => go(k, r.why ? undefined : r.id)}>
                   <Status s={r.status} />
                   <b>{r.name}</b>
-                  <span className="why">{why[r.status] || 'Not in the requested state'}</span>
+                  <span className="why">{r.why || why[r.status] || 'Not in the requested state'}</span>
                   <ChevronRight size={16} />
                 </button>
               ))
