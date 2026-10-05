@@ -43,6 +43,7 @@ make ci
 # the host when it has npm, otherwise locally before rsync.
 #   VEYRON_DEPLOY_FULL_LTO=1        Use the full `release` profile (slow link, smallest/fastest binary)
 #   VEYRON_DEPLOY_BUILD_TIMEOUT=N   Abort the remote cargo build after N seconds (default 3600)
+#   VEYRON_DEPLOY_FEATURES=kairon   Extra cargo features for the remote build
 
 # Post-deploy HTTPS API smoke test (NodePort health, templates, VM list — uses VEYRON_API_KEY)
 ./scripts/verify-veyron-remote.sh HOST [30151]
@@ -186,6 +187,7 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 ### Feature flags
 
 - `default = ["web"]` — enables axum, rustls, TLS, dashboard, WebSockets
+- `kairon` — compiles `src/kairon/` (`kairon.zyvor.dev` Machine CRDs on FluxVM) and enables `VEYRON_VM_BACKEND=kairon`, which serves `/api/v1/vms` list/get/create/delete/start/stop/restart from Kairon Machines instead of KubeVirt (`src/api/vm_backend.rs`; default `kubevirt` keeps the native path). RBAC for `kairon.zyvor.dev` is in all three ClusterRoles. CI runs clippy + tests with this feature too.
 - `trial` — 30-day evaluation build for the standalone client tarball only (`scripts/package-binary-remote.sh --trial`); pulls in `web` + `ring` for Ed25519 token verification. **Never** enabled for in-cluster Helm/`deploy-remote.sh` images — see `docs/deploy.md`.
 - Build CLI-only: `cargo build --no-default-features`
 
@@ -235,6 +237,7 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 | `VEYRON_KRYTON_TOKEN` / `VEYRON_KRYTON_PROJECT` | Kryton bearer API key / optional project (`?project=`) |
 | `VEYRON_VGPU_LIVE_MIGRATION` | Set to `1` ONLY after verifying the licensed NVIDIA vGPU host stack + KubeVirt actually live-migrate mdev VMIs (Phase 2 attestation). Relaxes the migration gate for vGPU-only VMs and enables `day2_ops.vgpu_live_migration` (when mdev resources are present). Upstream KubeVirt ≤1.8 does NOT support this — never set on plain passthrough clusters. |
 | `VEYRON_ALLOW_PUBLIC_RDP` | Set to `1` to permit `PUT /rdp-expose` with `service_type: NodePort`/`LoadBalancer`. **Default: refused with 403** — a bare 3389 NodePort puts Windows auth on the network with no gateway/MFA/TLS. Prefer `ClusterIP` + VPN/zero-trust gateway or `kubectl port-forward`. |
+| `VEYRON_VM_BACKEND` | `kubevirt` (default) or `kairon` (requires the `kairon` cargo feature; unknown values fall back to `kubevirt` with a warning). Selects which platform backs `/api/v1/vms` CRUD and power operations. |
 | `VEYRON_TRIAL_TOKEN` | Only read on `--features trial` builds (the evaluation client tarball). Overrides the `trial.token` file lookup (next to the binary, then `~/.config/veyron/trial.token`) — set to the token's contents. See `docs/deploy.md`. |
 | `VEYRON_OIDC_ISSUER`, `VEYRON_OIDC_CLIENT_ID`, `VEYRON_OIDC_CLIENT_SECRET`, `VEYRON_OIDC_AUTHORIZATION_URL`, `VEYRON_OIDC_TOKEN_URL`, `VEYRON_OIDC_JWKS_URL`, `VEYRON_OIDC_REDIRECT_URI`, `VEYRON_OIDC_ROLE_CLAIM` | Enterprise SSO against a real IdP (Keycloak/Auth0/Okta) — `src/api/oidc.rs`. `oidc_configured()` requires `CLIENT_ID` + (`AUTHORIZATION_URL` or `ISSUER`). Clients that implement OIDC use PKCE + authorization-code redirect; the backend only exchanges the code (`POST /api/v1/auth/oidc/token`, no server-side OAuth `redirect_uri` route) and validates bearer JWTs via JWKS RS256 (falls back to `VEYRON_OIDC_JWKS_URL`-less userinfo lookup) — see `oidc_role_from_bearer`. |
 | `VEYRON_OIDC_GROUP_ADMIN` / `VEYRON_OIDC_GROUP_WRITE` | Comma-separated, case-insensitive IdP group names mapped to `admin`/`write` roles (exact match, checked before the substring-based `admin`/`write` heuristic in `normalize_role`). Defaults: `veyron-admins,cluster-admins` / `veyron-write,veyron-editors`. Deploy without leaking secrets through `--set`/CLI history: `./scripts/deploy-remote.sh HOST USER --with-oidc` (writes a `veyron-oidc` Secret from `VEYRON_OIDC_*` env vars, wired into `deploy/k8s.yaml` via `envFrom` `optional: true` — absent unless that Secret exists; Helm chart equivalent: `oidc.*` values or `oidc.existingSecret`). See `contrib/veyron-oidc-keycloak.env.example` for a worked Keycloak example. |

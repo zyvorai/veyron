@@ -48,7 +48,9 @@ jobs:
         with:
           version: v4.1.4
       - name: Template veyron-monitoring
-        run: make helm-monitoring-validate
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          make helm-monitoring-validate
 
   frontend:
     name: Console (lint, test, build)
@@ -113,6 +115,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Run clippy
         run: cargo clippy --all-targets -- -D warnings
+      - name: Run clippy (kairon backend)
+        run: cargo clippy --features kairon --all-targets -- -D warnings
 
   audit:
     name: Security Audit
@@ -143,6 +147,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Run tests
         run: cargo test
+      - name: Run Kairon tests
+        run: cargo test --features kairon --lib -- kairon vm_backend
 
   build:
     name: Build (${{ matrix.os }})
@@ -213,11 +219,11 @@ jobs:
         run: ./bin/veyron profiles
 
       - name: Test VM creation (dry-run)
-        run: ./bin/veyron generate --name test-vm --template ubuntu
+        run: ./bin/veyron generate test-vm --template ubuntu --kubevirt
 
       - name: Test VM create, list, delete
         run: |
-          ./bin/veyron create test-integration-vm --template ubuntu --no-start
+          ./bin/veyron create test-integration-vm --template ubuntu --memory 1Gi --cpus 1
           ./bin/veyron list
           ./bin/veyron delete test-integration-vm --yes
 

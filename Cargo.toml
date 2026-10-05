@@ -95,6 +95,9 @@ web = [
 # --trial). Never enabled for in-cluster Helm/deploy-remote.sh builds. See src/trial.rs
 # and src/bin/trial-tool.rs (keygen/issue — requires this feature to build/run).
 trial = ["web", "dep:ring"]
+# Kairon VM platform (kairon.zyvor.dev Machines on FluxVM) as an alternative VM backend,
+# selected at runtime with VEYRON_VM_BACKEND=kairon. See src/kairon/ and src/vm_backend.rs.
+kairon = ["web"]
 
 [dev-dependencies]
 tempfile = "3.8"

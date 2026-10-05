@@ -4,6 +4,7 @@
 // VM handlers: list/get, expose (SSH/RDP/internet), guest agent, power, migrate, volumes, create/delete.
 
 use super::*;
+use crate::api::vm_backend::{self, BackendKind, VmBackend};
 
 #[derive(Deserialize)]
 pub struct VmQuery {
@@ -106,6 +107,14 @@ pub(super) async fn list_vms_handler(
         .or(query.ns.as_deref())
         .unwrap_or(default_namespace.as_str());
 
+    if vm_backend::selected() != BackendKind::KubeVirt {
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms");
+        return match VmBackend::for_client(&client).list(scope_ns).await {
+            Ok(vm_infos) => ok_json(&ApiResponse::success(&vm_infos, &ctx.request_id)),
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        };
+    }
+
     let vms = client.list_vms_for_scope(scope_ns).await;
     let vmi_index = vmi_ip_node_index(&client, scope_ns).await;
     let drift_index = vrvm_drift_index(&client, scope_ns).await;
@@ -146,6 +155,23 @@ pub(super) async fn get_vm_handler(
         let s = state.read().await;
         s.kube_client.clone()
     };
+
+    if vm_backend::selected() != BackendKind::KubeVirt {
+        return match VmBackend::for_client(&client).get(&ns, &name).await {
+            Ok(detail) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name");
+                ok_json(&ApiResponse::success(&detail, &ctx.request_id))
+            }
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                if msg.contains("NotFound") || msg.contains("not found") {
+                    err_json(404, "NOT_FOUND", &format!("VM '{}' not found", name))
+                } else {
+                    err_json(500, "INTERNAL_ERROR", &msg)
+                }
+            }
+        };
+    }
 
     match client.get_vm(&ns, &name).await {
         Ok(vm) => {
@@ -1071,7 +1097,7 @@ pub(super) async fn start_vm_handler(
         s.kube_client.clone()
     };
 
-    match client.start_vm(&ns, &name).await {
+    match VmBackend::for_client(&client).start(&ns, &name).await {
         Ok(_) => {
             let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/start");
             ok_json(&ApiResponse::success(
@@ -1099,7 +1125,7 @@ pub(super) async fn stop_vm_handler(
         s.kube_client.clone()
     };
 
-    match client.stop_vm(&ns, &name).await {
+    match VmBackend::for_client(&client).stop(&ns, &name).await {
         Ok(_) => {
             let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/stop");
             ok_json(&ApiResponse::success(
@@ -1127,7 +1153,7 @@ pub(super) async fn restart_vm_handler(
         s.kube_client.clone()
     };
 
-    match client.restart_vm(&ns, &name).await {
+    match VmBackend::for_client(&client).restart(&ns, &name).await {
         Ok(_) => {
             let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/restart");
             ok_json(&ApiResponse::success(
@@ -1818,7 +1844,7 @@ pub(super) async fn delete_vm_handler(
         s.kube_client.clone()
     };
 
-    match client.delete_vm(&ns, &name).await {
+    match VmBackend::for_client(&client).delete(&ns, &name).await {
         Ok(_) => {
             let ctx = req_ctx(HttpMethod::DELETE, "/api/v1/vms/:ns/:name");
             ok_json(&ApiResponse::success(
@@ -2441,15 +2467,17 @@ pub(super) async fn create_vm_handler(
         }
     }
 
-    match client.create_vm(&config).await {
+    let backend = VmBackend::for_client(&client);
+    match backend.create(&config).await {
         Ok(_) => {
             // Auto-start if requested
             let started = if req.start.unwrap_or(false) {
-                client.start_vm(ns, &req.name).await.is_ok()
+                backend.start(ns, &req.name).await.is_ok()
             } else {
                 false
             };
-            let internet = if req.allow_internet {
+            // The egress policy selects virt-launcher pods, which only exist on KubeVirt.
+            let internet = if req.allow_internet && backend.kind() == BackendKind::KubeVirt {
                 match vm_internet::ensure_vm_internet_egress(&client.client(), ns, &req.name).await
                 {
                     Ok(st) => serde_json::to_value(&st).unwrap_or(serde_json::Value::Null),

@@ -171,6 +171,11 @@ else
   CARGO_PROFILE="deploy"
 fi
 BUILD_TIMEOUT="${VEYRON_DEPLOY_BUILD_TIMEOUT:-3600}"
+# Extra cargo features, e.g. VEYRON_DEPLOY_FEATURES=kairon for VEYRON_VM_BACKEND=kairon.
+FEATURES_ARG=""
+if [[ -n "${VEYRON_DEPLOY_FEATURES:-}" ]]; then
+  FEATURES_ARG="--features ${VEYRON_DEPLOY_FEATURES}"
+fi
 
 # The console is embedded into the binary (include_dir!), so frontend/dist must exist
 # before cargo runs. Build it on the remote host when it has npm, else locally.
@@ -207,7 +212,7 @@ deploy_ssh "${USER}@${HOST}" "
     set -euo pipefail
     source \$HOME/.cargo/env 2>/dev/null || true
     cd ${REMOTE_DIR}
-    timeout ${BUILD_TIMEOUT} cargo build --profile ${CARGO_PROFILE} --bin veyron 2>&1 | sed 's/^/  [cargo] /'
+    timeout ${BUILD_TIMEOUT} cargo build --profile ${CARGO_PROFILE} --bin veyron ${FEATURES_ARG} 2>&1 | sed 's/^/  [cargo] /'
     mkdir -p target/release
     if [ '${CARGO_PROFILE}' != release ]; then cp target/${CARGO_PROFILE}/veyron target/release/veyron; fi
     strip target/release/veyron 2>/dev/null || true
@@ -404,6 +409,9 @@ rules:
     resources: ['networkpolicies', 'ingresses']
     verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
   - apiGroups: ['cilium.io']
+    resources: ['*']
+    verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
+  - apiGroups: ['kairon.zyvor.dev']
     resources: ['*']
     verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
   - apiGroups: ['rbac.authorization.k8s.io']

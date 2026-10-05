@@ -78,6 +78,10 @@ pub mod soc;
 // Operator CRD types (veyron.io/v1alpha1)
 pub mod operator_crds;
 
+// Kairon VM platform CRDs (kairon.zyvor.dev)
+#[cfg(feature = "kairon")]
+pub mod kairon;
+
 // Features ported from v9s
 pub mod advanced_filter;
 pub mod ai_troubleshoot;

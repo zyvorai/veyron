@@ -131,6 +131,10 @@ rules:
   - apiGroups: ["cilium.io"]
     resources: ["*"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Kairon Machines (VEYRON_VM_BACKEND=kairon)
+  - apiGroups: ["kairon.zyvor.dev"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # RBAC (read-only for visualization)
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
