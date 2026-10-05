@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Veyron</title>
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+     1600x800 dark README hero. Rendered by ./build.sh to docs/assets/readme-hero.jpg.
+     The framed screenshot is docs/assets/console-mission.png (real console capture). -->
+<style>
+  :root { --signal:#2997ff; --blue:#0071e3; --orange:#ff6a2a; --sans:"SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif; --mono:"SF Mono",Menlo,Consolas,monospace; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; padding:0; }
+  body { width:1600px; height:800px; overflow:hidden; color:#f5f5f7; font-family:var(--sans); position:relative;
+    background:radial-gradient(1000px 620px at 82% 30%, rgba(41,151,255,.30), transparent 62%),
+               radial-gradient(800px 560px at 100% 100%, rgba(0,113,227,.26), transparent 60%),
+               linear-gradient(160deg,#08080a 0%,#101116 55%,#0b0c11 100%); }
+  .grid { position:absolute; inset:0; opacity:.06;
+    background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px); background-size:44px 44px; }
+  .left { position:absolute; left:84px; top:70px; width:620px; }
+  .brand { display:flex; align-items:center; gap:14px; font-family:var(--mono); font-size:18px; letter-spacing:.16em; text-transform:uppercase; color:#a1a1a6; }
+  .brand img { height:36px; }
+  .word { margin:26px 0 0; font-size:140px; line-height:.92; font-weight:800; letter-spacing:-.055em;
+    background:linear-gradient(90deg,#fff 0%,#d6eaff 40%,var(--signal) 78%,var(--blue) 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .tag { margin:24px 0 0; font-size:44px; line-height:1.1; font-weight:700; letter-spacing:-.02em; }
+  .lede { margin:18px 0 0; font-size:23px; line-height:1.42; color:#c7c7cc; }
+  .stats { margin-top:32px; display:flex; gap:40px; }
+  .stat b { display:block; font-size:46px; font-weight:800; letter-spacing:-.03em; color:#fff; }
+  .stat span { font-family:var(--mono); font-size:14px; letter-spacing:.1em; text-transform:uppercase; color:#8e8e93; }
+  .pill { position:absolute; left:84px; bottom:56px; display:flex; gap:12px; }
+  .pill span { font-family:var(--mono); font-size:17px; font-weight:700; padding:8px 16px; border-radius:20px; border:1.5px solid rgba(255,255,255,.22); color:#e5e5ea; }
+  .pill span.b { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+  .frame { position:absolute; right:64px; top:96px; width:800px; border-radius:16px; overflow:hidden;
+    background:#1c1c1e; box-shadow:0 40px 110px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.14); }
+  .chrome { height:34px; display:flex; align-items:center; gap:8px; padding:0 14px; background:#2c2c2e; }
+  .chrome i { width:12px; height:12px; border-radius:50%; background:#5a5a5e; }
+  .chrome i:nth-child(1) { background:#ff5f57; } .chrome i:nth-child(2) { background:#febc2e; } .chrome i:nth-child(3) { background:#28c840; }
+  .chrome span { margin-left:14px; font-family:var(--mono); font-size:13px; color:#a1a1a6; }
+  .frame img { display:block; width:100%; }
+  .badge { position:absolute; right:92px; bottom:70px; display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:15px;
+    letter-spacing:.08em; text-transform:uppercase; color:#e5e5ea; background:rgba(28,28,30,.85); padding:10px 16px; border-radius:12px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.16); }
+  .badge i { width:10px; height:10px; border-radius:50%; background:var(--orange); box-shadow:0 0 12px var(--orange); }
+</style></head><body>
+<div class="grid"></div>
+<div class="left">
+  <div class="brand"><img src="zyvor-mark.svg" alt=""><span>Zyvor &middot; VM command center</span></div>
+  <div class="word">veyron</div>
+  <div class="tag">Every VM on Kubernetes.<br>One console.</div>
+  <div class="lede">Create, run, protect and secure virtual machines on Kairon from a browser, an API or a CLI.</div>
+  <div class="stats">
+    <div class="stat"><b>40+</b><span>OS templates</span></div>
+    <div class="stat"><b>300+</b><span>API routes</span></div>
+    <div class="stat"><b>1</b><span>Rust binary</span></div>
+  </div>
+</div>
+<div class="pill"><span class="b">github.com/zyvorai/veyron</span><span>Powered by Kairon</span></div>
+<div class="frame">
+  <div class="chrome"><i></i><i></i><i></i><span>veyron &middot; /console</span></div>
+  <img src="../assets/console-mission.png" alt="">
+</div>
+<div class="badge"><i></i>Live console, light &amp; dark</div>
+</body></html>

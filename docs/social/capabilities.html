@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Veyron capabilities</title>
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+     1600x600 Run / Protect / Observe / Secure. Rendered by ./build.sh to docs/assets/readme-capabilities.jpg. -->
+<link rel="stylesheet" href="card.css">
+<style>
+  body { height:600px; }
+  .cols { margin-top:26px; display:grid; grid-template-columns:repeat(4,1fr); gap:20px; flex:1; }
+  .card { display:flex; flex-direction:column; }
+  .card .lane { align-self:flex-start; }
+</style></head><body>
+<div class="bar"></div>
+<div class="wrap">
+  <div class="top"><img src="zyvor-mark.svg" alt=""><b>Veyron</b><span>&middot;</span><span>Capabilities at a glance</span><span class="r">One console &middot; API &middot; CLI</span></div>
+  <h1>Everything a VM fleet needs, <em>day one to day two.</em></h1>
+  <div class="cols">
+    <div class="card k"><span class="lane">RUN</span><h3>Create and operate</h3><ul>
+      <li>40+ OS templates, one-click VMs</li>
+      <li>Browser VNC and serial console</li>
+      <li>CPU and memory hotplug, bulk actions</li>
+      <li>GPU passthrough with migration guard</li>
+      <li>Windows golden images, sysprep, RDP</li></ul></div>
+    <div class="card o"><span class="lane">PROTECT</span><h3>Keep data safe</h3><ul>
+      <li>Snapshots, restores, clones</li>
+      <li>Backups and Velero</li>
+      <li>Ceph snapshots and S3 backups via Atlas</li>
+      <li>DR failback, self-healing restarts</li>
+      <li>Orphaned-volume cleanup, dry-run first</li></ul></div>
+    <div class="card v"><span class="lane">OBSERVE</span><h3>See the fleet</h3><ul>
+      <li>Mission Control overview</li>
+      <li>Metrics, alerts, incidents, logs</li>
+      <li>Costs and capacity headroom</li>
+      <li>Guest health via GuestKit</li>
+      <li>Copilot on any OpenAI-compatible model</li></ul></div>
+    <div class="card m"><span class="lane">SECURE</span><h3>Govern access</h3><ul>
+      <li>Admin, write and read-only roles</li>
+      <li>OIDC SSO: Keycloak, Okta, Azure AD</li>
+      <li>SOC detections and attack surface</li>
+      <li>Elastic, Splunk, Sentinel, QRadar export</li>
+      <li>Public-RDP guardrail, audit trail</li></ul></div>
+  </div>
+  <div class="foot" style="margin-top:22px"><span><b>docs/</b> getting started &middot; architecture &middot; API</span><span class="r"><span class="dot"></span>zyvor.dev</span></div>
+</div>
+</body></html>

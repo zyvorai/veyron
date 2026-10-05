@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Veyron architecture</title>
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+     1600x700 stack diagram. Rendered by ./build.sh to docs/assets/readme-architecture.jpg. -->
+<link rel="stylesheet" href="card.css">
+<style>
+  body { height:700px; }
+  .stage { margin-top:30px; display:grid; grid-template-columns:1fr 70px 1fr 70px 1fr; align-items:stretch; flex:1; }
+  .col { display:flex; flex-direction:column; gap:14px; }
+  .col .card { flex:1; }
+  .arrow { display:flex; align-items:center; justify-content:center; font-size:40px; color:var(--signal); font-weight:700; }
+  .side { margin-top:18px; display:flex; gap:12px; flex-wrap:wrap; }
+  .side span { font-family:var(--mono); font-size:16px; font-weight:700; padding:7px 14px; border-radius:18px; background:#fff; border:2px solid var(--line); color:var(--ink); }
+  .side span b { color:var(--signal); }
+</style></head><body>
+<div class="bar"></div>
+<div class="wrap">
+  <div class="top"><img src="zyvor-mark.svg" alt=""><b>Veyron</b><span>&middot;</span><span>How it fits together</span><span class="r">No database &middot; Kubernetes is the source of truth</span></div>
+  <h1>One binary in front. <em>Kairon underneath.</em></h1>
+  <div class="stage">
+    <div class="col">
+      <div class="card k"><span class="lane">VEYRON</span><h3>Console, API, CLI</h3><ul>
+        <li>React console at <code>/console</code></li>
+        <li>HTTPS API <code>:5151</code>, 3 roles, SSO</li>
+        <li><code>veyron</code> CLI with your kubeconfig</li>
+        <li>Templates lowered to a <code>Machine</code></li></ul></div>
+    </div>
+    <div class="arrow">&rarr;</div>
+    <div class="col">
+      <div class="card a"><span class="lane">KUBERNETES</span><h3>The Kubernetes API</h3><ul>
+        <li><code>kairon.zyvor.dev</code> CRDs</li>
+        <li>Machine, snapshot, backup, restore</li>
+        <li>RBAC through one ServiceAccount</li>
+        <li>Settings in labeled ConfigMaps</li></ul></div>
+    </div>
+    <div class="arrow">&rarr;</div>
+    <div class="col">
+      <div class="card v"><span class="lane">KAIRON</span><h3>The VM engine</h3><ul>
+        <li><code>kairon-controller</code> places</li>
+        <li><code>kairon-node</code> runs, relay <code>:8090</code></li>
+        <li>FluxVM: QEMU, Cloud Hypervisor, Firecracker</li>
+        <li>Straight onto KVM, no pod per VM</li></ul></div>
+    </div>
+  </div>
+  <div class="side"><span><b>+</b> Atlas: Ceph snapshots and S3 backups</span><span><b>+</b> PacketWolf: network intelligence</span><span><b>+</b> Prometheus, Loki, OpenCost</span><span><b>+</b> Keycloak / Okta / Azure AD</span><span><b>+</b> Elastic, Splunk, Sentinel, QRadar</span></div>
+  <div class="foot" style="margin-top:18px"><span><b>docs/architecture.md</b></span><span class="r"><span class="dot"></span>zyvor.dev</span></div>
+</div>
+</body></html>
