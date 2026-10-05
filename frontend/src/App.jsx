@@ -93,6 +93,7 @@ export default function App() {
     if (!getToken()) return;
     setLoading(true);
     const next = emptyData();
+    const failed = new Set();
     const settle = async (label, fn, mapFn, key, extra) => {
       try {
         const rows = await fn();
@@ -100,7 +101,7 @@ export default function App() {
         if (extra) await extra(next);
       } catch (e) {
         console.warn(label, e);
-        next[key].rows = [];
+        failed.add(key);
       }
     };
 
@@ -186,7 +187,10 @@ export default function App() {
       api.health().then(() => setHealthOk(true)).catch(() => setHealthOk(false)),
       api.listNotifications().then(setNotifications).catch(() => setNotifications([])),
     ]);
-    setData(next);
+    setData((prev) => {
+      for (const key of failed) next[key] = prev?.[key] || next[key];
+      return next;
+    });
     setLoading(false);
     if (!getToken()) {
       setAuthed(false);

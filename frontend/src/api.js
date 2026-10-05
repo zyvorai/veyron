@@ -148,6 +148,12 @@ function nsQ(ns) {
   return ns && ns !== 'all' ? `?namespace=${encodeURIComponent(ns)}` : '?namespace=all';
 }
 
+/** API sends vCPU as a number or a label like "2 cores". */
+function parseCount(v) {
+  const n = parseInt(String(v ?? ''), 10);
+  return Number.isFinite(n) ? n : '—';
+}
+
 function parseMemGi(v) {
   if (v == null) return 0;
   if (typeof v === 'number') return v > 64 ? Math.round(v / 1024) : v;
@@ -199,7 +205,7 @@ export function mapVm(raw, i) {
     name,
     ns,
     status: String(status).replace(/^VMI?Phase/, '') || 'Unknown',
-    cpu: raw.cpu ?? raw.cpus ?? raw.vcpus ?? raw.spec?.cpu ?? '—',
+    cpu: parseCount(raw.cpu ?? raw.cpus ?? raw.vcpus ?? raw.spec?.cpu),
     ram: parseMemGi(raw.memory || raw.ram || raw.memory_gi),
     disk: parseDiskGb(raw.disk || raw.disk_gb || raw.storage),
     host: raw.node || raw.host || raw.node_name || '—',
