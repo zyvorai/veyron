@@ -346,48 +346,84 @@ export function emptyData() {
   return out;
 }
 
+/** Global navigation (apple.com-style mega-menus). Each item: [pageId, label?, blurb]. */
 export const NAV = [
   {
     g: 'Overview',
     tone: 'sky',
     items: [
-      ['mission', 'Mission Control'],
-      ['console', 'ConsoleHub'],
-      ['monitoring', 'Monitoring'],
-      ['topology', 'Topology'],
+      ['mission', 'Mission Control', 'The whole fleet at a glance, live.'],
+      ['console', 'Consoles', 'Open a live screen on any running guest.'],
+      ['monitoring', 'Monitoring', 'Capacity headroom and platform versions.'],
+      ['topology', 'Topology', 'How hosts, machines and networks connect.'],
     ],
   },
   {
     g: 'Compute',
     tone: 'violet',
-    items: [['vms'], ['hosts'], ['gpus'], ['images'], ['pods'], ['templates'], ['migrations']],
+    items: [
+      ['vms', null, 'Create, size, start and migrate machines.'],
+      ['hosts', null, 'Nodes, load and maintenance.'],
+      ['gpus', null, 'Passthrough and vGPU inventory per node.'],
+      ['templates', null, 'Current OS releases, ready to boot.'],
+      ['images', null, 'Golden images and import jobs.'],
+      ['pods', null, 'Workloads running next to your VMs.'],
+      ['migrations', null, 'Live migrations in flight.'],
+    ],
   },
   {
-    g: 'Storage & network',
+    g: 'Storage & Network',
     tone: 'amber',
-    items: [['pvcs'], ['snapshots'], ['backups'], ['atlas'], ['networks'], ['network-brain', 'PacketWolf'], ['dr', 'DR & Velero']],
+    items: [
+      ['pvcs', null, 'Volumes, classes and resize.'],
+      ['snapshots', null, 'Point-in-time copies and restore.'],
+      ['backups', null, 'Scheduled and on-demand backups.'],
+      ['atlas', null, 'Ceph snapshots and S3 backups via Atlas.'],
+      ['dr', 'DR & Velero', 'Failover, failback and cluster backups.'],
+      ['networks', null, 'Secondary networks and CIDRs.'],
+      ['network-brain', 'PacketWolf', 'Flows and network intelligence.'],
+    ],
   },
   {
     g: 'Security',
     tone: 'rose',
-    items: [['alerts'], ['soc']],
+    items: [
+      ['alerts', null, 'Warnings across the cluster.'],
+      ['soc', null, 'Detections, hunts and SIEM export.'],
+    ],
   },
-  { g: 'System', tone: 'graphite', items: [['settings', 'Settings']] },
+  { g: 'Settings', tone: 'graphite', page: 'settings', items: [['settings', 'Settings', 'Accounts, policy and integrations.']] },
 ];
 
-/** Flat page order for 1:1 swipe navigation (matches sidebar top→bottom). */
+/** Every routable page, in menu order. */
 export const PAGE_ORDER = NAV.flatMap((g) => g.items.map(([id]) => id));
 
 /** Section-identity tone per page id, derived from NAV group membership. */
 export const TONE_BY_PAGE = Object.fromEntries(NAV.flatMap((g) => g.items.map(([id]) => [id, g.tone || null])));
 
+/** Display label per page id (falls back to the resource label). */
+export function pageLabel(id) {
+  for (const g of NAV) {
+    const hit = g.items.find(([pid]) => pid === id);
+    if (hit) return hit[1] || RES_META[id]?.l || id;
+  }
+  return RES_META[id]?.l || id;
+}
+
+/** Menu blurb per page id. */
+export function pageBlurb(id) {
+  for (const g of NAV) {
+    const hit = g.items.find(([pid]) => pid === id);
+    if (hit) return hit[2] || '';
+  }
+  return '';
+}
+
 export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'network-brain']);
 
-/** Immersive marketing-style pages that should render full-bleed — the left rail and
- * Inspector auto-collapse here so the .apple-band sections span the true viewport width. */
+/** Story pages that render full-bleed, without the local toolbar. */
 export const FULL_BLEED_PAGES = new Set(['mission', 'console', 'monitoring', 'topology', 'dr', 'network-brain']);
 
-// Icons for chapter pages in the rail
 export const CHAPTER_ICONS = {
   monitoring: Activity,
   topology: Map,

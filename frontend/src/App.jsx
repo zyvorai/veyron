@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
-  ChevronLeft, Search, Plus, List, LayoutGrid, Terminal, Trash2,
-  Sparkles, Settings, Bell, X, Info, RefreshCw, Sun, Moon, PanelLeft, PanelRight,
-  Download, Activity,
+  Search, Plus, List, LayoutGrid, Trash2, X, Info, RefreshCw, Download, Activity,
 } from 'lucide-react';
 import {
   api, getToken, clearSession, getAuthUser, getSavedTheme, setSavedTheme,
@@ -11,14 +9,15 @@ import {
   mapGpu, mapAlert, mapSoc, mapAtlasVol, mapAtlasSnap, mapMigration,
   mapCatalogTemplate, mapDataSource,
 } from './api.js';
-import { emptyData, NAV, RES_META, PAGE_ORDER, CHAPTER_PAGES, CHAPTER_ICONS, TONE_BY_PAGE, FULL_BLEED_PAGES } from './resources.js';
+import { emptyData, RES_META, TONE_BY_PAGE, pageLabel, pageBlurb } from './resources.js';
 import { Table } from './Table.jsx';
 import { Inspector, ACT } from './Inspector.jsx';
-import { PageHero } from './PageHero.jsx';
 import { Mission, ConsoleHub, SettingsPage, ConsoleSheet, NewSheet, Login } from './pages.jsx';
 import { MonitoringPage, TopologyPage, DrPage, PacketWolfPage } from './chapters.jsx';
 import { Status } from './status.jsx';
-import { usePageSwipe } from './usePageSwipe.js';
+import { GlobalNav } from './GlobalNav.jsx';
+import { CommandPalette } from './CommandPalette.jsx';
+import { EmptyArt, OsBadge, Reveal } from './story.jsx';
 
 function warnCount(rows) {
   return (rows || []).filter((x) => ['Degraded', 'Failed', 'Pending', 'Cordoned'].includes(x.status)).length;
@@ -75,8 +74,9 @@ export default function App() {
   const [menu, setMenu] = useState(null);
   const [sheet, setSheet] = useState(null);
   const [sheetMode, setSheetMode] = useState('console');
-  const [showSrc, setShowSrc] = useState(true);
-  const [showInsp, setShowInsp] = useState(true);
+  const [showInsp, setShowInsp] = useState(false);
+  const [palette, setPalette] = useState(false);
+  const [initialTemplate, setInitialTemplate] = useState(null);
   const [showBell, setShowBell] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [healthOk, setHealthOk] = useState(true);
@@ -199,9 +199,8 @@ export default function App() {
   }, [authed, load]);
 
   useEffect(() => {
-    const bleed = FULL_BLEED_PAGES.has(page);
-    setShowSrc(!bleed);
-    setShowInsp(!bleed);
+    setShowInsp(false);
+    document.querySelector('.stage')?.scrollTo({ top: 0 });
   }, [page]);
 
   const onLogin = async (username, password) => {
@@ -241,31 +240,30 @@ export default function App() {
     warnCount(data.pvcs.rows) +
     (notifications || []).filter((n) => !n.read).length;
 
-  const go = (p, id) => {
-    back.current.push(page);
-    setPage(p);
-    setSelected(id != null ? new Set([id]) : new Set());
-    setFocus(id ?? null);
-    setQ('');
-  };
-
-  const swipeTo = useCallback(
-    (p) => {
-      if (p === page) return;
+  const go = useCallback(
+    (p, id) => {
       back.current.push(page);
       setPage(p);
-      setSelected(new Set());
-      setFocus(null);
+      setSelected(id != null ? new Set([id]) : new Set());
+      setFocus(id ?? null);
       setQ('');
+      if (id != null) setTimeout(() => setShowInsp(true), 0);
     },
     [page],
   );
 
-  const { trackRef, pageIndex } = usePageSwipe({
-    page,
-    onPage: swipeTo,
-    enabled: authed && !sheet && !menu && !showBell,
-  });
+  const openCreate = useCallback((tpl) => {
+    setInitialTemplate(typeof tpl === 'string' ? tpl : null);
+    setSheet('new');
+  }, []);
+
+  const openConsole = useCallback((vm) => {
+    setPage('vms');
+    setFocus(vm.id);
+    setSelected(new Set([vm.id]));
+    setSheetMode('console');
+    setSheet('console');
+  }, []);
 
   const onRow = (r, e) => {
     if (e.metaKey || e.ctrlKey) {
@@ -282,6 +280,7 @@ export default function App() {
     } else {
       setSelected(new Set([r.id]));
       setFocus(r.id);
+      setShowInsp(true);
     }
   };
 
@@ -491,7 +490,7 @@ export default function App() {
     }
   };
 
-  const create = async ({ name, template, cls, size, url, cidr }) => {
+  const create = async ({ name, template, cls, size, url, cidr, cpus, memory }) => {
     try {
       const kind = (res || data.vms).kind;
       if (kind === 'VirtualMachine') {
@@ -501,7 +500,9 @@ export default function App() {
           namespace: 'default',
           start: true,
         };
-        if (size && size !== '10 Gi') {
+        if (cpus) body.cpus = cpus;
+        if (memory) body.memory = memory;
+        if (size && size !== '10 Gi' && size !== '10Gi') {
           body.disk_size = String(size).replace(/\s+/g, '');
         }
         await api.createVm(body);
@@ -552,18 +553,26 @@ export default function App() {
 
   useEffect(() => {
     const k = (e) => {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPalette((p) => !p);
+        return;
+      }
+      if (e.key === '/' && !typing) {
+        e.preventDefault();
+        setPalette(true);
+        return;
+      }
       if (e.key === 'Escape') {
         setMenu(null);
         setSheet(null);
         setShowBell(false);
+        setShowInsp(false);
       }
       if ((e.metaKey || e.ctrlKey) && e.key === 'n' && res) {
         e.preventDefault();
         setSheet('new');
-      }
-      if ((e.metaKey || e.ctrlKey) && e.altKey && e.key === 's') {
-        e.preventDefault();
-        setShowSrc((s) => !s);
       }
       if ((e.metaKey || e.ctrlKey) && e.altKey && e.key === 'i') {
         e.preventDefault();
@@ -576,6 +585,7 @@ export default function App() {
     };
     const c = () => {
       setMenu(null);
+      setShowBell(false);
     };
     window.addEventListener('keydown', k);
     window.addEventListener('click', c);
@@ -589,141 +599,44 @@ export default function App() {
     return <Login onSubmit={onLogin} error={loginErr} />;
   }
 
-  const title =
-    page === 'mission'
-      ? 'Mission Control'
-      : page === 'console'
-        ? 'ConsoleHub'
-        : page === 'settings'
-          ? 'Settings'
-          : page === 'monitoring'
-            ? 'Monitoring'
-            : page === 'topology'
-              ? 'Topology'
-              : page === 'dr'
-                ? 'DR & Velero'
-                : page === 'network-brain'
-                  ? 'PacketWolf'
-                  : res?.l || 'Veyron';
-
-  const navIcon = (id, I) => {
-    if (id === 'mission') return Sparkles;
-    if (id === 'console') return Terminal;
-    if (id === 'settings') return Settings;
-    if (CHAPTER_ICONS[id]) return CHAPTER_ICONS[id];
-    return I || RES_META[id]?.I || MonitorFallback;
-  };
-
-  const sheetTarget =
-    sheetMode === 'logs'
-      ? focusRow
-      : focusRow?.name
-        ? focusRow
-        : null;
-
+  const tone = TONE_BY_PAGE[page] || 'sky';
   const canCreate = !!(res?.canCreate || (!res && page === 'mission'));
+  const sheetTarget = sheetMode === 'logs' ? focusRow : focusRow?.name ? focusRow : null;
+  const warnRows = res ? warnCount(res.rows) : 0;
+  const okRows = res ? res.rows.filter((r) => ['Running', 'Ready', 'Bound', 'Healthy', 'Succeeded', 'Up'].includes(r.status)).length : 0;
 
   return (
     <div className="vy" data-theme={theme}>
       {toast && <div className={`toast ${toast.err ? 'err' : ''}`}>{toast.msg}</div>}
-      <header className="bar">
-        <div className="brand">
-          <i>Z</i>
-          <b>Veyron</b>
-          <small>Private cloud</small>
-        </div>
-        <button className="tb" onClick={() => setShowSrc(!showSrc)}>
-          <PanelLeft size={16} />
-        </button>
-        <button
-          className="tb"
-          onClick={() => {
-            const p = back.current.pop();
-            if (p) setPage(p);
-          }}
-          disabled={!back.current.length}
-        >
-          <ChevronLeft size={16} />
-        </button>
-        {res && (
-          <div className="seg">
-            <button className="tb" aria-pressed={view === 'list'} onClick={() => setView('list')}>
-              <List size={15} />
-            </button>
-            <button className="tb" aria-pressed={view === 'grid'} onClick={() => setView('grid')}>
-              <LayoutGrid size={15} />
-            </button>
-          </div>
-        )}
-        <div className="title">
-          {title}
-          <small>
-            {res ? `${rows.length} ${res.kind}${rows.length === 1 ? '' : 's'}` : loading ? 'Loading…' : 'Veyron'}
-          </small>
-        </div>
-        <label className="tsearch">
-          <Search size={14} />
-          <input
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              if (!res) setPage('vms');
-            }}
-            placeholder="Search"
-          />
-        </label>
-        <span className={`live ${!healthOk || alerts ? 'warn' : ''}`}>
-          <i />
-          {loading ? 'Sync' : healthOk ? 'Live' : 'Degraded'}
-        </span>
-        <button className="tb" onClick={() => load()} title="Refresh">
-          <RefreshCw size={15} />
-        </button>
-        <button
-          className="tb"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowBell((s) => {
-              const next = !s;
-              if (next && notifications.length) {
-                const ids = notifications.map((n) => n.id).filter(Boolean);
-                if (ids.length) api.markNotificationsRead(ids).catch(() => {});
-              }
-              return next;
-            });
-          }}
-          title="Notifications"
-        >
-          <Bell size={15} />
-          {alerts > 0 && <span className="badge">{alerts}</span>}
-        </button>
-        <button className="tb" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
-        <button className="tb" onClick={() => setShowInsp(!showInsp)}>
-          <PanelRight size={16} />
-        </button>
-        {canCreate && (
-          <button
-            className="primary"
-            onClick={() => {
-              if (!res) setPage('vms');
-              setSheet('new');
-            }}
-          >
-            <Plus size={14} />
-            New
-          </button>
-        )}
-        <div
-          className="avatar"
-          title={user?.display_name || user?.username ? `Sign out (${user.display_name || user.username})` : 'Sign out'}
-          onClick={onLogout}
-          role="button"
-        >
-          {(user?.display_name || user?.username || 'A').charAt(0).toUpperCase()}
-        </div>
-      </header>
+
+      <GlobalNav
+        page={page}
+        go={go}
+        data={data}
+        theme={theme}
+        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        onSearch={() => setPalette(true)}
+        onBell={() =>
+          setShowBell((b) => {
+            const next = !b;
+            if (next && notifications.length) {
+              const ids = notifications.map((n) => n.id).filter(Boolean);
+              if (ids.length) api.markNotificationsRead(ids).catch(() => {});
+            }
+            return next;
+          })
+        }
+        alerts={alerts}
+        healthOk={healthOk}
+        loading={loading}
+        canCreate={canCreate}
+        onCreate={() => {
+          if (!res) setPage('vms');
+          openCreate();
+        }}
+        user={user}
+        onLogout={onLogout}
+      />
 
       {showBell && (
         <div className="bell-panel" onClick={(e) => e.stopPropagation()}>
@@ -732,7 +645,7 @@ export default function App() {
             <div className="bell-empty">
               {alerts
                 ? `${alerts} resource alert${alerts === 1 ? '' : 's'} in lists — no stored notifications.`
-                : 'No notifications.'}
+                : 'You’re all caught up.'}
             </div>
           ) : (
             notifications.slice(0, 40).map((n) => (
@@ -752,214 +665,248 @@ export default function App() {
         </div>
       )}
 
-      <div className="body">
-        <nav className={`source ${showSrc ? '' : 'hide'}`}>
-          {NAV.map((g) => (
-            <div className="sg" data-tone={g.tone} key={g.g}>
-              <div className="sg-h">{g.g}</div>
-              {g.items.map(([id, l]) => {
-                const r = data[id];
-                const Icon = navIcon(id, r?.I);
-                const warn = r ? warnCount(r.rows) : 0;
-                return (
-                  <button
-                    key={id}
-                    className="srow"
-                    aria-current={page === id ? 'page' : undefined}
-                    onClick={() => go(id)}
-                  >
-                    <Icon size={15} strokeWidth={1.9} />
-                    {l || r?.l || id}
-                    {r && <span className={`n ${warn ? 'warn' : ''}`}>{warn || r.rows.length}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div className="swipe-host">
-          <div className="swipe-track" data-tone={TONE_BY_PAGE[page]} data-page={page} ref={trackRef}>
-            {page === 'mission' ? (
-              <Mission
-                data={data}
-                go={go}
-                hostCount={data.hosts.rows.length}
-                onCreate={() => setSheet('new')}
-              />
-            ) : page === 'settings' ? (
-              <SettingsPage theme={theme} setTheme={setTheme} />
-            ) : page === 'monitoring' ? (
-              <MonitoringPage />
-            ) : page === 'topology' ? (
-              <TopologyPage />
-            ) : page === 'dr' ? (
-              <DrPage showToast={showToast} />
-            ) : page === 'network-brain' ? (
-              <PacketWolfPage />
-            ) : page === 'console' ? (
-              <div className="center">
-                <ConsoleHub
-                  vms={data.vms.rows}
-                  onCreate={() => {
-                    setPage('vms');
-                    setSheet('new');
-                  }}
-                  onOpen={(v) => {
-                    setPage('vms');
-                    setFocus(v.id);
-                    setSelected(new Set([v.id]));
-                    setSheetMode('console');
-                    setSheet('console');
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="center">
-                <div className="list">
-                  <PageHero
-                    kicker={res.kind}
-                    title={res.l}
-                    lede={loading ? 'Loading…' : `${rows.length} ${res.l.toLowerCase()} in this view.`}
-                    dense
-                  />
-                  {rows.length === 0 ? (
-                    <div className="empty" style={{ minHeight: 320 }}>
-                      <div>
-                        <b>No {res.kind.toLowerCase()}s</b>
-                        <p className="lede">
-                          {loading
-                            ? 'Loading…'
-                            : q
-                              ? 'Nothing matches this search.'
-                              : page === 'vms'
-                                ? 'Create a machine to get started.'
-                                : 'Nothing matches this view.'}
-                        </p>
-                        {!loading && !q && page === 'vms' && (
-                          <div className="acts">
-                            <button className="pill" onClick={() => setSheet('new')}>
-                              <Plus size={16} />
-                              Create a machine
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : view === 'grid' ? (
-                    <div className="grid">
-                      {rows.map((r) => (
-                        <button
-                          key={r.id}
-                          className="gcard"
-                          aria-selected={selected.has(r.id)}
-                          onClick={(e) => onRow(r, e)}
-                          onContextMenu={(e) => onMenu(r, e)}
-                        >
-                          <b>{r.name}</b>
-                          {r.status && <Status s={r.status} />}
-                          <div className="m">
-                            {res.cols
-                              .slice(2, 5)
-                              .map((c) => `${r[c[0]] ?? '—'}${c[3] || ''}`)
-                              .join(' · ')}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <Table cols={res.cols} rows={rows} selected={selected} focus={focus} onRow={onRow} onMenu={onMenu} />
-                  )}
-                  {res.extra && (
-                    <>
-                      <div className="sect">
-                        <h2>{res.extra.title}</h2>
-                        <small>{res.extra.rows.length}</small>
-                        <div className="r">
-                          <button className="btn sm secondary" onClick={() => load()}>
-                            <RefreshCw size={12} />
-                            Refresh
-                          </button>
-                          <button
-                            className="btn sm secondary"
-                            onClick={() =>
-                              downloadCsv(
-                                'storage-pools.csv',
-                                res.extra.cols,
-                                res.extra.rows,
-                              )
-                            }
-                          >
-                            <Download size={12} />
-                            CSV
-                          </button>
-                        </div>
-                      </div>
-                      <Table cols={res.extra.cols} rows={res.extra.rows} />
-                    </>
-                  )}
-                </div>
-                {selected.size > 1 && res.acts?.length > 0 && (
-                  <div className="bulk">
-                    <b>{selected.size} selected</b>
-                    {res.acts
-                      .filter((a) => a !== 'console' && a !== 'logs')
-                      .map((a) => {
-                        const [l, I] = ACT[a] || [a, Activity];
-                        return (
-                          <button key={a} className="tb" onClick={() => act(a)}>
-                            <I size={13} />
-                            {l}
-                          </button>
-                        );
-                      })}
-                    <button className="tb" onClick={() => setSelected(new Set())}>
-                      <X size={14} />
+      <main className="stage" data-tone={tone} data-page={page}>
+        {page === 'mission' ? (
+          <Mission data={data} go={go} onCreate={openCreate} onConsole={openConsole} healthOk={healthOk} />
+        ) : page === 'settings' ? (
+          <SettingsPage theme={theme} setTheme={setTheme} />
+        ) : page === 'monitoring' ? (
+          <MonitoringPage />
+        ) : page === 'topology' ? (
+          <TopologyPage />
+        ) : page === 'dr' ? (
+          <DrPage showToast={showToast} />
+        ) : page === 'network-brain' ? (
+          <PacketWolfPage />
+        ) : page === 'console' ? (
+          <ConsoleHub
+            vms={data.vms.rows}
+            onCreate={() => {
+              setPage('vms');
+              openCreate();
+            }}
+            onOpen={openConsole}
+          />
+        ) : res ? (
+          <div className="res-page">
+            <div className="localnav">
+              <div className="localnav-inner">
+                <h1 className="localnav-title">
+                  {res.I && <res.I size={18} strokeWidth={1.9} />}
+                  {pageLabel(page)}
+                </h1>
+                <label className="tsearch">
+                  <Search size={14} />
+                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${res.l.toLowerCase()}`} />
+                  {q && (
+                    <button type="button" onClick={() => setQ('')} aria-label="Clear search">
+                      <X size={13} />
                     </button>
-                  </div>
-                )}
-                <div className="statusbar">
-                  <span>{selected.size ? `${selected.size} of ${rows.length} selected` : `${rows.length} items`}</span>
-                  <span>
-                    {data.hosts.rows.length} host{data.hosts.rows.length === 1 ? '' : 's'}
-                  </span>
-                  <span>{alerts} alerts</span>
+                  )}
+                </label>
+                <div className="seg">
+                  <button className="tb" aria-pressed={view === 'list'} onClick={() => setView('list')} aria-label="List view">
+                    <List size={15} />
+                  </button>
+                  <button className="tb" aria-pressed={view === 'grid'} onClick={() => setView('grid')} aria-label="Grid view">
+                    <LayoutGrid size={15} />
+                  </button>
                 </div>
+                <button className="tb" onClick={() => load()} title="Refresh" aria-label="Refresh">
+                  <RefreshCw size={15} className={loading ? 'spin' : ''} />
+                </button>
+                {res.canCreate && (
+                  <button className="btn primary sm" onClick={() => openCreate()}>
+                    <Plus size={14} />
+                    New
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="list">
+              <Reveal className="res-hero">
+                <p className="kicker">{res.kind}</p>
+                <h2>{pageLabel(page)}.</h2>
+                <p className="res-lede">{pageBlurb(page)}</p>
+                <div className="res-metrics">
+                  <div>
+                    <b>{res.rows.length}</b>
+                    <span>total</span>
+                  </div>
+                  <div>
+                    <b>{okRows}</b>
+                    <span>healthy</span>
+                  </div>
+                  <div data-warn={warnRows > 0 || undefined}>
+                    <b>{warnRows}</b>
+                    <span>need a look</span>
+                  </div>
+                  {q && (
+                    <div>
+                      <b>{rows.length}</b>
+                      <span>match “{q}”</span>
+                    </div>
+                  )}
+                </div>
+              </Reveal>
+
+              {rows.length === 0 ? (
+                <div className="empty">
+                  <div>
+                    <EmptyArt tone={tone} />
+                    <b>{loading ? 'Loading…' : q ? 'Nothing matches.' : `No ${res.l.toLowerCase()} yet.`}</b>
+                    <p className="lede">
+                      {loading
+                        ? 'Fetching live data from your cluster.'
+                        : q
+                          ? 'Try a different search, or clear it.'
+                          : page === 'vms'
+                            ? 'Create a machine from a current OS template. It takes about a minute.'
+                            : pageBlurb(page)}
+                    </p>
+                    {!loading && !q && res.canCreate && (
+                      <div className="acts">
+                        <button className="pill" onClick={() => openCreate()}>
+                          <Plus size={16} />
+                          {page === 'vms' ? 'Create a machine' : `New ${res.kind}`}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : view === 'grid' ? (
+                <div className="grid">
+                  {rows.map((r) => (
+                    <button
+                      key={r.id}
+                      className="gcard"
+                      aria-selected={selected.has(r.id)}
+                      onClick={(e) => onRow(r, e)}
+                      onContextMenu={(e) => onMenu(r, e)}
+                    >
+                      <div className="gcard-top">
+                        {page === 'vms' || page === 'templates' ? (
+                          <OsBadge name={page === 'templates' ? r.name : r.os} size={36} />
+                        ) : (
+                          res.I && (
+                            <span className="gcard-ico">
+                              <res.I size={18} />
+                            </span>
+                          )
+                        )}
+                        {r.status && <Status s={r.status} />}
+                      </div>
+                      <b>{r.name}</b>
+                      <div className="m">
+                        {res.cols
+                          .slice(2, 5)
+                          .map((c) => `${r[c[0]] ?? '—'}${c[3] || ''}`)
+                          .join(' · ')}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="table-card">
+                  <Table cols={res.cols} rows={rows} selected={selected} focus={focus} onRow={onRow} onMenu={onMenu} />
+                </div>
+              )}
+
+              {res.extra && (
+                <>
+                  <div className="sect">
+                    <h2>{res.extra.title}</h2>
+                    <small>{res.extra.rows.length}</small>
+                    <div className="r">
+                      <button className="btn sm secondary" onClick={() => load()}>
+                        <RefreshCw size={12} />
+                        Refresh
+                      </button>
+                      <button className="btn sm secondary" onClick={() => downloadCsv(`${page}-extra.csv`, res.extra.cols, res.extra.rows)}>
+                        <Download size={12} />
+                        CSV
+                      </button>
+                    </div>
+                  </div>
+                  <div className="table-card">
+                    <Table cols={res.extra.cols} rows={res.extra.rows} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {selected.size > 1 && res.acts?.length > 0 && (
+              <div className="bulk">
+                <b>{selected.size} selected</b>
+                {res.acts
+                  .filter((a) => a !== 'console' && a !== 'logs')
+                  .map((a) => {
+                    const [l, I] = ACT[a] || [a, Activity];
+                    return (
+                      <button key={a} className="tb" onClick={() => act(a)}>
+                        <I size={13} />
+                        {l}
+                      </button>
+                    );
+                  })}
+                <button className="tb" onClick={() => setSelected(new Set())} aria-label="Clear selection">
+                  <X size={14} />
+                </button>
               </div>
             )}
           </div>
-          <div className="swipe-dots" aria-hidden>
-            {PAGE_ORDER.map((id, i) => (
-              <i key={id} className={i === pageIndex ? 'on' : ''} />
-            ))}
-          </div>
-        </div>
+        ) : null}
+      </main>
 
-        {res && (
-          <Inspector
-            res={res}
-            row={focusRow}
-            hide={!showInsp}
-            onAct={(a) => act(a, new Set([focus].filter(Boolean)))}
-            onOpsDone={(l) => {
-              showToast(`${l} · done`);
-              load();
-            }}
-          />
-        )}
-        {sheet === 'console' && sheetTarget && (
-          <ConsoleSheet vm={sheetTarget} mode={sheetMode} onClose={() => setSheet(null)} />
-        )}
-        {sheet === 'new' && (res || data.vms)?.canCreate && (
-          <NewSheet
-            res={res || data.vms}
-            templates={data.templates.rows}
-            storageClasses={data.pvcs.extra?.rows || []}
-            onClose={() => setSheet(null)}
-            onCreate={create}
-          />
-        )}
-      </div>
+      {res && (
+        <>
+          <div className={`insp-scrim${showInsp && focusRow ? ' on' : ''}`} onClick={() => setShowInsp(false)} />
+          <div className={`insp-slide${showInsp && focusRow ? ' open' : ''}`}>
+            <button className="insp-close tb" onClick={() => setShowInsp(false)} aria-label="Close details">
+              <X size={15} />
+            </button>
+            <Inspector
+              res={res}
+              row={focusRow}
+              hide={false}
+              onAct={(a) => act(a, new Set([focus].filter(Boolean)))}
+              onOpsDone={(l) => {
+                showToast(`${l} · done`);
+                load();
+              }}
+            />
+          </div>
+        </>
+      )}
+
+      {sheet === 'console' && sheetTarget && (
+        <ConsoleSheet vm={sheetTarget} mode={sheetMode} onClose={() => setSheet(null)} />
+      )}
+      {sheet === 'new' && (res || data.vms)?.canCreate && (
+        <NewSheet
+          res={res?.canCreate ? res : data.vms}
+          templates={data.templates.rows}
+          storageClasses={data.pvcs.extra?.rows || []}
+          initialTemplate={initialTemplate}
+          onClose={() => setSheet(null)}
+          onCreate={create}
+        />
+      )}
+
+      <CommandPalette
+        open={palette}
+        onClose={() => setPalette(false)}
+        data={data}
+        go={go}
+        theme={theme}
+        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        onCreate={() => {
+          setPage('vms');
+          openCreate();
+        }}
+        onConsole={openConsole}
+      />
 
       {menu && res && (
         <div className="menu" style={{ left: menu.x, top: menu.y }} onClick={(e) => e.stopPropagation()}>
@@ -996,8 +943,4 @@ export default function App() {
       )}
     </div>
   );
-}
-
-function MonitorFallback(props) {
-  return <Sparkles {...props} />;
 }
