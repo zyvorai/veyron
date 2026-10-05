@@ -163,7 +163,8 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 | Module | Purpose |
 |---|---|
 | `src/config/` | `VMConfig` schema, `VMConfigBuilder` fluent API, `AppConfig` (~/.config/veyron/config.toml) |
-| `src/templates/mod.rs` | 44 OS templates (Ubuntu, CentOS, Windows, RHEL, etc.) with pre-set CPU/memory/firmware |
+| `src/templates/mod.rs` | 25 templates aligned with the Kryton catalog (Ubuntu 26.04/24.04/22.04, Debian 13/12, Fedora 44, CentOS Stream 10/9, AlmaLinux 10/9, Rocky 10/9, openSUSE Leap 16, Windows Server 2025/2022/2019, Windows 11); bare family names alias the newest release. EOL releases are retired. Rocky clones the Kryton golden DataSource `kryton-images/rocky-*` (its containerdisk is auth-gated) |
+| `src/api/kryton.rs`, `src/api/handlers/kryton.rs` | Kryton machine-API integration under `/api/v1/kryton/*` (`VEYRON_KRYTON_URL`, `VEYRON_KRYTON_TOKEN`, `VEYRON_KRYTON_PROJECT`) |
 | `docs/windows.md` | Windows golden images, Cloudbase-Init/Sysprep, Packer → QCOW2 → GitOps pipeline |
 | `examples/windows-kubevirt-gitops/` | Reference manifests + `patch_kubevirt_configdrive.py` for Windows `cloudInitConfigDrive` |
 | `src/monitoring/` | `MetricsCollector` (collect VM CPU/memory/disk/network), `PerformanceAnalyzer`, `MonitoringReporter` |
@@ -226,6 +227,8 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 | `VEYRON_ATLAS_URL` | Optional. Atlas storage control-plane gateway base URL (e.g. `http://atlas-gateway.zyvor:5110`). When set, the **Atlas** integration enables Ceph-backed VM disk snapshot/backup/restore. Unset ⇒ routes report `configured:false`. |
 | `VEYRON_ATLAS_TOKEN` | Optional HS256 JWT bearer for Atlas (required when Atlas runs with `ATLAS_AUTH_REQUIRED=1`) |
 | `VEYRON_ATLAS_TENANT` | Optional tenant id recorded on Atlas-provisioned volumes/backups (default `global`) |
+| `VEYRON_KRYTON_URL` | Optional. Kryton machine-API base URL. Enables `/api/v1/kryton/*` (machines, catalog, golden-image bootstrap into `kryton-images/<id>`). Unset ⇒ `/kryton/status` reports `configured:false`, other routes 503. |
+| `VEYRON_KRYTON_TOKEN` / `VEYRON_KRYTON_PROJECT` | Kryton bearer API key / optional project (`?project=`) |
 | `VEYRON_VGPU_LIVE_MIGRATION` | Set to `1` ONLY after verifying the licensed NVIDIA vGPU host stack + KubeVirt actually live-migrate mdev VMIs (Phase 2 attestation). Relaxes the migration gate for vGPU-only VMs and enables `day2_ops.vgpu_live_migration` (when mdev resources are present). Upstream KubeVirt ≤1.8 does NOT support this — never set on plain passthrough clusters. |
 | `VEYRON_ALLOW_PUBLIC_RDP` | Set to `1` to permit `PUT /rdp-expose` with `service_type: NodePort`/`LoadBalancer`. **Default: refused with 403** — a bare 3389 NodePort puts Windows auth on the network with no gateway/MFA/TLS. Prefer `ClusterIP` + VPN/zero-trust gateway or `kubectl port-forward`. |
 | `VEYRON_TRIAL_TOKEN` | Only read on `--features trial` builds (the evaluation client tarball). Overrides the `trial.token` file lookup (next to the binary, then `~/.config/veyron/trial.token`) — set to the token's contents. See `docs/deploy.md`. |

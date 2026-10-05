@@ -34,6 +34,7 @@ API.
 | Notifications | `VEYRON_SLACK_WEBHOOK_URL`, `VEYRON_PAGERDUTY_ROUTING_KEY`, `VEYRON_EMAIL_RELAY_URL` | Alert delivery |
 | SOC | `VEYRON_ELASTIC_*`, `VEYRON_SPLUNK_*`, `VEYRON_SENTINEL_*`, `VEYRON_QRADAR_*`, `VEYRON_SOAR_WEBHOOK_URL` | [soc.md](soc.md) |
 | SSO | `VEYRON_OIDC_*` | [sso.md](sso.md) |
+| Lab machines | `VEYRON_KRYTON_URL`, `VEYRON_KRYTON_TOKEN`, `VEYRON_KRYTON_PROJECT` | [Kryton](#kryton-lab-and-edge-machines-golden-images) machines and golden images |
 | Browser links | `VEYRON_GRAFANA_EXTERNAL_URL`, `VEYRON_PROMETHEUS_EXTERNAL_URL`, `VEYRON_ALERTMANAGER_EXTERNAL_URL` | "Open console" buttons |
 
 Monitoring stack in one command:
@@ -59,6 +60,34 @@ Routes live under `/api/v1/atlas/*`: status, volumes, the volume map for each VM
 `ceph-snapshot`, `ceph-backup`, restore (admin), clone and jobs. Write routes return `202` with a
 `job_id`. A disk maps to an Atlas volume by namespace and PVC name, so only disks on Ceph RBD are
 actionable.
+
+## Kryton: lab and edge machines, golden images
+
+[Kryton](https://github.com/zyvorai/zyvor-kryton) is the Zyvor machine API: one REST contract for
+Windows and Linux machines on `dockur` (Windows in containers on a lab host), `libvirt` (Linux
+cloud images on a KVM host), `kubevirt` or the in-memory `demo` provider. With `VEYRON_KRYTON_URL`
+set, Veyron proxies it under `/api/v1/kryton/*`, so one Veyron API key drives lab machines next to
+cluster VMs.
+
+| Variable | Notes |
+|---|---|
+| `VEYRON_KRYTON_URL` | Kryton base URL, for example `http://kryton.kryton-system:8080` |
+| `VEYRON_KRYTON_TOKEN` | Kryton bearer API key (Kryton stores only its SHA-256 digest) |
+| `VEYRON_KRYTON_PROJECT` | Optional project; Kryton's default project otherwise |
+
+| Route | Does |
+|---|---|
+| `GET /kryton/status` | Configured, reachable, summary and provider capabilities |
+| `GET /kryton/images` | Kryton catalog (Windows and Linux images, readiness) |
+| `GET/POST /kryton/machines`, `GET/DELETE /kryton/machines/:id` | List, create, inspect, delete machines |
+| `POST /kryton/machines/:id/{start,stop}` | Power actions |
+| `GET/POST /kryton/machines/:id/snapshots` | Snapshots |
+| `GET /kryton/golden`, `POST /kryton/golden/:id/bootstrap` | Golden builds; bootstrap publishes the CDI DataSource `kryton-images/<image-id>` |
+| `GET /kryton/jobs/:id` | Poll async jobs |
+
+Veyron's built-in templates follow the Kryton catalog. `rocky-10` and `rocky-9` clone the Kryton
+golden DataSource `kryton-images/rocky-*`, because the public Rocky containerdisk needs
+registry credentials. Bootstrap the image in Kryton before creating Rocky VMs.
 
 ## PacketWolf: network intelligence
 

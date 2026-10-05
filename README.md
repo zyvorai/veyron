@@ -37,7 +37,7 @@
 
 | When this happens… | Veyron gives you… |
 |---|---|
-| Your team needs VMs but nobody wants to hand-write YAML | **Templates and a console.** 40+ OS templates, size and start a VM in a minute, then open its screen in the browser. |
+| Your team needs VMs but nobody wants to hand-write YAML | **Templates and a console.** Current OS templates (Ubuntu 26.04, Debian 13, Fedora 44, EL10, Windows Server 2025 and 11), size and start a VM in a minute, then open its screen in the browser. |
 | Day 2 means a pile of scripts: patching, resizing, moving, cleaning up | **Day-2 operations as buttons and API calls:** hotplug, bulk actions, node maintenance, guest patching, disk reclaim, self-healing. |
 | A bad upgrade or a deleted disk turns into an outage | **Snapshots, clones, backups and DR failback**, plus Ceph snapshots and off-cluster S3 backups through [Atlas](https://zyvor.dev). |
 | GPU and Windows workloads don't fit generic tooling | **GPU passthrough with a live-migration guard**, and Windows golden images with sysprep, domain join and RDP guardrails. |
@@ -100,7 +100,7 @@ Helm, plain manifests, the production checklist and the standalone client tarbal
 | OIDC SSO | API stable; console sign-in button planned |
 | SOC detections and SIEM export | Stable |
 | GPU passthrough | Phase 1 (whole-GPU); vGPU next |
-| Atlas (Ceph) protection, PacketWolf | Integration, needs those products |
+| Atlas (Ceph) protection, Kryton lab machines, PacketWolf | Integration, needs those products |
 | Kairon engine | In progress: replacing KubeVirt and CDI |
 
 ---
@@ -134,6 +134,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately 
 |---|---|
 | **Veyron** | The console, API and CLI for VMs on Kubernetes |
 | **[Kairon](https://github.com/zyvorai/kairon)** | The VM engine: `Machine`s on FluxVM and KVM, without KubeVirt |
+| **[Kryton](https://github.com/zyvorai/zyvor-kryton)** | Machine API for lab and edge Windows/Linux hosts (dockur, libvirt), plus checksum-pinned golden images |
 | **[Atlas](https://github.com/zyvorai/zyvor-atlas)** | Storage control plane: Ceph snapshots, clones and S3 backups for VM disks |
 | **PacketWolf** | Network intelligence for the cluster |
 | **[GuestKit](https://github.com/zyvorai/zyvor-guestkit)** | In-guest agent: evidence, diagnosis and repair |

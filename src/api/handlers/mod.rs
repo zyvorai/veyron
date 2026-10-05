@@ -37,6 +37,7 @@ pub mod images;
 pub mod incidents;
 pub mod ingress;
 pub mod integrations;
+pub mod kryton;
 pub mod logs;
 pub mod metrics;
 pub mod migration_policies;
@@ -139,6 +140,7 @@ pub fn all_routes(
         .merge(hpa::router(state.clone()))
         .merge(backups::router(state.clone()))
         .merge(atlas::router(state.clone()))
+        .merge(kryton::router(state.clone()))
         .merge(compute::router(state.clone()))
         .merge(guest_ops::router(state.clone()))
         .merge(capacity::router(state.clone()))

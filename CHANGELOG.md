@@ -21,7 +21,21 @@ All notable changes to this project are documented here. The format follows
   now holds a small set of current guides, and the README has new hero, capability and
   architecture images built from `docs/social/`.
 
+### Added
+
+- **Kryton integration.** `/api/v1/kryton/*` proxies the Kryton machine API: status, catalog,
+  machines, power, snapshots, golden-image bootstrap and jobs (`VEYRON_KRYTON_URL`,
+  `VEYRON_KRYTON_TOKEN`, `VEYRON_KRYTON_PROJECT`).
+- **Refreshed OS templates**, aligned with the Kryton catalog: Ubuntu 26.04, Debian 13, Fedora 44,
+  CentOS Stream 10, AlmaLinux 10, Rocky 10 (Kryton golden image), openSUSE Leap 16 and Windows
+  Server 2025. `ubuntu`, `debian`, `windows` and the other bare family names now point at the newest
+  release; Windows templates default to 80 GiB disks with TPM.
+
 ### Removed
+
+- Retired templates for end-of-life or placeholder images: Ubuntu 18.04/20.04, Fedora 42/43,
+  CentOS Stream 8, Debian 11, AlmaLinux/Rocky 8, RHEL, Oracle Linux, Alpine, Arch, openSUSE
+  Tumbleweed, FreeBSD, Flatcar, Talos and Windows 10.
 
 - The legal templates (`docs/legal/`), the subscription document and the legal sync, bundle and
   license-acceptance scripts.

@@ -15,6 +15,7 @@ pub mod handlers;
 pub mod http_server;
 #[cfg(feature = "web")]
 pub mod integrations;
+pub mod kryton;
 #[cfg(feature = "web")]
 pub mod loki;
 pub mod middleware;
