@@ -3,9 +3,9 @@ kind: VMTemplate
 metadata:
   labels:
     veyron.io/managed-by: veyron-catalog-export
-  name: opensuse
+  name: opensuse-leap-16
 spec:
-  description: 'Veyron built-in template: opensuse'
+  description: 'Veyron built-in template: opensuse-leap-16'
   tags:
   - linux
   family: linux

@@ -27,11 +27,7 @@ pub fn builtin_profiles() -> HashMap<String, Profile> {
                 "Testing".to_string(),
                 "Learning".to_string(),
             ],
-            recommended_os: vec![
-                "ubuntu".to_string(),
-                "alpine".to_string(),
-                "debian".to_string(),
-            ],
+            recommended_os: vec!["ubuntu".to_string(), "debian".to_string()],
         },
     );
 
@@ -126,11 +122,7 @@ pub fn builtin_profiles() -> HashMap<String, Profile> {
                 "Docker hosts".to_string(),
                 "Microservices".to_string(),
             ],
-            recommended_os: vec![
-                "flatcar".to_string(),
-                "alpine".to_string(),
-                "ubuntu".to_string(),
-            ],
+            recommended_os: vec!["ubuntu".to_string(), "fedora".to_string()],
         },
     );
 
@@ -178,11 +170,7 @@ pub fn builtin_profiles() -> HashMap<String, Profile> {
                 "Static sites".to_string(),
                 "Reverse proxy".to_string(),
             ],
-            recommended_os: vec![
-                "ubuntu".to_string(),
-                "alpine".to_string(),
-                "debian".to_string(),
-            ],
+            recommended_os: vec!["ubuntu".to_string(), "debian".to_string()],
         },
     );
 
@@ -203,7 +191,7 @@ pub fn builtin_profiles() -> HashMap<String, Profile> {
                 "Monitoring agent".to_string(),
                 "Log collector".to_string(),
             ],
-            recommended_os: vec!["alpine".to_string()],
+            recommended_os: vec!["debian".to_string()],
         },
     );
 

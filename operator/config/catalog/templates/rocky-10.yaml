@@ -3,9 +3,9 @@ kind: VMTemplate
 metadata:
   labels:
     veyron.io/managed-by: veyron-catalog-export
-  name: rocky
+  name: rocky-10
 spec:
-  description: 'Veyron built-in template: rocky'
+  description: 'Veyron built-in template: rocky-10'
   tags:
   - linux
   family: linux

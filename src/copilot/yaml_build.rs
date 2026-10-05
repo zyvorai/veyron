@@ -38,14 +38,18 @@ pub fn parse_spec_from_query(query: &str) -> YamlBuildRequest {
 
     let template = if lower.contains("windows 11") || lower.contains("windows-11") {
         Some("windows-11".into())
-    } else if lower.contains("windows 10") {
-        Some("windows-10".into())
-    } else if lower.contains("windows") || lower.contains("server 2022") {
+    } else if lower.contains("server 2022") {
         Some("windows-2022".into())
-    } else if lower.contains("ubuntu 24") {
-        Some("ubuntu-24.04".into())
-    } else if lower.contains("ubuntu") || lower.contains("postgres") {
+    } else if lower.contains("server 2019") {
+        Some("windows-2019".into())
+    } else if lower.contains("windows") {
+        Some("windows-2025".into())
+    } else if lower.contains("ubuntu 26") {
+        Some("ubuntu-26.04".into())
+    } else if lower.contains("ubuntu 22") {
         Some("ubuntu-22.04".into())
+    } else if lower.contains("ubuntu") || lower.contains("postgres") {
+        Some("ubuntu-24.04".into())
     } else {
         None
     };

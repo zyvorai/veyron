@@ -3,9 +3,9 @@ kind: VMTemplate
 metadata:
   labels:
     veyron.io/managed-by: veyron-catalog-export
-  name: fedora
+  name: fedora-44
 spec:
-  description: 'Veyron built-in template: fedora'
+  description: 'Veyron built-in template: fedora-44'
   tags:
   - linux
   family: linux

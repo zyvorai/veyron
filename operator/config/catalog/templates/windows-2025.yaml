@@ -3,9 +3,9 @@ kind: VMTemplate
 metadata:
   labels:
     veyron.io/managed-by: veyron-catalog-export
-  name: windows-10
+  name: windows-2025
 spec:
-  description: 'Veyron built-in template: windows-10'
+  description: 'Veyron built-in template: windows-2025'
   tags:
   - windows
   family: windows
@@ -20,7 +20,7 @@ spec:
       size: '8Gi'
     disks:
     - name: rootdisk
-      size: '60Gi'
+      size: '80Gi'
       bootOrder: 1
       source:
         type: blank
@@ -78,10 +78,10 @@ spec:
         rtcTickPolicy: catchup
         hypervPresent: true
     terminationGracePeriod: 120
-    enableTpm: false
+    enableTpm: true
     enableRng: true
     machineType: q35
     labels:
-      os.version: '10'
       os: windows
+      os.version: '2025'
     allowInternet: true

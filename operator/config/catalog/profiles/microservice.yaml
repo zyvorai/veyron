@@ -17,6 +17,5 @@ spec:
   - Docker hosts
   - Microservices
   recommendedTemplates:
-  - flatcar
-  - alpine
   - ubuntu
+  - fedora

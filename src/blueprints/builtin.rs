@@ -143,7 +143,7 @@ pub fn builtin_blueprints() -> HashMap<String, Blueprint> {
                 },
                 VMSpec {
                     name: "nginx-lb".to_string(),
-                    template: "alpine".to_string(),
+                    template: "debian".to_string(),
                     profile: Some("web".to_string()),
                     cpu: Some(2),
                     memory: Some("4Gi".to_string()),
@@ -185,7 +185,7 @@ pub fn builtin_blueprints() -> HashMap<String, Blueprint> {
                 },
                 VMSpec {
                     name: "dev-cache".to_string(),
-                    template: "alpine".to_string(),
+                    template: "debian".to_string(),
                     profile: Some("minimal".to_string()),
                     cpu: Some(1),
                     memory: Some("2Gi".to_string()),

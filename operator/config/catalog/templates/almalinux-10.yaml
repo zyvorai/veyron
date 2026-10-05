@@ -3,9 +3,9 @@ kind: VMTemplate
 metadata:
   labels:
     veyron.io/managed-by: veyron-catalog-export
-  name: almalinux
+  name: almalinux-10
 spec:
-  description: 'Veyron built-in template: almalinux'
+  description: 'Veyron built-in template: almalinux-10'
   tags:
   - linux
   family: linux

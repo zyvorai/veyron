@@ -19,5 +19,4 @@ spec:
   - Reverse proxy
   recommendedTemplates:
   - ubuntu
-  - alpine
   - debian

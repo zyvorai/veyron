@@ -119,7 +119,7 @@ func TestBlueprintOverrideGpus(t *testing.T) {
 }
 
 func TestSpecHashStable(t *testing.T) {
-	spec := ubuntu2204Default()
+	spec := ubuntuDefault("22.04")
 	h1, err := SpecHash(spec)
 	if err != nil {
 		t.Fatal(err)

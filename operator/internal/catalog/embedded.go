@@ -46,7 +46,7 @@ var windowsClock = &veyronv1alpha1.ClockSpec{
 	},
 }
 
-func windows2022Default() veyronv1alpha1.VeyronVMSpec {
+func windowsServerDefault() veyronv1alpha1.VeyronVMSpec {
 	sata := "sata"
 	cacheNone := "none"
 	return veyronv1alpha1.VeyronVMSpec{
@@ -54,7 +54,7 @@ func windows2022Default() veyronv1alpha1.VeyronVMSpec {
 		Memory: veyronv1alpha1.MemorySpec{Size: "8Gi"},
 		Disks: []veyronv1alpha1.DiskSpec{
 			{
-				Name: "rootdisk", Size: "60Gi", BootOrder: 1,
+				Name: "rootdisk", Size: "80Gi", BootOrder: 1,
 				Source: veyronv1alpha1.DiskSource{Type: "blank"},
 				DeviceType: "disk", Bus: &sata, Cache: &cacheNone,
 			},
@@ -87,7 +87,7 @@ func windows2022Default() veyronv1alpha1.VeyronVMSpec {
 	}
 }
 
-func ubuntu2204Default() veyronv1alpha1.VeyronVMSpec {
+func ubuntuDefault(version string) veyronv1alpha1.VeyronVMSpec {
 	virtio := "virtio"
 	return veyronv1alpha1.VeyronVMSpec{
 		CPU:    veyronv1alpha1.CPUSpec{Cores: 2, Sockets: 1, Threads: 1},
@@ -97,7 +97,7 @@ func ubuntu2204Default() veyronv1alpha1.VeyronVMSpec {
 				Name: "rootdisk", Size: "20Gi", BootOrder: 1,
 				Source: veyronv1alpha1.DiskSource{
 					Type:  "containerDisk",
-					Image: "quay.io/containerdisks/ubuntu:22.04",
+					Image: "quay.io/containerdisks/ubuntu:" + version,
 				},
 				DeviceType: "disk", Bus: &virtio,
 			},
@@ -119,32 +119,53 @@ func int64Ptr(v int64) *int64 { return &v }
 // Regenerate via scripts/generate-catalog-crds.sh from Rust templates.
 var embeddedTemplates = map[string]veyronv1alpha1.VMTemplateSpec{
 	"windows": {
-		Description:         "Windows Server 2022 (alias)",
+		Description:         "Windows Server 2025 (alias)",
 		Tags:                []string{"windows", "server"},
 		Family:              "windows",
 		RecommendedProfiles: []string{"prod"},
-		Default:             windows2022Default(),
+		Default:             windowsServerDefault(),
+	},
+	"windows-2025": {
+		Description:         "Windows Server 2025 with Hyper-V enlightenments, UEFI, TPM, config-drive",
+		Tags:                []string{"windows", "server", "2025"},
+		Family:              "windows",
+		RecommendedProfiles: []string{"prod"},
+		Default:             windowsServerDefault(),
 	},
 	"windows-2022": {
 		Description:         "Windows Server 2022 with Hyper-V enlightenments, UEFI, TPM, config-drive",
 		Tags:                []string{"windows", "server", "2022"},
 		Family:              "windows",
 		RecommendedProfiles: []string{"prod"},
-		Default:             windows2022Default(),
+		Default:             windowsServerDefault(),
 	},
-	"ubuntu-22.04": {
-		Description:         "Ubuntu 22.04 container disk",
+	"ubuntu-26.04": {
+		Description:         "Ubuntu 26.04 LTS container disk",
 		Tags:                []string{"linux", "ubuntu"},
 		Family:              "linux",
 		RecommendedProfiles: []string{"dev", "prod"},
-		Default:             ubuntu2204Default(),
+		Default:             ubuntuDefault("26.04"),
+	},
+	"ubuntu-24.04": {
+		Description:         "Ubuntu 24.04 LTS container disk",
+		Tags:                []string{"linux", "ubuntu"},
+		Family:              "linux",
+		RecommendedProfiles: []string{"dev", "prod"},
+		Default:             ubuntuDefault("24.04"),
+	},
+	"ubuntu-22.04": {
+		Description:         "Ubuntu 22.04 LTS container disk",
+		Tags:                []string{"linux", "ubuntu"},
+		Family:              "linux",
+		RecommendedProfiles: []string{"dev", "prod"},
+		Default:             ubuntuDefault("22.04"),
 	},
 	"ubuntu": {
-		Description:         "Ubuntu 22.04 (alias)",
+		Description:         "Ubuntu 26.04 LTS (alias)",
 		Tags:                []string{"linux", "ubuntu"},
 		Family:              "linux",
 		RecommendedProfiles: []string{"dev"},
-		Default:             ubuntu2204Default(),
+		Default:             ubuntuDefault("26.04"),
 	},
 }
 

@@ -14,13 +14,13 @@ spec:
   default:
     cpu:
       cores: 4
-      sockets: 2
+      sockets: 1
       threads: 1
     memory:
-      size: '4Gi'
+      size: '8Gi'
     disks:
     - name: rootdisk
-      size: '16Gi'
+      size: '80Gi'
       bootOrder: 1
       source:
         type: blank

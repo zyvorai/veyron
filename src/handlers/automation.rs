@@ -159,7 +159,7 @@ pub fn handle_automation_list(enabled_only: bool, output: String) -> Result<()> 
             println!(
                 "{:<30} {:<15} {:<10} {}",
                 rule.name,
-                &rule.trigger.to_string(),
+                rule.trigger.to_string(),
                 status,
                 rule.execution_count
             );

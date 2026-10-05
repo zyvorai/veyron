@@ -161,6 +161,35 @@ impl VMConfigBuilder {
         self
     }
 
+    /// Add a per-VM disk cloned from a CDI `DataSource` (golden image) at create time.
+    pub fn add_golden_image_disk(
+        mut self,
+        name: impl Into<String>,
+        data_source: impl Into<String>,
+        namespace: impl Into<String>,
+        size: impl Into<String>,
+        boot_order: u32,
+    ) -> Self {
+        self.config.disks.push(DiskConfig {
+            name: name.into(),
+            size: size.into(),
+            storage_class: None,
+            boot_order,
+            source: DiskSource::GoldenImage {
+                name: data_source.into(),
+                namespace: namespace.into(),
+                from_pvc: false,
+                storage_class: None,
+                volume_mode: None,
+            },
+            device_type: DiskDeviceType::default(),
+            bus: None,
+            cache: None,
+            io: None,
+        });
+        self
+    }
+
     /// Add a disk backed by an existing PVC (boot disk when it has the lowest boot order).
     pub fn add_pvc_disk(
         mut self,

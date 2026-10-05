@@ -3,9 +3,9 @@ kind: VMTemplate
 metadata:
   labels:
     veyron.io/managed-by: veyron-catalog-export
-  name: debian
+  name: debian-13
 spec:
-  description: 'Veyron built-in template: debian'
+  description: 'Veyron built-in template: debian-13'
   tags:
   - linux
   family: linux

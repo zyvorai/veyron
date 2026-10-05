@@ -3,9 +3,9 @@ kind: VMTemplate
 metadata:
   labels:
     veyron.io/managed-by: veyron-catalog-export
-  name: ubuntu
+  name: ubuntu-26.04
 spec:
-  description: 'Veyron built-in template: ubuntu'
+  description: 'Veyron built-in template: ubuntu-26.04'
   tags:
   - linux
   family: linux

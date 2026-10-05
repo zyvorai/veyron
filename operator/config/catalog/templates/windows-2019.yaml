@@ -20,7 +20,7 @@ spec:
       size: '8Gi'
     disks:
     - name: rootdisk
-      size: '60Gi'
+      size: '80Gi'
       bootOrder: 1
       source:
         type: blank
@@ -78,7 +78,7 @@ spec:
         rtcTickPolicy: catchup
         hypervPresent: true
     terminationGracePeriod: 120
-    enableTpm: false
+    enableTpm: true
     enableRng: true
     machineType: q35
     labels:

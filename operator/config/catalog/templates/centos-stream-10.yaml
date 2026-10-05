@@ -3,9 +3,9 @@ kind: VMTemplate
 metadata:
   labels:
     veyron.io/managed-by: veyron-catalog-export
-  name: centos
+  name: centos-stream-10
 spec:
-  description: 'Veyron built-in template: centos'
+  description: 'Veyron built-in template: centos-stream-10'
   tags:
   - linux
   family: linux
