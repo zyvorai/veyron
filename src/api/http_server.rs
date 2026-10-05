@@ -293,7 +293,12 @@ pub mod web {
         /// password login. Reuses the same `VEYRON_JWT_SECRET`/`VEYRON_JWT_ISSUER`
         /// that `authenticate_jwt` already validates against, so the returned
         /// token is accepted by every existing auth path with no other changes.
-        pub fn issue_jwt(&self, username: &str, role: &str, ttl_secs: i64) -> Result<String, String> {
+        pub fn issue_jwt(
+            &self,
+            username: &str,
+            role: &str,
+            ttl_secs: i64,
+        ) -> Result<String, String> {
             let secret = std::env::var("VEYRON_JWT_SECRET")
                 .map_err(|_| "VEYRON_JWT_SECRET is not configured".to_string())?;
             let issuer = std::env::var("VEYRON_JWT_ISSUER")
@@ -305,7 +310,10 @@ pub mod web {
                 std::env::var("VEYRON_JWT_ROLE_CLAIM").unwrap_or_else(|_| "role".to_string());
             let now = chrono::Utc::now().timestamp();
             let mut claims = serde_json::Map::new();
-            claims.insert("sub".to_string(), serde_json::Value::String(username.to_string()));
+            claims.insert(
+                "sub".to_string(),
+                serde_json::Value::String(username.to_string()),
+            );
             claims.insert("iss".to_string(), serde_json::Value::String(issuer));
             claims.insert("iat".to_string(), serde_json::Value::from(now));
             claims.insert("exp".to_string(), serde_json::Value::from(now + ttl_secs));
@@ -2531,7 +2539,12 @@ pub mod web {
         }
         let req = body.map(|Json(b)| b).unwrap_or_default();
         match crate::handlers::agent::deploy_agent_api(
-            &ns, &name, req.os, req.spawn, req.bundle_url, req.iso,
+            &ns,
+            &name,
+            req.os,
+            req.spawn,
+            req.bundle_url,
+            req.iso,
         )
         .await
         {
@@ -4573,9 +4586,9 @@ pub mod web {
                     ))
                 }
                 Err(e) => {
-                let msg = sanitize_error(&e);
-                err_json(status_for_sanitized_error(&msg), "DELETE_FAILED", &msg)
-            }
+                    let msg = sanitize_error(&e);
+                    err_json(status_for_sanitized_error(&msg), "DELETE_FAILED", &msg)
+                }
             },
             Err(e) => err_json(503, "SERVICE_UNAVAILABLE", &sanitize_error(&e)),
         }

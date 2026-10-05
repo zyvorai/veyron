@@ -140,7 +140,9 @@ async fn compute_compliance_statuses(
     let np_count = match np_result {
         Ok(l) => l.items.len() as u32,
         Err(e) => {
-            warnings.push(format!("network-policies check could not reach the API: {e}"));
+            warnings.push(format!(
+                "network-policies check could not reach the API: {e}"
+            ));
             0
         }
     };
@@ -156,7 +158,9 @@ async fn compute_compliance_statuses(
     let rb_count = match rb_result {
         Ok(l) => l.items.len() as u32,
         Err(e) => {
-            warnings.push(format!("rbac-configured check could not reach the API: {e}"));
+            warnings.push(format!(
+                "rbac-configured check could not reach the API: {e}"
+            ));
             0
         }
     };

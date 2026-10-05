@@ -149,7 +149,9 @@ async fn create_snapshot(
     if namespace_scope::is_all_namespaces(&ns) {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({ "error": "namespace 'all' is not valid for snapshot creation" })),
+            Json(
+                serde_json::json!({ "error": "namespace 'all' is not valid for snapshot creation" }),
+            ),
         ));
     }
     let manager = SnapshotManager::from_client(s.client().client(), &ns);

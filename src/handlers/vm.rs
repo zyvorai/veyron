@@ -1142,7 +1142,10 @@ pub async fn handle_ssh(name: String, user: String, namespace: &str) -> Result<(
                 }
             }
         }
-        Err(e) => Err(anyhow::anyhow!("Failed to connect to Kubernetes cluster: {}", e)),
+        Err(e) => Err(anyhow::anyhow!(
+            "Failed to connect to Kubernetes cluster: {}",
+            e
+        )),
     }
 }
 

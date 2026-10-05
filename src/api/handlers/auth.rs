@@ -73,7 +73,11 @@ pub struct SetPasswordRequest {
     pub password: String,
 }
 
-fn err_json(status: StatusCode, code: &str, message: impl Into<String>) -> (StatusCode, Json<serde_json::Value>) {
+fn err_json(
+    status: StatusCode,
+    code: &str,
+    message: impl Into<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
     (
         status,
         Json(serde_json::json!({ "error": code, "message": message.into() })),
@@ -157,15 +161,13 @@ async fn login(
             return err_json(
                 StatusCode::SERVICE_UNAVAILABLE,
                 "AUTH_NOT_CONFIGURED",
-                format!(
-                    "Username/password login is not fully configured on the server: {e}"
-                ),
+                format!("Username/password login is not fully configured on the server: {e}"),
             );
         }
     };
 
-    let expires_at = (chrono::Utc::now() + chrono::Duration::seconds(LOGIN_TOKEN_TTL_SECS))
-        .to_rfc3339();
+    let expires_at =
+        (chrono::Utc::now() + chrono::Duration::seconds(LOGIN_TOKEN_TTL_SECS)).to_rfc3339();
     (
         StatusCode::OK,
         Json(serde_json::json!(LoginResponse {

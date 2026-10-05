@@ -44,7 +44,9 @@ pub async fn handle_auth_user(command: AuthUserCommands, namespace: &str) -> Res
                 .await?;
             println!(
                 "{}",
-                color::success(&format!("Dashboard login account '{username}' created ({role})"))
+                color::success(&format!(
+                    "Dashboard login account '{username}' created ({role})"
+                ))
             );
         }
         AuthUserCommands::List => {
@@ -95,7 +97,9 @@ pub async fn handle_auth_user(command: AuthUserCommands, namespace: &str) -> Res
                 .with_confirmation("Confirm password", "Passwords didn't match")
                 .interact()
                 .context("read password")?;
-            client.set_user_password(namespace, &username, &password).await?;
+            client
+                .set_user_password(namespace, &username, &password)
+                .await?;
             println!(
                 "{}",
                 color::success(&format!("Password updated for '{username}'"))

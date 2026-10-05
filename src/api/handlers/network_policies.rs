@@ -44,19 +44,17 @@ async fn list_network_policies(
 
     let s = state.read().await;
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let policies = namespace_scope::list_namespaced_resource::<NetworkPolicy>(
-        &s.client().client(),
-        &scope,
-    )
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({
-                "error": format!("failed to list network policies: {e}")
-            })),
-        )
-    })?;
+    let policies =
+        namespace_scope::list_namespaced_resource::<NetworkPolicy>(&s.client().client(), &scope)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({
+                        "error": format!("failed to list network policies: {e}")
+                    })),
+                )
+            })?;
 
     let results: Vec<NetworkPolicyResponse> = policies
         .iter()

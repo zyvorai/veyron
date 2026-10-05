@@ -133,10 +133,7 @@ async fn packetwolf_bearer_token(client: &reqwest::Client, base: &str) -> Option
         .await
         .ok()?;
     if !resp.status().is_success() {
-        log::warn!(
-            "PacketWolf login failed: HTTP {}",
-            resp.status().as_u16()
-        );
+        log::warn!("PacketWolf login failed: HTTP {}", resp.status().as_u16());
         return None;
     }
     let body: serde_json::Value = resp.json().await.ok()?;

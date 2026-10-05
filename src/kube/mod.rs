@@ -30,11 +30,11 @@ pub mod migration_guard;
 pub mod status;
 pub mod storage_caps;
 pub mod types;
+pub mod user_store;
 pub mod vm_data_disk;
 pub mod vm_internet;
 pub mod vm_multus;
 pub mod vm_rdp;
-pub mod user_store;
 pub mod vm_ssh;
 pub mod windows_rdp;
 

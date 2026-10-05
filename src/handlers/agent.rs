@@ -14,9 +14,9 @@
 // The agent binary/ISO come from the public GuestKit release by default; override
 // with `--bundle-url` / `--iso`.
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use base64::Engine;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::time::Duration;
 
 use crate::cli::AgentCommands;
@@ -197,9 +197,7 @@ async fn deploy_linux(
     if wait {
         wait_and_verify_linux(&client, namespace, name).await?;
     } else if spawn {
-        println!(
-            "    verify once booted:  veyron agent verify {name}  (or --wait to block here)"
-        );
+        println!("    verify once booted:  veyron agent verify {name}  (or --wait to block here)");
     }
     Ok(())
 }
@@ -276,11 +274,14 @@ fn linux_cloud_init(bundle_url: &str, full_access: bool) -> String {
     // Indent every script line by 6 spaces so it sits inside the `content: |`
     // block scalar (whose first line `#!/bin/sh` is also at 6 spaces). cloud-init
     // strips this common indent when it writes the file.
-    let script = format!("#!/bin/sh\n{}", linux_install_script(bundle_url, full_access))
-        .lines()
-        .map(|l| format!("      {l}"))
-        .collect::<Vec<_>>()
-        .join("\n");
+    let script = format!(
+        "#!/bin/sh\n{}",
+        linux_install_script(bundle_url, full_access)
+    )
+    .lines()
+    .map(|l| format!("      {l}"))
+    .collect::<Vec<_>>()
+    .join("\n");
     format!(
         r#"#cloud-config
 # curl ships in the Ubuntu cloud image; skip apt to avoid a slow/failing update.
@@ -336,11 +337,7 @@ async fn wait_and_verify_linux(client: &KubeClient, namespace: &str, name: &str)
 }
 
 /// Agent status as structured JSON (for the REST API / dashboard).
-pub async fn agent_status_json(
-    client: &KubeClient,
-    namespace: &str,
-    name: &str,
-) -> Result<Value> {
+pub async fn agent_status_json(client: &KubeClient, namespace: &str, name: &str) -> Result<Value> {
     let vmi = client.get_vmi(namespace, name).await?;
     let vmi_json = serde_json::to_value(&vmi)?;
     let connected = kube::windows_rdp::vmi_guest_agent_connected(&vmi_json);
@@ -450,7 +447,14 @@ async fn deploy_windows(
 
     // OS boot disk (virtio bus — the prepared Windows image ships virtio storage drivers).
     if let Some(ref pvc) = boot_pvc {
-        push_disk(&mut config, "rootdisk", DiskSourceKind::Pvc(pvc.clone()), false, 1, "virtio");
+        push_disk(
+            &mut config,
+            "rootdisk",
+            DiskSourceKind::Pvc(pvc.clone()),
+            false,
+            1,
+            "virtio",
+        );
     }
     // Agent CD-ROM: an existing PVC ("pvc:NAME"), a containerDisk image, or a
     // CDI-imported ISO PVC (default).
@@ -463,8 +467,22 @@ async fn deploy_windows(
             2,
             "sata",
         ),
-        Some(img) => push_disk(&mut config, "guestkit-iso", DiskSourceKind::Container(img.clone()), true, 2, "sata"),
-        None => push_disk(&mut config, "guestkit-iso", DiskSourceKind::DataVolume(iso_dv.clone()), true, 2, "sata"),
+        Some(img) => push_disk(
+            &mut config,
+            "guestkit-iso",
+            DiskSourceKind::Container(img.clone()),
+            true,
+            2,
+            "sata",
+        ),
+        None => push_disk(
+            &mut config,
+            "guestkit-iso",
+            DiskSourceKind::DataVolume(iso_dv.clone()),
+            true,
+            2,
+            "sata",
+        ),
     }
 
     let vm = kube::vm_config_to_kubevirt(&config)?;
@@ -567,10 +585,10 @@ sc.exe query GuestKitAgent
 }
 
 async fn apply_datavolume(client: &KubeClient, namespace: &str, dv: &Value) -> Result<()> {
+    use ::kube::Api;
     use ::kube::api::PostParams;
     use ::kube::core::{DynamicObject, GroupVersionKind};
     use ::kube::discovery::ApiResource;
-    use ::kube::Api;
     let gvk = GroupVersionKind::gvk("cdi.kubevirt.io", "v1beta1", "DataVolume");
     let ar = ApiResource::from_gvk_with_plural(&gvk, "datavolumes");
     let api: Api<DynamicObject> = Api::namespaced_with(client.client(), namespace, &ar);
@@ -596,7 +614,10 @@ async fn report_status(name: &str, namespace: &str) -> Result<()> {
     let connected = kube::windows_rdp::vmi_guest_agent_connected(&vmi_json);
     let windows = kube::windows_rdp::is_windows_guest(None, Some(&vmi_json));
     println!("VM:             {name}");
-    println!("Guest OS:       {}", if windows { "windows" } else { "linux" });
+    println!(
+        "Guest OS:       {}",
+        if windows { "windows" } else { "linux" }
+    );
     println!(
         "AgentConnected: {}",
         if connected { "true" } else { "false" }

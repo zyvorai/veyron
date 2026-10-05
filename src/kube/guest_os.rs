@@ -94,11 +94,7 @@ fn is_linux_vmi(vmi: &Value) -> bool {
 }
 
 fn guest_os_label(vm: &Value, family: &str) -> bool {
-    for key in [
-        "v9s.io/guest-os",
-        "veyron.io/guest-os",
-        "h2kvm.io/guest-os",
-    ] {
+    for key in ["v9s.io/guest-os", "veyron.io/guest-os", "h2kvm.io/guest-os"] {
         if metadata_str(vm, "labels", key).is_some_and(|v| v.eq_ignore_ascii_case(family)) {
             return true;
         }

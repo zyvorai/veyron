@@ -109,8 +109,12 @@ async fn guest_patch(
                 if packages.is_empty() {
                     Ok(serde_json::json!({ "message": "no updates available", "updates": updates }))
                 } else {
-                    kube.guest_packages_install(&ns, &name, serde_json::json!({ "packages": packages }))
-                        .await
+                    kube.guest_packages_install(
+                        &ns,
+                        &name,
+                        serde_json::json!({ "packages": packages }),
+                    )
+                    .await
                 }
             }
             Err(e) => Err(e),
@@ -140,7 +144,10 @@ async fn disk_reclaim(
     Path((ns, name)): Path<(String, String)>,
 ) -> impl IntoResponse {
     let kube = { state.read().await.kube_client.clone() };
-    match kube.guest_storage_trim(&ns, &name, serde_json::json!({})).await {
+    match kube
+        .guest_storage_trim(&ns, &name, serde_json::json!({}))
+        .await
+    {
         Ok(result) => (
             StatusCode::OK,
             Json(serde_json::json!({ "ok": true, "vm": name, "namespace": ns, "result": result })),
