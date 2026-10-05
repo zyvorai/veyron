@@ -4,7 +4,6 @@
    apple.com / Netra shell: global nav + mega-menus, ⌘K palette, story pages,
    resource pages, slide-over inspector, create sheet. Tokens come from styles.css. */
 
-.vy { height: 100vh; overflow: hidden; background: var(--bg-page); }
 .stage { flex: 1; min-height: 0; overflow: auto; position: relative; scroll-behavior: smooth; background: var(--bg-page); }
 .stage > * { min-height: 100%; }
 
@@ -110,7 +109,6 @@
 .gn-sheet button.active { color: var(--apple-link); }
 @keyframes sheetIn { from { opacity: 0; transform: translateY(-10px); } }
 
-.bell-panel { position: fixed; top: 54px; right: max(16px, calc((100vw - 1180px) / 2)); z-index: 45; }
 
 /* —— ⌘K palette —— */
 .cmdk-scrim {
@@ -345,7 +343,6 @@
 
 /* —— Create sheet —— */
 .vy .sheet { animation: popIn 0.3s var(--ease-apple); }
-.scrim { position: fixed; animation: fadeIn 0.2s var(--ease-apple); align-items: center; }
 .sheet.sheet--wide { width: min(980px, 94vw); margin-top: 0; }
 .create { display: grid; grid-template-columns: 1fr 300px; min-height: 480px; }
 .create-main { padding: 24px 28px 28px; overflow: auto; max-height: 72vh; }
@@ -422,3 +419,18 @@
   border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
 }
 .vy .load-error b { font-weight: 600; margin-right: 4px; }
+
+/* Keyboard focus */
+.vy .vt tbody tr:focus-visible { outline: 2px solid var(--apple-blue); outline-offset: -2px; }
+.vy .vt thead th:focus-visible { outline: 2px solid var(--apple-blue); outline-offset: -2px; border-radius: 6px; }
+.vy .vt thead th { cursor: pointer; user-select: none; }
+
+/* Narrow screens: tables scroll sideways instead of crushing columns */
+@media (max-width: 720px) {
+  .vy .table-card { -webkit-overflow-scrolling: touch; }
+  .vy .table-card .vt { min-width: 640px; }
+  .vy .load-error { flex-direction: column; align-items: flex-start; }
+}
+
+.vy .ops-err.page-err { margin: 0 32px 16px; }
+:where(.vy) button:disabled { cursor: default; }

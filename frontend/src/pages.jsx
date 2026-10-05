@@ -1,4 +1,5 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useFocusTrap } from './a11y.js';
 import {
   ChevronRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
   Network, Database, Shield, Settings, Eye, EyeOff, ArrowRight, ChevronLeft, Loader2,
@@ -539,14 +540,25 @@ export function ConsoleSheet({ vm, mode = 'console', onClose }) {
       cancelled = true;
     };
   }, [mode, vm.name, vm.ns]);
+  const sheetRef = useRef(null);
+  useFocusTrap(sheetRef);
 
   return (
     <div className="scrim" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()} style={{ width: mode === 'console' ? 'min(960px, 96%)' : undefined }}>
+      <div
+        ref={sheetRef}
+        className="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${vm.name} ${mode === 'logs' ? 'logs' : 'console'}`}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: mode === 'console' ? 'min(960px, 96%)' : undefined }}
+      >
         <div className="sheet-h">
           <Terminal size={15} />
           {vm.name} · {mode === 'logs' ? 'logs' : 'console'}
-          <button className="tb x" onClick={onClose}>
+          <button className="tb x" onClick={onClose} aria-label="Close">
             <X size={15} />
           </button>
         </div>
@@ -596,6 +608,8 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
   const finalName = name || (isVm ? suggested : '');
 
   const canCreate = !!finalName && (res.kind !== 'Image' || !!url.trim()) && (!isVm || !!template);
+  const sheetRef = useRef(null);
+  useFocusTrap(sheetRef);
   const submit = () =>
     onCreate({
       name: finalName,
@@ -609,7 +623,15 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
 
   return (
     <div className="scrim" onClick={onClose}>
-      <div className={`sheet${isVm ? ' sheet--wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={sheetRef}
+        className={`sheet${isVm ? ' sheet--wide' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={isVm ? 'Create a machine' : `New ${res.kind}`}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sheet-h">
           <Plus size={15} />
           {isVm ? 'Create a machine' : `New ${res.kind}`}

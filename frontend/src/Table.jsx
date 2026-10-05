@@ -34,7 +34,15 @@ export function Table({ cols, rows, selected, focus, onRow, onMenu }) {
             <th
               key={c[0]}
               className={c[2] === 'n' ? 'num' : ''}
+              tabIndex={0}
+              aria-sort={sort.k === c[0] ? (sort.d > 0 ? 'ascending' : 'descending') : 'none'}
               onClick={() => setSort({ k: c[0], d: sort.k === c[0] ? -sort.d : 1 })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSort({ k: c[0], d: sort.k === c[0] ? -sort.d : 1 });
+                }
+              }}
             >
               {c[1]}
               {sort.k === c[0] && (
@@ -52,7 +60,19 @@ export function Table({ cols, rows, selected, focus, onRow, onMenu }) {
             key={r.id}
             aria-selected={selected?.has(r.id)}
             className={focus === r.id ? 'focus' : ''}
+            tabIndex={onRow ? 0 : undefined}
             onClick={(e) => onRow?.(r, e)}
+            onKeyDown={(e) => {
+              if (!onRow) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onRow(r, e);
+              } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const sib = e.key === 'ArrowDown' ? e.currentTarget.nextElementSibling : e.currentTarget.previousElementSibling;
+                sib?.focus();
+              }
+            }}
             onContextMenu={(e) => onMenu?.(r, e)}
           >
             {cols.map((c) => (

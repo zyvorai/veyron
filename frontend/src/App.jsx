@@ -19,6 +19,7 @@ import { Status } from './status.jsx';
 import { GlobalNav } from './GlobalNav.jsx';
 import { CommandPalette } from './CommandPalette.jsx';
 import { EmptyArt, OsBadge, Reveal } from './story.jsx';
+import { useFocusTrap } from './a11y.js';
 
 function warnCount(rows) {
   return (rows || []).filter((x) => ['Degraded', 'Failed', 'Pending', 'Cordoned'].includes(x.status)).length;
@@ -95,6 +96,7 @@ export default function App() {
   const [showBell, setShowBell] = useState(false);
   const [toast, setToast] = useState(null);
   const back = useRef([]);
+  const inspRef = useRef(null);
 
   const toastTimer = useRef(null);
   const showToast = useCallback((msg, err = false) => {
@@ -502,7 +504,8 @@ export default function App() {
         e.preventDefault();
         setShowInsp((s) => !s);
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'a' && res) {
+      const inTable = document.activeElement === document.body || !!document.activeElement?.closest('.table-card');
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a' && res && !typing && inTable) {
         e.preventDefault();
         setSelected(new Set(rows.map((r) => r.id)));
       }
@@ -518,6 +521,8 @@ export default function App() {
       window.removeEventListener('click', c);
     };
   }, [rows, res]);
+
+  useFocusTrap(inspRef, !!(showInsp && focusRow));
 
   if (!authed) {
     return <Login onSubmit={onLogin} error={loginErr} />;
@@ -802,7 +807,16 @@ export default function App() {
       {res && (
         <>
           <div className={`insp-scrim${showInsp && focusRow ? ' on' : ''}`} onClick={() => setShowInsp(false)} />
-          <div className={`insp-slide${showInsp && focusRow ? ' open' : ''}`}>
+          <div
+            ref={inspRef}
+            className={`insp-slide${showInsp && focusRow ? ' open' : ''}`}
+            role="dialog"
+            aria-modal={showInsp && focusRow ? 'true' : undefined}
+            aria-hidden={showInsp && focusRow ? undefined : 'true'}
+            {...(showInsp && focusRow ? {} : { inert: '' })}
+            aria-label={focusRow ? `${focusRow.name} details` : 'Details'}
+            tabIndex={-1}
+          >
             <button className="insp-close tb" onClick={() => setShowInsp(false)} aria-label="Close details">
               <X size={15} />
             </button>

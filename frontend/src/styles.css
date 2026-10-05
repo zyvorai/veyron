@@ -198,8 +198,9 @@ body { background: var(--bg-page); color: var(--text-primary); font-family: var(
 .vy {
   font-family: var(--font);
   color: var(--ink);
-  background: var(--win);
+  background: var(--bg-page);
   height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   letter-spacing: -0.008em;
@@ -442,9 +443,10 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .empty .acts { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
 
 .scrim {
-  position: absolute; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.32);
+  position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.32);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  display: flex; justify-content: center; align-items: flex-start;
+  display: flex; justify-content: center; align-items: center;
+  animation: fadeIn 0.2s var(--ease-apple);
 }
 .sheet {
   width: min(760px, 92%); margin-top: 24px; border-radius: var(--radius-2xl); background: var(--bg-elevated);
@@ -471,7 +473,7 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
   word-break: break-word;
 }
 .bell-panel {
-  position: absolute; top: 54px; right: 120px; z-index: 40; width: min(360px, 92vw);
+  position: fixed; top: 54px; right: max(16px, calc((100vw - 1180px) / 2)); z-index: 45; width: min(360px, 92vw);
   max-height: 420px; overflow: auto; border-radius: 12px; background: var(--menu);
   box-shadow: 0 0 0 0.5px var(--line), 0 18px 40px rgba(0, 0, 0, 0.28);
   -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);

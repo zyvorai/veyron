@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, CornerDownLeft, Plus, Sun, Moon, Terminal, ArrowRight } from 'lucide-react';
 import { NAV, RES_META, pageLabel, pageBlurb } from './resources.js';
 import { Status } from './status.jsx';
+import { useFocusTrap } from './a11y.js';
 
 const RECENT_KEY = 'veyron_palette_recent';
 
@@ -31,6 +32,8 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
   const [idx, setIdx] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  const dialogRef = useRef(null);
+  useFocusTrap(dialogRef, open);
 
   useEffect(() => {
     if (open) {
@@ -148,7 +151,7 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
   let lastGroup = null;
   return (
     <div className="cmdk-scrim" onMouseDown={onClose}>
-      <div className="cmdk" role="dialog" aria-label="Command palette" onMouseDown={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className="cmdk" role="dialog" aria-modal="true" aria-label="Command palette" onMouseDown={(e) => e.stopPropagation()}>
         <label className="cmdk-input">
           <Search size={18} />
           <input

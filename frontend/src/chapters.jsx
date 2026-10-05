@@ -66,7 +66,7 @@ export function MonitoringPage() {
       onRefresh={load}
       busy={busy}
     >
-      {err && <div className="ops-err" style={{ margin: '0 32px 16px' }}>{err}</div>}
+      {err && <div className="ops-err page-err">{err}</div>}
       <section className="apple-band-paper">
         <div className="specs">
           {cards.map(([l, v]) => (
@@ -92,7 +92,7 @@ export function MonitoringPage() {
                   display = String(v);
                 }
                 return (
-                  <button type="button" key={k} disabled style={{ cursor: 'default' }}>
+                  <button type="button" key={k} disabled>
                     <b>{k}</b>
                     <span className="why mono">{display}</span>
                   </button>
@@ -143,7 +143,7 @@ export function TopologyPage() {
       onRefresh={load}
       busy={busy}
     >
-      {err && <div className="ops-err" style={{ margin: '0 32px 16px' }}>{err}</div>}
+      {err && <div className="ops-err page-err">{err}</div>}
       <section className="apple-band">
         <div className="apple-chapter">
           <div className="kicker">Nodes · {Array.isArray(nodes) ? nodes.length : 0}</div>
@@ -152,7 +152,7 @@ export function TopologyPage() {
               const label = n.name || n.id || n.node || `node-${i}`;
               const kind = n.kind || n.type || n.role || '—';
               return (
-                <button type="button" key={label} disabled style={{ cursor: 'default' }}>
+                <button type="button" key={label} disabled>
                   <Status s={n.status || 'Ready'} />
                   <b>{label}</b>
                   <span className="why">{kind}</span>
@@ -171,7 +171,7 @@ export function TopologyPage() {
           </div>
           <div className="rows">
             {(Array.isArray(edges) ? edges : []).slice(0, 30).map((e, i) => (
-              <button type="button" key={i} disabled style={{ cursor: 'default' }}>
+              <button type="button" key={i} disabled>
                 <b>
                   {e.source || e.from || '?'} → {e.target || e.to || '?'}
                 </b>
@@ -232,7 +232,7 @@ export function DrPage({ showToast }) {
       onRefresh={load}
       busy={busy === 'load'}
     >
-      {err && <div className="ops-err" style={{ margin: '0 32px 16px' }}>{err}</div>}
+      {err && <div className="ops-err page-err">{err}</div>}
       <section className="apple-band-paper">
         <div className="apple-chapter">
           <div className="kicker">Status</div>
@@ -327,7 +327,7 @@ export function PacketWolfPage() {
       onRefresh={load}
       busy={busy}
     >
-      {err && <div className="ops-err" style={{ margin: '0 32px 16px' }}>{err}</div>}
+      {err && <div className="ops-err page-err">{err}</div>}
       <section className="apple-band">
         <div className="apple-chapter">
           <div className="kicker">Connection</div>
@@ -340,13 +340,13 @@ export function PacketWolfPage() {
               'Set VEYRON_PACKETWOLF_URL (and login credentials) on the API.'}
           </p>
           <div className="rows" style={{ marginTop: 20 }}>
-            <button type="button" disabled style={{ cursor: 'default' }}>
+            <button type="button" disabled>
               <Status s={ok ? 'Healthy' : 'Unknown'} />
               <b>Health</b>
               <span className="why">{ok ? 'Probe succeeded' : 'Integration absent or unreachable'}</span>
             </button>
             {status?.version && (
-              <button type="button" disabled style={{ cursor: 'default' }}>
+              <button type="button" disabled>
                 <Radar size={14} />
                 <b>Version</b>
                 <span className="why">{String(status.version)}</span>
