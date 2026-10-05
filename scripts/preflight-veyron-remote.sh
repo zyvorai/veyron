@@ -54,10 +54,10 @@ fi
 ok "API reachable"
 
 # 2) Security posture
-if [[ "${KEY}" == "CHANGE_ME" ]]; then
-  warn "Using the DEFAULT API key 'CHANGE_ME' — set VEYRON_API_KEY / veyron-api-key Secret before go-live"
+if (( ${#KEY} < 20 )); then
+  warn "API key is only ${#KEY} characters (old fixed default or hand-picked) — rotate the veyron-api-key Secret to a random 32-character key before go-live"
 else
-  ok "Non-default API key in use"
+  ok "Strong API key in use"
 fi
 c -o /dev/null -w '' "${BASE}/api/v1/health/ready" 2>/dev/null && ok "Readiness endpoint healthy" || warn "Readiness probe not OK"
 

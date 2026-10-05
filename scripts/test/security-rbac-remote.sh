@@ -50,11 +50,11 @@ ADMIN_KEY="${VEYRON_ADMIN_KEY:-${KEY}}"
 
 section "P3 · Auth & TLS posture"
 
-# Default API key is a WARN (never blocks) — but must be fixed before go-live.
-if [[ "${KEY}" == "CHANGE_ME" ]]; then
-    warn "Default API key 'CHANGE_ME' in use — rotate via VEYRON_API_KEY / veyron-api-key Secret before go-live"
+# A short key (old fixed default or hand-picked) is a WARN (never blocks) — but must be fixed before go-live.
+if (( ${#KEY} < 20 )); then
+    warn "API key is only ${#KEY} characters — rotate the veyron-api-key Secret to a random 32-character key before go-live"
 else
-    pass "Non-default API key in use"
+    pass "Strong API key in use"
 fi
 
 # Unauthenticated read MUST be rejected — success here means auth is off (FAIL).
