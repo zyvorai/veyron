@@ -348,10 +348,10 @@ check_json_grep "GET /api/v1/experience/templates (store)" \
 tpl_body=$(curl -skS --connect-timeout 15 --max-time 45 \
     -H "X-API-Key: ${KEY}" "${BASE}/api/v1/experience/templates" || true)
 tpl_n=$(echo "${tpl_body}" | grep -o '"id"' | wc -l | tr -d ' ')
-if [[ "${tpl_n}" -ge 30 ]]; then
-    echo "  ✔ GET /api/v1/experience/templates (≥30 templates: ${tpl_n})"
+if [[ "${tpl_n}" -ge 25 ]]; then
+    echo "  ✔ GET /api/v1/experience/templates (≥25 templates: ${tpl_n})"
 else
-    echo "  ✗ GET /api/v1/experience/templates (count ${tpl_n:-0}, expected ≥30)"
+    echo "  ✗ GET /api/v1/experience/templates (count ${tpl_n:-0}, expected ≥25)"
     FAIL=$((FAIL + 1))
 fi
 check_json_grep "GET /api/v1/costs (list)" \

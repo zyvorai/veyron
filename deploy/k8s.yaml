@@ -278,6 +278,7 @@ spec:
               scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 3
           readinessProbe:
             httpGet:
               path: /api/v1/health
@@ -285,6 +286,7 @@ spec:
               scheme: HTTPS
             initialDelaySeconds: 3
             periodSeconds: 5
+            timeoutSeconds: 3
           env:
             - name: VEYRON_API_KEY
               valueFrom:
@@ -373,10 +375,10 @@ spec:
           resources:
             requests:
               cpu: 50m
-              memory: 64Mi
+              memory: 128Mi
             limits:
-              cpu: 500m
-              memory: 256Mi
+              cpu: "1"
+              memory: 1Gi
           volumeMounts:
             - name: tls-certs
               mountPath: /certs
