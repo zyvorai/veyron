@@ -308,10 +308,12 @@ else
         EXPORT_LINE="export BUILDAH_FORMAT=docker"
     fi
 
+    VIRTCTL_ARG="--build-arg VIRTCTL_VERSION=$(bash -c 'source "$1" && echo "$KUBEVIRT_VERSION"' _ "${SCRIPT_DIR}/cluster/versions.env")"
+
     PARALLEL_BUILD=$(cat <<REMOTE_BUILD_EOF
 set -euo pipefail
 ${EXPORT_LINE}
-API_CMD='${CTR_BUILD} build ${NO_CACHE_ARG} ${CACHE_FROM_ARGS} ${PROGRESS_ARG} -t ${VEYRON_IMAGE} .'
+API_CMD='${CTR_BUILD} build ${NO_CACHE_ARG} ${CACHE_FROM_ARGS} ${VIRTCTL_ARG} ${PROGRESS_ARG} -t ${VEYRON_IMAGE} .'
 OP_CMD='${CTR_BUILD} build ${NO_CACHE_ARG} ${CACHE_FROM_ARGS} ${PROGRESS_ARG} -t ${OPERATOR_IMAGE} .'
 ( cd '${DEPLOY_DIR}' && eval "\$API_CMD" ) &
 api_pid=\$!

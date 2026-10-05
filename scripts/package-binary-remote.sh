@@ -175,8 +175,8 @@ if $REUSE_IMAGE; then
 fi
 
 if $BUILD_NEEDED; then
-    BUILD_ARGS=""
-    $TRIAL_BUILD && BUILD_ARGS="--build-arg VEYRON_EXTRA_FEATURES=trial"
+    BUILD_ARGS="--build-arg VIRTCTL_VERSION=$(bash -c 'source "$1" && echo "$KUBEVIRT_VERSION"' _ "${SCRIPT_DIR}/cluster/versions.env")"
+    $TRIAL_BUILD && BUILD_ARGS="${BUILD_ARGS} --build-arg VEYRON_EXTRA_FEATURES=trial"
     BUILD_CMD="cd '${BUILD_DIR}' && ${CTR_BUILD} build ${BUILD_ARGS} -t '${IMAGE_TAG}' ."
     if [[ "${CTR_BUILD}" = "docker" ]]; then
         BUILD_CMD="cd '${BUILD_DIR}' && DOCKER_BUILDKIT=1 docker build ${BUILD_ARGS} --progress=plain -t '${IMAGE_TAG}' ."

@@ -34,11 +34,11 @@ type Event struct {
 
 // Event type constants (NATS subjects).
 const (
-	SubjectVMCreated  = "veyron.vm.created"
-	SubjectVMUpdated  = "veyron.vm.updated"
-	SubjectVMDeleted  = "veyron.vm.deleted"
-	SubjectVMStarted  = "veyron.vm.started"
-	SubjectVMStopped  = "veyron.vm.stopped"
+	SubjectVMCreated = "veyron.vm.created"
+	SubjectVMUpdated = "veyron.vm.updated"
+	SubjectVMDeleted = "veyron.vm.deleted"
+	SubjectVMStarted = "veyron.vm.started"
+	SubjectVMStopped = "veyron.vm.stopped"
 
 	SubjectBlueprintDeploying = "veyron.blueprint.deploying"
 	SubjectBlueprintReady     = "veyron.blueprint.ready"

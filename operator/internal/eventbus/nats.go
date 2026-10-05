@@ -85,7 +85,7 @@ func (eb *EventBus) Subscribe(subject string, handler func(Event)) error {
 			return // Skip malformed events.
 		}
 		handler(event)
-		msg.Ack()
+		_ = msg.Ack()
 	}, nats.Durable("veyron-operator"))
 	if err != nil {
 		return fmt.Errorf("subscribing to %s: %w", subject, err)
@@ -97,6 +97,6 @@ func (eb *EventBus) Subscribe(subject string, handler func(Event)) error {
 // Close shuts down the NATS connection.
 func (eb *EventBus) Close() {
 	if eb != nil && eb.conn != nil {
-		eb.conn.Drain()
+		_ = eb.conn.Drain()
 	}
 }

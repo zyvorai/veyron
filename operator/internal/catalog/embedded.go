@@ -9,7 +9,7 @@ import (
 
 func strPtr(s string) *string { return &s }
 func u32Ptr(v uint32) *uint32 { return &v }
-func boolPtr(b bool) *bool      { return &b }
+func boolPtr(b bool) *bool    { return &b }
 
 var windowsCloudInitUserData = `#ps1_sysnative
 Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
@@ -55,7 +55,7 @@ func windowsServerDefault() veyronv1alpha1.VeyronVMSpec {
 		Disks: []veyronv1alpha1.DiskSpec{
 			{
 				Name: "rootdisk", Size: "80Gi", BootOrder: 1,
-				Source: veyronv1alpha1.DiskSource{Type: "blank"},
+				Source:     veyronv1alpha1.DiskSource{Type: "blank"},
 				DeviceType: "disk", Bus: &sata, Cache: &cacheNone,
 			},
 			{

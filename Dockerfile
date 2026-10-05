@@ -5,16 +5,16 @@
 # React console (frontend/) — Vite build embedded via include_dir! into the Rust binary.
 FROM docker.io/library/node:22-slim AS frontend-builder
 WORKDIR /frontend
-COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm install
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
 FROM docker.io/library/rust:1.94-slim-bookworm AS builder
 
-# Keep in lockstep with KUBEVIRT_VERSION in scripts/cluster/versions.env — virtctl
-# is released alongside KubeVirt itself and this was 4 minor versions behind it.
-ARG VIRTCTL_VERSION=v1.8.4
+# Deploy/package scripts and CI pass KUBEVIRT_VERSION from scripts/cluster/versions.env;
+# this default only applies to a bare `docker build`.
+ARG VIRTCTL_VERSION=v1.9.0
 
 # Additive cargo features on top of the default set (e.g. "trial" for the time-limited
 # client tarball — see package-binary-remote.sh --trial). Empty for every normal build,
@@ -46,7 +46,8 @@ COPY Cargo.toml Cargo.lock ./
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/build/target,sharing=locked \
     mkdir src && echo "fn main() {}" > src/main.rs && echo "" > src/lib.rs \
-    && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-musl --bin veyron ${VEYRON_EXTRA_FEATURES:+--features "$VEYRON_EXTRA_FEATURES"} 2>/dev/null || true \
+    && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-musl --bin veyron ${VEYRON_EXTRA_FEATURES:+--features "$VEYRON_EXTRA_FEATURES"} \
+       || echo "warning: dependency pre-build failed; the full build below will compile dependencies" \
     && rm -rf src target/x86_64-unknown-linux-musl/release/veyron target/x86_64-unknown-linux-musl/release/deps/veyron-*
 
 COPY src/ src/

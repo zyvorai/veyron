@@ -10,26 +10,53 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: zyvorai/veyron
   CHARTS_REPO: ghcr.io/zyvorai/charts
+  GUESTKIT_REPO: zyvorai/zyvor-guestkit
 
 permissions:
   contents: write
   packages: write
+  id-token: write
 
 jobs:
-  test:
-    name: Test
+  frontend:
+    name: Console build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci && npm run lint && npm test && npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: console-dist
+          path: frontend/dist
+
+  test:
+    name: Test
+    needs: [frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GUESTKIT_REPO }}
+          path: guestkit
+      - uses: actions/download-artifact@v4
+        with:
+          name: console-dist
+          path: frontend/dist
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
       - name: Lint
         run: cargo fmt --all -- --check && cargo clippy --all-targets -- -D warnings
       - name: Test
-        run: cargo test --verbose
-        env:
-          RUST_MIN_STACK: 8388608
+        run: cargo test
 
   build:
     name: Build (${{ matrix.target }})
@@ -52,6 +79,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GUESTKIT_REPO }}
+          path: guestkit
+      - uses: actions/download-artifact@v4
+        with:
+          name: console-dist
+          path: frontend/dist
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -61,7 +96,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
 
       - name: Build release
         run: cargo build --release --target ${{ matrix.target }}
@@ -72,8 +107,7 @@ jobs:
           cp target/${{ matrix.target }}/release/veyron dist/${{ matrix.artifact }}
           chmod +x dist/${{ matrix.artifact }}
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: dist/${{ matrix.artifact }}
@@ -82,8 +116,14 @@ jobs:
     name: Docker Image
     needs: [test]
     runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GUESTKIT_REPO }}
+          path: guestkit
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -92,18 +132,32 @@ jobs:
           username: ssahani
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Extract version
+      - name: Extract versions
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+        run: |
+          source scripts/cluster/versions.env
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          echo "kubevirt=${KUBEVIRT_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        id: push
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
+          build-args: VIRTCTL_VERSION=${{ steps.version.outputs.kubevirt }}
+          sbom: true
+          provenance: mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Sign image (keyless)
+        run: cosign sign --yes "${REGISTRY}/${IMAGE_NAME}@${{ steps.push.outputs.digest }}"
 
   release:
     name: GitHub Release
@@ -112,17 +166,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          path: dist
+          path: artifacts
+          pattern: veyron-*
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: artifacts
+        run: sha256sum veyron-* > SHA256SUMS
+
+      - uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: artifacts/veyron.spdx.json
+          upload-artifact: false
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Sign checksums (keyless)
+        working-directory: artifacts
+        run: cosign sign-blob --yes --bundle SHA256SUMS.cosign.bundle SHA256SUMS
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
-            dist/veyron-linux-amd64/veyron-linux-amd64
-            dist/veyron-linux-arm64/veyron-linux-arm64
-            dist/veyron-darwin-amd64/veyron-darwin-amd64
-            dist/veyron-darwin-arm64/veyron-darwin-arm64
+            artifacts/veyron-linux-amd64
+            artifacts/veyron-linux-arm64
+            artifacts/veyron-darwin-amd64
+            artifacts/veyron-darwin-arm64
+            artifacts/SHA256SUMS
+            artifacts/SHA256SUMS.cosign.bundle
+            artifacts/veyron.spdx.json

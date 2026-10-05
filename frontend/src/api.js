@@ -143,13 +143,13 @@ async function request(path, opts = {}) {
   return body;
 }
 
-function unwrap(j) {
+export function unwrap(j) {
   if (j == null) return j;
   if (typeof j === 'object' && 'success' in j && j.success === true && 'data' in j) return j.data;
   return j;
 }
 
-function asArray(j) {
+export function asArray(j) {
   const u = unwrap(j);
   if (Array.isArray(u)) return u;
   if (u && Array.isArray(u.items)) return u.items;
@@ -174,12 +174,12 @@ function nsQ(ns) {
 }
 
 /** API sends vCPU as a number or a label like "2 cores". */
-function parseCount(v) {
+export function parseCount(v) {
   const n = parseInt(String(v ?? ''), 10);
   return Number.isFinite(n) ? n : '—';
 }
 
-function parseMemGi(v) {
+export function parseMemGi(v) {
   if (v == null) return 0;
   if (typeof v === 'number') return v > 64 ? Math.round(v / 1024) : v;
   const s = String(v);

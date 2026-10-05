@@ -245,22 +245,22 @@ func evaluateCEL(expression string, vm *veyronv1alpha1.VeyronVM) (bool, error) {
 		running = *vm.Spec.Running
 	}
 	vars := map[string]interface{}{
-		"cpu_cores":              uint64(vm.Spec.CPU.Cores),
-		"cpu_sockets":            uint64(vm.Spec.CPU.Sockets),
-		"cpu_threads":            uint64(vm.Spec.CPU.Threads),
-		"memory_size":            vm.Spec.Memory.Size,
-		"enable_tpm":             vm.Spec.EnableTPM,
-		"enable_rng":             vm.Spec.EnableRNG,
-		"has_cloud_init":         vm.Spec.CloudInit != nil,
-		"has_eviction_strategy":  vm.Spec.EvictionStrategy != nil,
-		"has_firmware":           vm.Spec.Firmware != nil,
-		"has_features":           vm.Spec.Features != nil,
-		"num_disks":              uint64(len(vm.Spec.Disks)),
-		"num_interfaces":         uint64(len(vm.Spec.Interfaces)),
-		"template":               vm.Spec.Template,
-		"name":                   vm.Name,
-		"namespace":              vm.Namespace,
-		"running":                running,
+		"cpu_cores":             uint64(vm.Spec.CPU.Cores),
+		"cpu_sockets":           uint64(vm.Spec.CPU.Sockets),
+		"cpu_threads":           uint64(vm.Spec.CPU.Threads),
+		"memory_size":           vm.Spec.Memory.Size,
+		"enable_tpm":            vm.Spec.EnableTPM,
+		"enable_rng":            vm.Spec.EnableRNG,
+		"has_cloud_init":        vm.Spec.CloudInit != nil,
+		"has_eviction_strategy": vm.Spec.EvictionStrategy != nil,
+		"has_firmware":          vm.Spec.Firmware != nil,
+		"has_features":          vm.Spec.Features != nil,
+		"num_disks":             uint64(len(vm.Spec.Disks)),
+		"num_interfaces":        uint64(len(vm.Spec.Interfaces)),
+		"template":              vm.Spec.Template,
+		"name":                  vm.Name,
+		"namespace":             vm.Namespace,
+		"running":               running,
 	}
 
 	out, _, err := prg.Eval(vars)

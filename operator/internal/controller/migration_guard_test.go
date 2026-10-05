@@ -4,7 +4,6 @@
 package controller
 
 import (
-	"os"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -59,7 +58,7 @@ func TestEvaluateMigrationEligibilityBlocksPassthroughGpu(t *testing.T) {
 }
 
 func TestEvaluateMigrationEligibilityVgpuBlockedWithoutClusterAttestation(t *testing.T) {
-	os.Unsetenv("VEYRON_VGPU_LIVE_MIGRATION")
+	t.Setenv("VEYRON_VGPU_LIVE_MIGRATION", "")
 	vmi := runningVMI(map[string]interface{}{
 		"gpus": []interface{}{
 			map[string]interface{}{"name": "gpu0", "deviceName": "nvidia.com/GRID_T4-2Q"},

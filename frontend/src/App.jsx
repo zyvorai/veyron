@@ -106,7 +106,7 @@ export default function App() {
   }, []);
 
   const {
-    data, errors, loading, loaded, lastLoaded, healthOk, notifications, setNotifications, refreshVisible,
+    data, errors, loading, loaded, lastLoaded, healthOk, notifications, refreshVisible,
   } = useResources({ enabled: authed, page });
   const load = refreshVisible;
 
