@@ -31,7 +31,7 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
   const why = {
     Degraded: 'Needs attention',
     Provisioning: 'Still provisioning',
-    Failed: 'Failed',
+    Failed: 'Stopped unexpectedly — open to see events',
     Pending: 'Waiting for capacity',
     Cordoned: 'Cordoned for maintenance',
     NotReady: 'Host not ready',
@@ -47,7 +47,15 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
       ? `${attn.length} thing${attn.length === 1 ? '' : 's'} need${attn.length === 1 ? 's' : ''} a look.`
       : 'Everything’s running.';
   const templates = (data.templates?.rows || []).filter((t) => !/^(ubuntu|debian|fedora|centos|almalinux|rocky|opensuse|windows)$/.test(t.name));
-  const featured = templates.length ? templates.slice(0, 8) : [];
+  const seenFamily = new Set();
+  const featured = templates
+    .filter((t) => {
+      const fam = osInfo(t.name).family;
+      if (seenFamily.has(fam)) return false;
+      seenFamily.add(fam);
+      return true;
+    })
+    .slice(0, 12);
 
   const shortcuts = [
     { I: Monitor, t: 'Create a machine', p: 'Pick an OS, size it, boot it.', tone: 'sky', run: () => { go('vms'); onCreate?.(); } },
@@ -113,7 +121,7 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
                 <button key={`${k}-${r.id}`} onClick={() => go(k, r.id)}>
                   <Status s={r.status} />
                   <b>{r.name}</b>
-                  <span className="why">{why[r.status] || r.status}</span>
+                  <span className="why">{why[r.status] || 'Not in the requested state'}</span>
                   <ChevronRight size={16} />
                 </button>
               ))
@@ -574,11 +582,14 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
   const [cidr, setCidr] = useState('10.244.100.0/24');
   const preset = SIZES.find((s) => s.id === sizeId);
   const o = osInfo(template);
+  const [suffix] = useState(() => Math.random().toString(36).slice(2, 6));
+  const suggested = `${o.family}-${suffix}`;
+  const finalName = name || (isVm ? suggested : '');
 
-  const canCreate = !!name && (res.kind !== 'Image' || !!url.trim()) && (!isVm || !!template);
+  const canCreate = !!finalName && (res.kind !== 'Image' || !!url.trim()) && (!isVm || !!template);
   const submit = () =>
     onCreate({
-      name,
+      name: finalName,
       template,
       cls,
       size,
@@ -648,12 +659,12 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
                 autoFocus
                 onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
                 onKeyDown={(e) => e.key === 'Enter' && canCreate && submit()}
-                placeholder={`${o.family}-01`}
+                placeholder={suggested}
               />
             </div>
             <aside className="create-summary">
               <OsBadge name={template} size={64} />
-              <h4>{name || 'New machine'}</h4>
+              <h4>{finalName}</h4>
               <p>
                 {o.label} {o.version}
               </p>

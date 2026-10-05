@@ -98,12 +98,14 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
       const base = items.filter((it) => it.group === 'Actions' || it.group === 'Pages').slice(0, 14);
       return [...rec, ...base.filter((b) => !recent.includes(b.key))];
     }
-    return items
+    const ranked = items
       .map((it) => ({ it, s: Math.max(score(it.label, q), score(it.hint || '', q) * 0.5) }))
       .filter((x) => x.s > 0)
       .sort((a, b) => b.s - a.s)
       .slice(0, 40)
       .map((x) => x.it);
+    const order = [...new Set(ranked.map((it) => it.group))];
+    return order.flatMap((g) => ranked.filter((it) => it.group === g));
   }, [items, q]);
 
   useEffect(() => {

@@ -9,7 +9,7 @@ import {
   mapGpu, mapAlert, mapSoc, mapAtlasVol, mapAtlasSnap, mapMigration,
   mapCatalogTemplate, mapDataSource,
 } from './api.js';
-import { emptyData, RES_META, TONE_BY_PAGE, pageLabel, pageBlurb } from './resources.js';
+import { emptyData, RES_META, TONE_BY_PAGE, pageLabel, pageBlurb, pageGroup } from './resources.js';
 import { Table } from './Table.jsx';
 import { Inspector, ACT } from './Inspector.jsx';
 import { Mission, ConsoleHub, SettingsPage, ConsoleSheet, NewSheet, Login } from './pages.jsx';
@@ -726,7 +726,7 @@ export default function App() {
 
             <div className="list">
               <Reveal className="res-hero">
-                <p className="kicker">{res.kind}</p>
+                <p className="kicker">{pageGroup(page) || res.kind}</p>
                 <h2>{pageLabel(page)}.</h2>
                 <p className="res-lede">{pageBlurb(page)}</p>
                 <div className="res-metrics">

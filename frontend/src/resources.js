@@ -411,6 +411,10 @@ export function pageLabel(id) {
 }
 
 /** Menu blurb per page id. */
+export function pageGroup(id) {
+  return NAV.find((g) => g.items.some(([pid]) => pid === id))?.g || '';
+}
+
 export function pageBlurb(id) {
   for (const g of NAV) {
     const hit = g.items.find(([pid]) => pid === id);
