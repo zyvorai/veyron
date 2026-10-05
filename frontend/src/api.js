@@ -43,6 +43,18 @@ export function clearSession() {
   setAuthUser(null);
 }
 
+/** Fired when the API rejects the session, so the shell can sign out immediately. */
+export const UNAUTHORIZED_EVENT = 'veyron:unauthorized';
+
+function onUnauthorized() {
+  clearSession();
+  window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+}
+
+/** Reads give up after 20s, mutations after 120s; pass `timeout: 0` to disable. */
+const READ_TIMEOUT_MS = 20_000;
+const WRITE_TIMEOUT_MS = 120_000;
+
 export function getSavedTheme() {
   try {
     return localStorage.getItem(THEME_STORAGE) || '';
@@ -81,16 +93,29 @@ export function setSavedUsername(username) {
 }
 
 async function request(path, opts = {}) {
-  const { skipAuth, rawText, ...fetchOpts } = opts;
+  const { skipAuth, rawText, timeout, ...fetchOpts } = opts;
   const token = getToken();
   const headers = Object.assign({}, fetchOpts.headers || {});
   if (token && !skipAuth) headers.Authorization = `Bearer ${token}`;
   if (fetchOpts.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
 
-  const resp = await fetch(path, { ...fetchOpts, headers });
-  const text = await resp.text();
+  const method = (fetchOpts.method || 'GET').toUpperCase();
+  const limit = timeout ?? (method === 'GET' ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS);
+  const ctrl = new AbortController();
+  const timer = limit ? setTimeout(() => ctrl.abort(), limit) : null;
+  let resp;
+  let text;
+  try {
+    resp = await fetch(path, { ...fetchOpts, headers, signal: fetchOpts.signal || ctrl.signal });
+    text = await resp.text();
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error(`Timed out after ${Math.round(limit / 1000)}s`);
+    throw e;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
   if (rawText) {
-    if (resp.status === 401 && !skipAuth) clearSession();
+    if (resp.status === 401 && !skipAuth) onUnauthorized();
     if (!resp.ok) throw new Error(text.slice(0, 200) || `HTTP ${resp.status}`);
     return text;
   }
@@ -104,7 +129,7 @@ async function request(path, opts = {}) {
     }
   }
   if (resp.status === 401 && !skipAuth) {
-    clearSession();
+    onUnauthorized();
   }
   if (!resp.ok) {
     const msg =

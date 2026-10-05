@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import {
   ChevronRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
   Network, Database, Shield, Settings, Eye, EyeOff, ArrowRight, ChevronLeft, Loader2,
@@ -13,7 +13,9 @@ import {
   LoginRemember,
   LoginError,
 } from './PremiumLoginShell.jsx';
-import { VncConsole, LogsPanel } from './VncConsole.jsx';
+import { LogsPanel } from './LogsPanel.jsx';
+
+const VncConsole = lazy(() => import('./VncConsole.jsx').then((m) => ({ default: m.VncConsole })));
 import { PageHero } from './PageHero.jsx';
 import { FleetHero } from './FleetHero.jsx';
 import { Reveal, useSeries, PulseFigure, OsBadge, osInfo, EmptyArt } from './story.jsx';
@@ -551,7 +553,9 @@ export function ConsoleSheet({ vm, mode = 'console', onClose }) {
         {mode === 'logs' ? (
           <LogsPanel text={logs} loading={loading} error={error} />
         ) : (
-          <VncConsole vm={vm} />
+          <Suspense fallback={<div className="console"><div className="console-logs">Loading console…</div></div>}>
+            <VncConsole vm={vm} />
+          </Suspense>
         )}
         <div className="sheet-f">
           <button className="btn" onClick={() => navigator.clipboard?.writeText(vm.name)}>

@@ -1,19 +1,20 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import {
   Search, Plus, List, LayoutGrid, Trash2, X, Info, RefreshCw, Download, Activity,
 } from 'lucide-react';
 import {
-  api, getToken, clearSession, getAuthUser, getSavedTheme, setSavedTheme,
-  mapVm, mapNode, mapPod, mapPvc, mapClass,
-  mapSnapshot, mapBackup, mapImage, mapNetwork, mapTemplate,
-  mapGpu, mapAlert, mapSoc, mapAtlasVol, mapAtlasSnap, mapMigration,
-  mapCatalogTemplate, mapDataSource,
+  api, getToken, clearSession, getAuthUser, getSavedTheme, setSavedTheme, UNAUTHORIZED_EVENT,
 } from './api.js';
-import { emptyData, RES_META, TONE_BY_PAGE, pageLabel, pageBlurb, pageGroup } from './resources.js';
+import { TONE_BY_PAGE, pageLabel, pageBlurb, pageGroup } from './resources.js';
+import { useResources } from './useResources.js';
 import { Table } from './Table.jsx';
 import { Inspector, ACT } from './Inspector.jsx';
 import { Mission, ConsoleHub, SettingsPage, ConsoleSheet, NewSheet, Login } from './pages.jsx';
-import { MonitoringPage, TopologyPage, DrPage, PacketWolfPage } from './chapters.jsx';
+const chapter = (name) => lazy(() => import('./chapters.jsx').then((m) => ({ default: m[name] })));
+const MonitoringPage = chapter('MonitoringPage');
+const TopologyPage = chapter('TopologyPage');
+const DrPage = chapter('DrPage');
+const PacketWolfPage = chapter('PacketWolfPage');
 import { Status } from './status.jsx';
 import { GlobalNav } from './GlobalNav.jsx';
 import { CommandPalette } from './CommandPalette.jsx';
@@ -21,6 +22,19 @@ import { EmptyArt, OsBadge, Reveal } from './story.jsx';
 
 function warnCount(rows) {
   return (rows || []).filter((x) => ['Degraded', 'Failed', 'Pending', 'Cordoned'].includes(x.status)).length;
+}
+
+const haystacks = new WeakMap();
+function haystack(row) {
+  let h = haystacks.get(row);
+  if (h == null) {
+    h = Object.values(row)
+      .filter((v) => v != null && typeof v !== 'object' && typeof v !== 'function')
+      .join(' ')
+      .toLowerCase();
+    haystacks.set(row, h);
+  }
+  return h;
 }
 
 function downloadCsv(filename, cols, rows) {
@@ -62,10 +76,14 @@ export default function App() {
   const [authed, setAuthed] = useState(() => !!getToken());
   const [loginErr, setLoginErr] = useState('');
   const [user, setUser] = useState(() => getAuthUser());
-  const [data, setData] = useState(emptyData);
   const [page, setPage] = useState('mission');
   const [view, setView] = useState('list');
+  const [qInput, setQInput] = useState('');
   const [q, setQ] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setQ(qInput.trim()), 150);
+    return () => clearTimeout(t);
+  }, [qInput]);
   const [selected, setSelected] = useState(new Set());
   const [focus, setFocus] = useState(null);
   const [menu, setMenu] = useState(null);
@@ -75,129 +93,29 @@ export default function App() {
   const [palette, setPalette] = useState(false);
   const [initialTemplate, setInitialTemplate] = useState(null);
   const [showBell, setShowBell] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [healthOk, setHealthOk] = useState(true);
   const [toast, setToast] = useState(null);
-  const [loading, setLoading] = useState(false);
   const back = useRef([]);
 
+  const toastTimer = useRef(null);
   const showToast = useCallback((msg, err = false) => {
     setToast({ msg, err });
-    setTimeout(() => setToast(null), 4000);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
   }, []);
 
-  const load = useCallback(async () => {
-    if (!getToken()) return;
-    setLoading(true);
-    const next = emptyData();
-    const failed = new Set();
-    const settle = async (label, fn, mapFn, key, extra) => {
-      try {
-        const rows = await fn();
-        next[key].rows = (rows || []).map(mapFn);
-        if (extra) await extra(next);
-      } catch (e) {
-        console.warn(label, e);
-        failed.add(key);
-      }
-    };
-
-    await Promise.all([
-      settle('vms', () => api.listVms('all'), mapVm, 'vms'),
-      settle('hosts', () => api.listNodes(), mapNode, 'hosts'),
-      settle('gpus', async () => {
-        const data = await api.listGpus();
-        return Array.isArray(data?.nodes) ? data.nodes : Array.isArray(data) ? data : [];
-      }, mapGpu, 'gpus'),
-      settle('pods', () => api.listPods('all'), mapPod, 'pods'),
-      settle('pvcs', () => api.listPvcs('all'), mapPvc, 'pvcs', async (n) => {
-        try {
-          const classes = await api.listStorageClasses();
-          n.pvcs.extra = {
-            title: RES_META.pvcs.extraTitle,
-            cols: RES_META.pvcs.extraCols,
-            rows: classes.map(mapClass),
-          };
-        } catch {
-          n.pvcs.extra = { title: RES_META.pvcs.extraTitle, cols: RES_META.pvcs.extraCols, rows: [] };
-        }
-      }),
-      settle('snapshots', () => api.listSnapshots(), mapSnapshot, 'snapshots'),
-      settle('backups', () => api.listBackups(), mapBackup, 'backups'),
-      settle('images', () => api.listImages(), mapImage, 'images', async (n) => {
-        try {
-          const ds = await api.listDataSources();
-          n.images.extra = {
-            title: RES_META.images.extraTitle,
-            cols: RES_META.images.extraCols,
-            rows: (ds || []).map(mapDataSource),
-          };
-        } catch {
-          n.images.extra = { title: RES_META.images.extraTitle, cols: RES_META.images.extraCols, rows: [] };
-        }
-      }),
-      settle('networks', () => api.listNads('all'), mapNetwork, 'networks'),
-      settle('templates', async () => {
-        try {
-          const catalog = await api.listCatalogTemplates();
-          if (catalog?.length) return catalog;
-        } catch {
-          /* fall through to builtins */
-        }
-        return api.listTemplates();
-      }, (raw, i) => {
-        if (raw.family != null || raw.tags != null) return mapCatalogTemplate(raw, i);
-        return mapTemplate(raw, i);
-      }, 'templates', async (n) => {
-        try {
-          const profiles = await api.listCatalogProfiles();
-          n.templates.extra = {
-            title: RES_META.templates.extraTitle,
-            cols: RES_META.templates.extraCols,
-            rows: (profiles || []).map((p, i) => ({
-              id: p.name || `p-${i}`,
-              name: p.name || `profile-${i}`,
-              os: p.family || p.description || '—',
-              cpu: p.cpu ?? p.cpus ?? '—',
-              ram: p.memory || p.ram || '—',
-            })),
-          };
-        } catch {
-          n.templates.extra = { title: RES_META.templates.extraTitle, cols: RES_META.templates.extraCols, rows: [] };
-        }
-      }),
-      settle('migrations', () => api.listMigrations(), mapMigration, 'migrations'),
-      settle('alerts', () => api.listAlerts(), mapAlert, 'alerts'),
-      settle('soc', () => api.listSocDetections(), mapSoc, 'soc'),
-      settle('atlas', () => api.listAtlasVolumes(), mapAtlasVol, 'atlas', async (n) => {
-        try {
-          const snaps = await api.listAtlasSnapshots();
-          n.atlas.extra = {
-            title: RES_META.atlas.extraTitle,
-            cols: RES_META.atlas.extraCols,
-            rows: (snaps || []).map(mapAtlasSnap),
-          };
-        } catch {
-          n.atlas.extra = { title: RES_META.atlas.extraTitle, cols: RES_META.atlas.extraCols, rows: [] };
-        }
-      }),
-      api.health().then(() => setHealthOk(true)).catch(() => setHealthOk(false)),
-      api.listNotifications().then(setNotifications).catch(() => setNotifications([])),
-    ]);
-    setData((prev) => {
-      for (const key of failed) next[key] = prev?.[key] || next[key];
-      return next;
-    });
-    setLoading(false);
-    if (!getToken()) {
-      setAuthed(false);
-      setUser(null);
-    }
-  }, []);
+  const {
+    data, errors, loading, loaded, lastLoaded, healthOk, notifications, setNotifications, refreshVisible,
+  } = useResources({ enabled: authed, page });
+  const load = refreshVisible;
 
   useEffect(() => {
-    if (authed) load();
-  }, [authed, load]);
+    const out = () => {
+      setUser(null);
+      setAuthed(false);
+    };
+    window.addEventListener(UNAUTHORIZED_EVENT, out);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, out);
+  }, []);
 
   useEffect(() => {
     setShowInsp(false);
@@ -226,12 +144,16 @@ export default function App() {
     clearSession();
     setUser(null);
     setAuthed(false);
-    setData(emptyData());
   };
 
   const res = data[page];
   const rows = useMemo(
-    () => (res ? res.rows.filter((r) => !q || JSON.stringify(r).toLowerCase().includes(q.toLowerCase())) : []),
+    () => {
+      if (!res) return [];
+      if (!q) return res.rows;
+      const needle = q.toLowerCase();
+      return res.rows.filter((r) => haystack(r).includes(needle));
+    },
     [res, q],
   );
   const focusRow = res?.rows.find((r) => r.id === focus);
@@ -247,6 +169,7 @@ export default function App() {
       setPage(p);
       setSelected(id != null ? new Set([id]) : new Set());
       setFocus(id ?? null);
+      setQInput('');
       setQ('');
       if (id != null) setTimeout(() => setShowInsp(true), 0);
     },
@@ -629,7 +552,7 @@ export default function App() {
         }
         alerts={alerts}
         healthOk={healthOk}
-        loading={loading}
+        loading={loading && !lastLoaded}
         canCreate={canCreate}
         onCreate={() => {
           if (!res) setPage('vms');
@@ -667,6 +590,7 @@ export default function App() {
       )}
 
       <main className="stage" data-tone={tone} data-page={page}>
+        <Suspense fallback={<div className="empty"><div><b>Loading…</b></div></div>}>
         {page === 'mission' ? (
           <Mission data={data} go={go} onCreate={openCreate} onConsole={openConsole} healthOk={healthOk} />
         ) : page === 'settings' ? (
@@ -698,9 +622,9 @@ export default function App() {
                 </h1>
                 <label className="tsearch">
                   <Search size={14} />
-                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${res.l.toLowerCase()}`} />
-                  {q && (
-                    <button type="button" onClick={() => setQ('')} aria-label="Clear search">
+                  <input value={qInput} onChange={(e) => setQInput(e.target.value)} placeholder={`Search ${res.l.toLowerCase()}`} />
+                  {qInput && (
+                    <button type="button" onClick={() => { setQInput(''); setQ(''); }} aria-label="Clear search">
                       <X size={13} />
                     </button>
                   )}
@@ -752,13 +676,26 @@ export default function App() {
                 </div>
               </Reveal>
 
+              {errors[page] && (
+                <div className="load-error" role="alert">
+                  <span>
+                    <b>Couldn’t {rows.length ? 'refresh' : 'load'} {res.l.toLowerCase()}.</b> {errors[page]}
+                  </span>
+                  <button className="btn sm secondary" onClick={() => load()}>
+                    <RefreshCw size={12} />
+                    Retry
+                  </button>
+                </div>
+              )}
+
               {rows.length === 0 ? (
+                errors[page] && !loaded(page) ? null : (
                 <div className="empty">
                   <div>
                     <EmptyArt tone={tone} />
-                    <b>{loading ? 'Loading…' : q ? 'Nothing matches.' : `No ${res.l.toLowerCase()} yet.`}</b>
+                    <b>{!loaded(page) ? 'Loading…' : q ? 'Nothing matches.' : `No ${res.l.toLowerCase()} yet.`}</b>
                     <p className="lede">
-                      {loading
+                      {!loaded(page)
                         ? 'Fetching live data from your cluster.'
                         : q
                           ? 'Try a different search, or clear it.'
@@ -766,7 +703,7 @@ export default function App() {
                             ? 'Create a machine from a current OS template. It takes about a minute.'
                             : pageBlurb(page)}
                     </p>
-                    {!loading && !q && res.canCreate && (
+                    {loaded(page) && !q && res.canCreate && (
                       <div className="acts">
                         <button className="pill" onClick={() => openCreate()}>
                           <Plus size={16} />
@@ -776,6 +713,7 @@ export default function App() {
                     )}
                   </div>
                 </div>
+                )
               ) : view === 'grid' ? (
                 <div className="grid">
                   {rows.map((r) => (
@@ -858,6 +796,7 @@ export default function App() {
             )}
           </div>
         ) : null}
+        </Suspense>
       </main>
 
       {res && (

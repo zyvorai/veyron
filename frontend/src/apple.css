@@ -412,3 +412,13 @@
   .vy *, .vy *::before, .vy *::after { animation: none !important; transition-duration: 0.01ms !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* Per-resource load failure (keeps showing the last good rows below it) */
+.vy .load-error {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 0 14px; padding: 10px 14px;
+  border-radius: var(--radius-sm); font-size: 13px;
+  background: var(--danger-bg); color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+}
+.vy .load-error b { font-weight: 600; margin-right: 4px; }
