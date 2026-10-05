@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import RFB from '@novnc/novnc/lib/rfb.js';
 import { api, wsUrl } from './api.js';
 
-/** Live noVNC viewer for a KubeVirt VM (ticket → /vnc WebSocket). */
+/** Live noVNC viewer for a Kairon machine (ticket → /vnc WebSocket). */
 export function VncConsole({ vm }) {
   const hostRef = useRef(null);
   const rfbRef = useRef(null);

@@ -130,7 +130,7 @@ function VmOps({ row, onDone }) {
             <small>{sshOn ? expose?.service_type || expose?.type || 'on' : 'off'}</small>
           </span>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() =>
               run(
@@ -155,7 +155,7 @@ function VmOps({ row, onDone }) {
             <small>{rdpOn ? rdp?.service_type || 'ClusterIP' : 'off'}</small>
           </span>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() =>
               run(
@@ -179,7 +179,7 @@ function VmOps({ row, onDone }) {
             <small>{inetOn ? 'allowed' : 'restricted / unknown'}</small>
           </span>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() =>
               run(
@@ -193,14 +193,14 @@ function VmOps({ row, onDone }) {
         </div>
         <div className="ops-acts" style={{ marginTop: 8 }}>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() => run('Enable RDP guest', () => api.enableRdpGuest(ns, name))}
           >
             Enable RDP in guest
           </button>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() => run('Disable RDP guest', () => api.disableRdpGuest(ns, name))}
           >
@@ -220,28 +220,28 @@ function VmOps({ row, onDone }) {
         </small>
         <div className="ops-acts">
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() => run('Soft reboot', () => api.guestSoftReboot(ns, name))}
           >
             Soft reboot
           </button>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() => run('Freeze', () => api.guestFreeze(ns, name))}
           >
             Freeze
           </button>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() => run('Unfreeze', () => api.guestUnfreeze(ns, name))}
           >
             Unfreeze
           </button>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() => {
               if (!window.confirm(`Patch OS packages inside ${name}?`)) return;
@@ -251,14 +251,14 @@ function VmOps({ row, onDone }) {
             Guest patch
           </button>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() => run('Reclaim', () => api.disksReclaim(ns, name))}
           >
             fstrim reclaim
           </button>
           <button
-            className="btn"
+            className="btn sm secondary"
             disabled={!!busy}
             onClick={() => run('Ceph snap', () => api.atlasVmCephSnapshot(ns, name))}
           >
@@ -277,7 +277,7 @@ function VmOps({ row, onDone }) {
             : 'No VeyronVM drift status (unmanaged VM)'}
         </small>
         <button
-          className="btn"
+          className="btn sm secondary"
           disabled={!!busy || !drift}
           onClick={() => run('Remediate', () => api.remediateDrift(ns, name))}
         >
@@ -300,7 +300,7 @@ function VmOps({ row, onDone }) {
           </label>
         </div>
         <button
-          className="btn primary"
+          className="btn sm primary"
           disabled={!!busy}
           onClick={() => {
             const s = parseInt(sockets, 10);
@@ -332,7 +332,7 @@ function VmOps({ row, onDone }) {
           </label>
         </div>
         <button
-          className="btn"
+          className="btn sm secondary"
           disabled={!!busy}
           onClick={() => run('Run strategy', () => api.setRunStrategy(ns, name, strategy))}
         >

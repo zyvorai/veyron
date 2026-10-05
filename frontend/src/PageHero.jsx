@@ -8,7 +8,7 @@ export function PageHero({ kicker, title, lede, dense, onRefresh, busy }) {
       <p>{lede}</p>
       {onRefresh && (
         <div className="acts" style={{ justifyContent: 'flex-start', marginTop: 16 }}>
-          <button className="btn" disabled={busy} onClick={onRefresh}>
+          <button className="btn secondary" disabled={busy} onClick={onRefresh}>
             <RefreshCw size={13} className={busy ? 'spin' : ''} />
             Refresh
           </button>

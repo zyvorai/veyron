@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   ChevronRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
-  Network, Database, Shield, Settings, User, Lock, Eye, EyeOff, ArrowRight, ChevronLeft, Loader2,
+  Network, Database, Shield, Settings, Eye, EyeOff, ArrowRight, ChevronLeft, Loader2,
   CheckCircle,
 } from 'lucide-react';
 import { Status } from './status.jsx';
@@ -301,8 +301,7 @@ export function SettingsPage({ theme, setTheme }) {
   };
   const versionLine = kvVersion
     ? [
-        verLabel(kvVersion.kubevirt || kvVersion.kubevirt_version, null),
-        verLabel(kvVersion.cdi || kvVersion.cdi_version, null),
+        verLabel(kvVersion.kairon || kvVersion.kairon_version, null) && `Kairon ${verLabel(kvVersion.kairon || kvVersion.kairon_version, null)}`,
         verLabel(kvVersion.veyron || kvVersion.version, null),
       ]
         .filter(Boolean)
@@ -337,7 +336,7 @@ export function SettingsPage({ theme, setTheme }) {
           <div className="srow2">
             <div>
               <b>Auto-heal degraded machines</b>
-              <small>Restart Failed/Unknown VMIs (self-healing policy).</small>
+              <small>Restart Failed or Error machines (self-healing policy).</small>
             </div>
             <button
               className="sw r"
@@ -352,11 +351,11 @@ export function SettingsPage({ theme, setTheme }) {
           <div className="srow2">
             <div>
               <b>Run self-healing now</b>
-              <small>Dry-run reports unhealthy VMIs; heal restarts them.</small>
+              <small>Dry-run reports unhealthy machines; heal restarts them.</small>
             </div>
             <div className="r" style={{ display: 'flex', gap: 6 }}>
               <button
-                className="btn"
+                className="btn sm secondary"
                 disabled={policyBusy}
                 onClick={async () => {
                   setPolicyBusy(true);
@@ -375,10 +374,10 @@ export function SettingsPage({ theme, setTheme }) {
                 Dry-run
               </button>
               <button
-                className="btn"
+                className="btn sm warn"
                 disabled={policyBusy}
                 onClick={async () => {
-                  if (!window.confirm('Heal unhealthy VMIs now?')) return;
+                  if (!window.confirm('Heal unhealthy VMs now?')) return;
                   setPolicyBusy(true);
                   setErr('');
                   try {
@@ -433,7 +432,9 @@ export function SettingsPage({ theme, setTheme }) {
                 <small>
                   {[
                     about.caps.live_migration && 'live migration',
-                    about.caps.windows_golden_images && 'Windows golden images',
+                    about.caps.machine_backups && 'machine backups',
+                    about.caps.machine_fork && 'VM fork',
+                    about.caps.gpu_passthrough && 'GPU (DRA)',
                     about.caps.persistent_tpm_efi && 'persistent TPM/EFI',
                   ]
                     .filter(Boolean)
@@ -606,10 +607,6 @@ export function Login({ onSubmit, error }) {
   const [rememberMe, setRememberMe] = useState(!!saved);
   const [submitting, setSubmitting] = useState(false);
 
-  const scrollToForm = () => {
-    document.getElementById('login-sign-in')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   const handleContinue = (e) => {
     e.preventDefault();
     if (!username.trim()) return;
@@ -637,138 +634,75 @@ export function Login({ onSubmit, error }) {
     }
   };
 
-  const storeCta = (
-    <>
-      <a
-        href="#login-sign-in"
-        className="login-cta-primary"
-        onClick={(e) => {
-          e.preventDefault();
-          scrollToForm();
-        }}
-      >
-        Sign in
-      </a>
-      <a
-        href="#login-sign-in"
-        className="login-cta-secondary"
-        onClick={(e) => {
-          e.preventDefault();
-          scrollToForm();
-        }}
-      >
-        Continue
-      </a>
-    </>
-  );
-
-  const panelSubtitle =
-    step === 'password' ? (
-      <>
-        Enter the password for <span className="login-apple-host">{username.trim()}</span>
-      </>
-    ) : (
-      'Sign in'
-    );
-
   return (
     <PremiumLoginShell
       productName="Veyron"
-      productWordmark="Veyron"
-      heroTitle="Private cloud control."
-      heroSubheadline="Fleet, storage, and day-2 ops for KubeVirt — from one console."
-      pills={[
-        { label: 'KubeVirt', tone: 'sky' },
-        { label: 'CDI', tone: 'violet' },
-        { label: 'Snapshots', tone: 'amber' },
-        { label: 'Console', tone: 'emerald' },
-      ]}
-      heroCta={storeCta}
-      chapterNote="Username and password · sign in to continue"
-      panelSubtitle={panelSubtitle}
-      panelHint={
-        step === 'identify' ? (
-          <>
-            Use your Veyron account credentials. Default lab user is{' '}
-            <span className="mono">admin</span>.
-          </>
-        ) : null
-      }
-      showSignInChapter
+      eyebrow="Veyron · Zyvor"
+      heroTitle="Real VMs. One console."
+      heroLede="Fleet, storage, snapshots, and day-2 operations for Kairon machines — no pods pretending to be VMs."
     >
       {step === 'identify' ? (
-        <form key="identify" onSubmit={handleContinue} autoComplete="on" aria-label="Account" className="login-apple-step">
+        <form key="identify" className="login-card" onSubmit={handleContinue} autoComplete="on" aria-label="Account" noValidate>
+          <h2>Sign in.</h2>
           {error ? <LoginError message={error} /> : null}
-
-          <div className="login-apple-fields">
-            <LoginField label="Username" id="username">
-              <User className="login-field-icon" size={14} />
-              <input
-                id="username"
-                name="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="login-input"
-                placeholder="Username"
-                autoComplete="username"
-                autoFocus
-                required
-              />
-            </LoginField>
-          </div>
-
+          <LoginField label="Username" id="username">
+            <input
+              id="username"
+              name="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              autoFocus
+              required
+            />
+          </LoginField>
           <LoginSubmit loading={false} disabled={!username.trim()}>
             <span>Continue</span>
             <ArrowRight size={16} />
           </LoginSubmit>
+          <p className="login-hint">
+            Use your Veyron account. Default lab user is <span className="mono">admin</span>.
+          </p>
         </form>
       ) : (
-        <form key="password" onSubmit={handleSubmit} autoComplete="on" aria-label="Password" className="login-apple-step">
-          <button type="button" onClick={handleBack} className="login-apple-identity" aria-label="Change account">
+        <form key="password" className="login-card" onSubmit={handleSubmit} autoComplete="on" aria-label="Password" noValidate>
+          <h2>Sign in.</h2>
+          <button type="button" onClick={handleBack} className="login-identity" aria-label="Change account">
             <ChevronLeft size={16} aria-hidden />
             <span>{username.trim()}</span>
           </button>
           <input type="text" name="username" value={username} autoComplete="username" readOnly hidden />
-
           {error ? <LoginError message={error} /> : null}
-
-          <div className="login-apple-fields">
-            <LoginField label="Password" id="password">
-              <Lock className="login-field-icon" size={14} />
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="login-input pr-11"
-                placeholder="Password"
-                autoComplete="current-password"
-                autoFocus
-                required
-                disabled={submitting}
-              />
-              <button
-                type="button"
-                className="login-eye"
-                onClick={() => setShowPassword((s) => !s)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </LoginField>
-          </div>
-
+          <LoginField label="Password" id="password">
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="has-eye"
+              autoComplete="current-password"
+              autoFocus
+              required
+              disabled={submitting}
+            />
+            <button
+              type="button"
+              className="login-eye"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </LoginField>
           <LoginRemember
             checked={rememberMe}
             onChange={(checked) => {
               setRememberMe(checked);
               if (!checked) setSavedUsername('');
             }}
-            label="Remember me on this device"
           />
-
           <LoginSubmit loading={submitting} disabled={!password}>
             {submitting ? (
               <>
@@ -776,20 +710,15 @@ export function Login({ onSubmit, error }) {
                 <span>Signing in…</span>
               </>
             ) : (
-              <>
-                <span>Sign In</span>
-                <ArrowRight size={16} />
-              </>
+              <span>Sign in</span>
             )}
           </LoginSubmit>
-
-          <div className="login-secure-note">
+          <p className="login-foot">
             <CheckCircle size={14} aria-hidden />
             <span>Secured with JWT session authentication</span>
-          </div>
+          </p>
         </form>
       )}
     </PremiumLoginShell>
   );
 }
-

@@ -58,6 +58,10 @@ export default function App() {
     setThemeState(t);
     setSavedTheme(t);
   }, []);
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#000000' : '#ffffff');
+  }, [theme]);
 
   const [authed, setAuthed] = useState(() => !!getToken());
   const [loginErr, setLoginErr] = useState('');
@@ -872,12 +876,12 @@ export default function App() {
                         <h2>{res.extra.title}</h2>
                         <small>{res.extra.rows.length}</small>
                         <div className="r">
-                          <button className="btn" onClick={() => load()}>
+                          <button className="btn sm secondary" onClick={() => load()}>
                             <RefreshCw size={12} />
                             Refresh
                           </button>
                           <button
-                            className="btn"
+                            className="btn sm secondary"
                             onClick={() =>
                               downloadCsv(
                                 'storage-pools.csv',
