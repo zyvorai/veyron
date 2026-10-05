@@ -55,3 +55,6 @@ dist/
 # Local run artifacts and agent scratch files
 /readiness-report*/
 .cursor/plans/
+
+# Assembled by docs/site/build.sh
+docs/site/assets/

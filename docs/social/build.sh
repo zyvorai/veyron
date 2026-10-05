@@ -31,3 +31,6 @@ render share-card.html veyron-share-card.png 1200 630
 render hero.html readme-hero.jpg 1600 800
 render capabilities.html readme-capabilities.jpg 1600 600
 render architecture.html readme-architecture.jpg 1600 700
+render stack.html readme-stack.jpg 1600 900
+render path.html readme-path.jpg 1600 900
+render benchmark.html readme-benchmark.jpg 1600 900

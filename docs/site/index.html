@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0 -->
+<title>Veyron: real VMs on Kubernetes, no pods pretending</title>
+<meta name="description" content="Veyron is the command center for VMs on Kubernetes. Kairon and FluxVM run every VM straight on KVM: 0 pods per VM, 7.4x faster to SSH than KubeVirt.">
+<meta property="og:title" content="Veyron: real VMs, no pods pretending">
+<meta property="og:description" content="One console for VMs on Kubernetes. 0 pods per VM, 14x lighter control plane, 7.4x faster to SSH than KubeVirt v1.9.0.">
+<meta property="og:image" content="assets/veyron-share-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="assets/zyvor-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<header class="nav" id="top">
+  <div class="nav-in">
+    <a class="logo" href="#top"><img src="assets/zyvor-mark.svg" alt="" width="22" height="22">Veyron</a>
+    <nav class="links" aria-label="Sections">
+      <a href="#stack">How it works</a>
+      <a href="#race">Speed</a>
+      <a href="#numbers">Benchmark</a>
+      <a href="#console">Console</a>
+      <a href="#start">Get started</a>
+    </nav>
+    <a class="btn sm" href="https://zyvor.dev/schedule?utm_source=site&amp;utm_medium=veyron&amp;utm_campaign=nav">Book a demo</a>
+  </div>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-copy">
+      <p class="eyebrow">Veyron &middot; Kairon &middot; FluxVM</p>
+      <h1>Real VMs.<br><span class="grad">No pods pretending.</span></h1>
+      <p class="lede">The command center for virtual machines on Kubernetes. One console, one API, one CLI, with every VM running straight on KVM. No <code>virt-launcher</code>, no libvirt, no waiting.</p>
+      <div class="cta">
+        <a class="btn" href="#start">Get started</a>
+        <a class="link" href="#race">Watch it race KubeVirt <span aria-hidden="true">&rsaquo;</span></a>
+      </div>
+    </div>
+    <figure class="frame reveal">
+      <div class="chrome"><i></i><i></i><i></i><span>veyron &middot; /console</span></div>
+      <img src="assets/console-mission.png" alt="Veyron Mission Control: a live fleet map with hosts and VMs" width="1440" height="900">
+    </figure>
+  </section>
+
+  <!-- Stat band -->
+  <section class="band" aria-label="Headline numbers">
+    <div class="stat reveal"><b data-count="0">0</b><span>pods per VM</span></div>
+    <div class="stat reveal"><b data-count="14" data-suffix="x">14x</b><span>lighter idle control plane</span></div>
+    <div class="stat reveal"><b data-count="7.4" data-suffix="x" data-dec="1">7.4x</b><span>faster to SSH, 5 VMs</span></div>
+    <div class="stat reveal"><b data-count="4">4</b><span>hypervisors, one API</span></div>
+  </section>
+
+  <!-- Stack -->
+  <section class="chapter dark" id="stack">
+    <div class="ch-head reveal">
+      <p class="kicker">How it works</p>
+      <h2>One click in the console.<br><span class="grad">Straight to KVM.</span></h2>
+      <p class="sub">Four layers, each doing one job. Hover a layer to see what it does.</p>
+    </div>
+    <div class="stack-wrap">
+      <ol class="stack" aria-label="The Veyron stack, top to bottom">
+        <li class="layer" style="--c:#2997ff" data-d="What you touch. A browser console, an HTTPS API and a CLI in one Rust binary. Templates, day-2 operations, snapshots, SSO, a SOC. It turns &ldquo;Ubuntu 24.04, medium&rdquo; into a Kairon Machine and keeps no database of its own.">
+          <span class="ln">Veyron</span><span class="lj">Console, API, CLI</span><span class="lt">Rust</span></li>
+        <li class="layer" style="--c:#8e8e93" data-d="The source of truth. Machines are custom resources, access is Kubernetes RBAC, and Veyron&rsquo;s settings live in labeled ConfigMaps. Nothing else to back up.">
+          <span class="ln">Kubernetes</span><span class="lj">Desired state</span><span class="lt">Machine CRDs</span></li>
+        <li class="layer" style="--c:#bf5af2" data-d="The VM engine. kairon-controller places Machines on real allocatable capacity; kairon-node on each host runs them and puts an eBPF edge on every VM tap: anti-spoofing, DNS and SNI policy, flows, packet capture.">
+          <span class="ln">Kairon</span><span class="lj">Places and runs Machines</span><span class="lt">0 pods / VM</span></li>
+        <li class="layer" style="--c:#30d158" data-d="The VMM layer on every host. One REST API for four hypervisors, a vsock guest agent instead of SSH, VM fork and warm pools. No libvirtd, no domain XML.">
+          <span class="ln">FluxVM</span><span class="lj">One API, every hypervisor</span><span class="lt">no libvirt</span></li>
+        <li class="hv" data-d="Pick per Machine: QEMU/KVM for full VMs and Windows, Cloud Hypervisor for lean Linux, Firecracker for microVMs, or FluxVM&rsquo;s own in-tree Rust hypervisor.">
+          <span>QEMU / KVM</span><span>Cloud Hypervisor</span><span>Firecracker</span><span>FluxVM HV</span></li>
+        <li class="kvm" data-d="Linux KVM on your own hardware: CPU, memory, NVMe and GPU passthrough. Nothing sits between the guest and the metal except the hypervisor you chose.">
+          <span class="ln">Linux KVM</span><span class="lj">your hardware</span></li>
+      </ol>
+      <aside class="stack-detail" aria-live="polite">
+        <p class="kicker" id="sd-k">Veyron</p>
+        <p id="sd-d">What you touch. A browser console, an HTTPS API and a CLI in one Rust binary.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Race -->
+  <section class="chapter" id="race">
+    <div class="ch-head reveal">
+      <p class="kicker">Speed</p>
+      <h2>Same VM. Same node.<br>Watch who gets to SSH first.</h2>
+      <p class="sub">A replay of the measured run, sped up 10x. Both sides boot the same Ubuntu 24.04 image on the same QEMU.</p>
+    </div>
+    <div class="race reveal">
+      <div class="race-ctl">
+        <div class="seg" role="tablist" aria-label="How many VMs">
+          <button role="tab" aria-selected="true" data-n="1">1 VM</button>
+          <button role="tab" aria-selected="false" data-n="5">5 VMs at once</button>
+        </div>
+        <button class="btn" id="race-go">Run the race</button>
+        <span class="clock" aria-live="off"><b id="race-clock">0.0</b> s measured</span>
+      </div>
+      <div class="lane win" data-lane="kairon">
+        <div class="lane-h"><b>Kairon</b><span>Machine &rarr; kairon-node &rarr; FluxVM &rarr; KVM</span><em class="lane-t">&mdash;</em></div>
+        <div class="track"><div class="fill"></div><i class="mark run" title="Running"></i><i class="mark ssh" title="SSH ready"></i></div>
+        <div class="lane-s">Waiting</div>
+      </div>
+      <div class="lane lose" data-lane="kubevirt">
+        <div class="lane-h"><b>KubeVirt v1.9.0</b><span>VM &rarr; Pod &rarr; virt-launcher &rarr; libvirt &rarr; QEMU</span><em class="lane-t">&mdash;</em></div>
+        <div class="track"><div class="fill"></div><i class="mark run" title="Running"></i><i class="mark ssh" title="SSH ready"></i></div>
+        <div class="lane-s">Waiting</div>
+      </div>
+      <p class="legend"><i class="lg run"></i>Running <i class="lg ssh"></i>SSH ready</p>
+      <p class="fine">Create to Running and create to SSH banner, p50. 2026-10-04, Xeon E-2336, k3s, 1 vCPU / 512 MiB guest. <a href="https://github.com/zyvorai/kairon/blob/main/docs/benchmarks/kairon-vs-kubevirt.md">Method and raw JSON</a>.</p>
+    </div>
+  </section>
+
+  <!-- Path -->
+  <section class="chapter dark" id="path">
+    <div class="ch-head reveal">
+      <p class="kicker">Why it&rsquo;s faster</p>
+      <h2>Same KVM at the bottom.<br><span class="grad">Half the stack in between.</span></h2>
+    </div>
+    <div class="paths">
+      <div class="path lose reveal">
+        <h3>KubeVirt <span class="hops">8 hops</span></h3>
+        <ol>
+          <li>VirtualMachine</li><li>virt-controller</li><li class="pod">Pod scheduled and pulled</li><li class="pod">virt-launcher pod, one per VM</li>
+          <li>virt-handler</li><li>libvirt / virtqemud</li><li>QEMU</li><li>KVM</li>
+        </ol>
+      </div>
+      <div class="path win reveal">
+        <h3>Kairon <span class="hops">5 hops</span></h3>
+        <ol>
+          <li>Machine</li><li>kairon-controller</li><li>kairon-node</li><li>FluxVM REST</li><li>KVM</li>
+        </ol>
+        <div class="gone"><s>virt-launcher pod</s><s>libvirt</s><s>domain XML</s><s>containerDisk pull</s><span>+ 4 hypervisors</span><span>+ eBPF VM edge</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Numbers -->
+  <section class="chapter" id="numbers">
+    <div class="ch-head reveal">
+      <p class="kicker">Benchmark</p>
+      <h2>Pod-per-VM is the bottleneck.<br>We removed it.</h2>
+      <p class="sub">One node, one script driving both platforms, run back to back against KubeVirt v1.9.0.</p>
+    </div>
+    <div class="bench">
+      <div class="b reveal"><h3>Idle control plane memory</h3><p class="x"><span class="grad">14x</span> lighter</p>
+        <div class="bar k" style="--w:7%"><span>Kairon</span><i></i><b>63 MiB</b></div>
+        <div class="bar v" style="--w:100%"><span>KubeVirt</span><i></i><b>905 MiB</b></div></div>
+      <div class="b reveal"><h3>Idle control plane CPU</h3><p class="x"><span class="grad">9x</span> lighter</p>
+        <div class="bar k" style="--w:11.6%"><span>Kairon</span><i></i><b>3.5m</b></div>
+        <div class="bar v" style="--w:100%"><span>KubeVirt</span><i></i><b>30.2m</b></div></div>
+      <div class="b reveal"><h3>1 VM: create to SSH</h3><p class="x"><span class="grad">2.9x</span> faster</p>
+        <div class="bar k" style="--w:35%"><span>Kairon</span><i></i><b>23.7 s</b></div>
+        <div class="bar v" style="--w:100%"><span>KubeVirt</span><i></i><b>67.6 s</b></div></div>
+      <div class="b reveal"><h3>5 VMs: create to SSH, p50</h3><p class="x"><span class="grad">7.4x</span> faster</p>
+        <div class="bar k" style="--w:13.4%"><span>Kairon</span><i></i><b>24.8 s</b></div>
+        <div class="bar v" style="--w:100%"><span>KubeVirt</span><i></i><b>184.7 s</b></div></div>
+      <div class="b wide reveal"><h3>10 VMs at once: reached SSH within 600 s</h3><p class="x"><span class="grad">10 of 10</span> vs 0 of 10</p>
+        <div class="dots k"><span>Kairon</span><div><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><b>10/10</b></div>
+        <div class="dots v"><span>KubeVirt</span><div><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><b>0/10</b></div>
+      </div>
+    </div>
+    <p class="honest reveal"><b>Being fair about it:</b> per-VM memory is the same, because both run the same QEMU. The N=10 run was on a shared lab host, so read it as &ldquo;the pod-per-VM path breaks first under pressure&rdquo;, not as KubeVirt&rsquo;s density ceiling. The win is the control plane and the start path, which is exactly the part you wait on. <a href="https://github.com/zyvorai/kairon/blob/main/docs/benchmarks/kairon-vs-kubevirt.md">Full method and caveats</a>.</p>
+  </section>
+
+  <!-- Console -->
+  <section class="chapter dark" id="console">
+    <div class="ch-head reveal">
+      <p class="kicker">The console</p>
+      <h2>Feels like an Apple app.<br><span class="grad">Runs your whole fleet.</span></h2>
+      <p class="sub">Frosted nav with mega-menus, a &#8984;K palette for everything, a live fleet map and a details panel that slides in from any row.</p>
+    </div>
+    <div class="gallery reveal">
+      <div class="seg" role="tablist" aria-label="Console screens">
+        <button role="tab" aria-selected="true" data-shot="console-mission.png">Mission Control</button>
+        <button role="tab" aria-selected="false" data-shot="console-vms.png">Virtual machines</button>
+        <button role="tab" aria-selected="false" data-shot="console-dark.png">Dark + details</button>
+        <button role="tab" aria-selected="false" data-shot="console-login.png">Sign in</button>
+      </div>
+      <figure class="frame">
+        <div class="chrome"><i></i><i></i><i></i><span>veyron &middot; /console</span></div>
+        <img id="shot" src="assets/console-mission.png" alt="Veyron console screen" width="1440" height="900" loading="lazy">
+      </figure>
+    </div>
+  </section>
+
+  <!-- Capabilities -->
+  <section class="chapter" id="caps">
+    <div class="ch-head reveal">
+      <p class="kicker">Everything day 2 needs</p>
+      <h2>Built in, not bolted on.</h2>
+    </div>
+    <div class="tiles">
+      <div class="tile reveal" style="--c:#2997ff"><h3>Current OS templates</h3><p>Ubuntu 26.04, Debian 13, Fedora 44, EL10, Windows Server 2025 and 11. Pick, size, boot.</p></div>
+      <div class="tile reveal" style="--c:#bf5af2"><h3>Day-2 as buttons</h3><p>Hotplug, bulk actions, node maintenance, guest patching, disk reclaim, self-healing.</p></div>
+      <div class="tile reveal" style="--c:#30d158"><h3>Protect</h3><p>Snapshots, clones, backups, DR failback, Ceph snapshots and S3 backups through Atlas.</p></div>
+      <div class="tile reveal" style="--c:#ff9f0a"><h3>GPU and Windows</h3><p>GPU passthrough with a live-migration guard. Golden images, sysprep, domain join, RDP guardrails.</p></div>
+      <div class="tile reveal" style="--c:#ff453a"><h3>Secure</h3><p>Admin, write and read-only roles, OIDC SSO, and a SOC with SIEM export.</p></div>
+      <div class="tile reveal" style="--c:#64d2ff"><h3>No database</h3><p>State lives in Kubernetes. Unsupported actions return 501 with a reason, never a fake success.</p></div>
+    </div>
+  </section>
+
+  <!-- Quickstart -->
+  <section class="chapter dark" id="start">
+    <div class="ch-head reveal">
+      <p class="kicker">Get started</p>
+      <h2>Two commands to your first VM.</h2>
+    </div>
+    <div class="code reveal">
+      <button class="copy" type="button" aria-label="Copy commands">Copy</button>
+<pre><code><span class="c"># build on the node, deploy to veyron-system</span>
+git clone https://github.com/zyvorai/veyron.git &amp;&amp; cd veyron
+./scripts/deploy-remote.sh &lt;node-host&gt; &lt;ssh-user&gt;
+
+<span class="c"># then open https://&lt;node-ip&gt;:30151/console, or:</span>
+veyron create demo --template ubuntu-24.04 --cpus 2 --memory 4Gi</code></pre>
+    </div>
+    <div class="final reveal">
+      <h2>Ready to retire <code>virt-launcher</code>?</h2>
+      <div class="cta">
+        <a class="btn" href="https://zyvor.dev/schedule?utm_source=site&amp;utm_medium=veyron&amp;utm_campaign=footer">Book a demo</a>
+        <a class="btn ghost" href="https://zyvor.dev/poc?utm_source=site&amp;utm_medium=veyron&amp;utm_campaign=footer">Start a 30-day PoC</a>
+        <a class="link" href="https://github.com/zyvorai/veyron">View on GitHub <span aria-hidden="true">&rsaquo;</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>&copy; 2026 Zyvor AI Labs &middot; Veyron is source-available under the Zyvor Production License</span>
+  <span><a href="https://github.com/zyvorai/veyron">GitHub</a> &middot; <a href="https://github.com/zyvorai/kairon">Kairon</a> &middot; <a href="https://github.com/zyvorai/fluxvm">FluxVM</a> &middot; <a href="https://zyvor.dev">zyvor.dev</a></span>
+</footer>
+
+<script src="site.js" defer></script>
+</body>
+</html>

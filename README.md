@@ -6,45 +6,75 @@
 [![License: Zyvor Production 1.0](https://img.shields.io/badge/License-Zyvor_Production_1.0-1d1d1f.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-one_binary-dea584?logo=rust)](Cargo.toml)
 [![Engine: Kairon](https://img.shields.io/badge/Engine-Kairon-0071e3)](https://github.com/zyvorai/kairon)
+[![Website](https://img.shields.io/badge/Website-zyvorai.github.io%2Fveyron-2997ff)](https://zyvorai.github.io/veyron/)
 
 [![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=veyron&utm_campaign=readme_hero)
 [![30-day PoC](https://img.shields.io/badge/30--day_PoC-000000?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=veyron&utm_campaign=readme_hero)
 [![Quickstart](https://img.shields.io/badge/Quickstart-0a84ff?style=for-the-badge)](#quickstart)
 
-![Veyron: every VM on Kubernetes, one console](docs/assets/readme-hero.jpg)
+![Veyron: real VMs, no pods pretending](docs/assets/readme-hero.jpg)
 
-### Every VM on Kubernetes. One console.
+### Real VMs. No pods pretending.
 
-**Veyron is the command center for virtual machines on Kubernetes.** Create, run, protect and secure VMs from a browser, an HTTPS API or a CLI, all in one Rust binary, with [Kairon](https://github.com/zyvorai/kairon) running the VMs underneath.
+**Veyron is the command center for virtual machines on Kubernetes.** A browser console, an HTTPS API and a CLI in one Rust binary. Underneath, [Kairon](https://github.com/zyvorai/kairon) and [FluxVM](https://github.com/zyvorai/fluxvm) run every VM straight on KVM: no `virt-launcher` pod, no libvirt, no operator zoo.
 
-**Browser console** · **Day-2 operations built in** · **GPU and Windows ready** · **SSO and three-role RBAC** · **A SOC that watches your fleet**
+**0 pods per VM** · **7.4x faster to SSH than KubeVirt** · **4 hypervisors** · **Day-2 ops built in** · **SSO, RBAC and a SOC**
 
 </div>
 
 ---
 
-## What's new
+## Why not KubeVirt?
 
-| | |
-|---|---|
-| **Kairon as the engine** | Veyron drives Kairon `Machine`s through the Kubernetes API: no pod per VM, no libvirt in the hot path. KubeVirt and CDI are on the way out. |
-| **A new console** | Login, buttons, colors and every panel rebuilt in the Zyvor design system, in light and dark. |
-| **Source-available** | The full source is public under the [Zyvor Production License](LICENSE): free for evaluation and non-production use. |
+KubeVirt turns every VM into a Pod. That means a scheduler round-trip, an image pull, a `virt-launcher` container, libvirt and domain XML on the path to every boot. Each layer is one more thing to patch, one more log to read and one more process to crash at 2 a.m. We measured what it costs.
+
+<table>
+<tr>
+<td align="center" width="33%"><h2>14x</h2>lighter idle control plane<br><sub>63 MiB vs 905 MiB</sub></td>
+<td align="center" width="33%"><h2>7.4x</h2>faster to SSH, 5 VMs at once<br><sub>24.8 s vs 184.7 s (p50)</sub></td>
+<td align="center" width="33%"><h2>10 / 10</h2>VMs up at N=10<br><sub>KubeVirt: 0 of 10 in 600 s</sub></td>
+</tr>
+</table>
+
+![Kairon vs KubeVirt benchmark: 14x lighter idle control plane, 2.9x faster to SSH for one VM, 7.4x for five, 10 of 10 vs 0 of 10 at ten](docs/assets/readme-benchmark.jpg)
+
+Same node, same Ubuntu 24.04 image, same 1 vCPU / 512 MiB guest, same readiness probe (the guest's SSH banner), one script driving both, run back to back on 2026-10-04 against **KubeVirt v1.9.0**. Method, raw JSON and caveats: [Kairon benchmark](https://github.com/zyvorai/kairon/blob/main/docs/benchmarks/kairon-vs-kubevirt.md).
+
+To be fair about it: **per-VM memory is the same** (both run the same QEMU), and the N=10 run was on a shared lab host, so read it as "the pod-per-VM path breaks first under pressure", not as KubeVirt's density ceiling. The win is the control plane and the start path, and that is exactly the part you wait on.
 
 ---
 
-## Why Veyron
+## How it works
 
-| When this happens… | Veyron gives you… |
+![The stack: Veyron on top, the Kubernetes API, Kairon, FluxVM, four hypervisors, and Linux KVM on your hardware](docs/assets/readme-stack.jpg)
+
+| Layer | What it does |
 |---|---|
-| Your team needs VMs but nobody wants to hand-write YAML | **Templates and a console.** Current OS templates (Ubuntu 26.04, Debian 13, Fedora 44, EL10, Windows Server 2025 and 11), size and start a VM in a minute, then open its screen in the browser. |
-| Day 2 means a pile of scripts: patching, resizing, moving, cleaning up | **Day-2 operations as buttons and API calls:** hotplug, bulk actions, node maintenance, guest patching, disk reclaim, self-healing. |
-| A bad upgrade or a deleted disk turns into an outage | **Snapshots, clones, backups and DR failback**, plus Ceph snapshots and off-cluster S3 backups through [Atlas](https://zyvor.dev). |
-| GPU and Windows workloads don't fit generic tooling | **GPU passthrough with a live-migration guard**, and Windows golden images with sysprep, domain join and RDP guardrails. |
-| Everyone shares one admin password | **Admin, write and read-only roles**, multiple keys, local accounts and OIDC SSO with Keycloak, Okta, Auth0 or Azure AD. |
-| Security finds exposed VMs after the fact | **A built-in SOC:** detections for public RDP and SSH, policy gaps and drift, plus export to Elastic, Splunk, Sentinel and QRadar. |
+| **Veyron** | What you touch. Console, API and CLI; templates, day-2 operations, snapshots, SSO, SOC. Turns "Ubuntu 24.04, medium" into a Kairon `Machine`. Keeps no database. |
+| **Kubernetes** | The source of truth. `Machine` custom resources, RBAC through one ServiceAccount, Veyron settings in labeled ConfigMaps. |
+| **Kairon** | The VM engine. `kairon-controller` places Machines on real allocatable capacity; `kairon-node` on each host runs them and puts an eBPF edge on every VM tap. Go standard library only. |
+| **FluxVM** | The VMM layer on each host. One REST API for four hypervisors, a vsock guest agent instead of SSH, fork and warm pools. No libvirtd, no XML. |
+| **Hypervisor** | Your pick per Machine: **QEMU/KVM** for full VMs and Windows, **Cloud Hypervisor** for lean Linux, **Firecracker** for microVMs, or FluxVM's own in-tree Rust hypervisor. |
+| **KVM** | Linux KVM on your hardware, including GPU passthrough. |
 
-![Capabilities at a glance: Run, Protect, Observe, Secure](docs/assets/readme-capabilities.jpg)
+---
+
+## The start path, side by side
+
+![KubeVirt: 8 hops from VirtualMachine to KVM with a pod per VM. Kairon: 5 hops from Machine to KVM, no pods](docs/assets/readme-path.jpg)
+
+| | **Veyron + Kairon** | **KubeVirt** |
+|---|---|---|
+| A VM is | A `Machine`: its own CRD and lifecycle | A Pod in disguise (`virt-launcher`) |
+| Pods per running VM | **0** | 1 |
+| Path to KVM | `kairon-node` → FluxVM REST → KVM | `virt-handler` → `virt-launcher` → libvirt → QEMU |
+| libvirt on the boot path | **No** | Yes |
+| Hypervisors | **QEMU, Cloud Hypervisor, Firecracker, FluxVM** | QEMU |
+| Idle control plane | **63 MiB, 3.5m CPU** | 905 MiB, 30.2m CPU |
+| 1 VM, create to SSH | **23.7 s** | 67.6 s |
+| 5 VMs, create to SSH (p50) | **24.8 s** | 184.7 s |
+| VM networking | eBPF edge per VM: anti-spoof, DNS/SNI policy, flows, pcap | Pod CNI, masquerade, Multus |
+| Console, day-2, SOC | **Veyron, built in** | Bring your own UI |
 
 ---
 
@@ -52,17 +82,28 @@
 
 | Mission Control | Virtual machines |
 |---|---|
-| ![Mission Control](docs/assets/console-mission.png) | ![VM list](docs/assets/console-vms.png) |
-| **Sign in** | **Dark theme** |
-| ![Sign in](docs/assets/console-login.png) | ![Dark theme](docs/assets/console-dark.png) |
+| ![Mission Control: live fleet map, health headline, create button](docs/assets/console-mission.png) | ![Virtual machines list](docs/assets/console-vms.png) |
+| **Sign in** | **Dark theme, details panel** |
+| ![Sign in](docs/assets/console-login.png) | ![Dark theme with VM details panel](docs/assets/console-dark.png) |
+
+A frosted top nav with mega-menus, a ⌘K palette for everything, a live fleet map, and a details panel that slides in from any row. Light and dark.
 
 ---
 
-## How it fits together
+## What you can do with it
 
-![Veyron console, API and CLI in front, the Kubernetes API in the middle, Kairon underneath](docs/assets/readme-architecture.jpg)
+| When this happens… | Veyron gives you… |
+|---|---|
+| Your team needs VMs but nobody wants to hand-write YAML | **Templates and a console.** Ubuntu 26.04, Debian 13, Fedora 44, EL10, Windows Server 2025 and 11: pick, size, boot, then open its screen in the browser. |
+| Day 2 means a pile of scripts | **Day-2 operations as buttons and API calls:** hotplug, bulk actions, node maintenance, guest patching, disk reclaim, self-healing. |
+| A bad upgrade or a deleted disk turns into an outage | **Snapshots, clones, backups and DR failback**, plus Ceph snapshots and off-cluster S3 backups through [Atlas](https://zyvor.dev). |
+| GPU and Windows workloads don't fit generic tooling | **GPU passthrough with a live-migration guard**, and Windows golden images with sysprep, domain join and RDP guardrails. |
+| Everyone shares one admin password | **Admin, write and read-only roles**, multiple keys, local accounts and OIDC SSO with Keycloak, Okta, Auth0 or Azure AD. |
+| Security finds exposed VMs after the fact | **A built-in SOC:** detections for public RDP and SSH, policy gaps and drift, export to Elastic, Splunk, Sentinel and QRadar. |
 
-Veyron keeps no database. VM state lives in Kubernetes as Kairon custom resources, and Veyron's own settings (alert rules, policies, budgets, SOC state) live in labeled ConfigMaps. Consoles and in-guest commands go through the kairon-node relay, so there is nothing per VM to babysit. Anything the engine can't do returns `501` with a reason, never a fake success. Details: [docs/architecture.md](docs/architecture.md).
+![Capabilities at a glance: Run, Protect, Observe, Secure](docs/assets/readme-capabilities.jpg)
+
+Veyron keeps no database: VM state lives in Kubernetes, settings in labeled ConfigMaps, and anything the engine can't do returns `501` with a reason, never a fake success. Details: [docs/architecture.md](docs/architecture.md).
 
 ---
 
@@ -134,6 +175,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately 
 |---|---|
 | **Veyron** | The console, API and CLI for VMs on Kubernetes |
 | **[Kairon](https://github.com/zyvorai/kairon)** | The VM engine: `Machine`s on FluxVM and KVM, without KubeVirt |
+| **[FluxVM](https://github.com/zyvorai/fluxvm)** | The VMM layer under Kairon: QEMU, Cloud Hypervisor, Firecracker and its own hypervisor behind one REST API |
 | **[Kryton](https://github.com/zyvorai/zyvor-kryton)** | Machine API for lab and edge Windows/Linux hosts (dockur, libvirt), plus checksum-pinned golden images |
 | **[Atlas](https://github.com/zyvorai/zyvor-atlas)** | Storage control plane: Ceph snapshots, clones and S3 backups for VM disks |
 | **PacketWolf** | Network intelligence for the cluster |
