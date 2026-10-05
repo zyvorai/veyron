@@ -51,7 +51,7 @@ pub async fn push_events(events: &[SecurityEvent]) -> anyhow::Result<u32> {
         Some(c) => c,
         None => return Ok(0),
     };
-    let client = reqwest::Client::new();
+    let client = crate::soc::http_client();
     let url = format!("{}/services/collector/event", cfg.hec_url);
     let mut pushed = 0u32;
     for ev in events {
@@ -98,7 +98,7 @@ pub async fn run_hunt(query: &str, time_range: &str) -> anyhow::Result<serde_jso
         "{}/services/search/jobs/export?output_mode=json",
         base.trim_end_matches('/')
     );
-    let client = reqwest::Client::new();
+    let client = crate::soc::http_client();
     let resp = client
         .post(&url)
         .header("Authorization", format!("Bearer {}", token))
@@ -122,7 +122,7 @@ pub async fn probe() -> bool {
     let Some(cfg) = config() else {
         return false;
     };
-    let client = reqwest::Client::new();
+    let client = crate::soc::http_client();
     client
         .get(&cfg.hec_url)
         .header("Authorization", format!("Splunk {}", cfg.token))

@@ -68,7 +68,7 @@ pub async fn push_events(events: &[SecurityEvent]) -> anyhow::Result<u32> {
         "{}/dataCollectionRules/{}/streams/{}?api-version=2023-01-01",
         cfg.dce_url, cfg.dcr_rule, cfg.stream
     );
-    let client = reqwest::Client::new();
+    let client = crate::soc::http_client();
     let resp = client
         .post(&url)
         .bearer_auth(&token)
@@ -96,7 +96,7 @@ async fn acquire_token(cfg: &SentinelConfig) -> anyhow::Result<String> {
         "https://login.microsoftonline.com/{}/oauth2/v2.0/token",
         cfg.tenant_id
     );
-    let client = reqwest::Client::new();
+    let client = crate::soc::http_client();
     let resp = client
         .post(&url)
         .form(&[

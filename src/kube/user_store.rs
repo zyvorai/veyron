@@ -290,6 +290,14 @@ fn decode_users(secret: &Secret) -> Vec<UserAccount> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn generated_passwords_are_long_and_unique() {
+        let (a, b) = (super::random_password(), super::random_password());
+        assert_eq!(a.len(), 24);
+        assert!(a.chars().all(|c| c.is_ascii_alphanumeric()));
+        assert_ne!(a, b);
+    }
+
     use super::*;
 
     #[test]

@@ -93,7 +93,7 @@ pub async fn trigger_playbook(
         })
     });
 
-    let client = reqwest::Client::new();
+    let client = crate::soc::http_client();
     let resp = client.post(&pb.webhook_url).json(&body).send().await?;
     Ok(serde_json::json!({
         "playbook": pb.name,
@@ -106,7 +106,7 @@ pub async fn trigger_playbook(
 pub async fn fire_detection_webhooks(event_type: &str, detection: &serde_json::Value) {
     if let Ok(url) = std::env::var("VEYRON_SOAR_WEBHOOK_URL") {
         if !url.is_empty() {
-            let client = reqwest::Client::new();
+            let client = crate::soc::http_client();
             let body = serde_json::json!({
                 "event_type": event_type,
                 "detection": detection,

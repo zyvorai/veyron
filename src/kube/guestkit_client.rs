@@ -122,20 +122,6 @@ fn jsonrpc_method_to_qga_execute(method: &str, params: &Value) -> Result<Value> 
     }))
 }
 
-/// Legacy per-method QGA mapping (agents without the `guestkit-rpc` passthrough).
-#[allow(dead_code)]
-fn jsonrpc_method_to_qga_execute_legacy(method: &str, params: &Value) -> Result<Value> {
-    match method {
-        "guestkit.getEvidence" => Ok(json!({ "execute": "guestkit-get-evidence" })),
-        "guestkit.doctor" => Ok(json!({ "execute": "guestkit-doctor", "arguments": params })),
-        "guestkit.getCapabilities" => Ok(json!({ "execute": "guestkit-get-capabilities" })),
-        "guestkit.getVersion" => Ok(json!({ "execute": "guestkit-get-version" })),
-        "guestkit.getMetrics" => Ok(json!({ "execute": "guestkit-get-metrics" })),
-        "guestkit.getGuestHealth" => Ok(json!({ "execute": "guestkit-get-guest-health" })),
-        other => anyhow::bail!("no legacy QGA shim for: {other}"),
-    }
-}
-
 /// Raw QGA `{ "execute": "...", "arguments": ... }` via virt-launcher virsh.
 pub async fn qga_execute_for_vmi(
     client: Client,

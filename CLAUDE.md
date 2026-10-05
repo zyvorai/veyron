@@ -115,7 +115,7 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
 
 ### Web API (feature = "web")
 
-- `src/api/http_server.rs` — Axum server, TLS, auth middleware, rate limiting, WebSocket upgrade, VNC proxy. VM routes: **`/network/internet`** (per-VM egress), **`/expose`** (SSH via `kubevirt.io/domain`), **`/rdp-expose`** (RDP via `kubevirt.io/vm` + NodePort).
+- `src/api/http_server.rs` — Axum server, TLS, auth middleware, rate limiting, CORS, router; handlers it mounts directly live in `src/api/http_server/web/{vm,resources,ws,tls}.rs` (child modules, `pub(super)` items). VM routes: **`/network/internet`** (per-VM egress), **`/expose`** (SSH via `kubevirt.io/domain`), **`/rdp-expose`** (RDP via `kubevirt.io/vm` + NodePort).
 - `src/api/handlers/` — handler modules per API domain (`vmis`, `pods`, `metrics`, `costs`, `snapshots`, `compliance`, `soc`, etc.)
 
 **Day-2 operations** (ongoing fleet maintenance; mutations ⇒ Write, cluster-wide/destructive ⇒ Admin in `auth_context.rs`; several are **dry-run by default**):
@@ -151,7 +151,7 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 
 ### Kubernetes integration
 
-- `src/kube/mod.rs` — `KubeClient` wrapper; kubeconfig resolved once into `static CACHED_CONFIG: OnceCell<Config>`, fresh `kube::Client` created per call (cheap)
+- `src/kube/mod.rs` — `KubeClient` wrapper; kubeconfig resolved once and the `kube::Client` cached (`get_client()` honors `--kubeconfig`); CLI handlers should use it rather than `Client::try_default()`
 - `src/kube/types.rs` — KubeVirt CRD types: `VirtualMachine`, `VirtualMachineInstance` (spec uses `BTreeMap<String, serde_json::Value>` flatten), `VirtualMachineInstanceMigration`
 - `src/kube/converter.rs` — `VMConfig → KubeVirt VirtualMachine` manifest
 - `src/kube/status.rs` — VM status queries and resource summaries
@@ -181,7 +181,6 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 ### Feature flags
 
 - `default = ["web"]` — enables axum, rustls, TLS, dashboard, WebSockets
-- `experimental` — placeholder
 - `trial` — 30-day evaluation build for the standalone client tarball only (`scripts/package-binary-remote.sh --trial`); pulls in `web` + `ring` for Ed25519 token verification. **Never** enabled for in-cluster Helm/`deploy-remote.sh` images — see `docs/deploy.md`.
 - Build CLI-only: `cargo build --no-default-features`
 

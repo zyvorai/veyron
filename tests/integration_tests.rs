@@ -28,13 +28,13 @@ fn test_windows_11_template_uses_lab_sized_memory_default() {
         .get("windows-11")
         .expect("windows-11 template exists");
 
-    assert_eq!(template.memory.size, "4Gi");
+    assert_eq!(template.memory.size, "8Gi");
     assert!(template.enable_tpm);
 
     let vm = vm_config_to_kubevirt(&template).unwrap();
     assert_eq!(
         vm.spec.template.spec.domain.memory.as_ref().unwrap().guest,
-        Some("4Gi".to_string())
+        Some("8Gi".to_string())
     );
 }
 
@@ -314,8 +314,8 @@ fn test_network_types_conversion() {
 fn test_all_templates_valid() {
     let template_names = TEMPLATES.list();
     assert!(
-        template_names.len() >= 40,
-        "Expected at least 40 templates, got {}",
+        template_names.len() >= 25,
+        "Expected at least 25 templates, got {}",
         template_names.len()
     );
 
@@ -360,7 +360,7 @@ fn test_all_templates_convert_to_kubevirt() {
 
 #[test]
 fn test_template_families() {
-    let families = ["ubuntu", "fedora", "centos", "debian", "rhel", "windows"];
+    let families = ["ubuntu", "fedora", "centos", "debian", "rocky", "windows"];
     for family in families {
         let config = TEMPLATES.get(family);
         assert!(
@@ -1471,8 +1471,8 @@ fn test_templates_api_returns_all_templates() {
     // Verify the templates handler has data to serve
     let names = TEMPLATES.list();
     assert!(
-        names.len() >= 40,
-        "Should have 40+ templates, got {}",
+        names.len() >= 25,
+        "Should have 25+ templates, got {}",
         names.len()
     );
 

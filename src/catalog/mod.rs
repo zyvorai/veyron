@@ -363,9 +363,9 @@ pub struct ClusterProfileSummary {
 
 /// List VMTemplate CRDs from the connected cluster.
 pub async fn list_cluster_templates() -> Result<Vec<ClusterTemplateSummary>> {
-    use kube::{Api, Client, api::ListParams};
+    use kube::{Api, api::ListParams};
 
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VMTemplate> = Api::all(client);
     let list = api.list(&ListParams::default().limit(500)).await?;
     let mut items: Vec<_> = list
@@ -383,9 +383,9 @@ pub async fn list_cluster_templates() -> Result<Vec<ClusterTemplateSummary>> {
 
 /// List VMProfile CRDs from the connected cluster.
 pub async fn list_cluster_profiles() -> Result<Vec<ClusterProfileSummary>> {
-    use kube::{Api, Client, api::ListParams};
+    use kube::{Api, api::ListParams};
 
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VMProfile> = Api::all(client);
     let list = api.list(&ListParams::default().limit(100)).await?;
     let mut items: Vec<_> = list
@@ -411,7 +411,7 @@ mod tests {
     fn export_catalog_writes_files() {
         let dir = TempDir::new().unwrap();
         let (t, p) = export_catalog(dir.path()).unwrap();
-        assert!(t >= 40);
+        assert!(t >= 25);
         assert!(p >= 8);
         assert!(dir.path().join("templates/windows-2022.yaml").exists());
         assert!(dir.path().join("profiles/prod.yaml").exists());

@@ -293,10 +293,6 @@ pub struct RdpCredentialsRequest {
     pub domain: Option<String>,
 }
 
-/// Maximum clipboard size (10 MiB) to prevent memory exhaustion
-#[allow(dead_code)]
-const MAX_CLIPBOARD_SIZE: usize = 10 * 1024 * 1024;
-
 /// RDP clipboard transfer
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RdpClipboardRequest {

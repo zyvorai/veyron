@@ -113,7 +113,7 @@ async fn upsert_profile(
 }
 
 pub async fn handle_catalog_sync(_namespace: String) -> Result<()> {
-    use kube::{Api, Client};
+    use kube::Api;
 
     let dir = crate::catalog::default_output_dir();
     let templates_dir = dir.join("templates");
@@ -124,7 +124,7 @@ pub async fn handle_catalog_sync(_namespace: String) -> Result<()> {
         );
     }
 
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let tpl_api: Api<crate::operator_crds::VMTemplate> = Api::all(client.clone());
     let prof_api: Api<crate::operator_crds::VMProfile> = Api::all(client);
 

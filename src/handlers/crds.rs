@@ -3,14 +3,14 @@
 
 use anyhow::Result;
 use kube::{
-    Api, Client,
+    Api,
     api::{DeleteParams, ListParams, PostParams},
 };
 
 use crate::operator_crds::*;
 
 pub async fn handle_vrvm_list(namespace: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronVM> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
@@ -55,7 +55,7 @@ pub async fn handle_vrvm_list(namespace: &str) -> Result<()> {
 }
 
 pub async fn handle_vrvm_get(namespace: &str, name: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronVM> = Api::namespaced(client, namespace);
     let vm = api.get(name).await?;
 
@@ -126,7 +126,7 @@ pub async fn handle_vrvm_create(namespace: &str, name: &str, args: VrvmCreateArg
         return Ok(());
     }
 
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronVM> = Api::namespaced(client, namespace);
     let vm = VeyronVM::new(name, spec);
     let created = api.create(&PostParams::default(), &vm).await?;
@@ -506,7 +506,7 @@ pub async fn handle_vrvm_apply(namespace: &str, file: &str, dry_run: bool) -> Re
         return Ok(());
     }
 
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronVM> = Api::namespaced(client, &ns);
 
     // Try to get existing — if exists, replace; otherwise create
@@ -528,7 +528,7 @@ pub async fn handle_vrvm_apply(namespace: &str, file: &str, dry_run: bool) -> Re
 }
 
 pub async fn handle_vrvm_delete(namespace: &str, name: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronVM> = Api::namespaced(client, namespace);
     api.delete(name, &DeleteParams::default()).await?;
     println!("VeyronVM '{}' deleted", name);
@@ -536,7 +536,7 @@ pub async fn handle_vrvm_delete(namespace: &str, name: &str) -> Result<()> {
 }
 
 pub async fn handle_vrbp_list(namespace: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronBlueprint> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
@@ -572,7 +572,7 @@ pub async fn handle_vrbp_list(namespace: &str) -> Result<()> {
 }
 
 pub async fn handle_vrbp_get(namespace: &str, name: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronBlueprint> = Api::namespaced(client, namespace);
     let bp = api.get(name).await?;
 
@@ -606,7 +606,7 @@ pub async fn handle_vrbp_get(namespace: &str, name: &str) -> Result<()> {
 }
 
 pub async fn handle_vrbp_delete(namespace: &str, name: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronBlueprint> = Api::namespaced(client, namespace);
     api.delete(name, &DeleteParams::default()).await?;
     println!("VeyronBlueprint '{}' deleted", name);
@@ -614,7 +614,7 @@ pub async fn handle_vrbp_delete(namespace: &str, name: &str) -> Result<()> {
 }
 
 pub async fn handle_vrpol_list(namespace: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronPolicy> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
@@ -648,7 +648,7 @@ pub async fn handle_vrpol_list(namespace: &str) -> Result<()> {
 }
 
 pub async fn handle_vrpol_get(namespace: &str, name: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronPolicy> = Api::namespaced(client, namespace);
     let p = api.get(name).await?;
 
@@ -676,7 +676,7 @@ pub async fn handle_vrpol_get(namespace: &str, name: &str) -> Result<()> {
 }
 
 pub async fn handle_vrpol_delete(namespace: &str, name: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronPolicy> = Api::namespaced(client, namespace);
     api.delete(name, &DeleteParams::default()).await?;
     println!("VeyronPolicy '{}' deleted", name);
@@ -684,7 +684,7 @@ pub async fn handle_vrpol_delete(namespace: &str, name: &str) -> Result<()> {
 }
 
 pub async fn handle_vrin_list(namespace: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronInsight> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
@@ -718,7 +718,7 @@ pub async fn handle_vrin_list(namespace: &str) -> Result<()> {
 }
 
 pub async fn handle_vract_list(namespace: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronAction> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
@@ -752,7 +752,7 @@ pub async fn handle_vract_list(namespace: &str) -> Result<()> {
 }
 
 pub async fn handle_vract_approve(namespace: &str, name: &str) -> Result<()> {
-    let client = Client::try_default().await?;
+    let client = crate::kube::get_client().await?;
     let api: Api<VeyronAction> = Api::namespaced(client, namespace);
 
     let mut action = api.get(name).await?;

@@ -70,7 +70,7 @@ pub async fn push_events(events: &[SecurityEvent]) -> anyhow::Result<u32> {
         bulk.push('\n');
     }
     let url = format!("{}/_bulk", cfg.url);
-    let client = reqwest::Client::new();
+    let client = crate::soc::http_client();
     let mut req = client
         .post(&url)
         .header("Authorization", format!("ApiKey {}", cfg.api_key))
@@ -114,7 +114,7 @@ pub async fn run_hunt(query: &str, time_range: &str) -> anyhow::Result<serde_jso
         "sort": [{ "@timestamp": "desc" }]
     });
     let url = format!("{}/{}/_search", cfg.url, cfg.index);
-    let client = reqwest::Client::new();
+    let client = crate::soc::http_client();
     let resp = client
         .post(&url)
         .header("Authorization", format!("ApiKey {}", cfg.api_key))

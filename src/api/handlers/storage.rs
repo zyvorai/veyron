@@ -281,12 +281,19 @@ async fn list_storage_pools(
         entry.1 += 1;
     }
 
+    let csi_free = csi_free_by_storage_class(&kube_client.client()).await;
+
     let results: Vec<StoragePool> = storage_classes
         .iter()
         .map(|sc| {
             let meta = &sc.metadata;
             let sc_name = meta.name.clone().unwrap_or_default();
             let (total_bytes, volume_count) = sc_stats.get(&sc_name).copied().unwrap_or((0, 0));
+            // CSIStorageCapacity is only published by drivers with storageCapacity: true.
+            let available = csi_free
+                .get(&sc_name)
+                .map(|(_, sum)| format_bytes(*sum))
+                .unwrap_or_else(|| "N/A".to_string());
             let total_str = format_bytes(total_bytes);
             StoragePool {
                 name: sc_name.clone(),
@@ -294,7 +301,7 @@ async fn list_storage_pools(
                 provisioner: sc.provisioner.clone(),
                 total_capacity: total_str.clone(),
                 used_capacity: total_str, // PVC capacity = allocated/used
-                available_capacity: "N/A".to_string(), // requires storage-level API
+                available_capacity: available,
                 volume_count,
             }
         })
@@ -325,6 +332,19 @@ fn format_bytes(bytes: u64) -> String {
 async fn csi_min_free_by_storage_class(
     client: &kube::Client,
 ) -> std::collections::HashMap<String, u64> {
+    csi_free_by_storage_class(client)
+        .await
+        .into_iter()
+        .map(|(sc, (min, _))| (sc, min))
+        .collect()
+}
+
+/// Free capacity per StorageClass from `CSIStorageCapacity` as `(min per topology
+/// segment, sum across segments)`. Empty when the CSI driver doesn't publish capacity.
+#[cfg(feature = "web")]
+async fn csi_free_by_storage_class(
+    client: &kube::Client,
+) -> std::collections::HashMap<String, (u64, u64)> {
     use k8s_openapi::api::storage::v1::CSIStorageCapacity;
     use kube::api::ListParams;
 
@@ -333,23 +353,28 @@ async fn csi_min_free_by_storage_class(
         return std::collections::HashMap::new();
     };
 
-    let mut m: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
-    for item in list.items {
-        let sc = item.storage_class_name.clone();
-        if sc.is_empty() {
-            continue;
-        }
+    fold_csi_capacity(list.items.iter().map(|item| {
         let free = item
             .capacity
             .as_ref()
             .map(|q| crate::utils::parse_memory_bytes(&q.0))
             .unwrap_or(0);
-        if free == 0 {
+        (item.storage_class_name.as_str(), free)
+    }))
+}
+
+/// `(storage_class, free_bytes)` per topology segment → `(min, sum)` per class.
+fn fold_csi_capacity<'a>(
+    items: impl Iterator<Item = (&'a str, u64)>,
+) -> std::collections::HashMap<String, (u64, u64)> {
+    let mut m: std::collections::HashMap<String, (u64, u64)> = std::collections::HashMap::new();
+    for (sc, free) in items {
+        if sc.is_empty() || free == 0 {
             continue;
         }
-        m.entry(sc)
-            .and_modify(|e| *e = (*e).min(free))
-            .or_insert(free);
+        m.entry(sc.to_string())
+            .and_modify(|e| *e = (e.0.min(free), e.1 + free))
+            .or_insert((free, free));
     }
     m
 }
@@ -560,5 +585,33 @@ async fn delete_pvc(
             };
             (code, Json(serde_json::json!({ "error": msg })))
         }
+    }
+}
+
+#[cfg(test)]
+mod capacity_tests {
+    use super::*;
+
+    #[test]
+    fn csi_capacity_folds_min_and_sum_per_class() {
+        let m = fold_csi_capacity(
+            [
+                ("local", 10u64),
+                ("local", 30),
+                ("ceph", 100),
+                ("", 5),
+                ("ceph", 0),
+            ]
+            .into_iter(),
+        );
+        assert_eq!(m.get("local"), Some(&(10, 40)));
+        assert_eq!(m.get("ceph"), Some(&(100, 100)));
+        assert_eq!(m.len(), 2);
+    }
+
+    #[test]
+    fn format_bytes_picks_binary_units() {
+        assert_eq!(format_bytes(0), "0");
+        assert_eq!(format_bytes(1 << 40), "1.0 TiB");
     }
 }

@@ -172,6 +172,11 @@ async fn set_run_strategy(
     }
 }
 
+/// Bulk operations hit the API server in parallel, bounded so a 200-VM batch
+/// doesn't open 200 concurrent requests.
+#[cfg(feature = "web")]
+const BULK_CONCURRENCY: usize = 8;
+
 #[cfg(feature = "web")]
 async fn bulk_action(
     State(state): State<SharedState>,
@@ -193,54 +198,16 @@ async fn bulk_action(
             .into_response();
     }
     let kube = { state.read().await.kube_client.clone() };
-    let mut results = Vec::with_capacity(req.names.len());
-    for name in &req.names {
-        let r = match action.as_str() {
-            "start" => kube.start_vm(&req.namespace, name).await.map(|_| ()),
-            "stop" => kube.stop_vm(&req.namespace, name).await.map(|_| ()),
-            "restart" => kube.restart_vm(&req.namespace, name).await.map(|_| ()),
-            "delete" => kube.delete_vm(&req.namespace, name).await,
-            "migrate" => {
-                // Per-VM eligibility: a passthrough-GPU VM in the batch fails
-                // with the blocker text instead of silently "succeeding" into
-                // a doomed migration. Probe failure never blocks.
-                let blocked = match kube
-                    .migration_eligibility(
-                        &req.namespace,
-                        name,
-                        crate::kube::migration_guard::ClusterMigrationCaps::from_env(),
-                    )
-                    .await
-                {
-                    Ok(elig) if !elig.eligible => Some(
-                        elig.blockers
-                            .iter()
-                            .map(|b| b.message.as_str())
-                            .collect::<Vec<_>>()
-                            .join("; "),
-                    ),
-                    _ => None,
-                };
-                match blocked {
-                    Some(msg) => Err(anyhow::anyhow!("migration blocked: {msg}")),
-                    None => kube.migrate_vm(&req.namespace, name, None).await,
-                }
-            }
-            _ => unreachable!(),
-        };
-        results.push(match r {
-            Ok(()) => BulkResult {
-                name: name.clone(),
-                ok: true,
-                error: None,
-            },
-            Err(e) => BulkResult {
-                name: name.clone(),
-                ok: false,
-                error: Some(e.to_string()),
-            },
-        });
-    }
+    use futures_util::stream::{self, StreamExt};
+    let mut results: Vec<BulkResult> = stream::iter(req.names.clone())
+        .map(|name| {
+            let (kube, ns, action) = (kube.clone(), req.namespace.clone(), action.clone());
+            async move { bulk_one(&kube, &ns, &name, &action).await }
+        })
+        .buffer_unordered(BULK_CONCURRENCY)
+        .collect()
+        .await;
+    results.sort_by_key(|r| req.names.iter().position(|n| *n == r.name));
     let ok = results.iter().filter(|r| r.ok).count();
     (
         StatusCode::OK,
@@ -250,4 +217,58 @@ async fn bulk_action(
         })),
     )
         .into_response()
+}
+
+#[cfg(feature = "web")]
+async fn bulk_one(
+    kube: &crate::kube::KubeClient,
+    ns: &str,
+    name: &str,
+    action: &str,
+) -> BulkResult {
+    let r = match action {
+        "start" => kube.start_vm(ns, name).await.map(|_| ()),
+        "stop" => kube.stop_vm(ns, name).await.map(|_| ()),
+        "restart" => kube.restart_vm(ns, name).await.map(|_| ()),
+        "delete" => kube.delete_vm(ns, name).await,
+        "migrate" => {
+            // Per-VM eligibility: a passthrough-GPU VM in the batch fails
+            // with the blocker text instead of silently "succeeding" into
+            // a doomed migration. Probe failure never blocks.
+            let blocked = match kube
+                .migration_eligibility(
+                    ns,
+                    name,
+                    crate::kube::migration_guard::ClusterMigrationCaps::from_env(),
+                )
+                .await
+            {
+                Ok(elig) if !elig.eligible => Some(
+                    elig.blockers
+                        .iter()
+                        .map(|b| b.message.as_str())
+                        .collect::<Vec<_>>()
+                        .join("; "),
+                ),
+                _ => None,
+            };
+            match blocked {
+                Some(msg) => Err(anyhow::anyhow!("migration blocked: {msg}")),
+                None => kube.migrate_vm(ns, name, None).await,
+            }
+        }
+        _ => unreachable!(),
+    };
+    match r {
+        Ok(()) => BulkResult {
+            name: name.to_string(),
+            ok: true,
+            error: None,
+        },
+        Err(e) => BulkResult {
+            name: name.to_string(),
+            ok: false,
+            error: Some(e.to_string()),
+        },
+    }
 }

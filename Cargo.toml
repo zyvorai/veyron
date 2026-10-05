@@ -91,7 +91,6 @@ web = [
     "reqwest",
     "jsonwebtoken",
 ]
-experimental = []
 # 30-day evaluation build for the standalone client tarball (package-binary-remote.sh
 # --trial). Never enabled for in-cluster Helm/deploy-remote.sh builds. See src/trial.rs
 # and src/bin/trial-tool.rs (keygen/issue — requires this feature to build/run).
