@@ -59,7 +59,11 @@ HOST="${1:-${DEPLOY_HOST:-}}"
 PORT="${2:-30151}"
 [[ -z "${HOST}" ]] && { echo "usage: VEYRON_API_KEY=... $0 <host> [port] [--ssh-user U] [--report-dir DIR] [--full] [--allow-destructive]" >&2; exit 2; }
 
-KEY="${VEYRON_API_KEY:-CHANGE_ME}"
+KEY="${VEYRON_API_KEY:-$(source "$(dirname "${BASH_SOURCE[0]}")/lib/api-key.sh" && veyron_require_api_key "${HOST}" 2>/dev/null)}"
+if [[ -n "${HOST}" && -z "${KEY}" ]]; then
+    echo "VEYRON_API_KEY is not set and no saved key for ${HOST} (deploy prints and saves it to ~/.config/veyron/hosts/)" >&2
+    exit 1
+fi
 BASE="https://${HOST}:${PORT}"
 export HOST PORT KEY BASE
 export TEST_NS="${TEST_NS:-veyron-readiness}"

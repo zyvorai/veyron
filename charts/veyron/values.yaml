@@ -32,9 +32,12 @@ tls:
   existingSecret: ""
 
 auth:
-  apiKey: "CHANGE_ME"
+  # Empty = random on first install, preserved across upgrades (read it back with
+  # kubectl get secret <release>-api-key -o jsonpath='{.data.api-key}' | base64 -d).
+  apiKey: ""
   adminUser: "admin"
-  adminPassword: "CHANGE_ME"
+  # Empty = same as apiKey.
+  adminPassword: ""
   # Empty = auto-generated (random, 64 chars) on first install, preserved across upgrades.
   # A hardcoded default here would be a full auth-bypass vector (anyone who reads this
   # file could forge a valid token) — unlike apiKey/adminPassword, never set a fixed

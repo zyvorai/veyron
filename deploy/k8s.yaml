@@ -1,14 +1,16 @@
 # Veyron Kubernetes Deployment
 #
 # Prerequisites (created automatically by deploy-k8s.sh / deploy-all-remote.sh):
+#   KEY=$(openssl rand -hex 16)
 #   kubectl create secret generic veyron-api-key \
 #     --namespace=veyron-system \
-#     --from-literal=api-key=CHANGE_ME \
-#     --from-literal=jwt-secret=veyron-dev-jwt-secret-change-me \
+#     --from-literal=api-key="$KEY" \
+#     --from-literal=jwt-secret="$(openssl rand -hex 32)" \
 #     --from-literal=jwt-issuer=veyron \
-#     --from-literal=admin-password=CHANGE_ME
+#     --from-literal=admin-password="$KEY"
 #
-# Dashboard login: username admin · password CHANGE_ME (same as API key by default).
+# Dashboard login: username admin, password = admin-password (deploy scripts generate one
+# and save it to ~/.config/veyron/hosts/<host>.env).
 # Or use: ./scripts/deploy-k8s.sh deploy (creates the secret automatically)
 #
 # Legacy: veyron-system / veyron-api still work on existing clusters until migrated.
@@ -238,6 +240,8 @@ spec:
         app.kubernetes.io/component: api
     spec:
       serviceAccountName: veyron
+      securityContext:
+        fsGroup: 10001
       initContainers:
         - name: gen-cert
           image: alpine/openssl:3.3.2
@@ -249,17 +253,25 @@ spec:
                 -keyout /certs/tls.key -out /certs/tls.crt \
                 -subj "/CN=veyron/O=veyron" \
                 -addext "subjectAltName=DNS:veyron-api,DNS:veyron-api.veyron-system.svc,DNS:localhost,IP:127.0.0.1"
-              chown 10001:10001 /certs/tls.key /certs/tls.crt
               chmod 600 /certs/tls.key && chmod 644 /certs/tls.crt
           securityContext:
-            runAsUser: 0
-            runAsNonRoot: false
+            runAsUser: 10001
+            runAsGroup: 10001
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - name: tls-certs
               mountPath: /certs
       containers:
         - name: veyron
-          image: docker.io/library/veyron:latest
+          # Deploy scripts substitute the built tag (deploy-all-remote: veyron:<Cargo version>).
+          image: docker.io/library/veyron:0.2.2
           imagePullPolicy: Never
           args: ["api-serve", "--port", "5151", "--host", "0.0.0.0", "--tls", "--tls-cert", "/certs/tls.crt", "--tls-key", "/certs/tls.key"]
           ports:
@@ -369,6 +381,7 @@ spec:
             allowPrivilegeEscalation: false
             seccompProfile:
               type: RuntimeDefault
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
@@ -383,8 +396,12 @@ spec:
             - name: tls-certs
               mountPath: /certs
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: tls-certs
+          emptyDir: {}
+        - name: tmp
           emptyDir: {}
 ---
 apiVersion: v1

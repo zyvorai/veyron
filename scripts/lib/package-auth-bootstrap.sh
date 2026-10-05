@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
-# Customer install: default web/API login admin / CHANGE_ME (API key CHANGE_ME).
+# Customer install: web/API login admin / <random per install> (PKG_AUTH_SECRET overrides).
+# Existing non-placeholder values in each product env file are kept.
 # Sourced from package-ui.sh (bundled as .package-lib/package-auth-bootstrap.sh).
 set -euo pipefail
+
+pkg_auth_secret() {
+    if [[ -z "${PKG_AUTH_SECRET:-}" ]]; then
+        PKG_AUTH_SECRET=$(openssl rand -base64 48 2>/dev/null | tr -dc 'A-Za-z0-9' | head -c 24)
+        [[ -n "${PKG_AUTH_SECRET}" ]] || PKG_AUTH_SECRET=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)
+        export PKG_AUTH_SECRET
+    fi
+    printf '%s' "${PKG_AUTH_SECRET}"
+}
 
 pkg_env_set_var() {
     local env_file="$1" key="$2" value="$3"
@@ -45,7 +55,7 @@ pkg_env_ensure_jwt_secret() {
 }
 
 pkg_ragnarok_admin_hash() {
-    local pw="${PW:-CHANGE_ME}"
+    local pw="${PW:?PW required}"
     if command -v htpasswd >/dev/null 2>&1; then
         htpasswd -nbBC 12 '' "${pw}" 2>/dev/null | cut -d: -f2-
         return 0
@@ -53,7 +63,7 @@ pkg_ragnarok_admin_hash() {
     if command -v python3 >/dev/null 2>&1; then
         PW="${pw}" python3 - <<'PY' 2>/dev/null || true
 import os, sys
-pw = os.environ.get("PW", "CHANGE_ME").encode()
+pw = os.environ["PW"].encode()
 try:
     import bcrypt
     print(bcrypt.hashpw(pw, bcrypt.gensalt(rounds=12)).decode())
@@ -65,10 +75,13 @@ PY
     return 1
 }
 
-# Set API key / password / JWT per product env file (admin / CHANGE_ME).
+# Set API key / password / JWT per product env file (admin / pkg_auth_secret).
 pkg_env_bootstrap_auth_for_file() {
     local env_file="$1"
     local root="${PKG_INSTALL_ROOT:-.}"
+    local secret
+    pkg_auth_secret >/dev/null
+    secret="${PKG_AUTH_SECRET}"
     local base="${env_file##*/}"
     base="${base%.env}"
 
@@ -78,56 +91,56 @@ pkg_env_bootstrap_auth_for_file() {
         packetwolf)
             pkg_env_ensure_var "${env_file}" "PACKETWOLF_HOST" "0.0.0.0"
             pkg_env_ensure_var "${env_file}" "PACKETWOLF_PORT" "9191"
-            pkg_env_ensure_var "${env_file}" "PACKETWOLF_ADMIN_API_KEY" "CHANGE_ME"
-            pkg_env_ensure_var "${env_file}" "PACKETWOLF_ADMIN_PASSWORD" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "PACKETWOLF_ADMIN_API_KEY" "${secret}"
+            pkg_env_ensure_var "${env_file}" "PACKETWOLF_ADMIN_PASSWORD" "${secret}"
             pkg_env_ensure_jwt_secret "${env_file}" "JWT_SECRET"
             pkg_env_ensure_var "${env_file}" "UI_DIST_DIR" "${root}/ui"
             ;;
         veyron)
-            pkg_env_ensure_var "${env_file}" "VEYRON_API_KEY" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "VEYRON_API_KEY" "${secret}"
             pkg_env_ensure_jwt_secret "${env_file}" "VEYRON_JWT_SECRET"
             pkg_env_ensure_var "${env_file}" "VEYRON_JWT_ISSUER" "veyron"
             pkg_env_ensure_var "${env_file}" "VEYRON_BOOTSTRAP_ADMIN_USER" "admin"
-            pkg_env_ensure_var "${env_file}" "VEYRON_BOOTSTRAP_ADMIN_PASSWORD" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "VEYRON_BOOTSTRAP_ADMIN_PASSWORD" "${secret}"
             pkg_env_ensure_var "${env_file}" "VEYRON_BOOTSTRAP_ADMIN_SYNC" "1"
             ;;
         forge)
-            pkg_env_ensure_var "${env_file}" "FORGE_API_KEY" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "FORGE_API_KEY" "${secret}"
             pkg_env_ensure_var "${env_file}" "FORGE_API_USER" "admin"
             ;;
         v9s)
-            pkg_env_ensure_var "${env_file}" "V9S_API_KEY" "CHANGE_ME"
-            pkg_env_ensure_var "${env_file}" "V9S_LOCAL_ADMIN_PASSWORD" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "V9S_API_KEY" "${secret}"
+            pkg_env_ensure_var "${env_file}" "V9S_LOCAL_ADMIN_PASSWORD" "${secret}"
             ;;
         ironwolf)
-            pkg_env_ensure_var "${env_file}" "IRONWOLF_API_KEY" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "IRONWOLF_API_KEY" "${secret}"
             ;;
         axiom)
-            pkg_env_ensure_var "${env_file}" "AXIOM_API_KEY" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "AXIOM_API_KEY" "${secret}"
             ;;
         ragnarok)
             pkg_env_ensure_jwt_secret "${env_file}" "JWT_SECRET"
             local hash
-            hash=$(PW=CHANGE_ME pkg_ragnarok_admin_hash) || hash=""
+            hash=$(PW="${secret}" pkg_ragnarok_admin_hash) || hash=""
             if [[ -n "${hash}" ]]; then
                 pkg_env_set_var "${env_file}" "RAGNAROK_ADMIN_PASSWORD_HASH" "${hash}"
-                pkg_ok "RAGNAROK_ADMIN_PASSWORD_HASH set (login admin / CHANGE_ME)"
+                pkg_ok "RAGNAROK_ADMIN_PASSWORD_HASH set (login admin / ${secret})"
             else
                 pkg_warn "Install htpasswd or python3+bcrypt to seed admin — see backend docs"
             fi
             ;;
         transiva)
-            pkg_env_ensure_var "${env_file}" "ZYVOR_API_KEY" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "ZYVOR_API_KEY" "${secret}"
             ;;
         h2kvm)
-            pkg_env_ensure_var "${env_file}" "H2KVM_API_KEY" "CHANGE_ME"
+            pkg_env_ensure_var "${env_file}" "H2KVM_API_KEY" "${secret}"
             ;;
         *)
             if [[ -n "${PKG_AUTH_API_KEY_VAR:-}" ]]; then
-                pkg_env_ensure_var "${env_file}" "${PKG_AUTH_API_KEY_VAR}" "CHANGE_ME"
+                pkg_env_ensure_var "${env_file}" "${PKG_AUTH_API_KEY_VAR}" "${secret}"
             fi
             if [[ -n "${PKG_AUTH_PASSWORD_VAR:-}" ]]; then
-                pkg_env_ensure_var "${env_file}" "${PKG_AUTH_PASSWORD_VAR}" "CHANGE_ME"
+                pkg_env_ensure_var "${env_file}" "${PKG_AUTH_PASSWORD_VAR}" "${secret}"
             fi
             if [[ -n "${PKG_AUTH_JWT_VAR:-}" ]]; then
                 pkg_env_ensure_jwt_secret "${env_file}" "${PKG_AUTH_JWT_VAR}"
@@ -139,5 +152,5 @@ pkg_env_bootstrap_auth_for_file() {
             ;;
     esac
 
-    pkg_ok "Web login: username admin · password CHANGE_ME (API key CHANGE_ME where applicable)"
+    pkg_ok "Web login: username admin · password/API key in ${env_file} (new installs: ${secret})"
 }

@@ -22,18 +22,30 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- if and .Values.tls.enabled .Values.tls.autoGenerate (not .Values.tls.existingSecret) }}
+      securityContext:
+        fsGroup: 10001
       initContainers:
         - name: tls-init
-          image: alpine:3.20
+          image: alpine/openssl:3.3.2
           command:
             - sh
             - -c
             - |
-              apk add --no-cache openssl
               openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
                 -keyout /tls/tls.key -out /tls/tls.crt -days 365 -nodes \
                 -subj "/CN={{ include "veyron.fullname" . }}.{{ .Release.Namespace }}.svc"
-              chown 10001:10001 /tls/tls.key /tls/tls.crt
+              chmod 600 /tls/tls.key && chmod 644 /tls/tls.crt
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - name: tls-certs
               mountPath: /tls

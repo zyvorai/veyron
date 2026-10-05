@@ -221,7 +221,7 @@ cp "\${BUILD_DIR}/deployments/docker/Dockerfile.veyron-bundle" "\${OUT_DIR}/\${A
 
 cat > "\${OUT_DIR}/\${ARTIFACT}/veyron.env.example" <<'ENV_EOF'
 # Copy to veyron.env and adjust before starting the API.
-VEYRON_API_KEY=CHANGE_ME
+VEYRON_API_KEY=change-me
 # VEYRON_API_KEYS=admin:secret1,write:secret2,readonly:secret3
 KUBECONFIG=/path/to/kubeconfig.yaml
 # VEYRON_NAMESPACE=default

@@ -7,10 +7,10 @@
 # curl-only (no jq). Exits 1 if any check fails.
 #
 # Usage:
-#   VEYRON_API_KEY='CHANGE_ME' ./scripts/test-vm-daily-ops-remote.sh <host> [port]
+#   VEYRON_API_KEY='...' ./scripts/test-vm-daily-ops-remote.sh <host> [port]
 #
 # Environment:
-#   VEYRON_API_KEY          API key (default: CHANGE_ME)
+#   VEYRON_API_KEY          API key (default: saved ~/.config/veyron/hosts/<host>.env from deploy)
 #   VEYRON_E2E_NAMESPACE    Target namespace (default: default)
 #   VEYRON_E2E_RESTORE      Set to 1 to run destructive snapshot restore
 #   VEYRON_E2E_SKIP_TIER_B  Set to 1 to run Tier A only (no VM create)
@@ -20,7 +20,11 @@ set -euo pipefail
 
 HOST="${1:-${DEPLOY_HOST:-}}"
 PORT="${2:-${VEYRON_NODE_PORT:-30151}}"
-KEY="${VEYRON_API_KEY:-CHANGE_ME}"
+KEY="${VEYRON_API_KEY:-$(source "$(dirname "${BASH_SOURCE[0]}")/lib/api-key.sh" && veyron_require_api_key "${HOST}" 2>/dev/null)}"
+if [[ -n "${HOST}" && -z "${KEY}" ]]; then
+    echo "VEYRON_API_KEY is not set and no saved key for ${HOST} (deploy prints and saves it to ~/.config/veyron/hosts/)" >&2
+    exit 1
+fi
 NS="${VEYRON_E2E_NAMESPACE:-default}"
 RESTORE="${VEYRON_E2E_RESTORE:-0}"
 SKIP_TIER_B="${VEYRON_E2E_SKIP_TIER_B:-0}"

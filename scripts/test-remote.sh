@@ -30,7 +30,11 @@ REMOTE="${USER}@${HOST}"
 
 NS="${VEYRON_NAMESPACE:-veyron-system}"
 NODE_PORT="${VEYRON_NODE_PORT:-30151}"
-API_KEY="${VEYRON_API_KEY:-CHANGE_ME}"
+API_KEY="${VEYRON_API_KEY:-$(source "$(dirname "${BASH_SOURCE[0]}")/lib/api-key.sh" && veyron_require_api_key "${HOST}" 2>/dev/null)}"
+if [[ -n "${HOST}" && -z "${API_KEY}" ]]; then
+    echo "VEYRON_API_KEY is not set and no saved key for ${HOST} (deploy prints and saves it to ~/.config/veyron/hosts/)" >&2
+    exit 1
+fi
 REMOTE_DIR="${VEYRON_REMOTE_DIR:-/home/${USER}/veyron}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LOCAL_SAMPLES="${REPO_ROOT}/operator/config/samples"

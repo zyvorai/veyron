@@ -12,14 +12,18 @@
 # Environment:
 #   DEPLOY_HOST         Default host if arg omitted
 #   VEYRON_NODE_PORT   Default port (default: 30151)
-#   VEYRON_API_KEY     API key (default: CHANGE_ME)
+#   VEYRON_API_KEY     API key (default: saved ~/.config/veyron/hosts/<host>.env from deploy)
 # ============================================================================
 
 set -euo pipefail
 
 HOST="${1:-${DEPLOY_HOST:-}}"
 PORT="${2:-${VEYRON_NODE_PORT:-30151}}"
-KEY="${VEYRON_API_KEY:-CHANGE_ME}"
+KEY="${VEYRON_API_KEY:-$(source "$(dirname "${BASH_SOURCE[0]}")/lib/api-key.sh" && veyron_require_api_key "${HOST}" 2>/dev/null)}"
+if [[ -n "${HOST}" && -z "${KEY}" ]]; then
+    echo "VEYRON_API_KEY is not set and no saved key for ${HOST} (deploy prints and saves it to ~/.config/veyron/hosts/)" >&2
+    exit 1
+fi
 
 if [[ -z "${HOST}" ]]; then
     echo "Usage: $0 <host> [https_node_port]" >&2

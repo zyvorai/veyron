@@ -33,6 +33,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=lib/deploy-ssh.sh
 source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
+# shellcheck source=lib/api-key.sh
+source "${SCRIPT_DIR}/lib/api-key.sh"
 
 usage() {
     cat <<'USAGE_EOF'
@@ -62,10 +64,7 @@ fi
 HOST="${1:?Usage: $0 <host> [user]   (see --help)}"
 USER="${2:-root}"
 REMOTE_DIR="/home/${USER}/veyron"
-API_KEY="${VEYRON_API_KEY:-CHANGE_ME}"
-JWT_SECRET="${VEYRON_JWT_SECRET:-veyron-dev-jwt-secret-change-me}"
 JWT_ISSUER="${VEYRON_JWT_ISSUER:-veyron}"
-ADMIN_PASSWORD="${VEYRON_BOOTSTRAP_ADMIN_PASSWORD:-${API_KEY}}"
 NODE_PORT="${VEYRON_NODE_PORT:-30151}"
 NS="${VEYRON_NAMESPACE:-veyron-system}"
 # shellcheck source=./cluster/versions.env
@@ -137,6 +136,7 @@ case "${REMOTE_K8S_FLAVOR}" in
     ;;
 esac
 IMPORT_CMD="${VEYRON_CONTAINER_RUNTIME_IMPORT:-${IMPORT_DEFAULT}}"
+veyron_resolve_deploy_secrets "${HOST}" "${USER}@${HOST}" "${K}" "${NS}"
 
 echo ""
 echo "  ${COLOR_BOLD}════════════════════════════════════════${COLOR_RESET}"
@@ -148,8 +148,7 @@ echo "  ${COLOR_DIM}Flavor:${COLOR_RESET}     ${REMOTE_K8S_FLAVOR}  (${K})"
 echo "  ${COLOR_DIM}Import:${COLOR_RESET}     ${IMPORT_CMD}"
 echo "  ${COLOR_DIM}Namespace:${COLOR_RESET}  ${NS}"
 echo "  ${COLOR_DIM}NodePort:${COLOR_RESET}   ${NODE_PORT} → pod :5151 (TLS)"
-echo "  ${COLOR_DIM}API key:${COLOR_RESET}    ${API_KEY}"
-echo "  ${COLOR_DIM}Dashboard:${COLOR_RESET}  admin / ${ADMIN_PASSWORD:-${API_KEY}}"
+echo "  ${COLOR_DIM}Credentials:${COLOR_RESET} $(veyron_hosts_dir)/${HOST}.env"
 echo ""
 
 # ── Step 1: Rsync ──
@@ -432,6 +431,8 @@ spec:
         veyron.io/deployed-at: "${DEPLOY_STAMP}"
     spec:
       serviceAccountName: veyron
+      securityContext:
+        fsGroup: 10001
       initContainers:
         - name: gen-cert
           image: alpine/openssl:3.3.2
@@ -443,11 +444,18 @@ spec:
                 -keyout /certs/tls.key -out /certs/tls.crt \
                 -subj "/CN=veyron/O=veyron" \
                 -addext "subjectAltName=DNS:veyron-api,DNS:veyron-api.${NS}.svc,DNS:localhost,IP:127.0.0.1"
-              chown 10001:10001 /certs/tls.key /certs/tls.crt
               chmod 600 /certs/tls.key && chmod 644 /certs/tls.crt
           securityContext:
-            runAsUser: 0
-            runAsNonRoot: false
+            runAsUser: 10001
+            runAsGroup: 10001
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - name: tls-certs
               mountPath: /certs
@@ -515,6 +523,7 @@ spec:
             runAsNonRoot: true
             runAsUser: 10001
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             seccompProfile:
               type: RuntimeDefault
             capabilities:
@@ -531,8 +540,12 @@ spec:
             - name: tls-certs
               mountPath: /certs
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: tls-certs
+          emptyDir: {}
+        - name: tmp
           emptyDir: {}
 ---
 apiVersion: v1
@@ -597,7 +610,8 @@ echo "    Health:     https://${HOST}:${DISPLAY_NODE_PORT}/api/v1/health"
 echo ""
 echo "  ${COLOR_DIM}TLS:${COLOR_RESET} self-signed init-container cert (browser warning) unless you mount a Secret at /certs."
 echo "  ${COLOR_DIM}API key:${COLOR_RESET} ${API_KEY}"
-echo "  ${COLOR_DIM}Dashboard login:${COLOR_RESET} admin / ${ADMIN_PASSWORD:-${API_KEY}}"
+echo "  ${COLOR_DIM}Dashboard login:${COLOR_RESET} admin / ${ADMIN_PASSWORD}"
+echo "  ${COLOR_DIM}Saved to:${COLOR_RESET} $(veyron_hosts_dir)/${HOST}.env"
 echo ""
 echo "  ${COLOR_DIM}kubectl (on remote):${COLOR_RESET}"
 echo "    ${K} -n ${NS} logs deployment/veyron-api -f"

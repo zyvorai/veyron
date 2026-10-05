@@ -22,7 +22,9 @@ IMAGE="${REPO}:${VERSION}"
 IMAGE_LATEST="${REPO}:latest"
 NAMESPACE="${VEYRON_NAMESPACE:-veyron-system}"
 MANIFEST="deploy/k8s.yaml"
-API_KEY="CHANGE_ME"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/api-key.sh
+source "${SCRIPT_DIR}/lib/api-key.sh"
 
 # ── Auto-detect container runtime ──
 detect_container_runtime() {
@@ -237,14 +239,19 @@ cmd_deploy() {
     # Create namespace
     ${KUBECTL} create namespace "${NAMESPACE}" --dry-run=client -o yaml | ${KUBECTL} apply -f -
 
-    # Create or update API key secret
+    # Create or update API key secret: env, else the existing Secret, else random
+    old() { ${KUBECTL} -n "${NAMESPACE}" get secret veyron-api-key -o jsonpath="{.data.$1}" 2>/dev/null | base64 -d 2>/dev/null || true; }
+    API_KEY="${VEYRON_API_KEY:-$(old api-key)}"; API_KEY="${API_KEY:-$(veyron_random_secret 32)}"
+    ADMIN_PASSWORD="${VEYRON_BOOTSTRAP_ADMIN_PASSWORD:-$(old admin-password)}"; ADMIN_PASSWORD="${ADMIN_PASSWORD:-${API_KEY}}"
+    JWT_SECRET="${VEYRON_JWT_SECRET:-$(old jwt-secret)}"; JWT_SECRET="${JWT_SECRET:-$(veyron_random_secret 64)}"
     ${KUBECTL} -n "${NAMESPACE}" delete secret veyron-api-key --ignore-not-found 2>/dev/null
     ${KUBECTL} -n "${NAMESPACE}" create secret generic veyron-api-key \
         --from-literal=api-key="${API_KEY}" \
-        --from-literal=jwt-secret="${VEYRON_JWT_SECRET:-veyron-dev-jwt-secret-change-me}" \
+        --from-literal=jwt-secret="${JWT_SECRET}" \
         --from-literal=jwt-issuer="${VEYRON_JWT_ISSUER:-veyron}" \
-        --from-literal=admin-password="${VEYRON_BOOTSTRAP_ADMIN_PASSWORD:-${API_KEY}}"
-    echo "API key secret created"
+        --from-literal=admin-password="${ADMIN_PASSWORD}"
+    veyron_save_host_secrets "local"
+    echo "API key secret created (saved to $(veyron_hosts_dir)/local.env)"
 
     # For local clusters, set imagePullPolicy to Never/IfNotPresent
     local pull_policy=""
@@ -299,7 +306,7 @@ cmd_status() {
         echo "  Port-forward: ${KUBECTL} -n ${NAMESPACE} port-forward svc/veyron-api 443:443"
         echo "  Dashboard:    https://localhost:443/dashboard"
     fi
-    echo "  API Key:    ${API_KEY}"
+    echo "  API Key:    ${API_KEY:-see $(veyron_hosts_dir)/local.env}"
 }
 
 # ── Tail logs ──

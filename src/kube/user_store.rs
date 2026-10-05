@@ -193,7 +193,8 @@ impl KubeClient {
 /// Controlled by env (all optional):
 /// - `VEYRON_BOOTSTRAP_ADMIN` — set to `0`/`false` to skip (default: on)
 /// - `VEYRON_BOOTSTRAP_ADMIN_USER` — default `admin`
-/// - `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` — default `VEYRON_API_KEY`, else `CHANGE_ME`
+/// - `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` — default `VEYRON_API_KEY`, else a random password
+///   logged once at `warn` (there is no fixed fallback)
 /// - `VEYRON_BOOTSTRAP_ADMIN_SYNC` — set to `1` to reset password when user exists
 ///
 /// Requires `VEYRON_JWT_SECRET` + `VEYRON_JWT_ISSUER` (login mints a JWT).
@@ -217,9 +218,12 @@ pub async fn bootstrap_dashboard_admin(client: &KubeClient, namespace: &str) {
 
     let username =
         std::env::var("VEYRON_BOOTSTRAP_ADMIN_USER").unwrap_or_else(|_| "admin".to_string());
-    let password = std::env::var("VEYRON_BOOTSTRAP_ADMIN_PASSWORD")
+    let configured = std::env::var("VEYRON_BOOTSTRAP_ADMIN_PASSWORD")
         .or_else(|_| std::env::var("VEYRON_API_KEY"))
-        .unwrap_or_else(|_| "CHANGE_ME".to_string());
+        .ok()
+        .filter(|p| !p.trim().is_empty());
+    let generated = configured.is_none();
+    let password = configured.unwrap_or_else(random_password);
     let sync = std::env::var("VEYRON_BOOTSTRAP_ADMIN_SYNC")
         .ok()
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
@@ -230,12 +234,15 @@ pub async fn bootstrap_dashboard_admin(client: &KubeClient, namespace: &str) {
             .create_user(namespace, &username, &password, "admin", "Administrator")
             .await
         {
+            Ok(()) if generated => log::warn!(
+                "bootstrapped dashboard login user '{username}' with generated password '{password}' — set VEYRON_BOOTSTRAP_ADMIN_PASSWORD and change it"
+            ),
             Ok(()) => log::info!(
                 "bootstrapped dashboard login user '{username}' (password from VEYRON_BOOTSTRAP_ADMIN_PASSWORD / VEYRON_API_KEY)"
             ),
             Err(e) => log::error!("dashboard login bootstrap failed creating '{username}': {e}"),
         },
-        Ok(Some(_)) if sync => match client
+        Ok(Some(_)) if sync && !generated => match client
             .set_user_password(namespace, &username, &password)
             .await
         {
@@ -249,6 +256,15 @@ pub async fn bootstrap_dashboard_admin(client: &KubeClient, namespace: &str) {
         }
         Err(e) => log::warn!("dashboard login bootstrap: could not read users: {e}"),
     }
+}
+
+fn random_password() -> String {
+    use rand::{Rng, distributions::Alphanumeric};
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(24)
+        .map(char::from)
+        .collect()
 }
 
 fn decode_users(secret: &Secret) -> Vec<UserAccount> {

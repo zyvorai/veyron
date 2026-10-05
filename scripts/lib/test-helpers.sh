@@ -29,7 +29,11 @@ _VEYRON_TEST_HELPERS_LOADED=1
 # ── Config / derived globals ────────────────────────────────────────────────
 HOST="${HOST:-${1:-${DEPLOY_HOST:-}}}"
 PORT="${PORT:-${VEYRON_NODE_PORT:-30151}}"
-KEY="${KEY:-${VEYRON_API_KEY:-CHANGE_ME}}"
+KEY="${KEY:-${VEYRON_API_KEY:-$(source "$(dirname "${BASH_SOURCE[0]}")/api-key.sh" && veyron_require_api_key "${HOST}" 2>/dev/null)}}"
+if [[ -n "${HOST}" && -z "${KEY}" ]]; then
+    echo "VEYRON_API_KEY is not set and no saved key for ${HOST} (deploy prints and saves it to ~/.config/veyron/hosts/)" >&2
+    exit 1
+fi
 BASE="${BASE:-https://${HOST}:${PORT}}"
 TEST_NS="${TEST_NS:-veyron-readiness}"
 RESULTS_JSONL="${RESULTS_JSONL:-}"

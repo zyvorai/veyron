@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # Smoke console-wired VM day-2 + product APIs against a live lab.
-# Usage: VEYRON_API_KEY=CHANGE_ME ./scripts/console-actions-smoke.sh HOST [PORT] [NS] [VM]
+# Usage: VEYRON_API_KEY=... ./scripts/console-actions-smoke.sh HOST [PORT] [NS] [VM]
 set -euo pipefail
 HOST="${1:?host}"
 PORT="${2:-30151}"
 NS="${3:-default}"
 VM="${4:-}"
-KEY="${VEYRON_API_KEY:-CHANGE_ME}"
+KEY="${VEYRON_API_KEY:-$(source "$(dirname "${BASH_SOURCE[0]}")/lib/api-key.sh" && veyron_require_api_key "${HOST}" 2>/dev/null)}"
+if [[ -n "${HOST}" && -z "${KEY}" ]]; then
+    echo "VEYRON_API_KEY is not set and no saved key for ${HOST} (deploy prints and saves it to ~/.config/veyron/hosts/)" >&2
+    exit 1
+fi
 BASE="https://${HOST}:${PORT}"
 PASS=0
 FAIL=0

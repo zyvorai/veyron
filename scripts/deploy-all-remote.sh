@@ -11,7 +11,7 @@
 #   2. Build Veyron + Operator container images
 #   3. Import images into K8s container runtime
 #   4. Ensure CDI (if DataVolume CRD missing) + install CRDs + NATS + RBAC + optional Cilium egress
-#   5. Deploy Veyron API + Operator pods (API key: CHANGE_ME)
+#   5. Deploy Veyron API + Operator pods (API key: VEYRON_API_KEY, else existing Secret, else random — saved to ~/.config/veyron/hosts/<host>.env)
 #   6. Clean up source
 #   7. Verify
 #
@@ -39,6 +39,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/deploy-remote-ui.sh"
 # shellcheck source=lib/deploy-ssh.sh
 source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
+# shellcheck source=lib/api-key.sh
+source "${SCRIPT_DIR}/lib/api-key.sh"
 DEPLOY_RUN_STARTED=${SECONDS}
 
 stream_remote() {
@@ -90,8 +92,8 @@ if [[ -z "${USER}" ]]; then
 fi
 REMOTE="${USER}@${HOST}"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-API_KEY="${VEYRON_API_KEY:-CHANGE_ME}"
-VEYRON_IMAGE="docker.io/library/veyron:latest"
+VEYRON_VERSION="$(grep -m1 '^version' "${REPO_DIR}/Cargo.toml" | sed 's/.*"\(.*\)"/\1/')"
+VEYRON_IMAGE="docker.io/library/veyron:${VEYRON_VERSION}"
 OPERATOR_IMAGE="docker.io/library/veyron-operator:latest"
 NAMESPACE="${VEYRON_NAMESPACE:-veyron-system}"
 
@@ -172,6 +174,7 @@ case "${CLUSTER_FLAVOR}" in
         K8S_CMD="kubectl"
         ;;
 esac
+veyron_resolve_deploy_secrets "${HOST}" "${REMOTE}" "${K8S_CMD}" "${NAMESPACE}"
 
 deploy_main_banner "${REMOTE}" "${CTR_BUILD}" "${K8S_RUNTIME}" "${CLUSTER_FLAVOR}" "${K8S_CMD}" "${QUICK}"
 
@@ -472,10 +475,8 @@ deploy_ssh "${REMOTE}" "
     done
 " 2>&1
 
-# Create API key + JWT + bootstrap admin password (dashboard login: admin / CHANGE_ME)
-JWT_SECRET="${VEYRON_JWT_SECRET:-veyron-dev-jwt-secret-change-me}"
+# Create API key + JWT + bootstrap admin password (resolved by veyron_resolve_deploy_secrets)
 JWT_ISSUER="${VEYRON_JWT_ISSUER:-veyron}"
-ADMIN_PASSWORD="${VEYRON_BOOTSTRAP_ADMIN_PASSWORD:-${API_KEY}}"
 deploy_ssh "${REMOTE}" "
     ${K8S_CMD} -n ${NAMESPACE} create secret generic veyron-api-key \
         --from-literal=api-key='${API_KEY}' \
@@ -509,7 +510,7 @@ if [ "${DEPLOY_WITH_OIDC}" = true ]; then
 fi
 
 # Apply Veyron API deployment
-deploy_ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1
+deploy_ssh "${REMOTE}" "sed 's#image: docker.io/library/veyron:.*#image: ${VEYRON_IMAGE}#' ${DEPLOY_DIR}/deploy/k8s.yaml | ${K8S_CMD} apply -f -" 2>&1
 
 # Optional: Prometheus / Alertmanager / Loki URLs when those namespaces exist
 if [[ -f "${REPO_DIR}/scripts/lib/bootstrap-integrations.sh" ]]; then
