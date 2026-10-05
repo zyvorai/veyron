@@ -5,11 +5,9 @@
   ║                                                              ║
   ╚══════════════════════════════════════════════════════════════╝
 
-  Best first open (offline — works in any browser):
-    docs/welcome.html
-
-  Or open the welcome PDF:
-    docs/pdf/WELCOME.pdf
+  Read first:
+    README.md
+    docs/getting-started.md
 
   ──────────────────────────────────────────────────────────────
   QUICK INSTALL (3 steps)
@@ -20,13 +18,12 @@
   3. Follow the URL printed at the end
 
   ──────────────────────────────────────────────────────────────
-  LICENSE (read before install)
+  LICENSE
   ──────────────────────────────────────────────────────────────
 
-  cat LICENSE              software license (required reading)
-  cat LEGAL-INDEX.txt      full list of legal files in this bundle
-  cat ZYVOR-COMPANY-TERMS.md   (if present) Zyvor distribution terms
-  ./install.sh will prompt you to accept before continuing.
+  cat LICENSE              Zyvor Production License v1.0
+                           (free for non-production; production use
+                           needs a commercial license from zyvor.dev)
 
   ──────────────────────────────────────────────────────────────
   IMPORTANT
@@ -40,8 +37,7 @@
   MORE HELP
   ──────────────────────────────────────────────────────────────
 
-  docs/PDF_INDEX.txt    all PDFs + guides
-  ls docs/pdf/          printable docs (Zyvor logo)
+  ls docs/              guides (markdown)
   cat HELP.txt          every script explained
   ./install-everything.sh --help
 

@@ -1,6 +1,6 @@
 # Security Policy
 
-**Related documentation:** [README.md](README.md) (TLS, API keys), [docs/DEVELOPER_VM_ACCESS.md](docs/DEVELOPER_VM_ACCESS.md) (cluster access patterns).
+**Related documentation:** [README.md](README.md) (TLS, API keys), [docs/api.md](docs/api.md) (cluster access patterns).
 
 ## Supported Versions
 
@@ -27,7 +27,7 @@ Instead, please report them via one of the following methods:
    - Fill in the details
 
 2. **Email**
-   - Send an email to: [your-email@example.com]
+   - Send an email to: **security@zyvor.dev**
    - Include as much information as possible (see below)
 
 ### 📝 What to Include

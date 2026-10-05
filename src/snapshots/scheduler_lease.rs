@@ -1,6 +1,5 @@
-// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-// Proprietary software — see LICENSE in the repository root.
-// https://zyvor.dev · info@zyvor.dev
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 //! Leader election for the in-process snapshot scheduler using a `coordination.k8s.io` **Lease**
 //! so only one API replica runs `snapshot_schedule_tick` (avoids duplicate `VirtualMachineSnapshot` CRs).

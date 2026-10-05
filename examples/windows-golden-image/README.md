@@ -1,4 +1,5 @@
-<!-- Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved. -->
+<!-- Copyright 2026 Zyvor AI Labs · https://zyvor.dev -->
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0 -->
 # Windows golden-image E2E
 
 Reference assets for `scripts/test-windows-golden-image-remote.sh`, which drives the
@@ -24,7 +25,7 @@ via your workstation.
 ## Headless ISO-install gotchas (learned the hard way on a live cluster)
 
 Installing Windows from an ISO on headless KubeVirt has friction points that a
-pre-built image (the Packer path in `docs/WINDOWS_PACKER_GITOPS_PIPELINE.md`) avoids.
+pre-built image (the Packer path in `docs/windows.md`) avoids.
 For a lab/one-off ISO build, know these:
 
 1. **"Press any key to boot from CD or DVD….."** — the Microsoft ISO shows this for
@@ -58,7 +59,7 @@ For a lab/one-off ISO build, know these:
    Drive past them (2× Enter, Next is the focused default); the answer file then
    auto-handles product key/edition, disk partitioning, image install, OOBE, and
    sysprep with no further input. For fully hands-off production, prefer the Packer
-   pre-built-image pipeline (`docs/WINDOWS_PACKER_GITOPS_PIPELINE.md`).
+   pre-built-image pipeline (`docs/windows.md`).
 
 ## Notes
 
@@ -69,7 +70,7 @@ For a lab/one-off ISO build, know these:
   without prompting and activates nothing.
 - The local administrator password in the answer file (`V3yron-Build!`) is for the
   builder only. Real tenant VMs get their own per-VM sysprep Secret (see
-  `docs/WINDOWS_GOLDEN_IMAGES.md`).
+  `docs/windows.md`).
 - Windows 11 needs 4 GiB RAM minimum; this builder requests 6 GiB. A single-node lab
   cluster must have the headroom free before you start.
 
@@ -92,7 +93,7 @@ Producing a **sysprep-generalized** golden image from an ISO install on headless
 Net: a *force-stopped* 24H2 ISO-install image **boots and clones fine** (proven), but
 cannot be generalized after the fact. For a generalized image:
 
-- **Recommended — Packer pre-built image** (`docs/WINDOWS_PACKER_GITOPS_PIPELINE.md`):
+- **Recommended — Packer pre-built image** (`docs/windows.md`):
   build + sysprep once in a controlled VM, export a qcow2, and `POST /images/import`
   it. Sidesteps OOBE, BitLocker, and credentials entirely.
 - **Or, for a headless ISO build**, the answer file must (a) set

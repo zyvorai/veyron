@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-# Proprietary software — see LICENSE in the repository root.
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 #
 # Prepare a host for NVIDIA GPU **PCI passthrough** into KubeVirt VMs:
 #
@@ -137,7 +137,7 @@ for addr in "${GPU_ADDRS[@]}"; do
 done
 if [[ "${ISOLATION_WARN}" == "1" ]]; then
   warn "Shared groups are passed through WHOLE. Try another PCIe slot first."
-  warn "ACS override patches exist but weaken isolation — see docs/GPU_PASSTHROUGH.md before considering them."
+  warn "ACS override patches exist but weaken isolation — see docs/gpu.md before considering them."
 fi
 
 # ── 4. vfio-pci binding plan / apply ─────────────────────────────────────────

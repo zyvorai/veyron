@@ -26,7 +26,7 @@ We welcome feature suggestions! Please create an issue with:
 1. **Fork the repository**
    ```bash
    git clone git@github.com:zyvorai/veyron.git
-   cd Veyron
+   cd veyron
    ```
 
 2. **Create a feature branch**
@@ -38,7 +38,7 @@ We welcome feature suggestions! Please create an issue with:
    - Write clear, documented code
    - Follow the existing code style
    - Add tests for new functionality
-   - Update documentation as needed — for user-facing behavior, touch [`docs/README.md`](docs/README.md) if you add a new top-level guide under `docs/`
+   - Update documentation as needed — for user-facing behavior, add new guides under `docs/` and link them from [`docs/README.md`](docs/README.md)
 
 4. **Run tests**
    ```bash
@@ -245,8 +245,8 @@ Integration tests that require a real Kubernetes cluster run automatically on pu
 
 Update relevant documentation files:
 - `README.md` - Overview and quick start
-- `ADVANCED_FEATURES.md` - Advanced features guide
-- `DEVELOPMENT.md` - Development roadmap
+- `docs/` - Guides (getting started, architecture, API, deploy, SSO, GPU, Windows, SOC, integrations)
+- `CHANGELOG.md` - User-visible changes
 
 ## 🔍 Code Review Process
 
@@ -381,7 +381,16 @@ RUST_LOG=debug cargo run -- command
 
 ## 📜 License
 
-By contributing to veyron, you agree that your contributions will be licensed under the same MIT OR Apache-2.0 license that covers the project.
+Contributions are accepted under the [Zyvor Production License v1.0](LICENSE). By submitting a change you confirm you have the right to contribute it, and you agree Zyvor AI Labs may use, modify, distribute and commercially license it (section 17 of the license).
+
+New source files start with the SPDX header used across the tree:
+
+```rust
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+```
+
+Use `#` for shell, Python and YAML, and `<!-- … -->` for Markdown and HTML.
 
 ## ❓ Questions?
 

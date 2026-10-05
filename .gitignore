@@ -32,28 +32,15 @@ charts/*/charts/*.tgz
 *.local.yaml
 *.local.json
 
-# e2e / front-end (install deps locally)
-e2e/node_modules/
-
-# Next-gen dashboard (Vite / npm)
-web/**/node_modules/
-web/**/dist/
-web/**/test-results/
-
 # React console (frontend/)
 frontend/node_modules/
 frontend/dist/
-web/**/.vite/
 
 # Local AI caches
 .grok/
 **/.DS_Store
 
-# Local presentation exports
-presentations/
 
-# local docs tooling
-.docs-tools/
 
 # Trial license signing key + issued tokens — NEVER commit (see src/bin/trial-tool.rs,
 # src/trial.rs). Only the embedded public key constant belongs in git.
@@ -64,3 +51,7 @@ trial.token
 # Trial signing private keys (never ship)
 secrets/
 dist/
+
+# Local run artifacts and agent scratch files
+/readiness-report*/
+.cursor/plans/

@@ -13,7 +13,7 @@
 #   --reuse-image  Skip podman build if the package image tag already exists
 #   --no-virtctl   Omit virtctl from the tarball (smaller)
 #   --trial        30-day evaluation build (--features trial) with a bundled signed
-#                  trial.token — see docs/LICENSING.md. Produces a distinctly named
+#                  trial.token — see docs/deploy.md. Produces a distinctly named
 #                  veyron-<ver>-trial-linux-amd64.tar.gz, never overwrites the regular
 #                  customer tarball. Requires a token minted with trial-tool first:
 #                    cargo run --features trial --bin trial-tool -- issue \
@@ -32,7 +32,7 @@
 #   ./scripts/package-binary-remote.sh <host> <user> --fetch
 #   ./scripts/package-binary-remote.sh <host> <user> --reuse-image --fetch
 #
-# See: docs/PACKAGE_BINARY_REMOTE.md
+# See: docs/deploy.md
 # ============================================================================
 
 set -euo pipefail
@@ -71,7 +71,7 @@ USER="${POSITIONAL[1]:-${DEPLOY_USER:-sus}}"
 
 if [[ -z "${HOST}" ]]; then
     echo "Usage: $0 <host> [user] [--fetch] [--reuse-image]" >&2
-    echo "  See: docs/PACKAGE_BINARY_REMOTE.md" >&2
+    echo "  See: docs/deploy.md" >&2
     exit 1
 fi
 
@@ -306,8 +306,6 @@ Remove: ./uninstall.sh --yes [--remove-dir]
 Packaged by Zyvor — zyvor.dev · Zyvor · © 2026
 QEOF
 
-cp "\${BUILD_DIR}/scripts/zyvor-branding/ZYVOR_INSTALL.txt" "\${OUT_DIR}/\${ARTIFACT}/ZYVOR_INSTALL.txt" 2>/dev/null || true
-
 cat > "\${OUT_DIR}/\${ARTIFACT}/README.txt" <<README_EOF
 Veyron ${VERSION} — Linux amd64 client bundle
 =============================================
@@ -350,7 +348,7 @@ README_EOF
 
 chmod +x "\${LIB}/finalize-customer-bundle.sh"
 "\${LIB}/finalize-customer-bundle.sh" "\${OUT_DIR}/\${ARTIFACT}" "\${BUILD_DIR}" "Veyron" "\${VERSION}"
-for req in LICENSE LEGAL-INDEX.txt install.sh uninstall.sh HELP.txt START_HERE.txt README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
+for req in LICENSE NOTICE install.sh uninstall.sh HELP.txt START_HERE.txt README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
   install-cluster.sh apply-cluster-network.sh test-cluster.sh test-package.sh \
   install-client-deps.sh veyron veyron.env.example chart Dockerfile install-to-kubernetes.sh; do
   test -e "\${OUT_DIR}/\${ARTIFACT}/\${req}" || { echo "bundle missing \${req}" >&2; exit 1; }

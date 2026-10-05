@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-# Proprietary software — see LICENSE in the repository root.
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 #
 # Host-level virtualization preflight for a KubeVirt node. The API-level gate
 # (preflight-veyron-remote.sh) can only see what Kubernetes reports; this checks

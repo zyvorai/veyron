@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-# Proprietary software — see LICENSE in the repository root.
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 #
 # Configure KubeVirt to hand prepared GPUs to VMs:
 #
@@ -214,4 +214,4 @@ echo '    -H "Content-Type: application/json" \'
 echo "    -d '{\"name\":\"gpu-vm\",\"template\":\"ubuntu22\",\"gpu\":{\"count\":1,\"resource_name\":\"${RESOURCE_NAME}\"}}'"
 echo
 echo "Note: passthrough GPU VMs can NEVER live-migrate (the API refuses with a 409"
-echo "and suggests a stop/start cold move). See docs/GPU_PASSTHROUGH.md."
+echo "and suggests a stop/start cold move). See docs/gpu.md."

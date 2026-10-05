@@ -1,6 +1,5 @@
-// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-// Proprietary software — see LICENSE in the repository root.
-// https://zyvor.dev · info@zyvor.dev
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 use super::types::*;
 use std::collections::HashMap;
@@ -153,6 +152,29 @@ impl VMConfigBuilder {
             boot_order,
             source: DiskSource::ContainerDisk {
                 image: image.into(),
+            },
+            device_type: DiskDeviceType::default(),
+            bus: None,
+            cache: None,
+            io: None,
+        });
+        self
+    }
+
+    /// Add a disk backed by an existing PVC (boot disk when it has the lowest boot order).
+    pub fn add_pvc_disk(
+        mut self,
+        name: impl Into<String>,
+        claim_name: impl Into<String>,
+        boot_order: u32,
+    ) -> Self {
+        self.config.disks.push(DiskConfig {
+            name: name.into(),
+            size: "0".to_string(),
+            storage_class: None,
+            boot_order,
+            source: DiskSource::PVC {
+                name: claim_name.into(),
             },
             device_type: DiskDeviceType::default(),
             bus: None,

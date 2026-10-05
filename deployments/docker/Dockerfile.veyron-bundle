@@ -1,5 +1,5 @@
 # Build a container image directly from the customer binary bundle produced by
-# scripts/package-binary-remote.sh (see docs/PACKAGE_BINARY_REMOTE.md) — for customers
+# scripts/package-binary-remote.sh (see docs/deploy.md) — for customers
 # who received a veyron-<version>-linux-amd64.tar.gz bundle and want to run Veyron as
 # Kubernetes pods (via the bundled Helm chart) instead of, or in addition to, the
 # standalone `./veyron api-serve` process the bundle already supports directly.

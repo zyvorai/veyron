@@ -89,18 +89,11 @@ verify_bundle_layout() {
   return "${ok}"
 }
 
-verify_customer_pdfs() {
+verify_customer_docs() {
   local ok=0
-  if [[ -d ./docs/pdf ]]; then
-    [[ -f ./docs/welcome.html ]] && log_ok "  docs/welcome.html" || { log_fail "  missing docs/welcome.html"; ok=1; }
-    [[ -f ./docs/pdf/WELCOME.pdf ]] && log_ok "  docs/pdf/WELCOME.pdf" || { log_fail "  missing docs/pdf/WELCOME.pdf"; ok=1; }
-    [[ -f ./OPEN_FIRST.txt ]] && log_ok "  OPEN_FIRST.txt" || log_warn "  missing OPEN_FIRST.txt"
-    [[ -f ./docs/zyvor-logo.png ]] && log_ok "  docs/zyvor-logo.png" || { log_warn "  missing docs/zyvor-logo.png"; ok=1; }
-    [[ -f ./docs/PDF_INDEX.txt ]] && log_ok "  docs/PDF_INDEX.txt" || log_warn "  missing docs/PDF_INDEX.txt"
-  else
-    log_warn "  docs/pdf/ not bundled (old tarball?)"
-    ok=1
-  fi
+  for f in README.md docs/getting-started.md docs/deploy.md; do
+    [[ -f "./${f}" ]] && log_ok "  ${f}" || { log_fail "  missing ${f}"; ok=1; }
+  done
   return "${ok}"
 }
 
@@ -178,7 +171,7 @@ test_tarball() {
 
   verify_extracted_ux || ((WARN++))
   verify_script_paths || { ((FAIL++)); rm -rf "${work}"; return 1; }
-  verify_customer_pdfs || ((WARN++))
+  verify_customer_docs || ((WARN++))
 
   local install_cmd timeout_secs
   install_cmd="$(choose_install_cmd)"

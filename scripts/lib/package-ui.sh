@@ -210,7 +210,7 @@ pkg_env_bootstrap_auth() {
 # Root of extracted tarball (set by install.sh / install-everything.sh before parsing args).
 PKG_INSTALL_ROOT="${PKG_INSTALL_ROOT:-}"
 
-# License / legal files in the bundle (shown in --help and install banners).
+# License files in the bundle (shown in --help and install banners).
 pkg_license_help_text() {
     local root="${1:-${PKG_INSTALL_ROOT:-.}}"
     local any=0
@@ -222,16 +222,8 @@ pkg_license_help_text() {
         echo "  LICENSE.txt             cat LICENSE.txt — software license"
         any=1
     fi
-    if [[ -f "${root}/ZYVOR-COMPANY-TERMS.md" ]]; then
-        echo "  ZYVOR-COMPANY-TERMS.md  Zyvor distribution (install prompts ACCEPT)"
-        any=1
-    fi
-    if [[ -f "${root}/LEGAL-INDEX.txt" ]]; then
-        echo "  LEGAL-INDEX.txt         index of all legal files"
-        any=1
-    fi
-    if [[ -d "${root}/docs/legal" ]]; then
-        echo "  docs/legal/             company reference"
+    if [[ -f "${root}/NOTICE" ]]; then
+        echo "  NOTICE                  attribution notice"
         any=1
     fi
     [[ "${any}" -eq 1 ]]
@@ -243,9 +235,8 @@ pkg_license_help_block() {
     lines="$(pkg_license_help_text "${root}" 2>/dev/null || true)"
     if [[ -n "${lines}" ]]; then
         echo ""
-        echo "License & legal:"
+        echo "License:"
         echo "${lines}"
-        echo "  Read LICENSE before install; ./install.sh will prompt to accept terms."
     fi
 }
 
@@ -267,7 +258,7 @@ Zyvor client bundle — install help
 Documentation in this folder:
   START_HERE.txt      begin here
   HELP.txt            all scripts (run: cat HELP.txt)
-  ZYVOR_INSTALL.txt   fastest install path
+  docs/               guides (markdown)
   QUICKSTART.txt      step-by-step commands
   README.txt          archive contents
 EOF
@@ -521,7 +512,7 @@ pkg_customer_hero() {
     pkg_box_line "Run: ./install-everything.sh (recommended)" "${PKG_C_GREEN}"
     pkg_box_line "Help: cat START_HERE.txt or cat HELP.txt" "${PKG_C_DIM}"
     if [[ -f "${PKG_INSTALL_ROOT:-.}/LICENSE" || -f "${PKG_INSTALL_ROOT:-.}/LICENSE.txt" ]]; then
-        pkg_box_line "License: cat LICENSE · LEGAL-INDEX.txt" "${PKG_C_DIM}"
+        pkg_box_line "License: cat LICENSE · NOTICE" "${PKG_C_DIM}"
     fi
     pkg_box_end
     echo ""
@@ -596,7 +587,7 @@ pkg_install_finish() {
     fi
     steps+=("Help: cat HELP.txt" "Re-run checks: ./test-package.sh" "Remove: ./uninstall.sh --yes [--remove-dir]")
     if [[ -f "${PKG_INSTALL_ROOT:-.}/LICENSE" || -f "${PKG_INSTALL_ROOT:-.}/LICENSE.txt" ]]; then
-        steps=("License: cat LICENSE · LEGAL-INDEX.txt" "${steps[@]}")
+        steps=("License: cat LICENSE · NOTICE" "${steps[@]}")
     fi
     pkg_next_steps "${steps[@]}"
 }
@@ -661,7 +652,7 @@ pkg_install_done_message() {
     pkg_summary "Install complete"
     local -a _done_steps=("zyvor.dev · Zyvor · © 2026" "Help: cat HELP.txt")
     if [[ -f "${PKG_INSTALL_ROOT:-.}/LICENSE" || -f "${PKG_INSTALL_ROOT:-.}/LICENSE.txt" ]]; then
-        _done_steps=("License: cat LICENSE · LEGAL-INDEX.txt" "${_done_steps[@]}")
+        _done_steps=("License: cat LICENSE · NOTICE" "${_done_steps[@]}")
     fi
     _done_steps+=("Remove: ./uninstall.sh --yes [--remove-dir]")
     pkg_next_steps "${_done_steps[@]}"

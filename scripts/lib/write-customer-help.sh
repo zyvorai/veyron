@@ -26,9 +26,8 @@ mkdir -p "${STAGE}"
 ================================================================================
 
 START HERE
-  OPEN_FIRST.txt      ✦ open this first (points to welcome page)
-  docs/welcome.html   interactive offline guide (best experience)
-  docs/pdf/WELCOME.pdf
+  README.md           product overview
+  docs/getting-started.md
   cat START_HERE.txt
   ./install-everything.sh     recommended full automatic install
   ./install-everything.sh --help
@@ -36,31 +35,23 @@ START HERE
 
 DOCUMENTATION (read in this order)
   HELP.txt            all scripts explained (this file)
-  docs/pdf/           same guides as printable PDFs (Zyvor logo on each page)
-  docs/PDF_INDEX.txt  list of PDF filenames
-  ZYVOR_INSTALL.txt   fastest install, no compile on this machine
+  docs/               guides: getting started, deploy, API, SSO, GPU, Windows, SOC
   QUICKSTART.txt      step-by-step commands for ${PRODUCT}
   README.txt          archive contents and requirements
 EOF
 
   echo ""
-  echo "LICENSE & LEGAL (read before install)"
+  echo "LICENSE"
   if [[ -f "${STAGE}/LICENSE" ]]; then
     echo "  LICENSE                 cat LICENSE — software license"
   fi
   if [[ -f "${STAGE}/LICENSE.txt" ]]; then
     echo "  LICENSE.txt             cat LICENSE.txt — software license"
   fi
-  if [[ -f "${STAGE}/ZYVOR-COMPANY-TERMS.md" ]]; then
-    echo "  ZYVOR-COMPANY-TERMS.md  Zyvor distribution terms (install prompts ACCEPT)"
+  if [[ -f "${STAGE}/NOTICE" ]]; then
+    echo "  NOTICE                  attribution notice"
   fi
-  if [[ -f "${STAGE}/LEGAL-INDEX.txt" ]]; then
-    echo "  LEGAL-INDEX.txt         index of all legal files"
-  fi
-  if [[ -d "${STAGE}/docs/legal" ]]; then
-    echo "  docs/legal/             company reference"
-  fi
-  echo "  ./install.sh --help     license summary + install options"
+  echo "  ./install.sh --help     install options"
 
   case "${KIND}" in
     k8s)
@@ -260,8 +251,8 @@ GETTING HELP
   All install scripts:     ./install.sh --help  |  ./install-everything.sh --help
   Remove install:          ./uninstall.sh --help
   Product binary:          run the main binary with --help (see README.txt)
-  License:                 cat LICENSE · cat LEGAL-INDEX.txt
-  Zyvor:                   https://zyvor.dev · sales@zyvor.dev · legal@zyvor.dev
+  License:                 cat LICENSE · cat NOTICE
+  Zyvor:                   https://zyvor.dev · sales@zyvor.dev
 
 --------------------------------------------------------------------------------
 ENTERPRISE (fleet, SLA, VMware exit)

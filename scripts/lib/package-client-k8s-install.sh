@@ -115,6 +115,6 @@ Deployed. Check status:
 Retrieve admin credentials:
   kubectl -n ${NAMESPACE} get secret veyron-api-key -o jsonpath='{.data.api-key}' | base64 -d; echo
   kubectl -n ${NAMESPACE} get secret veyron-api-key -o jsonpath='{.data.admin-password}' | base64 -d; echo
-See docs/customer/admin-basics.md for the full credential story.
+See docs/sso.md for the full credential story.
 EOF
 fi

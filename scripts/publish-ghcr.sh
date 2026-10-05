@@ -3,15 +3,15 @@
 # The remote already has the built image from the last deploy — no rebuild needed.
 #
 # Usage:
-#   GHCR_TOKEN=<pat> ./scripts/publish-ghcr.sh [host] [user] [version]
+#   GHCR_TOKEN=<pat> ./scripts/publish-ghcr.sh <host> <user> [version]
 #
 # Example:
-#   GHCR_TOKEN=ghp_xxx ./scripts/publish-ghcr.sh HOST sus 0.3.0
+#   GHCR_TOKEN=ghp_xxx ./scripts/publish-ghcr.sh 203.0.113.10 builder 0.3.0
 
 set -euo pipefail
 
-HOST="${1:-HOST}"
-RUSER="${2:-sus}"
+HOST="${1:?usage: publish-ghcr.sh <host> <user> [version]}"
+RUSER="${2:?usage: publish-ghcr.sh <host> <user> [version]}"
 VERSION="${3:-0.3.0}"
 REMOTE="${RUSER}@${HOST}"
 ORG="ssahani"

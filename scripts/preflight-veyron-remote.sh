@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-# Proprietary software — see LICENSE in the repository root.
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 #
 # Customer-site readiness preflight for a DEPLOYED Veyron API. Reports which
 # Day-2 operations the target cluster actually supports (KubeVirt feature gates
@@ -59,7 +59,7 @@ c -o /dev/null -w '' "${BASE}/api/v1/health/ready" 2>/dev/null && ok "Readiness 
 
 # 3) Acceptance gate — grade the cluster against the go-live requirements.
 #    Hard FAILs block sign-off (exit non-zero); WARNs are capability gaps that
-#    degrade gracefully. See docs/CUSTOMER_DEPLOY.md.
+#    degrade gracefully. See docs/deploy.md.
 GATE_FAILED=0
 echo; echo "Acceptance gate (target cluster):"; hr
 caps="$(c "${BASE}/api/v1/platform/capabilities" 2>/dev/null || true)"

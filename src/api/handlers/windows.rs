@@ -1,6 +1,5 @@
-// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-// Proprietary software — see LICENSE in the repository root.
-// https://zyvor.dev · info@zyvor.dev
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 //! Windows golden-image setup wizard API.
 
@@ -90,8 +89,7 @@ async fn get_setup_plan(Query(q): Query<WindowsSetupQuery>) -> Json<WindowsSetup
         steps,
         sample_veyronvm_yaml: sample,
         docs: vec![
-            "docs/WINDOWS_KUBEVIRT_PRODUCTION.md".into(),
-            "docs/WINDOWS_PACKER_GITOPS_PIPELINE.md".into(),
+            "docs/windows.md".into(),
             "examples/windows-kubevirt-gitops/".into(),
         ],
     })

@@ -1,6 +1,5 @@
-// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-// Proprietary software — see LICENSE in the repository root.
-// https://zyvor.dev · info@zyvor.dev
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 //! Self-healing: evaluate VM health and remediate unhealthy VMs (restart a VMI
 //! that has entered a Failed phase). Callable on demand or on a schedule via the

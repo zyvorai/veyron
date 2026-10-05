@@ -7,7 +7,7 @@ This example shows:
 
 It does **not** run Packer (that runs on a CI worker or image factory). See the repo guide:
 
-`docs/WINDOWS_PACKER_GITOPS_PIPELINE.md`
+`docs/windows.md`
 
 ## Quick apply
 

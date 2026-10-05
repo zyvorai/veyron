@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-# Proprietary software — see LICENSE in the repository root.
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 #
 # Headless dashboard LAYOUT audit — wrapper for dashboard-layout-audit.cjs.
 #
@@ -21,7 +21,7 @@
 # Requires: node, npm, Google Chrome (playwright-core, channel: chrome).
 #
 # Usage:
-#   ./scripts/dashboard-layout-audit.sh --host HOST
+#   ./scripts/dashboard-layout-audit.sh --host 203.0.113.10
 #   ./scripts/dashboard-layout-audit.sh --host H --width 1280 --tier advanced
 #   VEYRON_API_KEY=... ./scripts/dashboard-layout-audit.sh --host H --width 1280,1920
 set -euo pipefail

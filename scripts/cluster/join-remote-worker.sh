@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-# Proprietary software — see LICENSE in the repository root.
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 #
 # Join machines from a SECOND rack/site into the Veyron k3s cluster over a
 # host-level WireGuard underlay (Tailscale alternative via V9S_MESH_BACKEND).
 #
-# Topology (see docs/MULTI_SITE_MESH.md):
+# Topology (see docs/multi-site.md):
 #   - single control plane at site 1 (no etcd over WAN)
 #   - site-2 machines join as WORKERS with their k3s --node-ip on the mesh
 #   - VMs stay zone-pinned; live migration is within-site only; cross-site = DR
@@ -269,4 +269,4 @@ echo "  ssh ${SERVER_USER}@${SERVER_HOST} 'kubectl -n kube-system exec ds/cilium
 echo "  wg show   (on either end: latest handshake < 2 min)"
 echo ""
 echo "Reminder: keep VMs zone-pinned (scheduling.node_selector topology.kubernetes.io/zone=${SITE});"
-echo "live migration is within-site only — cross-site is DR (Velero/Atlas), see docs/MULTI_SITE_MESH.md."
+echo "live migration is within-site only — cross-site is DR (Velero/Atlas), see docs/multi-site.md."

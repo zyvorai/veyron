@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
-# Proprietary software — see LICENSE in the repository root.
+# Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 #
 # Bring an EXISTING cluster up to the Veyron production baseline, in place.
 #
@@ -296,13 +296,13 @@ if [[ -n "${GPU_ALLOC}" ]]; then
   fi
 fi
 # Multi-zone cluster whose StorageClasses ignore zones: PVCs can bind to the
-# wrong site and pin VMs across the WAN (see docs/MULTI_SITE_MESH.md).
+# wrong site and pin VMs across the WAN (see docs/multi-site.md).
 ZONE_COUNT="$($K get nodes -o jsonpath='{range .items[*]}{.metadata.labels.topology\.kubernetes\.io/zone}{"\n"}{end}' 2>/dev/null | grep -v '^$' | sort -u | wc -l | tr -d ' ')"
 if [[ "${ZONE_COUNT}" -gt 1 ]]; then
   TOPO_SC="$($K get sc -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.allowedTopologies}{"\n"}{end}' 2>/dev/null | awk 'NF>1' | wc -l | tr -d ' ')"
   if [[ "${TOPO_SC}" -eq 0 ]]; then
     warn "Cluster spans ${ZONE_COUNT} zones but no StorageClass sets allowedTopologies —"
-    warn "  cross-site PVC binding is possible; add zone-scoped StorageClasses (docs/MULTI_SITE_MESH.md §4)"
+    warn "  cross-site PVC binding is possible; add zone-scoped StorageClasses (docs/multi-site.md §4)"
   else
     ok "Multi-zone cluster has ${TOPO_SC} zone-scoped StorageClass(es)"
   fi
