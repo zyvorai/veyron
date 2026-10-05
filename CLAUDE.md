@@ -38,6 +38,11 @@ make ci
 #   VEYRON_DEPLOY_NO_CACHE=1        Force clean image rebuild (slow)
 #   VEYRON_DEPLOY_DIAGNOSTICS=1     Full cluster pod listing before rsync
 #   VEYRON_SKIP_GUESTKIT_PREP=1     Skip local guestkit rsync when guestkit/ is current
+# deploy-k8s-remote.sh builds with `cargo --profile deploy` (thin LTO, codegen-units 16), streams
+# cargo/npm/podman output, and prints per-step timings. The console (frontend/dist) is built on
+# the host when it has npm, otherwise locally before rsync.
+#   VEYRON_DEPLOY_FULL_LTO=1        Use the full `release` profile (slow link, smallest/fastest binary)
+#   VEYRON_DEPLOY_BUILD_TIMEOUT=N   Abort the remote cargo build after N seconds (default 3600)
 
 # Post-deploy HTTPS API smoke test (NodePort health, templates, VM list — uses VEYRON_API_KEY)
 ./scripts/verify-veyron-remote.sh HOST [30151]

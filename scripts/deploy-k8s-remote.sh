@@ -97,7 +97,19 @@ format_duration() {
 }
 
 info() { echo "  ${COLOR_GREEN}[✓]${COLOR_RESET} $*"; }
-step() { echo ""; echo "  ${COLOR_CYAN}──${COLOR_RESET} ${COLOR_BOLD}$*${COLOR_RESET}"; }
+STEP_STARTED=""
+STEP_NAME=""
+step_done() {
+  if [[ -n "${STEP_STARTED}" ]]; then
+    echo "  ${COLOR_DIM}   ${STEP_NAME%%:*} took $((SECONDS - STEP_STARTED))s${COLOR_RESET}"
+  fi
+}
+step() {
+  step_done
+  STEP_STARTED=${SECONDS}
+  STEP_NAME="$*"
+  echo ""; echo "  ${COLOR_CYAN}──${COLOR_RESET} ${COLOR_BOLD}$*${COLOR_RESET}"
+}
 error() { echo "  ${COLOR_RED}[✗]${COLOR_RESET} $*"; exit 1; }
 
 REMOTE="${USER}@${HOST}"
@@ -151,31 +163,65 @@ echo "  ${COLOR_DIM}NodePort:${COLOR_RESET}   ${NODE_PORT} → pod :5151 (TLS)"
 echo "  ${COLOR_DIM}Credentials:${COLOR_RESET} $(veyron_hosts_dir)/${HOST}.env"
 echo ""
 
+# Cargo profile: `deploy` (thin LTO, parallel codegen) is several times faster to link
+# than `release`. VEYRON_DEPLOY_FULL_LTO=1 restores the fully optimized release build.
+if [[ "${VEYRON_DEPLOY_FULL_LTO:-}" == "1" ]]; then
+  CARGO_PROFILE="release"
+else
+  CARGO_PROFILE="deploy"
+fi
+BUILD_TIMEOUT="${VEYRON_DEPLOY_BUILD_TIMEOUT:-3600}"
+
+# The console is embedded into the binary (include_dir!), so frontend/dist must exist
+# before cargo runs. Build it on the remote host when it has npm, else locally.
+REMOTE_HAS_NPM="$(deploy_ssh "${USER}@${HOST}" 'command -v npm >/dev/null 2>&1 && echo yes || echo no' | tr -d '\r')"
+if [[ "${REMOTE_HAS_NPM}" != "yes" ]]; then
+  step "Step 0/7: Building console locally (no npm on ${HOST})"
+  command -v npm >/dev/null 2>&1 || error "npm is required locally or on ${HOST} to build the console (frontend/)"
+  (cd frontend && npm ci --no-audit --no-fund && npm run build) || error "Console build failed"
+  info "Console built (frontend/dist)"
+fi
+
 # ── Step 1: Rsync ──
 step "Step 1/7: Syncing source to ${HOST}"
 rsync -az --delete \
-    --exclude target/ --exclude .git/ --exclude operator/bin/ \
+    --exclude target/ --exclude .git/ --exclude operator/bin/ --exclude frontend/node_modules/ \
     -e "$(deploy_rsync_ssh)" \
     . "${USER}@${HOST}:${REMOTE_DIR}/"
 info "Source synced"
 
+if [[ "${REMOTE_HAS_NPM}" == "yes" ]]; then
+  step "Step 1b/7: Building console on ${HOST}"
+  deploy_ssh "${USER}@${HOST}" "
+    set -euo pipefail
+    cd ${REMOTE_DIR}/frontend
+    npm ci --no-audit --no-fund 2>&1 | sed 's/^/  [npm] /'
+    npm run build 2>&1 | sed 's/^/  [vite] /'
+  " || error "Console build failed on ${HOST}"
+  info "Console built (frontend/dist)"
+fi
+
 # ── Step 2: Build binary ──
-step "Step 2/7: Building release binary"
+step "Step 2/7: Building binary (profile: ${CARGO_PROFILE}, timeout ${BUILD_TIMEOUT}s)"
 deploy_ssh "${USER}@${HOST}" "
+    set -euo pipefail
     source \$HOME/.cargo/env 2>/dev/null || true
     cd ${REMOTE_DIR}
-    cargo build --release --bin veyron 2>&1 | tail -3
+    timeout ${BUILD_TIMEOUT} cargo build --profile ${CARGO_PROFILE} --bin veyron 2>&1 | sed 's/^/  [cargo] /'
+    mkdir -p target/release
+    if [ '${CARGO_PROFILE}' != release ]; then cp target/${CARGO_PROFILE}/veyron target/release/veyron; fi
     strip target/release/veyron 2>/dev/null || true
     ls -lh target/release/veyron
-"
+" || error "Binary build failed or exceeded ${BUILD_TIMEOUT}s (VEYRON_DEPLOY_BUILD_TIMEOUT)"
 info "Binary built"
 
 # ── Step 3: Build container image ──
 step "Step 3/7: Building container image"
 deploy_ssh "${USER}@${HOST}" "
+    set -euo pipefail
     cd ${REMOTE_DIR}
     cp target/release/veyron /tmp/veyron-binary
-    podman build --format docker -t localhost/veyron:latest -f Dockerfile.deploy /tmp 2>&1 | tail -3
+    podman build --format docker --build-arg VIRTCTL_VERSION=${KUBEVIRT_VERSION} -t localhost/veyron:latest -f Dockerfile.deploy /tmp 2>&1 | sed 's/^/  [podman] /'
     podman save localhost/veyron:latest | ${IMPORT_CMD} 2>&1
 " || error "Image import failed (non-k3s: install containerd ctr, set VEYRON_CONTAINER_RUNTIME_IMPORT, or push to a registry and adjust the Deployment image / pullPolicy)"
 info "Container image built and imported"
@@ -597,6 +643,7 @@ info "Deployment verified"
 DISPLAY_NODE_PORT=$(deploy_ssh "${USER}@${HOST}" "${K} -n ${NS} get svc veyron-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || true)
 DISPLAY_NODE_PORT="${DISPLAY_NODE_PORT:-${NODE_PORT}}"
 
+step_done
 TOTAL_SEC=$(( $(date +%s) - RUN_STARTED_AT ))
 
 echo ""
