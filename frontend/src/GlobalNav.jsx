@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, Bell, Sun, Moon, Plus, Menu, X, LogOut } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Plus, Menu, X, LogOut, Settings } from 'lucide-react';
 import { NAV, RES_META, pageLabel } from './resources.js';
 import zyvorLogomark from './assets/zyvor-logomark.svg';
 
@@ -16,6 +16,9 @@ export function GlobalNav({
 }) {
   const [openGroup, setOpenGroup] = useState(null);
   const [mobile, setMobile] = useState(false);
+  const [account, setAccount] = useState(false);
+  const accountRef = useRef(null);
+  const avatarRef = useRef(null);
   const openTimer = useRef(null);
   const closeTimer = useRef(null);
   const navRef = useRef(null);
@@ -36,16 +39,21 @@ export function GlobalNav({
   useEffect(() => () => clearTimers(), []);
 
   useEffect(() => {
-    if (!openGroup && !mobile) return undefined;
+    if (!openGroup && !mobile && !account) return undefined;
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
       const g = openGroup;
       setOpenGroup(null);
       setMobile(false);
       if (g) triggerRefs.current[g]?.focus();
+      if (account) {
+        setAccount(false);
+        avatarRef.current?.focus();
+      }
     };
     const onDown = (e) => {
       if (navRef.current && !navRef.current.contains(e.target)) setOpenGroup(null);
+      if (accountRef.current && !accountRef.current.contains(e.target)) setAccount(false);
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDown);
@@ -53,7 +61,7 @@ export function GlobalNav({
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('mousedown', onDown);
     };
-  }, [openGroup, mobile]);
+  }, [openGroup, mobile, account]);
 
   const pick = (id) => {
     clearTimers();
@@ -62,7 +70,13 @@ export function GlobalNav({
     go(id);
   };
 
-  const initial = (user?.display_name || user?.username || 'A').charAt(0).toUpperCase();
+  const displayName = user?.display_name || user?.username || 'Signed in';
+  const initial = displayName.charAt(0).toUpperCase();
+  const role = user?.role || 'readonly';
+  const closeAccount = (then) => () => {
+    setAccount(false);
+    then?.();
+  };
 
   return (
     <nav className={`gn${openGroup ? ' gn--open' : ''}`} aria-label="Global" ref={navRef}>
@@ -109,7 +123,7 @@ export function GlobalNav({
             <span>Search</span>
             <kbd>⌘K</kbd>
           </button>
-          <span className={`gn-live${!healthOk || alerts ? ' warn' : ''}`} title={healthOk ? 'API healthy' : 'API degraded'}>
+          <span className={`gn-live${healthOk ? '' : ' warn'}`} title={healthOk ? 'API healthy' : 'API not responding reliably'}>
             <i />
             {loading ? 'Syncing' : healthOk ? 'Live' : 'Degraded'}
           </span>
@@ -140,14 +154,62 @@ export function GlobalNav({
               New
             </button>
           )}
-          <button
-            type="button"
-            className="gn-avatar"
-            onClick={onLogout}
-            title={`Sign out${user?.username ? ` (${user.username})` : ''}`}
-          >
-            {initial}
-          </button>
+          <div className="gn-account-wrap" ref={accountRef}>
+            <button
+              type="button"
+              ref={avatarRef}
+              className="gn-avatar"
+              aria-haspopup="menu"
+              aria-expanded={account}
+              aria-label={`Account: ${displayName}`}
+              onClick={() => {
+                setOpenGroup(null);
+                setAccount((a) => !a);
+              }}
+            >
+              {initial}
+            </button>
+            {account && (
+              <div className="gn-account" role="menu" aria-label="Account">
+                <div className="gn-account-head">
+                  <span className="gn-avatar lg" aria-hidden>
+                    {initial}
+                  </span>
+                  <div>
+                    <b>{displayName}</b>
+                    {user?.username && user.username !== displayName && <small>{user.username}</small>}
+                    <span className="gn-role" data-role={role}>
+                      {role}
+                    </span>
+                  </div>
+                </div>
+                <div className="gn-account-row">
+                  <span>Appearance</span>
+                  <div className="gn-seg" role="group" aria-label="Theme">
+                    {['light', 'dark'].map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={theme === t}
+                        onClick={() => theme !== t && onToggleTheme()}
+                      >
+                        {t === 'light' ? <Sun size={13} /> : <Moon size={13} />}
+                        {t === 'light' ? 'Light' : 'Dark'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button type="button" role="menuitem" className="gn-account-item" onClick={closeAccount(() => pick('settings'))}>
+                  <Settings size={15} /> Settings
+                </button>
+                <hr />
+                <button type="button" role="menuitem" className="gn-account-item" onClick={closeAccount(onLogout)}>
+                  <LogOut size={15} /> Sign out
+                </button>
+              </div>
+            )}
+          </div>
           <button
             type="button"
             className="gn-icon gn-burger"
@@ -213,6 +275,9 @@ export function GlobalNav({
             </section>
           ))}
           <section>
+            <p className="gn-mega-eyebrow">
+              Signed in as {displayName} · {role}
+            </p>
             <button type="button" onClick={onLogout}>
               <LogOut size={16} /> Sign out
             </button>

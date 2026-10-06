@@ -683,7 +683,7 @@ pub(super) struct PodListQuery {
     active: bool,
 }
 
-#[derive(Serialize, Default)]
+#[derive(Serialize, Default, Clone)]
 pub(super) struct PodSummary {
     total: usize,
     running: usize,
@@ -693,6 +693,28 @@ pub(super) struct PodSummary {
     unknown: usize,
     /// Failed pods per namespace, largest first (top 10).
     failed_by_namespace: Vec<(String, usize)>,
+}
+
+/// Listing every pod on a large cluster takes seconds; Mission polls this every 30s.
+const POD_SUMMARY_TTL: std::time::Duration = std::time::Duration::from_secs(30);
+
+type PodSummaryCache = std::sync::Mutex<HashMap<String, (std::time::Instant, PodSummary)>>;
+
+static POD_SUMMARY_CACHE: std::sync::LazyLock<PodSummaryCache> =
+    std::sync::LazyLock::new(Default::default);
+
+fn cached_pod_summary(ns: &str) -> Option<PodSummary> {
+    let cache = POD_SUMMARY_CACHE.lock().ok()?;
+    cache
+        .get(ns)
+        .filter(|(at, _)| at.elapsed() < POD_SUMMARY_TTL)
+        .map(|(_, s)| s.clone())
+}
+
+fn store_pod_summary(ns: &str, summary: &PodSummary) {
+    if let Ok(mut cache) = POD_SUMMARY_CACHE.lock() {
+        cache.insert(ns.to_string(), (std::time::Instant::now(), summary.clone()));
+    }
 }
 
 fn summarize_pods(pods: &[k8s_openapi::api::core::v1::Pod]) -> PodSummary {
@@ -737,6 +759,10 @@ pub(super) async fn pods_summary_handler(
     } else {
         ns
     };
+    let ctx = req_ctx(HttpMethod::GET, "/api/v1/pods/summary");
+    if let Some(cached) = cached_pod_summary(ns) {
+        return ok_json(&ApiResponse::success(&cached, &ctx.request_id));
+    }
     let pods = if ns == "all" {
         client.list_all_pods().await
     } else {
@@ -744,11 +770,9 @@ pub(super) async fn pods_summary_handler(
     };
     match pods {
         Ok(pods) => {
-            let ctx = req_ctx(HttpMethod::GET, "/api/v1/pods/summary");
-            ok_json(&ApiResponse::success(
-                &summarize_pods(&pods),
-                &ctx.request_id,
-            ))
+            let summary = summarize_pods(&pods);
+            store_pod_summary(ns, &summary);
+            ok_json(&ApiResponse::success(&summary, &ctx.request_id))
         }
         Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
     }

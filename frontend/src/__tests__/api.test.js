@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asArray, mapNode, mapVm, parseCount, parseMemGi, relTime, tidyEventMessage, unwrap } from '../api.js';
+import { asArray, loginErrorMessage, mapNode, mapVm, parseCount, parseMemGi, relTime, tidyEventMessage, unwrap } from '../api.js';
 
 describe('unwrap / asArray', () => {
   it('unwraps the success envelope', () => {
@@ -63,5 +63,13 @@ describe('audit mapping fixes', () => {
 
   it('formats relative times', () => {
     expect(relTime(new Date(Date.now() - 5 * 60_000).toISOString())).toBe('5m ago');
+  });
+});
+
+describe('loginErrorMessage', () => {
+  it('maps auth failures and unreachable servers to Netra-style copy', () => {
+    expect(loginErrorMessage(Object.assign(new Error('Invalid credentials'), { status: 401 }))).toBe('Wrong username or password.');
+    expect(loginErrorMessage(Object.assign(new TypeError('Failed to fetch'), { network: true }))).toMatch(/Could not reach Veyron/);
+    expect(loginErrorMessage(Object.assign(new Error('Bad gateway'), { status: 502 }))).toMatch(/Could not reach Veyron/);
   });
 });

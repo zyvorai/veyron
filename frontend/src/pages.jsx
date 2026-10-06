@@ -5,7 +5,7 @@ import {
   Network, Database, Shield, Settings, Loader2, CheckCircle, Activity,
 } from 'lucide-react';
 import { Status } from './status.jsx';
-import { api } from './api.js';
+import { api, loginErrorMessage } from './api.js';
 import { PremiumLoginShell, LoginError } from './PremiumLoginShell.jsx';
 import { LogsPanel } from './LogsPanel.jsx';
 
@@ -797,29 +797,32 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
 export function Login({ onSubmit, error }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [localError, setLocalError] = useState('');
+  const [shown, setShown] = useState(error || '');
   const [submitting, setSubmitting] = useState(false);
-  const shown = localError || error;
+
+  useEffect(() => {
+    if (error) setShown(error);
+  }, [error]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username.trim() || !password) {
-      setLocalError('Wrong username or password.');
+      setShown('Wrong username or password.');
       return;
     }
-    setLocalError('');
+    setShown('');
     setSubmitting(true);
     try {
       await onSubmit(username.trim(), password);
-    } catch {
-      /* parent sets error */
+    } catch (err) {
+      setShown(loginErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
   };
 
   const clearError = () => {
-    if (localError) setLocalError('');
+    if (shown) setShown('');
   };
 
   return (

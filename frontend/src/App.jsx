@@ -103,12 +103,13 @@ export default function App() {
     setThemeState(t);
     setSavedTheme(t);
   }, []);
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#000000' : '#ffffff');
-  }, [theme]);
-
   const [authed, setAuthed] = useState(() => !!getToken());
+  useEffect(() => {
+    const shown = authed ? theme : 'light';
+    document.documentElement.setAttribute('data-theme', shown);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', shown === 'dark' ? '#000000' : '#ffffff');
+  }, [theme, authed]);
+
   const [loginErr, setLoginErr] = useState('');
   const [user, setUser] = useState(() => getAuthUser());
   const [page, setPage] = useState(pageFromHash);
@@ -148,6 +149,7 @@ export default function App() {
   useEffect(() => {
     const out = () => {
       setUser(null);
+      setLoginErr('Your session expired. Sign in again.');
       setAuthed(false);
     };
     window.addEventListener(UNAUTHORIZED_EVENT, out);
@@ -172,13 +174,14 @@ export default function App() {
     } catch (e) {
       clearSession();
       setUser(null);
-      setLoginErr(e.message || 'Invalid username or password');
+      setLoginErr('');
       throw e;
     }
   };
 
   const onLogout = () => {
     clearSession();
+    setLoginErr('');
     setUser(null);
     setAuthed(false);
   };

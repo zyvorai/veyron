@@ -332,12 +332,17 @@ async fn paqtra_get_json(
     ))
 }
 
+/// Status probes give up quickly so an upstream restart reads as "unreachable", not a hang.
+#[cfg(feature = "web")]
+const STATUS_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
 /// Unauthenticated `/health`; `None` when unreachable.
 #[cfg(feature = "web")]
 pub async fn probe_health(base: &str) -> Option<serde_json::Value> {
     validate_proxy_url(base).ok()?;
     let resp = http_client()?
         .get(format!("{}/health", base.trim_end_matches('/')))
+        .timeout(STATUS_PROBE_TIMEOUT)
         .send()
         .await
         .ok()?;
@@ -436,6 +441,15 @@ fn apply_health(out: &mut PaqtraStatusResponse, body: &serde_json::Value) {
 }
 
 #[cfg(feature = "web")]
+async fn bounded(
+    fut: impl std::future::Future<Output = Result<serde_json::Value, PaqtraError>>,
+) -> Result<serde_json::Value, PaqtraError> {
+    tokio::time::timeout(STATUS_PROBE_TIMEOUT, fut)
+        .await
+        .unwrap_or_else(|_| Err(PaqtraError::Upstream("Paqtra API timed out".into())))
+}
+
+#[cfg(feature = "web")]
 async fn get_paqtra_status(State(state): State<SharedState>) -> Json<PaqtraStatusResponse> {
     let kube = state.read().await.kube_client.clone();
     let mut out = PaqtraStatusResponse::empty();
@@ -463,8 +477,8 @@ async fn get_paqtra_status(State(state): State<SharedState>) -> Json<PaqtraStatu
         discover_ui,
         probe_health(&base),
         credentials(&kube),
-        paqtra_get_json(&kube, &base, "/api/v1/cilium/status", &[]),
-        paqtra_get_json(&kube, &base, "/api/v1/cluster/health", &[]),
+        bounded(paqtra_get_json(&kube, &base, "/api/v1/cilium/status", &[])),
+        bounded(paqtra_get_json(&kube, &base, "/api/v1/cluster/health", &[])),
     );
     if ui.is_some() {
         out.external_url = ui;

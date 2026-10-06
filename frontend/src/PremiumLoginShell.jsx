@@ -14,7 +14,7 @@ export function PremiumLoginShell({
 }) {
   const host = typeof window !== 'undefined' ? window.location.host || window.location.hostname : '';
   return (
-    <div className="login-shell" data-testid="premium-login-shell">
+    <div className="login-shell" data-theme="light" data-testid="premium-login-shell">
       <div className="login-info">
         <img src={zyvorMark} className="login-logo" alt={productName} />
         <p className="eyebrow">{eyebrow}</p>

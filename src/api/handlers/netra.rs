@@ -154,9 +154,16 @@ async fn netra_get(
         .map_err(|e| format!("Netra request failed: {e}"))
 }
 
+/// Status probes give up quickly so an upstream restart reads as "unreachable", not a hang.
+#[cfg(feature = "web")]
+const STATUS_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
 #[cfg(feature = "web")]
 pub async fn probe_healthz(base: &str) -> bool {
-    matches!(netra_get(base, "/healthz", &[]).await, Ok(r) if r.status().is_success())
+    matches!(
+        tokio::time::timeout(STATUS_PROBE_TIMEOUT, netra_get(base, "/healthz", &[])).await,
+        Ok(Ok(r)) if r.status().is_success()
+    )
 }
 
 #[cfg(feature = "web")]
@@ -267,10 +274,14 @@ async fn get_netra_status(State(state): State<SharedState>) -> Json<NetraStatusR
         .map(|u| u.replacen("http://", "https://", 1));
     }
 
-    let (healthy, status) = tokio::join!(
-        probe_healthz(&base),
-        netra_get(&base, "/api/v1/status", &[])
-    );
+    let (healthy, status) = tokio::join!(probe_healthz(&base), async {
+        tokio::time::timeout(
+            STATUS_PROBE_TIMEOUT,
+            netra_get(&base, "/api/v1/status", &[]),
+        )
+        .await
+        .unwrap_or_else(|_| Err("Netra /api/v1/status timed out".to_string()))
+    });
     out.reachable = healthy;
     if !out.reachable {
         out.message = Some(format!("Netra health probe failed at {base}/healthz"));

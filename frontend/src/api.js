@@ -72,6 +72,22 @@ export function setSavedTheme(theme) {
   }
 }
 
+function httpError(message, status) {
+  const e = new Error(message);
+  e.status = status;
+  return e;
+}
+
+/** Netra-style sign-in errors: never show raw server or browser text. */
+export function loginErrorMessage(e) {
+  if (!e) return '';
+  if (e.status === 401 || e.status === 403) return 'Wrong username or password.';
+  if (e.network || e.status >= 500 || e.status === 404) return 'Could not reach Veyron. Check the URL and try again.';
+  return /invalid|wrong|unauthori[sz]ed|credential/i.test(e.message || '')
+    ? 'Wrong username or password.'
+    : 'Could not reach Veyron. Check the URL and try again.';
+}
+
 async function request(path, opts = {}) {
   const { skipAuth, rawText, timeout, ...fetchOpts } = opts;
   const token = getToken();
@@ -89,14 +105,15 @@ async function request(path, opts = {}) {
     resp = await fetch(path, { ...fetchOpts, headers, signal: fetchOpts.signal || ctrl.signal });
     text = await resp.text();
   } catch (e) {
-    if (e.name === 'AbortError') throw new Error(`Timed out after ${Math.round(limit / 1000)}s`);
-    throw e;
+    const err = e.name === 'AbortError' ? new Error(`Timed out after ${Math.round(limit / 1000)}s`) : e;
+    err.network = true;
+    throw err;
   } finally {
     if (timer) clearTimeout(timer);
   }
   if (rawText) {
     if (resp.status === 401 && !skipAuth) onUnauthorized();
-    if (!resp.ok) throw new Error(text.slice(0, 200) || `HTTP ${resp.status}`);
+    if (!resp.ok) throw httpError(text.slice(0, 200) || `HTTP ${resp.status}`, resp.status);
     return text;
   }
   let body = null;
@@ -104,7 +121,7 @@ async function request(path, opts = {}) {
     try {
       body = JSON.parse(text);
     } catch {
-      if (!resp.ok) throw new Error(text.slice(0, 200) || `HTTP ${resp.status}`);
+      if (!resp.ok) throw httpError(text.slice(0, 200) || `HTTP ${resp.status}`, resp.status);
       throw new Error('Invalid JSON from API');
     }
   }
@@ -115,7 +132,7 @@ async function request(path, opts = {}) {
     const msg =
       (body && (typeof body.error === 'string' ? body.message || body.error : body.error?.message ?? body.message)) ||
       `HTTP ${resp.status}`;
-    throw new Error(String(msg));
+    throw httpError(String(msg), resp.status);
   }
   if (body && typeof body === 'object' && body.success === false) {
     throw new Error(String(body.error?.message ?? body.message ?? 'Request failed'));

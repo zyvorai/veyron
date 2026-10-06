@@ -53,6 +53,7 @@
   font-weight: 600;
   margin: 8px 0 14px;
   color: var(--text-primary);
+  text-wrap: balance;
 }
 .login-info p:not(.eyebrow) {
   margin: 0 auto;
@@ -60,6 +61,7 @@
   font-size: var(--fs-lede);
   line-height: 1.5;
   max-width: 480px;
+  text-wrap: balance;
 }
 .login-info p.login-host {
   margin-top: 20px;
