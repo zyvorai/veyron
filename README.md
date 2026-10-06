@@ -116,10 +116,10 @@ git clone https://github.com/zyvorai/veyron.git && cd veyron
 ./scripts/deploy-remote.sh <node-host> <ssh-user>     # build on the node, deploy to veyron-system
 ```
 
-Open `https://<node-ip>:30151/console` and sign in. Then create a VM from the console, the API or the CLI:
+Open `https://<node-ip>:30151/console` and sign in as `admin` / `Admin@321` (lab default; override with `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` and `VEYRON_API_KEY`, see [Default credentials](docs/getting-started.md#default-credentials)). Then create a VM from the console, the API or the CLI:
 
 ```bash
-curl -sk -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+curl -sk -H "X-API-Key: ${VEYRON_API_KEY:-Admin@321}" -H 'Content-Type: application/json' \
   -X POST https://<node-ip>:30151/api/v1/vms \
   -d '{"name":"demo","template":"ubuntu-24.04","cpus":2,"memory":"4Gi"}'
 

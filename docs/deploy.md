@@ -45,7 +45,9 @@ Key values in [`charts/veyron/values.yaml`](../charts/veyron/values.yaml): `imag
 `service.type` / `nodePort`, `tls.existingSecret`, `auth.*` (API key, admin user, extra keys),
 `oidc.*` or `oidc.existingSecret`, `rateLimit.perMinute`, `networkPolicy.enabled`, `rbac.create`.
 
-**Always set your own `auth.apiKey` and `auth.adminPassword`.** The chart defaults are public.
+Without overrides the chart installs the lab defaults: console login `admin` / `Admin@321` and API
+key `Admin@321` (see [getting-started.md](getting-started.md#default-credentials)). **Always set
+your own `auth.apiKey` and `auth.adminPassword` in production.** The chart defaults are public.
 
 ## 3. Plain manifests
 
@@ -63,7 +65,7 @@ ClusterRole for dashboards.
 
 ## Production checklist
 
-- [ ] Replace the default API key and admin password; use `VEYRON_API_KEYS` for role-scoped keys.
+- [ ] Replace the default API key and admin password (`Admin@321`); use `VEYRON_API_KEYS` for role-scoped keys.
 - [ ] Put a real certificate in `tls.existingSecret`.
 - [ ] Turn on SSO ([sso.md](sso.md)).
 - [ ] Keep RDP behind a VPN or gateway. Public RDP NodePorts are refused unless

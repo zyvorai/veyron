@@ -40,11 +40,29 @@ Or use the Helm chart in [`charts/veyron`](../charts/veyron) (see [deploy.md](de
 
 Open `https://<node-ip>:30151/console`. The certificate is self-signed on first deploy.
 
-- **Local account:** `admin`, with the password from `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` (it defaults
-  to the API key).
-- **API key:** the value of the `veyron-api-key` Secret (`VEYRON_API_KEY`).
+![Sign in](assets/console-login.png)
 
-Change the bootstrap credentials before anyone else can reach the console. Production setups add
+### Default credentials
+
+| Field    | Value       |
+|----------|-------------|
+| Username | `admin`     |
+| Password | `Admin@321` |
+| API key  | `Admin@321` |
+
+These are lab defaults, the same pair as [Netra](https://github.com/zyvorai/netra). The deploy
+scripts and the Helm chart use them unless you override them:
+
+- **Console password:** `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` (Helm: `auth.adminPassword`), stored as
+  `admin-password` in the `veyron-api-key` Secret.
+- **API key:** `VEYRON_API_KEY` (Helm: `auth.apiKey`), stored as `api-key` in the same Secret.
+- A redeploy keeps whatever the existing Secret holds, so a rotated key survives upgrades.
+- The JWT signing secret is always random.
+
+The login screen shows the host you are connecting to ("Connecting to `<host>`"), so you can check
+you are on the right cluster before signing in.
+
+Change the defaults before anyone else can reach the console. Production setups add
 role-scoped keys and SSO ([api.md](api.md), [sso.md](sso.md)).
 
 ## 4. Create a VM
@@ -55,7 +73,7 @@ it and start it. Open the console tab for an in-browser VNC session.
 The same through the API:
 
 ```bash
-export VEYRON_API_KEY=<key>
+export VEYRON_API_KEY=Admin@321   # or your own key
 curl -sk -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
   -X POST https://<node-ip>:30151/api/v1/vms \
   -d '{"name":"demo","namespace":"default","template":"ubuntu-24.04","cpus":2,"memory":"4Gi"}'

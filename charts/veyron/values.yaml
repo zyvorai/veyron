@@ -32,11 +32,11 @@ tls:
   existingSecret: ""
 
 auth:
-  # Empty = random on first install, preserved across upgrades (read it back with
-  # kubectl get secret <release>-api-key -o jsonpath='{.data.api-key}' | base64 -d).
+  # Empty = lab default Admin@321 on first install (same as Netra), preserved across
+  # upgrades. Set a random value for production.
   apiKey: ""
   adminUser: "admin"
-  # Empty = same as apiKey.
+  # Console login password. Empty = lab default Admin@321.
   adminPassword: ""
   # Empty = auto-generated (random, 64 chars) on first install, preserved across upgrades.
   # A hardcoded default here would be a full auth-bypass vector (anyone who reads this

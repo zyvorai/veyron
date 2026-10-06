@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# Customer install: web/API login admin / <random per install> (PKG_AUTH_SECRET overrides).
+# Customer install: web/API login admin / Admin@321 (PKG_AUTH_SECRET overrides; change for production).
 # Existing non-placeholder values in each product env file are kept.
 # Sourced from package-ui.sh (bundled as .package-lib/package-auth-bootstrap.sh).
 set -euo pipefail
 
 pkg_auth_secret() {
     if [[ -z "${PKG_AUTH_SECRET:-}" ]]; then
-        PKG_AUTH_SECRET=$(openssl rand -base64 48 2>/dev/null | tr -dc 'A-Za-z0-9' | head -c 24)
-        [[ -n "${PKG_AUTH_SECRET}" ]] || PKG_AUTH_SECRET=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)
+        PKG_AUTH_SECRET="Admin@321"
         export PKG_AUTH_SECRET
     fi
     printf '%s' "${PKG_AUTH_SECRET}"

@@ -9,8 +9,8 @@
 #     --from-literal=jwt-issuer=veyron \
 #     --from-literal=admin-password="$KEY"
 #
-# Dashboard login: username admin, password = admin-password (deploy scripts generate one
-# and save it to ~/.config/veyron/hosts/<host>.env).
+# Dashboard login: admin / admin-password. Deploy scripts default to admin / Admin@321 and
+# API key Admin@321 unless VEYRON_BOOTSTRAP_ADMIN_PASSWORD / VEYRON_API_KEY are set.
 # Or use: ./scripts/deploy-k8s.sh deploy (creates the secret automatically)
 #
 # Legacy: veyron-system / veyron-api still work on existing clusters until migrated.

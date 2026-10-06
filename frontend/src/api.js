@@ -1,6 +1,5 @@
 const TOKEN_STORAGE = 'veyron_auth_token';
 const USER_STORAGE = 'veyron_auth_user';
-const SAVED_LOGIN = 'veyron-saved-login';
 const THEME_STORAGE = 'veyron_console_theme';
 
 export function getToken() {
@@ -67,26 +66,6 @@ export function setSavedTheme(theme) {
   try {
     if (theme) localStorage.setItem(THEME_STORAGE, theme);
     else localStorage.removeItem(THEME_STORAGE);
-  } catch {
-    /* ignore */
-  }
-}
-
-export function getSavedUsername() {
-  try {
-    const raw = localStorage.getItem(SAVED_LOGIN);
-    if (!raw) return '';
-    const parsed = JSON.parse(raw);
-    return parsed?.username || '';
-  } catch {
-    return '';
-  }
-}
-
-export function setSavedUsername(username) {
-  try {
-    if (username) localStorage.setItem(SAVED_LOGIN, JSON.stringify({ username }));
-    else localStorage.removeItem(SAVED_LOGIN);
   } catch {
     /* ignore */
   }

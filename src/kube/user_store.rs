@@ -22,6 +22,8 @@ use std::collections::BTreeMap;
 
 pub const USERS_SECRET_NAME: &str = "veyron-users";
 const USERS_SECRET_KEY: &str = "users.json";
+/// Lab default console password for the bootstrap admin (matches Netra's admin / Admin@321).
+pub const DEFAULT_ADMIN_PASSWORD: &str = "Admin@321";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserAccount {
@@ -222,8 +224,8 @@ pub async fn bootstrap_dashboard_admin(client: &KubeClient, namespace: &str) {
         .or_else(|_| std::env::var("VEYRON_API_KEY"))
         .ok()
         .filter(|p| !p.trim().is_empty());
-    let generated = configured.is_none();
-    let password = configured.unwrap_or_else(random_password);
+    let defaulted = configured.is_none();
+    let password = configured.unwrap_or_else(|| DEFAULT_ADMIN_PASSWORD.to_string());
     let sync = std::env::var("VEYRON_BOOTSTRAP_ADMIN_SYNC")
         .ok()
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
@@ -234,15 +236,15 @@ pub async fn bootstrap_dashboard_admin(client: &KubeClient, namespace: &str) {
             .create_user(namespace, &username, &password, "admin", "Administrator")
             .await
         {
-            Ok(()) if generated => log::warn!(
-                "bootstrapped dashboard login user '{username}' with generated password '{password}' — set VEYRON_BOOTSTRAP_ADMIN_PASSWORD and change it"
+            Ok(()) if defaulted => log::warn!(
+                "bootstrapped dashboard login user '{username}' with the default password — set VEYRON_BOOTSTRAP_ADMIN_PASSWORD for production"
             ),
             Ok(()) => log::info!(
                 "bootstrapped dashboard login user '{username}' (password from VEYRON_BOOTSTRAP_ADMIN_PASSWORD / VEYRON_API_KEY)"
             ),
             Err(e) => log::error!("dashboard login bootstrap failed creating '{username}': {e}"),
         },
-        Ok(Some(_)) if sync && !generated => match client
+        Ok(Some(_)) if sync && !defaulted => match client
             .set_user_password(namespace, &username, &password)
             .await
         {
@@ -256,15 +258,6 @@ pub async fn bootstrap_dashboard_admin(client: &KubeClient, namespace: &str) {
         }
         Err(e) => log::warn!("dashboard login bootstrap: could not read users: {e}"),
     }
-}
-
-fn random_password() -> String {
-    use rand::{Rng, distributions::Alphanumeric};
-    rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(24)
-        .map(char::from)
-        .collect()
 }
 
 fn decode_users(secret: &Secret) -> Vec<UserAccount> {
@@ -290,14 +283,6 @@ fn decode_users(secret: &Secret) -> Vec<UserAccount> {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn generated_passwords_are_long_and_unique() {
-        let (a, b) = (super::random_password(), super::random_password());
-        assert_eq!(a.len(), 24);
-        assert!(a.chars().all(|c| c.is_ascii_alphanumeric()));
-        assert_ne!(a, b);
-    }
-
     use super::*;
 
     #[test]

@@ -239,10 +239,10 @@ cmd_deploy() {
     # Create namespace
     ${KUBECTL} create namespace "${NAMESPACE}" --dry-run=client -o yaml | ${KUBECTL} apply -f -
 
-    # Create or update API key secret: env, else the existing Secret, else random
+    # Create or update API key secret: env, else the existing Secret, else the lab default
     old() { ${KUBECTL} -n "${NAMESPACE}" get secret veyron-api-key -o jsonpath="{.data.$1}" 2>/dev/null | base64 -d 2>/dev/null || true; }
-    API_KEY="${VEYRON_API_KEY:-$(old api-key)}"; API_KEY="${API_KEY:-$(veyron_random_secret 32)}"
-    ADMIN_PASSWORD="${VEYRON_BOOTSTRAP_ADMIN_PASSWORD:-$(old admin-password)}"; ADMIN_PASSWORD="${ADMIN_PASSWORD:-${API_KEY}}"
+    API_KEY="${VEYRON_API_KEY:-$(old api-key)}"; API_KEY="${API_KEY:-${VEYRON_DEFAULT_CREDENTIAL}}"
+    ADMIN_PASSWORD="${VEYRON_BOOTSTRAP_ADMIN_PASSWORD:-$(old admin-password)}"; ADMIN_PASSWORD="${ADMIN_PASSWORD:-${VEYRON_DEFAULT_CREDENTIAL}}"
     JWT_SECRET="${VEYRON_JWT_SECRET:-$(old jwt-secret)}"; JWT_SECRET="${JWT_SECRET:-$(veyron_random_secret 64)}"
     ${KUBECTL} -n "${NAMESPACE}" delete secret veyron-api-key --ignore-not-found 2>/dev/null
     ${KUBECTL} -n "${NAMESPACE}" create secret generic veyron-api-key \

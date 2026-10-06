@@ -2,18 +2,11 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useFocusTrap } from './a11y.js';
 import {
   ChevronRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
-  Network, Database, Shield, Settings, Eye, EyeOff, ArrowRight, ChevronLeft, Loader2,
-  CheckCircle, Activity,
+  Network, Database, Shield, Settings, Loader2, CheckCircle, Activity,
 } from 'lucide-react';
 import { Status } from './status.jsx';
-import { api, getSavedUsername, setSavedUsername } from './api.js';
-import {
-  PremiumLoginShell,
-  LoginField,
-  LoginSubmit,
-  LoginRemember,
-  LoginError,
-} from './PremiumLoginShell.jsx';
+import { api } from './api.js';
+import { PremiumLoginShell, LoginError } from './PremiumLoginShell.jsx';
 import { LogsPanel } from './LogsPanel.jsx';
 
 const VncConsole = lazy(() => import('./VncConsole.jsx').then((m) => ({ default: m.VncConsole })));
@@ -767,39 +760,31 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
 }
 
 export function Login({ onSubmit, error }) {
-  const saved = getSavedUsername();
-  const [step, setStep] = useState(saved ? 'password' : 'identify');
-  const [username, setUsername] = useState(saved || '');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(!!saved);
+  const [localError, setLocalError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const handleContinue = (e) => {
-    e.preventDefault();
-    if (!username.trim()) return;
-    setStep('password');
-  };
-
-  const handleBack = () => {
-    setStep('identify');
-    setPassword('');
-    setShowPassword(false);
-  };
+  const shown = localError || error;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username.trim() || !password) return;
+    if (!username.trim() || !password) {
+      setLocalError('Wrong username or password.');
+      return;
+    }
+    setLocalError('');
     setSubmitting(true);
     try {
       await onSubmit(username.trim(), password);
-      if (rememberMe) setSavedUsername(username.trim());
-      else setSavedUsername('');
     } catch {
       /* parent sets error */
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const clearError = () => {
+    if (localError) setLocalError('');
   };
 
   return (
@@ -809,84 +794,41 @@ export function Login({ onSubmit, error }) {
       heroTitle="Real VMs. One console."
       heroLede="Fleet, storage, snapshots, and day-2 operations for Kairon machines — no pods pretending to be VMs."
     >
-      {step === 'identify' ? (
-        <form key="identify" className="login-card" onSubmit={handleContinue} autoComplete="on" aria-label="Account" noValidate>
-          <h2>Sign in.</h2>
-          {error ? <LoginError message={error} /> : null}
-          <LoginField label="Username" id="username">
-            <input
-              id="username"
-              name="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              autoFocus
-              required
-            />
-          </LoginField>
-          <LoginSubmit loading={false} disabled={!username.trim()}>
-            <span>Continue</span>
-            <ArrowRight size={16} />
-          </LoginSubmit>
-          <p className="login-hint">
-            Use your Veyron account. Default lab user is <span className="mono">admin</span>.
-          </p>
-        </form>
-      ) : (
-        <form key="password" className="login-card" onSubmit={handleSubmit} autoComplete="on" aria-label="Password" noValidate>
-          <h2>Sign in.</h2>
-          <button type="button" onClick={handleBack} className="login-identity" aria-label="Change account">
-            <ChevronLeft size={16} aria-hidden />
-            <span>{username.trim()}</span>
-          </button>
-          <input type="text" name="username" value={username} autoComplete="username" readOnly hidden />
-          {error ? <LoginError message={error} /> : null}
-          <LoginField label="Password" id="password">
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="has-eye"
-              autoComplete="current-password"
-              autoFocus
-              required
-              disabled={submitting}
-            />
-            <button
-              type="button"
-              className="login-eye"
-              onClick={() => setShowPassword((s) => !s)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </LoginField>
-          <LoginRemember
-            checked={rememberMe}
-            onChange={(checked) => {
-              setRememberMe(checked);
-              if (!checked) setSavedUsername('');
+      <form className="card login-card" onSubmit={handleSubmit} noValidate>
+        <h1>Sign in.</h1>
+        <label className="tokenbox">
+          Username
+          <input
+            value={username}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              clearError();
             }}
+            autoFocus
+            autoComplete="username"
+            disabled={submitting}
+            aria-invalid={Boolean(shown)}
           />
-          <LoginSubmit loading={submitting} disabled={!password}>
-            {submitting ? (
-              <>
-                <Loader2 size={16} className="spin" />
-                <span>Signing in…</span>
-              </>
-            ) : (
-              <span>Sign in</span>
-            )}
-          </LoginSubmit>
-          <p className="login-foot">
-            <CheckCircle size={14} aria-hidden />
-            <span>Secured with JWT session authentication</span>
-          </p>
-        </form>
-      )}
+        </label>
+        <label className="tokenbox">
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              clearError();
+            }}
+            autoComplete="current-password"
+            disabled={submitting}
+            aria-invalid={Boolean(shown)}
+          />
+        </label>
+        <LoginError message={shown} />
+        <button type="submit" className="primary" disabled={submitting}>
+          {submitting ? 'Signing in…' : 'Sign in'}
+        </button>
+      </form>
     </PremiumLoginShell>
   );
 }
