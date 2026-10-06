@@ -150,3 +150,49 @@
   font-weight: 600;
   line-height: 1.4;
 }
+
+/* Two-step sign-in field group (apple.com Account): joined fields, floating
+   labels, a round arrow inside the active field. */
+.siw { border: 1px solid var(--hairline-1); border-radius: var(--radius-md); background: var(--fill-tertiary); overflow: hidden; transition: border-color 0.2s var(--ease-apple), box-shadow 0.2s var(--ease-apple); }
+.siw:focus-within { border-color: var(--apple-blue); box-shadow: var(--focus-ring); }
+.siw--err { border-color: var(--warning-border); }
+.siw-field { position: relative; }
+.siw-field--pass { border-top: 1px solid var(--hairline-1); animation: siwIn 0.32s var(--ease-apple); }
+@keyframes siwIn { from { opacity: 0; transform: translateY(-6px); } }
+.siw-field input {
+  display: block; width: 100%; height: 56px; padding: 22px 56px 6px 14px;
+  border: 0; background: transparent; color: var(--text-primary);
+  font: inherit; font-size: var(--fs-body);
+}
+.siw-field input:focus { outline: none; }
+.siw-field input:disabled { opacity: 0.6; }
+.siw-field label {
+  position: absolute; left: 14px; top: 18px; pointer-events: none;
+  font-size: var(--fs-body); color: var(--text-tertiary);
+  transition: top 0.18s var(--ease-apple), font-size 0.18s var(--ease-apple);
+}
+.siw-field input:focus + label,
+.siw-field input:not(:placeholder-shown) + label { top: 8px; font-size: 11px; }
+.siw-go {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+  border: 1.5px solid var(--text-tertiary); background: transparent; color: var(--text-secondary); cursor: pointer;
+  transition: border-color 0.2s var(--ease-apple), color 0.2s var(--ease-apple), background 0.2s var(--ease-apple);
+}
+.siw-go:hover:not(:disabled) { border-color: var(--apple-blue); color: var(--apple-blue); }
+.siw-field input:not(:placeholder-shown) ~ .siw-go { border-color: var(--apple-blue); background: var(--apple-blue); color: #fff; }
+.siw-go:focus-visible { outline: 2px solid var(--apple-blue); outline-offset: 2px; }
+.siw-go:disabled { cursor: wait; }
+.siw-help { margin: 0; font-size: 12px; color: var(--text-tertiary); text-align: center; }
+
+/* Product story under the sign-in card. */
+.login-story {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px;
+  width: 100%; max-width: 960px; padding-top: 32px; border-top: 1px solid var(--hairline-1); text-align: left;
+}
+.login-story-name { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--apple-blue); }
+.login-story b { display: block; font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-primary); }
+.login-story p:not(.login-story-name) { margin: 6px 0 0; font-size: 14px; line-height: 1.45; color: var(--text-secondary); }
+@media (max-width: 760px) {
+  .login-story { grid-template-columns: 1fr; gap: 20px; }
+}

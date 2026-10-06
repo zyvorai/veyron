@@ -10,6 +10,7 @@ export function PremiumLoginShell({
   heroTitle = 'Real VMs. One console.',
   heroLede,
   showHost = true,
+  footer = null,
   children,
 }) {
   const host = typeof window !== 'undefined' ? window.location.host || window.location.hostname : '';
@@ -27,6 +28,7 @@ export function PremiumLoginShell({
         ) : null}
       </div>
       {children}
+      {footer}
     </div>
   );
 }

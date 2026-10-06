@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useFocusTrap } from './a11y.js';
 import {
-  ChevronRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
+  ChevronRight, ArrowRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
   Network, Database, Shield, Settings, Loader2, CheckCircle, Activity,
 } from 'lucide-react';
 import { Status } from './status.jsx';
@@ -803,20 +803,55 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
   );
 }
 
+const LOGIN_STORY = [
+  {
+    name: 'Veyron',
+    title: 'One place for every VM.',
+    body: 'Create, console, snapshot, patch and migrate from the browser, the API or the CLI. Day-2 operations, SSO and a SOC are built in.',
+  },
+  {
+    name: 'Kairon',
+    title: 'No pod per VM.',
+    body: 'Machines run straight on KVM: 7.4x faster to SSH than KubeVirt with five VMs, and a 14x lighter control plane.',
+  },
+  {
+    name: 'FluxVM',
+    title: 'Four hypervisors, one API.',
+    body: 'QEMU/KVM for Windows and full VMs, Cloud Hypervisor, Firecracker microVMs or FluxVM’s own. No libvirt, no XML.',
+  },
+];
+
+/** apple.com Account-style sign-in: username first, then the password field slides in. */
 export function Login({ onSubmit, error }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [step, setStep] = useState('user');
   const [shown, setShown] = useState(error || '');
   const [submitting, setSubmitting] = useState(false);
+  const passRef = useRef(null);
+  const userRef = useRef(null);
 
   useEffect(() => {
     if (error) setShown(error);
   }, [error]);
 
+  useEffect(() => {
+    if (step === 'pass') passRef.current?.focus();
+  }, [step]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username.trim() || !password) {
-      setShown('Wrong username or password.');
+    if (step === 'user') {
+      if (!username.trim()) {
+        userRef.current?.focus();
+        return;
+      }
+      setShown('');
+      setStep('pass');
+      return;
+    }
+    if (!password) {
+      passRef.current?.focus();
       return;
     }
     setShown('');
@@ -825,14 +860,18 @@ export function Login({ onSubmit, error }) {
       await onSubmit(username.trim(), password);
     } catch (err) {
       setShown(loginErrorMessage(err));
+      setPassword('');
+      passRef.current?.focus();
     } finally {
       setSubmitting(false);
     }
   };
 
-  const clearError = () => {
-    if (shown) setShown('');
-  };
+  const arrow = (label) => (
+    <button type="submit" className="siw-go" aria-label={label} disabled={submitting}>
+      {submitting ? <RefreshCw size={16} className="spin" /> : <ArrowRight size={18} />}
+    </button>
+  );
 
   return (
     <PremiumLoginShell
@@ -840,41 +879,68 @@ export function Login({ onSubmit, error }) {
       eyebrow="Veyron · Zyvor"
       heroTitle="Real VMs. One console."
       heroLede="Fleet, storage, snapshots and day‑2 operations for your virtual machines."
+      footer={
+        <section className="login-story" aria-label="Why Veyron">
+          {LOGIN_STORY.map((s) => (
+            <div key={s.name}>
+              <p className="login-story-name">{s.name}</p>
+              <b>{s.title}</b>
+              <p>{s.body}</p>
+            </div>
+          ))}
+        </section>
+      }
     >
       <form className="card login-card" onSubmit={handleSubmit} noValidate>
-        <h1>Sign in.</h1>
-        <label className="tokenbox">
-          Username
-          <input
-            value={username}
-            onChange={(e) => {
-              setUsername(e.target.value);
-              clearError();
-            }}
-            autoFocus
-            autoComplete="username"
-            disabled={submitting}
-            aria-invalid={Boolean(shown)}
-          />
-        </label>
-        <label className="tokenbox">
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              clearError();
-            }}
-            autoComplete="current-password"
-            disabled={submitting}
-            aria-invalid={Boolean(shown)}
-          />
-        </label>
+        <h1>Sign in to Veyron.</h1>
+        <div className={`siw${step === 'pass' ? ' siw--pass' : ''}${shown ? ' siw--err' : ''}`}>
+          <div className="siw-field">
+            <input
+              ref={userRef}
+              id="siw-user"
+              value={username}
+              placeholder=" "
+              onChange={(e) => {
+                setUsername(e.target.value);
+                setShown('');
+                if (step === 'pass') {
+                  setStep('user');
+                  setPassword('');
+                }
+              }}
+              autoFocus
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              disabled={submitting}
+              aria-invalid={Boolean(shown)}
+            />
+            <label htmlFor="siw-user">Username</label>
+            {step === 'user' && arrow('Continue')}
+          </div>
+          {step === 'pass' && (
+            <div className="siw-field siw-field--pass">
+              <input
+                ref={passRef}
+                id="siw-pass"
+                type="password"
+                value={password}
+                placeholder=" "
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setShown('');
+                }}
+                autoComplete="current-password"
+                disabled={submitting}
+                aria-invalid={Boolean(shown)}
+              />
+              <label htmlFor="siw-pass">Password</label>
+              {arrow('Sign in')}
+            </div>
+          )}
+        </div>
         <LoginError message={shown} />
-        <button type="submit" className="primary" disabled={submitting}>
-          {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
+        <p className="siw-help">Forgot your password? Ask your Veyron administrator.</p>
       </form>
     </PremiumLoginShell>
   );
