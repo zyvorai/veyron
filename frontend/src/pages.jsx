@@ -273,7 +273,7 @@ export function ConsoleHub({ vms, onOpen, onCreate }) {
             <Reveal key={v.id} as="button" className="screen-card" delay={Math.min(i, 8) * 50} onClick={() => onOpen(v)}>
               <span className="screen">
                 <span className="screen-glow" />
-                <OsBadge name={v.os} size={46} />
+                <OsBadge name={v.os && v.os !== "—" ? v.os : v.name} size={46} />
                 <span className="screen-play">
                   <Terminal size={14} /> Open console
                 </span>

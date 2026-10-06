@@ -724,6 +724,7 @@ export default function App() {
                 <p className="kicker">{pageGroup(page) || res.kind}</p>
                 <h2>{pageLabel(page)}.</h2>
                 <p className="res-lede">{pageBlurb(page)}</p>
+                {!atlasOff && (
                 <div className="res-metrics">
                   {metrics.map(([n, label, warn]) => (
                     <div key={label} data-warn={(warn && n > 0) || undefined}>
@@ -738,6 +739,7 @@ export default function App() {
                     </div>
                   )}
                 </div>
+                )}
               </Reveal>
 
               {errors[page] && (
@@ -828,7 +830,7 @@ export default function App() {
                 </div>
               )}
 
-              {res.extra && (
+              {res.extra && !atlasOff && (
                 <>
                   <div className="sect">
                     <h2>{res.extra.title}</h2>

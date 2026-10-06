@@ -446,22 +446,29 @@ async fn get_paqtra_status(State(state): State<SharedState>) -> Json<PaqtraStatu
     out.configured = true;
     out.base_url = Some(base.clone());
     out.source = Some(source.to_string());
-    if out.external_url.is_none() {
-        out.external_url = super::integrations::discover_nodeport_url(
+    let discover_ui = async {
+        if out.external_url.is_some() {
+            return None;
+        }
+        super::integrations::discover_nodeport_url(
             &kube.client(),
             PAQTRA_NAMESPACE,
             PAQTRA_UI_SERVICE,
         )
         .await
-        .map(|u| u.replacen("http://", "https://", 1));
-    }
+        .map(|u| u.replacen("http://", "https://", 1))
+    };
 
-    let (health, creds, cilium, cluster) = tokio::join!(
+    let (ui, health, creds, cilium, cluster) = tokio::join!(
+        discover_ui,
         probe_health(&base),
         credentials(&kube),
         paqtra_get_json(&kube, &base, "/api/v1/cilium/status", &[]),
         paqtra_get_json(&kube, &base, "/api/v1/cluster/health", &[]),
     );
+    if ui.is_some() {
+        out.external_url = ui;
+    }
     let Some(health) = health else {
         out.message = Some(format!("Paqtra health probe failed at {base}/health"));
         return Json(out);
