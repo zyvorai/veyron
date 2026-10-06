@@ -490,6 +490,12 @@ check_api_json "Netra /netra/flows/summary" \
   "/api/v1/netra/flows/summary?number=100" '"verdicts"\s*:'
 check_api_json "Netra /netra/vms" \
   "/api/v1/netra/vms" '"items"\s*:'
+check_api_json "Paqtra /paqtra/status" \
+  "/api/v1/paqtra/status" '"api_authorized"\s*:\s*true'
+check_api_json "Paqtra /paqtra/flows" \
+  "/api/v1/paqtra/flows?limit=5" '"flows"\s*:'
+check_api_json "Paqtra /paqtra/drops" \
+  "/api/v1/paqtra/drops" '"drops"\s*:'
 check_api_json "Network Intelligence /cilium/flows" \
   "/api/v1/cilium/flows?namespace=all" 'flow_source'
 

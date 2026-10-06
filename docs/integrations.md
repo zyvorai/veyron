@@ -9,7 +9,7 @@ API.
 ## How to configure
 
 - **Automatic:** during `deploy-remote.sh`, `scripts/lib/bootstrap-integrations.sh` finds
-  Prometheus, Grafana, Alertmanager, Argo CD, Netra and Atlas Services in the cluster and
+  Prometheus, Grafana, Alertmanager, Argo CD, Netra, Paqtra and Atlas Services in the cluster and
   writes their URLs into the `veyron-integrations` Secret. Skip it with
   `VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP=1`.
 - **Manual:** fill in
@@ -114,3 +114,38 @@ you rotate `NETRA_API_KEY`, set `VEYRON_NETRA_API_KEY` to the same value; otherw
 | `GET /api/v1/netra/status` | `/healthz` and `/api/v1/status` (version, agents, mode, flow rate) |
 | `GET /api/v1/netra/flows/summary?namespace=&number=` | `/api/v1/flows/summary` |
 | `GET /api/v1/netra/vms?namespace=` | `/api/v1/vms` |
+
+## Paqtra: Cilium flow history
+
+[Paqtra](https://github.com/zyvorai/zyvor-paqtra) is Zyvor's Cilium-native observability product.
+It stores every Hubble flow and explains Cilium drops. Veyron's **Paqtra** console page shows
+Paqtra's health and Hubble ingest, the Cilium agents, the network policy posture, explained drops,
+and recent flows (optionally only dropped ones).
+
+When Paqtra runs in the same cluster with its default release name, there is nothing to configure.
+Veyron finds the `paqtra-api` Service in the `paqtra` namespace and talks to
+`http://paqtra-api.paqtra.svc:9191`.
+
+Paqtra signs callers in with a 24-hour JWT from `POST /api/v1/auth/login`. Its admin credentials are
+generated randomly on install, so Veyron reads them from Paqtra's own `paqtra/paqtra-secret`. It
+uses `ADMIN_USERNAME` and `API_KEY`, which Paqtra accepts as the admin password, and falls back to
+`ADMIN_PASSWORD`. The token is cached and refreshed before it expires. Veyron's `ClusterRole`
+already grants `get` on Secrets. If you trim that, set the credentials explicitly.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `VEYRON_PAQTRA_URL` | auto-detected | Paqtra API URL when it runs elsewhere |
+| `VEYRON_PAQTRA_USERNAME` | `admin` | Paqtra account to sign in with |
+| `VEYRON_PAQTRA_PASSWORD` | read from `paqtra-secret` | That account's password or Paqtra's `API_KEY` |
+| `VEYRON_PAQTRA_EXTERNAL_URL` | `paqtra-ui` NodePort, set by bootstrap | Browser link for **Open Paqtra** |
+| `VEYRON_PAQTRA_TLS_VERIFY` | off | `1` verifies the certificate when `VEYRON_PAQTRA_URL` is `https` |
+
+For least privilege, create a read-only Paqtra user and set `VEYRON_PAQTRA_USERNAME` and
+`VEYRON_PAQTRA_PASSWORD` instead of relying on the admin key. Veyron only calls read endpoints.
+
+| Route | Paqtra endpoint |
+|---|---|
+| `GET /api/v1/paqtra/status` | `/health`, `/api/v1/cilium/status`, `/api/v1/cluster/health` |
+| `GET /api/v1/paqtra/flows?namespace=&verdict=&limit=` | `/api/v1/flows` (`limit` 1–500, default 100) |
+| `GET /api/v1/paqtra/drops` | `/api/v1/modules/rootcause/drops` |
+| `GET /api/v1/paqtra/posture` | `/api/v1/security/posture` |

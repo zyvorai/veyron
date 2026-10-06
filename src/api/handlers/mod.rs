@@ -46,6 +46,7 @@ pub mod monitoring;
 pub mod multus;
 pub mod namespace_scope;
 pub mod namespaces;
+#[cfg(feature = "web")]
 pub mod netra;
 pub mod network;
 pub mod network_policies;
@@ -53,6 +54,8 @@ pub mod nodes;
 pub mod notifications;
 pub mod observability;
 pub mod operators;
+#[cfg(feature = "web")]
+pub mod paqtra;
 pub mod performance;
 pub mod pods;
 pub mod quotas;
@@ -185,4 +188,5 @@ pub fn all_routes(
         .merge(clusters::router(state.clone()))
         .merge(integrations::router(state.clone()))
         .merge(netra::router(state.clone()))
+        .merge(paqtra::router(state.clone()))
 }

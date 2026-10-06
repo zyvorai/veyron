@@ -15,6 +15,7 @@ const MonitoringPage = chapter('MonitoringPage');
 const TopologyPage = chapter('TopologyPage');
 const DrPage = chapter('DrPage');
 const NetraPage = chapter('NetraPage');
+const PaqtraPage = chapter('PaqtraPage');
 import { Status } from './status.jsx';
 import { GlobalNav } from './GlobalNav.jsx';
 import { CommandPalette } from './CommandPalette.jsx';
@@ -608,6 +609,8 @@ export default function App() {
           <DrPage showToast={showToast} />
         ) : page === 'netra' ? (
           <NetraPage />
+        ) : page === 'paqtra' ? (
+          <PaqtraPage />
         ) : page === 'console' ? (
           <ConsoleHub
             vms={data.vms.rows}

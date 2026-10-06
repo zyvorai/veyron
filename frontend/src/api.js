@@ -667,6 +667,11 @@ export const api = {
     unwrap(await request(`/api/v1/netra/flows/summary?namespace=${encodeURIComponent(ns)}`)) || {},
   netraVms: async (ns = 'all') =>
     asArray(await request(`/api/v1/netra/vms?namespace=${encodeURIComponent(ns)}`)),
+  paqtraStatus: async () => unwrap(await request('/api/v1/paqtra/status')) || {},
+  paqtraFlows: async (verdict = '') =>
+    unwrap(await request(`/api/v1/paqtra/flows?limit=50${verdict ? `&verdict=${verdict}` : ''}`))?.flows || [],
+  paqtraDrops: async () => unwrap(await request('/api/v1/paqtra/drops'))?.drops || [],
+  paqtraPosture: async () => unwrap(await request('/api/v1/paqtra/posture')) || {},
 };
 
 export function mapGpu(raw, i) {

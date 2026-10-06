@@ -323,6 +323,7 @@ export function SettingsPage({ theme, setTheme }) {
     integrations.find((i) => ids.includes(String(i.id || '').toLowerCase()) || ids.includes(String(i.name || '').toLowerCase()));
 
   const netra = findInteg(['netra']);
+  const paqtra = findInteg(['paqtra']);
   const atlas = findInteg(['atlas']);
   const oidc = findInteg(['oidc', 'sso']);
 
@@ -460,6 +461,7 @@ export function SettingsPage({ theme, setTheme }) {
         <h3>Integrations</h3>
         <div className="sbox">
           {integRow('Netra', 'Auto-detected in netra-system, or set VEYRON_NETRA_URL', Network, netra)}
+          {integRow('Paqtra', 'Auto-detected in the paqtra namespace, or set VEYRON_PAQTRA_URL', Network, paqtra)}
           {integRow('Atlas storage', 'Configure via VEYRON_ATLAS_URL', Database, atlas)}
           {integRow('Single sign-on', 'Configure via VEYRON_OIDC_*', Shield, oidc)}
         </div>

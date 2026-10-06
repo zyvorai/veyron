@@ -91,6 +91,13 @@ integrations:
   netraUrl: ""
   netraExternalUrl: ""
   netraApiKey: ""
+  # Paqtra: auto-detected from the paqtra-api Service in the paqtra namespace. Its admin
+  # credentials are random per install, so by default Veyron reads them from Paqtra's own
+  # paqtra-secret; set paqtraPassword (Paqtra's API_KEY or ADMIN_PASSWORD) to skip that.
+  paqtraUrl: ""
+  paqtraExternalUrl: ""
+  paqtraUsername: ""
+  paqtraPassword: ""
   existingSecret: ""
 
 oidc:

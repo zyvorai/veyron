@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Map, Cloud, Radar, RefreshCw, ChevronRight } from 'lucide-react';
+import { Activity, Map, Cloud, Radar, Waypoints, RefreshCw, ChevronRight } from 'lucide-react';
 import { api } from './api.js';
 import { Status } from './status.jsx';
 import { PageHero } from './PageHero.jsx';
@@ -470,6 +470,226 @@ export function NetraPage() {
                 <button type="button" disabled>
                   <b>No VMs seen by Netra</b>
                   <span className="why">Netra lists running virt-launcher pods.</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+    </ChapterShell>
+  );
+}
+
+const pct = (n) => (typeof n === 'number' ? `${Math.round(n)}%` : '—');
+const endpoint = (e) => (e?.pod ? `${e.namespace}/${e.pod}` : e?.ip || '—');
+
+export function PaqtraPage() {
+  const [status, setStatus] = useState(null);
+  const [flows, setFlows] = useState([]);
+  const [drops, setDrops] = useState([]);
+  const [posture, setPosture] = useState(null);
+  const [onlyDropped, setOnlyDropped] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const load = async (dropped) => {
+    setBusy(true);
+    setErr('');
+    try {
+      const st = await api.paqtraStatus();
+      setStatus(st);
+      if (st?.api_authorized) {
+        const results = await Promise.allSettled([
+          api.paqtraFlows(dropped ? 'DROPPED' : ''),
+          api.paqtraDrops(),
+          api.paqtraPosture(),
+        ]);
+        const [f, d, p] = results;
+        setFlows(f.status === 'fulfilled' ? f.value : []);
+        setDrops(d.status === 'fulfilled' ? d.value : []);
+        setPosture(p.status === 'fulfilled' ? p.value : null);
+        const failed = results.find((r) => r.status === 'rejected');
+        if (failed) setErr(failed.reason?.message || String(failed.reason));
+      } else {
+        setFlows([]);
+        setDrops([]);
+        setPosture(null);
+      }
+    } catch (e) {
+      setErr(e.message || String(e));
+      setStatus({ configured: false, reachable: false });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    load(false);
+  }, []);
+
+  const toggleDropped = () => {
+    const next = !onlyDropped;
+    setOnlyDropped(next);
+    load(next);
+  };
+
+  const ok = Boolean(status?.api_authorized);
+  const headline = ok ? 'Connected' : status?.reachable ? 'Unauthorized' : status?.configured ? 'Unreachable' : 'Not installed';
+  const score = posture?.posture;
+  const unprotected = posture?.breakdown?.namespaces_without_policies || [];
+
+  return (
+    <ChapterShell
+      kicker="Network"
+      title="Paqtra"
+      lede="Cilium-native flow history from Hubble: verdicts, explained drops and network policy coverage."
+      onRefresh={() => load(onlyDropped)}
+      busy={busy}
+    >
+      {err && <div className="ops-err page-err">{err}</div>}
+      <section className="apple-band">
+        <div className="apple-chapter">
+          <div className="kicker">Connection</div>
+          <h2>{headline}</h2>
+          <p>
+            {status?.message ||
+              (status?.base_url
+                ? `${status.base_url}${status.source === 'discovered' ? ' (found in the paqtra namespace)' : ''}`
+                : 'Install Paqtra or set VEYRON_PAQTRA_URL on the API.')}
+          </p>
+          <div className="rows" style={{ marginTop: 20 }}>
+            <button type="button" disabled>
+              <Status s={ok ? (status.health === 'healthy' ? 'Healthy' : 'Warning') : 'Unknown'} />
+              <b>Health</b>
+              <span className="why">
+                {ok
+                  ? `${status.health || 'unknown'}${typeof status.health_score === 'number' ? ` · score ${status.health_score}` : ''}`
+                  : 'No authorized connection'}
+              </span>
+            </button>
+            {status?.version && (
+              <button type="button" disabled>
+                <Waypoints size={14} />
+                <b>Version</b>
+                <span className="why">
+                  {status.version}
+                  {status.credentials_source === 'secret' ? ' · signed in with the install secret' : ''}
+                </span>
+              </button>
+            )}
+            {typeof status?.hubble_connected === 'boolean' && (
+              <button type="button" disabled>
+                <Status s={status.hubble_connected ? 'Healthy' : 'Failed'} />
+                <b>Hubble ingest</b>
+                <span className="why">
+                  {status.hubble_connected ? 'Streaming' : 'Disconnected'}
+                  {typeof status.flows_per_second === 'number' ? ` · ${status.flows_per_second.toFixed(1)} flows/s` : ''}
+                  {typeof status.indexed_flows === 'number' ? ` · ${fmtCount(status.indexed_flows)} stored` : ''}
+                  {status.retention_days ? ` · ${status.retention_days}d retention` : ''}
+                </span>
+              </button>
+            )}
+            {typeof status?.cilium_agents_total === 'number' && (
+              <button type="button" disabled>
+                <Status s={status.cilium_agents_ready === status.cilium_agents_total ? 'Healthy' : 'Warning'} />
+                <b>Cilium agents</b>
+                <span className="why">
+                  {status.cilium_agents_ready} of {status.cilium_agents_total} ready
+                </span>
+              </button>
+            )}
+            {status?.external_url && (
+              <a className="row-link" href={status.external_url} target="_blank" rel="noreferrer">
+                <ChevronRight size={14} />
+                <b>Open Paqtra</b>
+                <span className="why">{status.external_url}</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+      {ok && (
+        <section className="apple-band">
+          <div className="apple-chapter">
+            {score && (
+              <>
+                <div className="kicker">Policy posture · score {pct(score.score)}</div>
+                <div className="rows">
+                  <button type="button" disabled>
+                    <Status s={score.policy_coverage >= 80 ? 'Healthy' : 'Warning'} />
+                    <b>Policy coverage</b>
+                    <span className="why">{pct(score.policy_coverage)} of namespaces</span>
+                  </button>
+                  <button type="button" disabled>
+                    <Status s={score.namespace_isolation >= 80 ? 'Healthy' : 'Warning'} />
+                    <b>Namespace isolation</b>
+                    <span className="why">{pct(score.namespace_isolation)}</span>
+                  </button>
+                  <button type="button" disabled>
+                    <Status s={score.encryption_coverage >= 80 ? 'Healthy' : 'Warning'} />
+                    <b>Encryption</b>
+                    <span className="why">{pct(score.encryption_coverage)} of traffic</span>
+                  </button>
+                  {unprotected.length > 0 && (
+                    <button type="button" disabled>
+                      <Status s="Warning" />
+                      <b>No network policy</b>
+                      <span className="why">
+                        {unprotected.length} namespaces: {unprotected.slice(0, 6).join(', ')}
+                        {unprotected.length > 6 ? '…' : ''}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+            <div className="kicker" style={{ marginTop: score ? 28 : 0 }}>Explained drops · {drops.length}</div>
+            <div className="rows">
+              {drops.map((d) => (
+                <button type="button" key={d.id} disabled>
+                  <Status s="Failed" />
+                  <b>
+                    {d.source} → {d.destination}
+                  </b>
+                  <span className="why">
+                    {[d.drop_reason, d.root_cause, d.remediation, d.count > 1 ? `${fmtCount(d.count)}×` : null]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                </button>
+              ))}
+              {!drops.length && (
+                <button type="button" disabled>
+                  <Status s="Healthy" />
+                  <b>No drops</b>
+                  <span className="why">Cilium has not dropped any recent flows.</span>
+                </button>
+              )}
+            </div>
+            <div className="kicker" style={{ marginTop: 28 }}>
+              Recent flows · {flows.length}
+              <button type="button" className="btn sm secondary" style={{ marginLeft: 12 }} onClick={toggleDropped} disabled={busy}>
+                {onlyDropped ? 'Show all' : 'Only dropped'}
+              </button>
+            </div>
+            <div className="rows">
+              {flows.map((f) => (
+                <button type="button" key={f.id} disabled>
+                  <Status s={f.verdict === 'DROPPED' || f.verdict === 'ERROR' ? 'Failed' : 'Healthy'} />
+                  <b className="mono">
+                    {endpoint(f.source)} → {endpoint(f.destination)}
+                  </b>
+                  <span className="why">
+                    {[f.verdict, f.protocol && f.port ? `${f.protocol}/${f.port}` : f.protocol, f.timestamp && new Date(f.timestamp).toLocaleTimeString()]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                </button>
+              ))}
+              {!flows.length && (
+                <button type="button" disabled>
+                  <b>No flows</b>
+                  <span className="why">{onlyDropped ? 'No dropped flows in the store.' : 'Paqtra returned no flows.'}</span>
                 </button>
               )}
             </div>

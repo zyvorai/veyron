@@ -141,7 +141,7 @@ Helm, plain manifests, the production checklist and the standalone client tarbal
 | OIDC SSO | API stable; console sign-in button planned |
 | SOC detections and SIEM export | Stable |
 | GPU passthrough | Phase 1 (whole-GPU); vGPU next |
-| Atlas (Ceph) protection, Kryton lab machines, Netra | Integration, needs those products |
+| Atlas (Ceph) protection, Kryton lab machines, Netra, Paqtra | Integration, needs those products |
 | Kairon engine | In progress: replacing KubeVirt and CDI |
 
 ---
@@ -179,6 +179,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately 
 | **[Kryton](https://github.com/zyvorai/zyvor-kryton)** | Machine API for lab and edge Windows/Linux hosts (dockur, libvirt), plus checksum-pinned golden images |
 | **[Atlas](https://github.com/zyvorai/zyvor-atlas)** | Storage control plane: Ceph snapshots, clones and S3 backups for VM disks |
 | **[Netra](https://github.com/zyvorai/netra)** | eBPF network observability: flows, drops, VM lockdown |
+| **[Paqtra](https://github.com/zyvorai/zyvor-paqtra)** | Cilium flow history, explained drops, policy posture |
 | **[GuestKit](https://github.com/zyvorai/zyvor-guestkit)** | In-guest agent: evidence, diagnosis and repair |
 
 → [zyvor.dev](https://zyvor.dev)

@@ -1,6 +1,6 @@
 import {
   Monitor, Server, Disc3, Hexagon, Package, HardDrive, Camera, Archive, Network,
-  Cpu, Bell, Shield, Database, ArrowLeftRight, Activity, Map, Cloud, Radar,
+  Cpu, Bell, Shield, Database, ArrowLeftRight, Activity, Map, Cloud, Radar, Waypoints,
 } from 'lucide-react';
 
 /** Schema only — rows come from the API. */
@@ -382,6 +382,7 @@ export const NAV = [
       ['dr', 'DR & Velero', 'Failover, failback and cluster backups.'],
       ['networks', null, 'Secondary networks and CIDRs.'],
       ['netra', 'Netra', 'eBPF flows, drops and VM network view.'],
+      ['paqtra', 'Paqtra', 'Cilium flow history, drops and policy posture.'],
     ],
   },
   {
@@ -423,14 +424,15 @@ export function pageBlurb(id) {
   return '';
 }
 
-export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra']);
+export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra', 'paqtra']);
 
 /** Story pages that render full-bleed, without the local toolbar. */
-export const FULL_BLEED_PAGES = new Set(['mission', 'console', 'monitoring', 'topology', 'dr', 'netra']);
+export const FULL_BLEED_PAGES = new Set(['mission', 'console', 'monitoring', 'topology', 'dr', 'netra', 'paqtra']);
 
 export const CHAPTER_ICONS = {
   monitoring: Activity,
   topology: Map,
   dr: Cloud,
   netra: Radar,
+  paqtra: Waypoints,
 };

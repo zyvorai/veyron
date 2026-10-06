@@ -162,6 +162,22 @@ spec:
             - name: VEYRON_NETRA_API_KEY
               value: {{ . | quote }}
             {{- end }}
+            {{- with .Values.integrations.paqtraUrl }}
+            - name: VEYRON_PAQTRA_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.paqtraExternalUrl }}
+            - name: VEYRON_PAQTRA_EXTERNAL_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.paqtraUsername }}
+            - name: VEYRON_PAQTRA_USERNAME
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.paqtraPassword }}
+            - name: VEYRON_PAQTRA_PASSWORD
+              value: {{ . | quote }}
+            {{- end }}
             {{- with .Values.ai.url }}
             - name: VEYRON_AI_URL
               value: {{ . | quote }}

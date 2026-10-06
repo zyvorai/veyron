@@ -380,6 +380,26 @@ if echo "${netra_status}" | grep -q '"configured"\s*:\s*true'; then
 else
     echo "  ○ GET /api/v1/netra/status (Netra not installed in netra-system and VEYRON_NETRA_URL unset)"
 fi
+paqtra_status=$(curl -skS --connect-timeout 15 --max-time 45 \
+    -H "X-API-Key: ${KEY}" "${BASE}/api/v1/paqtra/status" || true)
+if echo "${paqtra_status}" | grep -q '"configured"\s*:\s*true'; then
+    if echo "${paqtra_status}" | grep -q '"api_authorized"\s*:\s*true'; then
+        echo "  ✔ GET /api/v1/paqtra/status"
+        check_json_grep "GET /api/v1/paqtra/flows" \
+            "${BASE}/api/v1/paqtra/flows?limit=5" '"flows"\s*:'
+        check_json_grep "GET /api/v1/paqtra/drops" \
+            "${BASE}/api/v1/paqtra/drops" '"drops"\s*:'
+        check_json_grep "GET /api/v1/paqtra/posture" \
+            "${BASE}/api/v1/paqtra/posture" '"posture"\s*:'
+    else
+        echo "  ✗ GET /api/v1/paqtra/status (found but not reachable or login rejected)"
+        echo "${paqtra_status}" | head -c 400 | sed 's/^/    /'
+        echo ""
+        FAIL=$((FAIL + 1))
+    fi
+else
+    echo "  ○ GET /api/v1/paqtra/status (Paqtra not installed in paqtra and VEYRON_PAQTRA_URL unset)"
+fi
 check_json_grep "GET /api/v1/cilium/flows" \
     "${BASE}/api/v1/cilium/flows?namespace=all" 'flow_source'
 # Console assets are content-hashed by the Vite build — extract the actual

@@ -139,6 +139,12 @@ const DEFINITIONS: &[IntegrationDef] = &[
         feeds: "eBPF network observability: flows, drops, VM traffic (GET /api/v1/netra/status)",
     },
     IntegrationDef {
+        id: "paqtra",
+        name: "Paqtra",
+        env_var: "VEYRON_PAQTRA_URL",
+        feeds: "Cilium/Hubble flow history, drops, policy posture (GET /api/v1/paqtra/status)",
+    },
+    IntegrationDef {
         id: "atlas",
         name: "Atlas",
         env_var: "VEYRON_ATLAS_URL",
@@ -202,6 +208,7 @@ fn in_app_open(id: &str) -> Option<IntegrationOpenLink> {
         "jaeger" => ("traces", "Open traces"),
         "elastic" | "splunk" | "sentinel" | "qradar" | "soar" => ("soc", "Open SOC"),
         "netra" => ("netra", "Open Netra"),
+        "paqtra" => ("paqtra", "Open Paqtra"),
         "atlas" => ("snapshots", "Open snapshots"),
         _ => return None,
     };
@@ -321,6 +328,7 @@ async fn resolve_external_open(
         "argocd" => "VEYRON_ARGOCD_EXTERNAL_URL",
         "jaeger" => "VEYRON_JAEGER_EXTERNAL_URL",
         "netra" => "VEYRON_NETRA_EXTERNAL_URL",
+        "paqtra" => "VEYRON_PAQTRA_EXTERNAL_URL",
         _ => return None,
     };
     if let Some(url) = crate::api::integrations::env_var(external_env) {
@@ -362,6 +370,12 @@ async fn resolve_external_open(
                 .and_then(base_url_from_env)
                 .map(|u| external_open("Open Netra", u));
         }
+        "paqtra" => {
+            use crate::api::handlers::paqtra::{PAQTRA_NAMESPACE, PAQTRA_UI_SERVICE};
+            return discover_nodeport_url(client, PAQTRA_NAMESPACE, PAQTRA_UI_SERVICE)
+                .await
+                .map(|u| external_open("Open Paqtra", u.replacen("http://", "https://", 1)));
+        }
         _ => return None,
     };
     discover_nodeport_url(client, ns, hint)
@@ -391,6 +405,12 @@ async fn get_integrations_status(
             .await
             .map(|(url, _)| url)
     };
+    let paqtra_base = {
+        let kube = state.read().await.kube_client.clone();
+        crate::api::handlers::paqtra::paqtra_base_url(&kube)
+            .await
+            .map(|(url, _)| url)
+    };
     let mut integrations = Vec::with_capacity(DEFINITIONS.len() + 1);
     let mut configured_count = 0u32;
     let mut probe_futures = Vec::new();
@@ -398,6 +418,8 @@ async fn get_integrations_status(
     for def in DEFINITIONS {
         let raw = if def.id == "netra" {
             netra_base.clone()
+        } else if def.id == "paqtra" {
+            paqtra_base.clone()
         } else {
             crate::api::integrations::env_var(def.env_var)
         };
@@ -429,8 +451,8 @@ async fn get_integrations_status(
                 } else {
                     probe_futures.push((def.id, url.to_string(), None));
                 }
-            } else if def.id == "netra" {
-                // Probed below with Netra's own client (self-signed TLS).
+            } else if def.id == "netra" || def.id == "paqtra" {
+                // Probed below with the integration's own client.
             } else if def.id == "atlas" {
                 let health = if url.trim_end_matches('/').ends_with("/health") {
                     url.to_string()
@@ -446,7 +468,7 @@ async fn get_integrations_status(
             None
         } else if matches!(
             def.id,
-            "grafana" | "argocd" | "prometheus" | "alertmanager" | "jaeger" | "netra"
+            "grafana" | "argocd" | "prometheus" | "alertmanager" | "jaeger" | "netra" | "paqtra"
         ) {
             resolve_external_open(&kube_client, def.id, raw.as_deref())
                 .await
@@ -533,6 +555,12 @@ async fn get_integrations_status(
             "qradar" => crate::soc::export::qradar::probe().await,
             "netra" => match netra_base.as_deref() {
                 Some(base) => crate::api::handlers::netra::probe_healthz(base).await,
+                None => false,
+            },
+            "paqtra" => match paqtra_base.as_deref() {
+                Some(base) => crate::api::handlers::paqtra::probe_health(base)
+                    .await
+                    .is_some(),
                 None => false,
             },
             _ => continue,

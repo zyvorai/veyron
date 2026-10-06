@@ -108,7 +108,7 @@ bootstrap_veyron_integrations() {
     fi
 
     local prom_url="" am_url="" loki_url="" opencost_url="" trivy_url="" jaeger_url="" grafana_url=""
-    local grafana_ext="" prom_ext="" am_ext="" jaeger_ext="" netra_ext=""
+    local grafana_ext="" prom_ext="" am_ext="" jaeger_ext="" netra_ext="" paqtra_ext=""
     local atlas_url="" atlas_ns="" atlas_svc="" atlas_entry=""
     local argocd_url="" argocd_token="" argocd_default_app=""
     local prom_svc="" am_svc="" loki_svc="" opencost_svc="" trivy_svc="" jaeger_svc="" grafana_svc=""
@@ -191,6 +191,12 @@ bootstrap_veyron_integrations() {
         echo "Netra detected in netra-system${netra_ext:+: ${netra_ext}}"
     fi
 
+    # Paqtra: Veyron finds the API Service and reads its credentials from paqtra-secret.
+    if ${k8s} get svc paqtra-api -n paqtra &>/dev/null; then
+        paqtra_ext=$(bootstrap_nodeport_external_url "${k8s}" paqtra paqtra-ui https || true)
+        echo "Paqtra detected in paqtra${paqtra_ext:+: ${paqtra_ext}}"
+    fi
+
     # Atlas storage control plane — enables Ceph-backed VM disk snapshot/backup/
     # restore. Prefer the real-Ceph gateway (rook-ceph) over the fake/zyvor-system one.
     for atlas_entry in "rook-ceph:atlas-gateway-ceph" "zyvor-system:atlas-gateway" "atlas:atlas-gateway"; do
@@ -214,7 +220,7 @@ bootstrap_veyron_integrations() {
         fi
     fi
 
-    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${grafana_url}" && -z "${argocd_url}" && -z "${netra_ext}" && -z "${atlas_url}" ]]; then
+    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${grafana_url}" && -z "${argocd_url}" && -z "${netra_ext}" && -z "${paqtra_ext}" && -z "${atlas_url}" ]]; then
         echo "No integration services detected — skip veyron-integrations Secret"
         return 0
     fi
@@ -249,6 +255,7 @@ EOF
     [[ -n "${jaeger_ext}" ]] && echo "  VEYRON_JAEGER_EXTERNAL_URL: \"${jaeger_ext}\"" >>"${tmp}"
     [[ -n "${atlas_url}" ]] && echo "  VEYRON_ATLAS_URL: \"${atlas_url}\"" >>"${tmp}"
     [[ -n "${netra_ext}" ]] && echo "  VEYRON_NETRA_EXTERNAL_URL: \"${netra_ext}\"" >>"${tmp}"
+    [[ -n "${paqtra_ext}" ]] && echo "  VEYRON_PAQTRA_EXTERNAL_URL: \"${paqtra_ext}\"" >>"${tmp}"
     [[ -n "${argocd_url}" ]] && echo "  VEYRON_ARGOCD_URL: \"${argocd_url}\"" >>"${tmp}"
     [[ -n "${argocd_token}" ]] && echo "  VEYRON_ARGOCD_TOKEN: \"${argocd_token}\"" >>"${tmp}"
     [[ -n "${argocd_default_app}" ]] && echo "  VEYRON_ARGOCD_DEFAULT_APP: \"${argocd_default_app}\"" >>"${tmp}"
