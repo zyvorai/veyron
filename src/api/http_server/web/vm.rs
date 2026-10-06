@@ -12,6 +12,9 @@ pub struct VmQuery {
     /// Alias for `namespace` (dashboard legacy `?ns=`).
     #[serde(alias = "ns")]
     pub ns: Option<String>,
+    /// Agent sandbox VMs are left out unless asked for (or their namespace is listed).
+    #[serde(default)]
+    pub include_sandboxes: bool,
 }
 
 /// First guest IP + node name from VMI status (VMI name matches VM name in KubeVirt).
@@ -118,8 +121,18 @@ pub(super) async fn list_vms_handler(
     let vms = client.list_vms_for_scope(scope_ns).await;
     let vmi_index = vmi_ip_node_index(&client, scope_ns).await;
     let drift_index = vrvm_drift_index(&client, scope_ns).await;
+    let hide_sandboxes = !query.include_sandboxes && scope_ns != crate::sandbox::namespace();
     let vm_infos: Vec<VmInfo> = vms
         .iter()
+        .filter(|vm| {
+            !hide_sandboxes
+                || vm
+                    .metadata
+                    .labels
+                    .as_ref()
+                    .and_then(|l| l.get(crate::sandbox::LABEL_SANDBOX))
+                    .is_none_or(|v| v != "true")
+        })
         .map(|vm| {
             let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
             let name = vm.metadata.name.as_deref().unwrap_or("");

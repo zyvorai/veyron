@@ -199,7 +199,7 @@ fn plan(req: &CreateModel) -> Result<Plan, String> {
         disk: req.disk_size.clone().unwrap_or_else(|| disk.into()),
         context: req
             .context
-            .unwrap_or(if runtime == "vllm" { 8192 } else { 4096 })
+            .unwrap_or(if runtime == "vllm" { 8192 } else { 16384 })
             .clamp(512, 131_072),
     })
 }

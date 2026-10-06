@@ -462,6 +462,13 @@ pub struct DataVolumeSource {
 pub struct CloudInitNoCloudSource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_data: Option<String>,
+    #[serde(
+        default,
+        rename = "secretRef",
+        alias = "userDataSecretRef",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub user_data_secret_ref: Option<UserDataSecretRef>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_data: Option<String>,
 }
@@ -469,7 +476,12 @@ pub struct CloudInitNoCloudSource {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CloudInitConfigDriveSource {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        rename = "secretRef",
+        alias = "userDataSecretRef",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub user_data_secret_ref: Option<UserDataSecretRef>,
 }
 

@@ -694,17 +694,23 @@ mod tests {
             "#cloud-config\npackages:\n  - jq\nruncmd:\n  - echo hi\nhostname: llm\n",
         );
         let v: serde_yml::Value = serde_yml::from_str(&merged).unwrap();
-        let pkgs: Vec<_> = v["packages"]
-            .as_sequence()
-            .unwrap()
-            .iter()
-            .filter_map(|p| p.as_str())
-            .collect();
-        assert_eq!(pkgs, vec!["curl", "jq"]);
+        let b: serde_yml::Value = serde_yml::from_str(&base).unwrap();
+        let strs = |v: &serde_yml::Value| -> Vec<String> {
+            v.as_sequence()
+                .map(|s| {
+                    s.iter()
+                        .filter_map(|p| p.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        let mut want = strs(&b["packages"]);
+        want.push("jq".into());
+        assert_eq!(strs(&v["packages"]), want);
         let run = v["runcmd"].as_sequence().unwrap();
         assert_eq!(
-            run.first().and_then(|r| r.as_str()),
-            Some("/usr/local/sbin/veyron-install-guestkit.sh")
+            run.first(),
+            b["runcmd"].as_sequence().and_then(|r| r.first())
         );
         assert_eq!(run.last().and_then(|r| r.as_str()), Some("echo hi"));
         assert_eq!(v["hostname"].as_str(), Some("llm"));

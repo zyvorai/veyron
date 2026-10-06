@@ -78,7 +78,8 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 | MCP | `POST /mcp` (MCP server, Streamable HTTP), `GET/PUT /ai/mcp-servers`, `POST /ai/mcp-servers/:server/call` |
 | Sandboxes | `GET/POST /sandboxes`, `GET/DELETE /sandboxes/:id`, `POST /sandboxes/:id/exec`, `GET/PUT /sandboxes/:id/files` |
 
-Query `?namespace=all` for cluster-wide lists.
+Query `?namespace=all` for cluster-wide lists. `GET /vms` leaves agent sandbox VMs out unless
+you pass `include_sandboxes=true` or ask for their namespace.
 
 Snapshot schedules take standard five-field cron (`minute hour day month weekday`, UTC), for
 example `0 2 * * *`; Veyron stores it with a leading seconds field (`0 0 2 * * *`). Six-field

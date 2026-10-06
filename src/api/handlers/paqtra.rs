@@ -336,6 +336,11 @@ async fn paqtra_get_json(
 #[cfg(feature = "web")]
 const STATUS_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
+/// Paqtra's authenticated status routes query Cilium and the cluster on a cold cache and
+/// regularly take 1-5 s, so they get more room than the `/health` liveness probe.
+#[cfg(feature = "web")]
+const AUTH_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(12);
+
 /// Unauthenticated `/health`; `None` when unreachable.
 #[cfg(feature = "web")]
 pub async fn probe_health(base: &str) -> Option<serde_json::Value> {
@@ -444,9 +449,14 @@ fn apply_health(out: &mut PaqtraStatusResponse, body: &serde_json::Value) {
 async fn bounded(
     fut: impl std::future::Future<Output = Result<serde_json::Value, PaqtraError>>,
 ) -> Result<serde_json::Value, PaqtraError> {
-    tokio::time::timeout(STATUS_PROBE_TIMEOUT, fut)
+    tokio::time::timeout(AUTH_PROBE_TIMEOUT, fut)
         .await
-        .unwrap_or_else(|_| Err(PaqtraError::Upstream("Paqtra API timed out".into())))
+        .unwrap_or_else(|_| {
+            Err(PaqtraError::Upstream(format!(
+                "Paqtra API did not answer within {} s",
+                AUTH_PROBE_TIMEOUT.as_secs()
+            )))
+        })
 }
 
 #[cfg(feature = "web")]

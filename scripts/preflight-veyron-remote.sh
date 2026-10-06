@@ -160,4 +160,4 @@ fi
 ok "Preflight complete."
 ok "Full smoke test:  VEYRON_API_KEY=... $0 ${HOST} ${PORT} --smoke"
 ok "Daily-ops E2E:    VEYRON_API_KEY=... ./scripts/test-vm-daily-ops-remote.sh ${HOST} ${PORT}"
-ok "Console sweep:    VEYRON_API_KEY=... ./scripts/dashboard-console-check.sh --host ${HOST}"
+ok "Console sweep:    VEYRON_API_KEY=... ./scripts/console-audit.sh --host ${HOST}"

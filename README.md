@@ -102,7 +102,7 @@ A frosted top nav with mega-menus, a ⌘K palette for everything, a live fleet m
 | Security finds exposed VMs after the fact | **A built-in SOC:** detections for public RDP and SSH, policy gaps and drift, export to Elastic, Splunk, Sentinel and QRadar. |
 | You want AI help without giving a bot the keys | **Veyron AI:** an MCP server, incident investigations and forecasts, where every change is a proposal a human approves. |
 
-![Capabilities at a glance: Run, Protect, Observe, Secure](docs/assets/readme-capabilities.jpg)
+![Capabilities at a glance: Run, Protect, Observe, Secure, Veyron AI](docs/assets/readme-capabilities.jpg)
 
 Veyron keeps no database: VM state lives in Kubernetes, settings in labeled ConfigMaps, and anything the engine can't do returns `501` with a reason, never a fake success. Details: [docs/architecture.md](docs/architecture.md).
 

@@ -297,7 +297,9 @@ impl KubeClient {
         }
 
         if let Some(ci) = &config.cloud_init {
-            if ci.delivery == CloudInitDelivery::ConfigDrive {
+            if ci.delivery == CloudInitDelivery::ConfigDrive
+                || nocloud_userdata_needs_secret(&ci.user_data)
+            {
                 self.ensure_configdrive_userdata_secret(
                     &config.namespace,
                     &cloudinit_configdrive_secret_name(&config.name),
@@ -2242,6 +2244,13 @@ fn pod_name_str(p: &k8s_openapi::api::core::v1::Pod) -> &str {
 /// Keep consistent with `operator/internal/controller` helpers.
 pub fn cloudinit_configdrive_secret_name(vm_name: &str) -> String {
     truncate_k8s_dns_subdomain(format!("{vm_name}-veyron-cfgdrv"), 253)
+}
+
+/// KubeVirt's admission webhook rejects inline `cloudInitNoCloud.userData` over 2048 bytes.
+pub const NOCLOUD_INLINE_USERDATA_MAX: usize = 2048;
+
+pub fn nocloud_userdata_needs_secret(user_data: &str) -> bool {
+    user_data.len() > NOCLOUD_INLINE_USERDATA_MAX
 }
 
 /// Kubernetes Service name for Veyron-created exposed Services.

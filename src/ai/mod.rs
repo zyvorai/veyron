@@ -84,7 +84,14 @@ pub fn leader_tick(state: SharedState, n: u64) {
     let s = state.clone();
     spawn_guarded(&SANDBOX, async move { crate::sandbox::tick(&s).await });
     let s = state.clone();
-    spawn_guarded(&INCIDENTS, async move { incidents::tick(&s).await });
+    spawn_guarded(&INCIDENTS, async move {
+        let (client, ns) = {
+            let st = s.read().await;
+            (st.kube_client.client(), ai_namespace(&st.namespace))
+        };
+        proposals::expire_stale(&client, &ns).await;
+        incidents::tick(&s).await
+    });
     if n % predictive::TICK_EVERY == 1 || predictive::TICK_EVERY == 1 {
         spawn_guarded(&PREDICT, async move { predictive::tick(&state).await });
     }

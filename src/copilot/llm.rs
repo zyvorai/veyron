@@ -200,11 +200,20 @@ pub fn max_tool_rounds() -> u32 {
         .unwrap_or(2)
 }
 
+/// In-cluster models usually run on CPU, where reading a long prompt alone can take minutes.
+const IN_CLUSTER_TIMEOUT_SECS: u64 = 300;
+
 pub fn timeout_secs() -> u64 {
     std::env::var("VEYRON_AI_TIMEOUT_SECS")
         .ok()
         .and_then(|s| s.parse().ok())
-        .unwrap_or(30)
+        .unwrap_or_else(|| {
+            if runtime_override().is_some() {
+                IN_CLUSTER_TIMEOUT_SECS
+            } else {
+                30
+            }
+        })
 }
 
 pub fn ai_rate_limit_per_min() -> u64 {

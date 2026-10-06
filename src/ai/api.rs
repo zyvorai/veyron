@@ -331,6 +331,13 @@ pub async fn approve_and_run(
     if p.status != ProposalStatus::Pending {
         return Err((409, "This proposal was already decided".into()));
     }
+    if p.is_stale(chrono::Utc::now()) {
+        return Err((
+            409,
+            "This proposal expired; ask Veyron AI to draft it again against the current cluster"
+                .into(),
+        ));
+    }
     if auth.subject.contains("(via Veyron AI)") {
         return Err((403, "AI tools cannot approve proposals".into()));
     }

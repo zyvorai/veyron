@@ -311,6 +311,7 @@ const FILTERS = [
   ['rolled_back', 'Rolled back'],
   ['failed', 'Failed'],
   ['rejected', 'Rejected'],
+  ['expired', 'Expired'],
 ];
 
 export function ProposalsPage({ user }) {

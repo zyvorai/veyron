@@ -178,9 +178,9 @@ if [[ "${P1_PASSED}" -eq 1 ]]; then
         "${SCRIPT_DIR}/test-vm-daily-ops-remote.sh" "${HOST}" "${PORT}" || true
 
     # ── P8 · Dashboard console sweep ────────────────────────────────────────
-    if [[ -x "${SCRIPT_DIR}/dashboard-console-check.sh" ]]; then
+    if [[ -x "${SCRIPT_DIR}/console-audit.sh" ]]; then
         run_legacy_phase "P8 dashboard console sweep" "P8-dashboard" "${LOG_DIR}/p8-dashboard.log" \
-            env VEYRON_API_KEY="${KEY}" "${SCRIPT_DIR}/dashboard-console-check.sh" --host "${HOST}" || true
+            env VEYRON_API_KEY="${KEY}" "${SCRIPT_DIR}/console-audit.sh" --host "${HOST}" --port "${PORT}" || true
     else
         skip_phase "P8 dashboard console sweep" "P8-dashboard" "dashboard console sweep" "console_check_missing"
     fi

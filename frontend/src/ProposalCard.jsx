@@ -9,6 +9,7 @@ const STATUS_LABEL = {
   failed: 'Failed',
   rolled_back: 'Rolled back',
   rejected: 'Rejected',
+  expired: 'Expired',
 };
 
 export function ProposalStatus({ s }) {

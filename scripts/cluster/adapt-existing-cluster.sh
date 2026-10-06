@@ -267,6 +267,33 @@ elif sudo test -f /etc/containerd/config.toml; then
   fi
 fi
 
+# ── 5a. Terminated-pod garbage collection ────────────────────────────────────
+# kube-controller-manager only deletes terminated pods above 12500. One
+# DiskPressure eviction storm leaves ~12k Evicted pods behind for good, and every
+# cluster-wide pod list (console, API) has to page through them.
+if command -v k3s >/dev/null 2>&1 || [[ -x /usr/local/bin/k3s ]]; then
+  echo; echo "5a) Terminated-pod garbage collection"
+  if sudo grep -q 'terminated-pod-gc-threshold' "${K3S_CONF}" 2>/dev/null; then
+    ok "terminated-pod-gc-threshold already set in ${K3S_CONF}"
+  elif sudo grep -q '^kube-controller-manager-arg:' "${K3S_CONF}" 2>/dev/null; then
+    warn "add terminated-pod-gc-threshold=1000 to kube-controller-manager-arg in ${K3S_CONF} by hand"
+  elif [[ "${APPLY}" == "1" ]]; then
+    CHANGES=$((CHANGES + 1))
+    sudo mkdir -p "$(dirname "${K3S_CONF}")"
+    printf 'kube-controller-manager-arg:\n  - "terminated-pod-gc-threshold=1000"\n' | sudo tee -a "${K3S_CONF}" >/dev/null
+    if sudo systemctl restart k3s 2>/dev/null; then
+      for _ in $(seq 1 30); do $K get nodes >/dev/null 2>&1 && break; sleep 5; done
+      ok "set terminated-pod-gc-threshold=1000 and restarted k3s"
+    else
+      bad "FAILED to restart k3s — restart it by hand to apply terminated-pod-gc-threshold"
+    fi
+  else
+    warn "terminated pods are only collected above 12500 (k3s default)"
+    plan "set kube-controller-manager-arg terminated-pod-gc-threshold=1000 in ${K3S_CONF} and restart k3s"
+    CHANGES=$((CHANGES + 1))
+  fi
+fi
+
 # ── 5b. Cilium socket LB must not cover pod namespaces ───────────────────────
 # With kube-proxy replacement, full socket-LB coverage skips per-packet ClusterIP
 # translation for KubeVirt guests (their traffic is NAT-forwarded inside the

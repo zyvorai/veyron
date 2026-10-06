@@ -1,0 +1,124 @@
+<!doctype html>
+<!-- Source for docs/assets/readme-capabilities.jpg. Render at 1600x600 and save as JPEG. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Veyron capabilities</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1600px; height: 600px; overflow: hidden; }
+  body {
+    background: #f5f5f7; color: #1d1d1f; position: relative;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+  .mono { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+  .edge { position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: #0071e3; }
+  .wrap { position: absolute; inset: 0 56px 0 66px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding-top: 34px; }
+  .brand { display: flex; align-items: center; gap: 16px; font-size: 18px; letter-spacing: 3px; color: #6e6e73; }
+  .brand b { color: #0071e3; }
+  .logo { width: 38px; height: 38px; border-radius: 9px; background: #f05a22; display: grid; place-items: center; }
+  .logo svg { width: 21px; height: 21px; }
+  .tags { font-size: 17px; letter-spacing: 3px; color: #6e6e73; }
+
+  h1 { font-size: 50px; font-weight: 800; letter-spacing: -1.5px; margin-top: 22px; }
+  h1 span { color: #0071e3; }
+
+  .cols { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 24px; }
+  .col {
+    background: #fff; border: 2px solid var(--c); border-left-width: 7px; border-radius: 14px;
+    padding: 14px 16px; height: 340px;
+  }
+  .pill { display: inline-block; background: var(--c); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1.4px; padding: 3px 10px; border-radius: 999px; }
+  .col h3 { font-size: 22px; font-weight: 750; margin: 9px 0 6px; letter-spacing: -0.3px; }
+  .col li { list-style: none; font-size: 15.5px; color: #3a3a3c; line-height: 1.32; padding: 6px 0; border-bottom: 1px solid #e8e8ed; }
+  .col li:last-child { border-bottom: 0; }
+  .col.new { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 18%, transparent); }
+
+  footer {
+    position: absolute; left: 0; right: 0; bottom: 24px; border-top: 3px solid #1d1d1f; padding-top: 12px;
+    display: flex; justify-content: space-between; font-size: 17px; color: #6e6e73;
+  }
+  footer b { color: #1d1d1f; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f05a22; margin-right: 8px; }
+</style>
+</head>
+<body>
+  <div class="edge"></div>
+  <div class="wrap">
+    <header>
+      <div class="brand mono">
+        <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14L5 19h14"/></svg></div>
+        <span><b>VEYRON</b> · CAPABILITIES AT A GLANCE</span>
+      </div>
+      <div class="tags mono">ONE CONSOLE · API · CLI · MCP</div>
+    </header>
+
+    <h1>Everything a VM fleet needs, <span>day one to day two.</span></h1>
+
+    <div class="cols">
+      <div class="col" style="--c:#0071e3">
+        <span class="pill">RUN</span>
+        <h3>Create and operate</h3>
+        <ul>
+          <li>Current OS templates, one-click VMs</li>
+          <li>Browser VNC and serial console</li>
+          <li>CPU and memory hotplug, bulk actions</li>
+          <li>GPU passthrough with migration guard</li>
+          <li>Windows golden images, sysprep, RDP</li>
+        </ul>
+      </div>
+      <div class="col" style="--c:#1f8a4c">
+        <span class="pill">PROTECT</span>
+        <h3>Keep data safe</h3>
+        <ul>
+          <li>Snapshots, restores, clones</li>
+          <li>Backups and Velero</li>
+          <li>Ceph snapshots and S3 backups via Atlas</li>
+          <li>DR failback, self-healing restarts</li>
+          <li>Orphaned-volume cleanup, dry-run first</li>
+        </ul>
+      </div>
+      <div class="col" style="--c:#7b3fe4">
+        <span class="pill">OBSERVE</span>
+        <h3>See the fleet</h3>
+        <ul>
+          <li>Mission Control overview</li>
+          <li>Metrics, alerts, incidents, logs</li>
+          <li>Costs and capacity headroom</li>
+          <li>Guest health via GuestKit</li>
+          <li>Network flows via Netra and Paqtra</li>
+        </ul>
+      </div>
+      <div class="col" style="--c:#c2410c">
+        <span class="pill">SECURE</span>
+        <h3>Govern access</h3>
+        <ul>
+          <li>Admin, write and read-only roles</li>
+          <li>OIDC SSO: Keycloak, Okta, Azure AD</li>
+          <li>SOC detections and attack surface</li>
+          <li>Elastic, Splunk, Sentinel, QRadar export</li>
+          <li>Public-RDP guardrail, audit trail</li>
+        </ul>
+      </div>
+      <div class="col new" style="--c:#0e7490">
+        <span class="pill">VEYRON AI</span>
+        <h3>Asks before it acts</h3>
+        <ul>
+          <li>MCP server for Claude, Cursor or any agent</li>
+          <li>Every change is a proposal you approve</li>
+          <li>Investigations and failure forecasts</li>
+          <li>Sandboxes for agent code</li>
+          <li>Bring a model, or serve one yourself</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer class="mono">
+      <span><b>docs/</b> getting started · architecture · API · AI</span>
+      <span><span class="dot"></span>zyvor.dev</span>
+    </footer>
+  </div>
+</body>
+</html>

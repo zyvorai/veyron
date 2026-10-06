@@ -52,10 +52,10 @@ make ci
 VEYRON_API_KEY='...' ./scripts/test-vm-daily-ops-remote.sh HOST [30151]
 # Optional: VEYRON_E2E_RESTORE=1 for destructive snapshot restore; VEYRON_E2E_SKIP_TIER_B=1 for contract checks only
 
-# Headless console-error sweep and layout audit (scripts/dashboard-layout-audit.sh) still target
-# the removed macOS-style dashboard's DOM/routes, not the current React console at /console — stale,
-# not currently runnable against /console. A live Chrome pass (claude-in-chrome MCP tools, or
-# manual) is the reliable way to catch console/network/layout regressions until these are ported.
+# Headless audit of the React console: every page in the NAV menu (read from frontend/src/resources.js),
+# JS errors, API 5xx, empty pages, horizontal overflow, offscreen/clipped controls, content under the nav.
+# Exits non-zero on any finding (playwright-core + local Chrome; ~2 min per width).
+VEYRON_API_KEY='...' ./scripts/console-audit.sh --host HOST [--width 1280,1920] [--pages vms,ai]
 
 # Client deliverable: static linux/amd64 tarball (remote podman build, no cluster deploy)
 ./scripts/package-binary-remote.sh HOST USER --fetch   # → dist/veyron-<ver>-linux-amd64.tar.gz
@@ -218,6 +218,7 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 - **virt-launcher pod selectors**: always select by **`vm.kubevirt.io/name`** (`kube::VM_NAME_LABEL`) — KubeVirt 1.8 launchers do NOT carry the old `kubevirt.io/domain` label (Services selecting on it get zero endpoints; this bit SSH expose, logs-by-VM, OpenCost, and guest Prometheus). `kubevirt.io/domain` (`VM_NAME_LABEL_LEGACY`) is acceptable only as a read fallback when mapping pods→VMs. RDP expose historically uses `kubevirt.io/vm`, which 1.8 still sets.
 - **Guest DNS needs Cilium `socketLB.hostNamespaceOnly: true`** (`bpf-lb-sock-hostns-only: "true"` in `cilium-config`, set in `scripts/cluster/cilium-k3s-values.yaml`). With kube-proxy replacement and full socket-LB coverage, KubeVirt guests' NAT-forwarded traffic to ClusterIPs (kube-dns, GuestKit download, model endpoints) is never translated — no VM ever reaches `AgentConnected`, sandboxes never become ready. Found and fixed on 175.110.122.71 on 2026-10-06; check `cilium-dbg status --verbose` → `Socket LB Coverage: Hostns-only`.
 - **Custom cloud-init on Linux templates is merged, not replaced** (`templates::merge_cloud_init`, `VMConfigBuilder::merge_cloud_init`): list keys (`packages`, `write_files`, `runcmd`, `bootcmd`, `ssh_authorized_keys`, `users`, `mounts`) append, other keys override, `#!` scripts become a `write_files` + `runcmd` entry — so GuestKit bootstrap survives user cloud-init.
+- **NoCloud user-data over 2048 bytes goes to a Secret**: KubeVirt's webhook rejects larger inline `cloudInitNoCloud.userData`, so the converter emits a Secret ref (`<vm>-veyron-cfgdrv`, same Secret as config-drive) and `KubeClient::create_vm` creates it (`kube::nocloud_userdata_needs_secret`). Paths that call `vm_config_to_kubevirt` and `create` directly (sandboxes) must keep user-data small or create that Secret themselves. KubeVirt's wire name for it is **`secretRef`** (Go field `UserDataSecretRef`); `userDataSecretRef` is silently pruned.
 
 ## Environment variables
 
@@ -249,7 +250,7 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 | `VEYRON_KRYTON_URL` | Optional. Kryton machine-API base URL. Enables `/api/v1/kryton/*` (machines, catalog, golden-image bootstrap into `kryton-images/<id>`). Unset ⇒ `/kryton/status` reports `configured:false`, other routes 503. |
 | `VEYRON_KRYTON_TOKEN` / `VEYRON_KRYTON_PROJECT` | Kryton bearer API key / optional project (`?project=`) |
 | `VEYRON_VGPU_LIVE_MIGRATION` | Set to `1` ONLY after verifying the licensed NVIDIA vGPU host stack + KubeVirt actually live-migrate mdev VMIs (Phase 2 attestation). Relaxes the migration gate for vGPU-only VMs and enables `day2_ops.vgpu_live_migration` (when mdev resources are present). Upstream KubeVirt ≤1.8 does NOT support this — never set on plain passthrough clusters. |
-| `VEYRON_AI_URL`, `VEYRON_AI_API_KEY`, `VEYRON_AI_MODEL` | Bring-your-own OpenAI-compatible LLM for Veyron AI (fallback when no model is chosen in Settings / `veyron-ai-llm` ConfigMap). Also `VEYRON_AI_MAX_TOOL_ROUNDS`, `VEYRON_AI_TIMEOUT_SECS`, `VEYRON_AI_RATE_LIMIT_PER_MIN`, `VEYRON_AI_NAMESPACE`, `VEYRON_AI_PREDICTIVE=0`, `VEYRON_AI_INVESTIGATOR=0`. See `docs/ai.md`. |
+| `VEYRON_AI_URL`, `VEYRON_AI_API_KEY`, `VEYRON_AI_MODEL` | Bring-your-own OpenAI-compatible LLM for Veyron AI (fallback when no model is chosen in Settings / `veyron-ai-llm` ConfigMap). Also `VEYRON_AI_MAX_TOOL_ROUNDS`, `VEYRON_AI_TIMEOUT_SECS`, `VEYRON_AI_RATE_LIMIT_PER_MIN`, `VEYRON_AI_NAMESPACE`, `VEYRON_AI_PREDICTIVE=0`, `VEYRON_AI_INVESTIGATOR=0`, `VEYRON_AI_PROPOSAL_TTL_HOURS` (waiting proposals expire, default 72). See `docs/ai.md`. |
 | `VEYRON_MCP_ALLOW_SELF_APPROVE` | `1` lets `write`-role MCP callers approve proposals over MCP (default: admin only). |
 | `VEYRON_SANDBOX_*` | `NAMESPACE` (`veyron-sandboxes`), `POOL_SIZE` (1), `MAX_PER_OWNER` (3), `MAX_TTL_MINUTES` (1440), `TEMPLATE` (`ubuntu-24.04`), `MEMORY` (`1Gi`), `WAIT_SECS` (240). |
 | `VEYRON_ALLOW_PUBLIC_RDP` | Set to `1` to permit `PUT /rdp-expose` with `service_type: NodePort`/`LoadBalancer`. **Default: refused with 403** — a bare 3389 NodePort puts Windows auth on the network with no gateway/MFA/TLS. Prefer `ClusterIP` + VPN/zero-trust gateway or `kubectl port-forward`. |

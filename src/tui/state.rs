@@ -143,7 +143,15 @@ fn vm_os_hint(vm: &crate::kube::types::VirtualMachine) -> Option<String> {
                 .cloned()
         })
     };
+    let template_os = labels.and_then(|l| {
+        let os = l.get("os").filter(|v| !v.is_empty())?;
+        Some(match l.get("os.version").filter(|v| !v.is_empty()) {
+            Some(ver) => format!("{os} {ver}"),
+            None => os.clone(),
+        })
+    });
     pick(OS_LABELS)
+        .or(template_os)
         .or_else(|| {
             vm.spec.template.spec.volumes.as_ref().and_then(|vols| {
                 vols.iter()

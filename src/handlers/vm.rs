@@ -3179,6 +3179,7 @@ mod tests {
             empty_disk: None,
             cloud_init_no_cloud: Some(CloudInitNoCloudSource {
                 user_data: Some("#cloud-config\npackages:\n  - vim\n".to_string()),
+                user_data_secret_ref: None,
                 network_data: None,
             }),
             cloud_init_config_drive: None,

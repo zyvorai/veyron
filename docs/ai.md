@@ -37,9 +37,10 @@ Veyron works with any OpenAI-compatible chat endpoint. The active model is chose
 | `VEYRON_AI_API_KEY` | Bearer key (optional for local servers) |
 | `VEYRON_AI_MODEL` | Model name |
 | `VEYRON_AI_MAX_TOOL_ROUNDS` | Tool-call rounds per question (default 8) |
-| `VEYRON_AI_TIMEOUT_SECS` | Per-request timeout |
+| `VEYRON_AI_TIMEOUT_SECS` | Per-request timeout (default 30 s, or 300 s while an in-cluster model is selected) |
 | `VEYRON_AI_RATE_LIMIT_PER_MIN` | Per-caller chat rate limit |
 | `VEYRON_AI_NAMESPACE` | Where proposals and investigations are stored (default: API namespace) |
+| `VEYRON_AI_PROPOSAL_TTL_HOURS` | Waiting proposals expire after this many hours (default 72) |
 | `VEYRON_AI_PREDICTIVE=0` | Turn off the forecast tick |
 | `VEYRON_AI_INVESTIGATOR=0` | Turn off automatic investigations |
 
@@ -55,6 +56,8 @@ console takes effect cluster-wide without a restart.
   the minimum role for each step, and whether it can be undone.
 - **Approving** needs the step's role (`write` or `admin`). Over MCP only `admin` callers may
   approve, unless `VEYRON_MCP_ALLOW_SELF_APPROVE=1` lets `write` callers approve their own.
+- A proposal nobody decides on within `VEYRON_AI_PROPOSAL_TTL_HOURS` (72 h) is marked **Expired**
+  and can no longer be approved, so a stale plan never runs against a cluster that has moved on.
 - Approved steps run through the normal API router, so they pass the same auth, audit trail and
   validation as a console click. Every chat, tool call and approval is in the audit trail.
 
@@ -100,6 +103,8 @@ takes seconds.
 
 - Namespace `veyron-sandboxes`, with a deny-all egress NetworkPolicy. `internet: true` on create
   lifts it for that sandbox.
+- Sandbox VMs are left out of `GET /api/v1/vms` (and so the VM list, Mission Control and search)
+  unless you list the `veyron-sandboxes` namespace or pass `include_sandboxes=true`.
 - Owners see only their own sandboxes; admins see all. TTL 5–1440 minutes (default 30); the leader
   tick deletes expired sandboxes.
 - Env: `VEYRON_SANDBOX_NAMESPACE`, `VEYRON_SANDBOX_POOL_SIZE` (1), `VEYRON_SANDBOX_MAX_PER_OWNER`
@@ -115,7 +120,7 @@ port 8000 behind a ClusterIP Service:
 
 | Runtime | Console default | API default (no `model` given) | Needs |
 |---|---|---|---|
-| llama.cpp | Qwen2.5 1.5B Instruct (GGUF, q4_k_m) | Qwen2.5 0.5B Instruct (GGUF, q4_k_m) | 4 CPU, 8 GiB, 30 GiB disk |
+| llama.cpp | Qwen2.5 1.5B Instruct (GGUF, q4_k_m) | Qwen2.5 0.5B Instruct (GGUF, q4_k_m) | 4 CPU, 8 GiB, 30 GiB disk, 16k context |
 | vLLM | `Qwen/Qwen2.5-7B-Instruct` | `Qwen/Qwen2.5-1.5B-Instruct` | a GPU, 8 CPU, 32 GiB, 100 GiB disk |
 
 Tool calling gets noticeably more reliable above 1B parameters; the 0.5B model is fine for a

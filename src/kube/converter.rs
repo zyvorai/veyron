@@ -202,10 +202,22 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
     if let Some(cloud_init) = &config.cloud_init {
         match cloud_init.delivery {
             CloudInitDelivery::NoCloud => {
+                let (user_data, user_data_secret_ref) =
+                    if crate::kube::nocloud_userdata_needs_secret(&cloud_init.user_data) {
+                        (
+                            None,
+                            Some(UserDataSecretRef {
+                                name: crate::kube::cloudinit_configdrive_secret_name(&config.name),
+                            }),
+                        )
+                    } else {
+                        (Some(cloud_init.user_data.clone()), None)
+                    };
                 volumes.push(Volume {
                     name: "cloudinitdisk".to_string(),
                     cloud_init_no_cloud: Some(CloudInitNoCloudSource {
-                        user_data: Some(cloud_init.user_data.clone()),
+                        user_data,
+                        user_data_secret_ref,
                         network_data: cloud_init.network_data.clone(),
                     }),
                     ..Default::default()
@@ -1160,6 +1172,45 @@ mod tests {
                 .unwrap()
                 .storage_class_name
                 .is_none()
+        );
+    }
+
+    #[test]
+    fn large_nocloud_userdata_moves_to_secret_ref() {
+        let build = |user_data: String| {
+            let mut config = VMConfigBuilder::new("llm01")
+                .namespace("default")
+                .cpu(2, 1, 1)
+                .memory("4Gi")
+                .add_blank_disk("rootdisk", "20Gi", 1)
+                .add_pod_network("default")
+                .build();
+            config.cloud_init = Some(crate::config::CloudInitConfig {
+                user_data,
+                network_data: None,
+                delivery: CloudInitDelivery::NoCloud,
+            });
+            let vm = vm_config_to_kubevirt(&config).unwrap();
+            let vol = vm.spec.template.spec.volumes.unwrap();
+            vol.into_iter()
+                .find(|v| v.name == "cloudinitdisk")
+                .and_then(|v| v.cloud_init_no_cloud)
+                .unwrap()
+        };
+
+        let small = build("#cloud-config\npackages: [vim]\n".into());
+        assert!(small.user_data.is_some() && small.user_data_secret_ref.is_none());
+
+        let big = build(format!("#cloud-config\n# {}\n", "x".repeat(3000)));
+        let wire = serde_json::to_value(&big).unwrap();
+        assert_eq!(
+            wire["secretRef"]["name"],
+            crate::kube::cloudinit_configdrive_secret_name("llm01")
+        );
+        assert!(big.user_data.is_none());
+        assert_eq!(
+            big.user_data_secret_ref.unwrap().name,
+            crate::kube::cloudinit_configdrive_secret_name("llm01")
         );
     }
 

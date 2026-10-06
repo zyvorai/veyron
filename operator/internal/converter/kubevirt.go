@@ -337,7 +337,7 @@ func buildVolumes(vmName string, spec *veyronv1alpha1.VeyronVMSpec) []interface{
 			volumes = append(volumes, map[string]interface{}{
 				"name": "cloudinitdisk",
 				"cloudInitConfigDrive": map[string]interface{}{
-					"userDataSecretRef": map[string]interface{}{
+					"secretRef": map[string]interface{}{
 						"name": secretName,
 					},
 				},

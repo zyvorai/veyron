@@ -210,7 +210,9 @@ fi
 if [[ "${VEYRON_E2E_MODEL:-0}" == "1" ]]; then
     echo "  (model serving)"
     M="ai-e2e-llm-${SUFFIX}"
-    cr=$(api POST /api/v1/ai/models "{\"name\":\"${M}\",\"namespace\":\"${NS}\",\"runtime\":\"llamacpp\"}" 120)
+    MODEL_ID="${VEYRON_E2E_MODEL_ID:-Qwen/Qwen2.5-1.5B-Instruct-GGUF/qwen2.5-1.5b-instruct-q4_k_m.gguf}"
+    MODEL_MEM="${VEYRON_E2E_MODEL_MEMORY:-4Gi}"
+    cr=$(api POST /api/v1/ai/models "{\"name\":\"${M}\",\"namespace\":\"${NS}\",\"runtime\":\"llamacpp\",\"model\":\"${MODEL_ID}\",\"memory\":\"${MODEL_MEM}\"}" 120)
     if echo "${cr}" | grep -q '"success":true'; then
         ok "deploy ${M} ($(echo "${cr}" | jget 'd["data"]["served_name"]'))"
         st=""
@@ -224,7 +226,9 @@ if [[ "${VEYRON_E2E_MODEL:-0}" == "1" ]]; then
             us=$(api PUT /api/v1/ai/settings/llm "{\"namespace\":\"${NS}\",\"name\":\"${M}\"}")
             [[ "$(echo "${us}" | jget 'd["data"]["source"]')" == "in-cluster" ]] && ok "Use for Veyron AI" || bad "Use for Veyron AI" "${us}"
             ch=$(chat)
-            [[ -n "$(echo "${ch}" | jget 'd["data"]["outcome"]["content"]')" ]] && ok "chat through the in-cluster model" || bad "chat through the in-cluster model" "${ch}"
+            [[ -n "$(echo "${ch}" | jget 'd["data"]["outcome"]["content"]')" ]] && ok "chat through the in-cluster model (tools used: $(echo "${ch}" | jget '",".join(d["data"]["outcome"]["tools_used"])'))" || bad "chat through the in-cluster model" "${ch}"
+            inv=$(api POST /api/v1/ai/investigations/run "{\"namespace\":\"${NS}\",\"vm_name\":\"${M}\"}" 300)
+            [[ "$(echo "${inv}" | jget 'd["data"]["mode"]')" == "llm" ]] && ok "investigation written by the model" || bad "investigation written by the model (mode=$(echo "${inv}" | jget 'd["data"]["mode"]'))" "${inv}"
             api PUT /api/v1/ai/settings/llm '{"clear":true}' >/dev/null
         else
             bad "${M} is serving (last status: ${st:-unknown})" "$(api GET /api/v1/ai/models)"

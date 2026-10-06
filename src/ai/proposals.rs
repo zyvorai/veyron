@@ -102,6 +102,17 @@ pub enum ProposalStatus {
     Failed,
     RolledBack,
     Rejected,
+    /// Nobody decided within `VEYRON_AI_PROPOSAL_TTL_HOURS`; the cluster may have moved on.
+    Expired,
+}
+
+/// How long a proposal may wait for a decision (default 72 h).
+pub fn ttl_hours() -> i64 {
+    std::env::var("VEYRON_AI_PROPOSAL_TTL_HOURS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .filter(|h: &i64| *h > 0)
+        .unwrap_or(72)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -185,6 +196,13 @@ impl Proposal {
             .max_by_key(role_rank)
             .unwrap_or(ApiRole::Write)
             .max_by_rank(ApiRole::Write)
+    }
+
+    /// Pending for longer than the TTL.
+    pub fn is_stale(&self, now: chrono::DateTime<chrono::Utc>) -> bool {
+        self.status == ProposalStatus::Pending
+            && chrono::DateTime::parse_from_rfc3339(&self.created_at)
+                .is_ok_and(|t| now.signed_duration_since(t) > chrono::Duration::hours(ttl_hours()))
     }
 
     fn note(&mut self, msg: impl Into<String>) {
@@ -310,6 +328,24 @@ pub async fn list(client: &kube::Client, namespace: &str) -> anyhow::Result<Vec<
         .collect();
     out.sort_by(|a, b| b.created_at.cmp(&a.created_at));
     Ok(out)
+}
+
+/// Mark proposals that waited longer than the TTL as expired.
+pub async fn expire_stale(client: &kube::Client, namespace: &str) {
+    let Ok(all) = list(client, namespace).await else {
+        return;
+    };
+    let now = chrono::Utc::now();
+    for mut p in all.into_iter().filter(|p| p.is_stale(now)) {
+        p.status = ProposalStatus::Expired;
+        p.note(format!(
+            "Expired after {} h without a decision",
+            ttl_hours()
+        ));
+        if let Err(e) = save(client, namespace, &p).await {
+            log::warn!("expiring proposal {}: {e}", p.id);
+        }
+    }
 }
 
 /// Keep the newest `keep` finished proposals; pending ones are never pruned.
@@ -502,6 +538,17 @@ mod tests {
         assert_eq!(p.required_role(), ApiRole::Write);
         p.steps.push(step("admin"));
         assert_eq!(p.required_role(), ApiRole::Admin);
+    }
+
+    #[test]
+    fn pending_proposals_go_stale_after_ttl() {
+        let now = chrono::Utc::now();
+        let mut p = Proposal::new("t", "assistant", "me");
+        assert!(!p.is_stale(now));
+        p.created_at = (now - chrono::Duration::hours(ttl_hours() + 1)).to_rfc3339();
+        assert!(p.is_stale(now));
+        p.status = ProposalStatus::Rejected;
+        assert!(!p.is_stale(now));
     }
 
     #[test]

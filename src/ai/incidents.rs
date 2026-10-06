@@ -789,6 +789,7 @@ async fn analyze_rules(
     ctx: &ToolCtx,
     t: &Trigger,
     evidence: &Value,
+    model_failed: bool,
 ) -> (Value, Vec<(String, Value, String)>) {
     let mut recs: Vec<String> = Vec::new();
     let mut fixes = Vec::new();
@@ -869,8 +870,13 @@ async fn analyze_rules(
             "Stop new VMs from landing on a NotReady node.".to_string(),
         ));
     }
+    let why = if model_failed {
+        "The language model could not produce a report"
+    } else {
+        "No language model is configured"
+    };
     let summary = format!(
-        "{}\n\nNo language model is configured, so this report lists the evidence and Veyron's built-in recommendations.",
+        "{}\n\n{why}, so this report lists the evidence and Veyron's built-in recommendations.",
         t.detail
     );
     (
@@ -965,12 +971,12 @@ pub async fn investigate(ctx: &ToolCtx, t: &Trigger, requested_by: &str) -> Inve
             }
             Err(e) => {
                 log::warn!("investigation LLM call failed: {e}");
-                let (r, f) = analyze_rules(ctx, t, &evidence).await;
+                let (r, f) = analyze_rules(ctx, t, &evidence, true).await;
                 (r, f, "evidence")
             }
         },
         None => {
-            let (r, f) = analyze_rules(ctx, t, &evidence).await;
+            let (r, f) = analyze_rules(ctx, t, &evidence, false).await;
             (r, f, "evidence")
         }
     };
