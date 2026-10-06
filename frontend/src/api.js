@@ -53,6 +53,7 @@ function onUnauthorized() {
 /** Reads give up after 20s, mutations after 120s; pass `timeout: 0` to disable. */
 const READ_TIMEOUT_MS = 20_000;
 const WRITE_TIMEOUT_MS = 120_000;
+const HEALTH_TIMEOUT_MS = 5_000;
 
 export function getSavedTheme() {
   try {
@@ -172,16 +173,35 @@ export function parseMemGi(v) {
 }
 
 function parseDiskGb(v) {
-  if (v == null) return 0;
+  if (v == null) return '—';
   if (typeof v === 'number') return v;
-  const s = String(v);
-  const m = s.match(/([\d.]+)\s*(Gi|G|Ti|T|Mi)?/i);
-  if (!m) return Number(s) || 0;
+  const s = String(v).trim();
+  const m = s.match(/^([\d.]+)\s*(Gi|G|Ti|T|Mi)?$/i);
+  if (!m) return '—';
   const n = parseFloat(m[1]);
   const u = (m[2] || 'G').toLowerCase();
   if (u.startsWith('ti') || u === 't') return Math.round(n * 1024);
   if (u.startsWith('mi')) return Math.round(n / 1024);
   return Math.round(n);
+}
+
+/** API placeholders for "no value" ("N/A", "", "<none>") become a dash. */
+function present(v) {
+  if (v == null) return '—';
+  const s = String(v).trim();
+  return !s || /^(n\/a|none|<none>|unknown|null)$/i.test(s) ? '—' : v;
+}
+
+/** "2026-10-06T04:42:06Z" → "12m ago"; anything unparseable is returned as-is. */
+export function relTime(v) {
+  if (!v || v === '—') return '—';
+  const t = Date.parse(v);
+  if (!Number.isFinite(t)) return v;
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+  return `${Math.round(s / 86400)}d ago`;
 }
 
 function ageOf(obj) {
@@ -211,12 +231,20 @@ export function mapVm(raw, i) {
     status: String(status).replace(/^VMI?Phase/, '') || 'Unknown',
     cpu: parseCount(raw.cpu ?? raw.cpus ?? raw.vcpus ?? raw.spec?.cpu),
     ram: parseMemGi(raw.memory || raw.ram || raw.memory_gi),
-    disk: parseDiskGb(raw.disk || raw.disk_gb || raw.storage),
-    host: raw.node || raw.host || raw.node_name || '—',
-    ip: raw.ip || raw.ips?.[0] || raw.interfaces?.[0]?.ipAddress || '—',
+    disk: parseDiskGb(raw.disk_gb ?? raw.disk ?? raw.storage),
+    diskSrc: present(raw.disk),
+    host: present(raw.node || raw.host || raw.node_name),
+    ip: present(raw.ip || raw.ips?.[0] || raw.interfaces?.[0]?.ipAddress),
     age: ageOf(raw),
     os: raw.os || raw.guest_os || raw.template || '—',
   };
+}
+
+/** Usage percentage, or null when the API has no measurement (never a fake 0). */
+function pctOrNull(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n) : null;
 }
 
 export function mapNode(raw, i) {
@@ -227,8 +255,8 @@ export function mapNode(raw, i) {
     id: name,
     name,
     status: unschedulable ? 'Cordoned' : ready ? 'Ready' : String(raw.status || 'NotReady'),
-    cpu: Math.round(Number(raw.cpu_percent ?? raw.cpu_usage ?? raw.cpu ?? 0)),
-    mem: Math.round(Number(raw.memory_percent ?? raw.mem_usage ?? raw.memory ?? 0)),
+    cpu: pctOrNull(raw.cpu_percent ?? raw.cpu_usage),
+    mem: pctOrNull(raw.memory_percent ?? raw.mem_usage),
     vms: raw.vm_count ?? raw.vms ?? raw.running_vms ?? '—',
     kernel: raw.kernel || raw.kernel_version || '—',
     age: ageOf(raw),
@@ -264,7 +292,7 @@ export function mapPvc(raw, i) {
     status: raw.status || raw.phase || 'Unknown',
     cls: raw.storage_class || raw.storageClassName || raw.class || '—',
     size: raw.size || raw.capacity || raw.request || '—',
-    used: Math.round(Number(raw.used_percent ?? raw.used ?? 0)),
+    used: pctOrNull(raw.used_percent ?? raw.used),
     access: raw.access_modes?.[0] || raw.access || '—',
     vol: raw.volume_name || raw.volume || '—',
   };
@@ -278,7 +306,7 @@ export function mapClass(raw, i) {
     cls: raw.is_default ? `${name} (default)` : name,
     prov: raw.provisioner || '—',
     total: raw.capacity || raw.total || '—',
-    used: Math.round(Number(raw.used_percent ?? 0)),
+    used: pctOrNull(raw.used_percent),
     vols: raw.volume_count ?? raw.vols ?? '—',
   };
 }
@@ -383,10 +411,11 @@ export const api = {
     });
     return data;
   },
-  health: () => request('/api/v1/health', { skipAuth: true }).then(unwrap),
+  health: () => request('/api/v1/health', { skipAuth: true, timeout: HEALTH_TIMEOUT_MS }).then(unwrap),
   listVms: (ns = 'all') => request(`/api/v1/vms${nsQ(ns)}`).then(asArray),
   listNodes: () => request('/api/v1/nodes').then(asArray),
-  listPods: (ns = 'all') => request(`/api/v1/pods${nsQ(ns)}`).then(asArray),
+  listPods: (ns = 'all', { active = false } = {}) => request(`/api/v1/pods${nsQ(ns)}${active ? '&active=true' : ''}`).then(asArray),
+  podSummary: () => request('/api/v1/pods/summary?namespace=all').then(unwrap),
   listPvcs: (ns = 'all') => request(`/api/v1/storage/pvcs${nsQ(ns)}`).then(asArray),
   listStorageClasses: () => request('/api/v1/storage/classes').then(asArray),
   listSnapshots: () => request('/api/v1/snapshots?namespace=all').then(asArray),
@@ -691,6 +720,12 @@ export function mapGpu(raw, i) {
   };
 }
 
+/** Kubelet event text names pods as `name_namespace(uid)`; show `namespace/name` instead. */
+export function tidyEventMessage(m) {
+  if (!m) return m;
+  return String(m).replace(/\b([a-z0-9][a-z0-9.-]*)_([a-z0-9][a-z0-9-]*)\([0-9a-f-]{36}\)/g, '$2/$1');
+}
+
 export function mapAlert(raw, i) {
   const id = raw.id || `alert-${i}`;
   return {
@@ -698,9 +733,10 @@ export function mapAlert(raw, i) {
     name: raw.name || raw.reason || id,
     status: raw.status || 'firing',
     severity: raw.severity || 'warning',
-    message: raw.message || '—',
+    message: tidyEventMessage(raw.message) || '—',
     source: raw.source || '—',
-    age: raw.fired_at || raw.age || '—',
+    age: relTime(raw.fired_at || raw.age),
+    firedAt: raw.fired_at || '—',
   };
 }
 
@@ -757,15 +793,16 @@ export function mapMigration(raw, i) {
   };
 }
 
-export function mapCatalogTemplate(raw, i) {
+export function mapCatalogTemplate(raw, i, sizing) {
   const name = raw.name || `tpl-${i}`;
+  const size = sizing?.[name];
   return {
     id: name,
     name,
     os: raw.family || raw.os || raw.description || '—',
-    cpu: '—',
-    ram: '—',
-    disk: '—',
+    cpu: size ? (size.cpu ?? size.default_cpus ?? '—') : '—',
+    ram: size ? parseMemGi(size.memory || size.default_memory) : '—',
+    disk: size ? parseDiskGb(size.disk || size.default_disk_size) : '—',
     uses: '—',
     ci: '—',
     catalog: true,

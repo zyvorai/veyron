@@ -55,7 +55,7 @@ export function MonitoringPage() {
         : '—',
     ],
     ['Nodes', headroom?.nodes ?? caps?.nodes?.count ?? '—'],
-    ['Live migration', caps?.live_migration ? 'yes' : caps ? 'no' : '—'],
+    ['Live migration', caps?.live_migration ? 'Available' : caps ? 'Not available' : '—'],
   ];
 
   return (
@@ -297,6 +297,13 @@ export function DrPage({ showToast }) {
 
 const fmtCount = (n) => (typeof n === 'number' ? n.toLocaleString() : '—');
 
+function connectionHeadline(status) {
+  if (!status) return 'Checking…';
+  if (status.api_authorized) return 'Connected';
+  if (status.reachable) return 'Unauthorized';
+  return status.configured ? 'Unreachable' : 'Not installed';
+}
+
 export function NetraPage() {
   const [status, setStatus] = useState(null);
   const [flows, setFlows] = useState(null);
@@ -333,7 +340,7 @@ export function NetraPage() {
   }, []);
 
   const ok = Boolean(status?.api_authorized);
-  const headline = ok ? 'Connected' : status?.reachable ? 'Unauthorized' : status?.configured ? 'Unreachable' : 'Not installed';
+  const headline = connectionHeadline(status);
   const verdicts = Object.entries(flows?.verdicts || {}).sort((x, y) => y[1] - x[1]);
   const protocols = Object.entries(flows?.protocols || {}).sort((x, y) => y[1] - x[1]);
   const drops = flows?.dropReasons || [];
@@ -353,10 +360,12 @@ export function NetraPage() {
           <div className="kicker">Connection</div>
           <h2>{headline}</h2>
           <p>
-            {status?.message ||
-              (status?.base_url
-                ? `${status.base_url}${status.source === 'discovered' ? ' (found in netra-system)' : ''}`
-                : 'Install Netra in netra-system or set VEYRON_NETRA_URL on the API.')}
+            {!status
+              ? 'Looking for Netra in this cluster.'
+              : status.message ||
+                (status.base_url
+                  ? `${status.base_url}${status.source === 'discovered' ? ' (found in netra-system)' : ''}`
+                  : 'Install Netra in netra-system or set VEYRON_NETRA_URL on the API.')}
           </p>
           <div className="rows" style={{ marginTop: 20 }}>
             <button type="button" disabled>
@@ -404,7 +413,7 @@ export function NetraPage() {
       {ok && (
         <section className="apple-band">
           <div className="apple-chapter">
-            <div className="kicker">Traffic · last {fmtCount(flows?.total)} flows</div>
+            <div className="kicker">Traffic · {flows ? `last ${fmtCount(flows.total)} flows` : 'loading'}</div>
             <div className="rows">
               {verdicts.map(([v, n]) => (
                 <button type="button" key={`v-${v}`} disabled>
@@ -421,8 +430,10 @@ export function NetraPage() {
               ))}
               {!verdicts.length && (
                 <button type="button" disabled>
-                  <b>No flows sampled</b>
-                  <span className="why">Netra returned an empty window.</span>
+                  <b>{flows ? 'No flows sampled' : busy ? 'Sampling flows…' : 'Flow summary unavailable'}</b>
+                  <span className="why">
+                    {flows ? 'Netra returned an empty window.' : busy ? 'Asking Netra for recent flows.' : 'See the error above.'}
+                  </span>
                 </button>
               )}
             </div>
@@ -534,7 +545,7 @@ export function PaqtraPage() {
   };
 
   const ok = Boolean(status?.api_authorized);
-  const headline = ok ? 'Connected' : status?.reachable ? 'Unauthorized' : status?.configured ? 'Unreachable' : 'Not installed';
+  const headline = connectionHeadline(status);
   const score = posture?.posture;
   const unprotected = posture?.breakdown?.namespaces_without_policies || [];
 
@@ -552,10 +563,12 @@ export function PaqtraPage() {
           <div className="kicker">Connection</div>
           <h2>{headline}</h2>
           <p>
-            {status?.message ||
-              (status?.base_url
-                ? `${status.base_url}${status.source === 'discovered' ? ' (found in the paqtra namespace)' : ''}`
-                : 'Install Paqtra or set VEYRON_PAQTRA_URL on the API.')}
+            {!status
+              ? 'Looking for Paqtra in this cluster.'
+              : status.message ||
+                (status.base_url
+                  ? `${status.base_url}${status.source === 'discovered' ? ' (found in the paqtra namespace)' : ''}`
+                  : 'Install Paqtra or set VEYRON_PAQTRA_URL on the API.')}
           </p>
           <div className="rows" style={{ marginTop: 20 }}>
             <button type="button" disabled>

@@ -456,26 +456,30 @@ async fn get_paqtra_status(State(state): State<SharedState>) -> Json<PaqtraStatu
         .map(|u| u.replacen("http://", "https://", 1));
     }
 
-    let Some(health) = probe_health(&base).await else {
+    let (health, creds, cilium, cluster) = tokio::join!(
+        probe_health(&base),
+        credentials(&kube),
+        paqtra_get_json(&kube, &base, "/api/v1/cilium/status", &[]),
+        paqtra_get_json(&kube, &base, "/api/v1/cluster/health", &[]),
+    );
+    let Some(health) = health else {
         out.message = Some(format!("Paqtra health probe failed at {base}/health"));
         return Json(out);
     };
     out.reachable = true;
     apply_health(&mut out, &health);
-    out.credentials_source = credentials(&kube).await.map(|c| c.source.to_string());
-
-    match paqtra_get_json(&kube, &base, "/api/v1/cilium/status", &[]).await {
-        Ok(cilium) => {
-            out.api_authorized = true;
-            out.cilium_agents_ready = cilium.get("healthy").and_then(|v| v.as_u64());
-            out.cilium_agents_total = cilium.get("total").and_then(|v| v.as_u64());
-        }
+    out.credentials_source = creds.map(|c| c.source.to_string());
+    let cilium = match cilium {
+        Ok(c) => c,
         Err(e) => {
             out.message = Some(e.message());
             return Json(out);
         }
-    }
-    if let Ok(cluster) = paqtra_get_json(&kube, &base, "/api/v1/cluster/health", &[]).await {
+    };
+    out.api_authorized = true;
+    out.cilium_agents_ready = cilium.get("healthy").and_then(|v| v.as_u64());
+    out.cilium_agents_total = cilium.get("total").and_then(|v| v.as_u64());
+    if let Ok(cluster) = cluster {
         out.health_score = cluster.get("score").and_then(|v| v.as_f64());
     }
     Json(out)

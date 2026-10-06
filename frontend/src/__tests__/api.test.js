@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asArray, mapVm, parseCount, parseMemGi, unwrap } from '../api.js';
+import { asArray, mapNode, mapVm, parseCount, parseMemGi, relTime, tidyEventMessage, unwrap } from '../api.js';
 
 describe('unwrap / asArray', () => {
   it('unwraps the success envelope', () => {
@@ -42,5 +42,26 @@ describe('mapVm', () => {
 
   it('falls back to defaults for sparse payloads', () => {
     expect(mapVm({}, 3)).toMatchObject({ id: 'default/vm-3', status: 'Unknown' });
+  });
+});
+
+describe('audit mapping fixes', () => {
+  it('does not invent a disk size from a PVC reference or N/A', () => {
+    const vm = mapVm({ name: 'a', disk: 'pvc:e2e-root-2', host: 'N/A', ip: 'none' }, 0);
+    expect(vm).toMatchObject({ disk: '—', diskSrc: 'pvc:e2e-root-2', host: '—', ip: '—' });
+    expect(mapVm({ name: 'b', disk_gb: '20Gi' }, 0).disk).toBe(20);
+  });
+
+  it('reports host usage as null when metrics-server has no data', () => {
+    expect(mapNode({ name: 'n1' }, 0).cpu).toBeNull();
+    expect(mapNode({ name: 'n1', cpu_percent: 98.7 }, 0).cpu).toBe(99);
+  });
+
+  it('rewrites name_ns(uid) event subjects to ns/name', () => {
+    expect(tidyEventMessage('Back-off restarting web_prod(0f8e2c1a-1b2c-4d5e-8f90-123456789abc) container')).toContain('prod/web');
+  });
+
+  it('formats relative times', () => {
+    expect(relTime(new Date(Date.now() - 5 * 60_000).toISOString())).toBe('5m ago');
   });
 });

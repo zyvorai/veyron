@@ -7,6 +7,7 @@ import {
 export const RES_META = {
   vms: {
     l: 'Virtual machines',
+    empty: 'No machines yet.',
     I: Monitor,
     kind: 'VirtualMachine',
     cols: [
@@ -17,13 +18,14 @@ export const RES_META = {
       ['disk', 'Disk', 'n', ' GB'],
       ['host', 'Host', 'm'],
       ['ip', 'IP', 'm'],
-      ['age', 'Uptime', 'n'],
+      ['age', 'Age', 'n'],
     ],
     insp: [
       ['Guest OS', 'os'],
       ['Host', 'host'],
       ['IP', 'ip'],
-      ['Uptime', 'age'],
+      ['Disk', 'diskSrc'],
+      ['Age', 'age'],
       ['Namespace', 'ns'],
     ],
     spark: true,
@@ -32,6 +34,7 @@ export const RES_META = {
   },
   hosts: {
     l: 'Hosts',
+    empty: 'No hosts reported.',
     I: Server,
     kind: 'Host',
     cols: [
@@ -41,19 +44,20 @@ export const RES_META = {
       ['mem', 'Memory', 'meter'],
       ['vms', 'VMs', 'n'],
       ['kernel', 'Kernel', 'm'],
-      ['age', 'Uptime', 'n'],
+      ['age', 'Age', 'n'],
     ],
     insp: [
       ['Kernel', 'kernel'],
       ['Cores', 'cores'],
       ['Memory', 'memTotal'],
       ['VMs', 'vms'],
-      ['Uptime', 'age'],
+      ['Age', 'age'],
     ],
     acts: ['cordon', 'uncordon', 'reboot'],
   },
   gpus: {
     l: 'GPUs',
+    empty: 'No GPUs advertised.',
     I: Cpu,
     kind: 'GPU',
     cols: [
@@ -75,6 +79,7 @@ export const RES_META = {
   },
   images: {
     l: 'Images & ISOs',
+    empty: 'No images yet.',
     I: Disc3,
     kind: 'Image',
     cols: [
@@ -103,6 +108,7 @@ export const RES_META = {
   },
   pods: {
     l: 'Pods',
+    empty: 'No active pods.',
     I: Hexagon,
     kind: 'Pod',
     cols: [
@@ -124,6 +130,7 @@ export const RES_META = {
   },
   templates: {
     l: 'Template Foundry',
+    empty: 'No templates found.',
     I: Package,
     kind: 'Template',
     cols: [
@@ -151,6 +158,7 @@ export const RES_META = {
   },
   migrations: {
     l: 'Migrations',
+    empty: 'No migrations in flight.',
     I: ArrowLeftRight,
     kind: 'Migration',
     cols: [
@@ -173,6 +181,7 @@ export const RES_META = {
   },
   pvcs: {
     l: 'Storage',
+    empty: 'No volumes yet.',
     I: HardDrive,
     kind: 'PersistentVolumeClaim',
     cols: [
@@ -205,6 +214,7 @@ export const RES_META = {
   },
   snapshots: {
     l: 'Snapshots',
+    empty: 'No snapshots yet.',
     I: Camera,
     kind: 'Snapshot',
     cols: [
@@ -223,6 +233,7 @@ export const RES_META = {
   },
   backups: {
     l: 'Backups',
+    empty: 'No backup policies yet.',
     I: Archive,
     kind: 'Backup',
     cols: [
@@ -242,6 +253,7 @@ export const RES_META = {
   },
   atlas: {
     l: 'Atlas',
+    empty: 'No Atlas volumes yet.',
     I: Database,
     kind: 'AtlasVolume',
     cols: [
@@ -270,6 +282,7 @@ export const RES_META = {
   },
   networks: {
     l: 'Networks',
+    empty: 'No extra networks.',
     I: Network,
     kind: 'Network',
     cols: [
@@ -292,6 +305,7 @@ export const RES_META = {
   },
   alerts: {
     l: 'Alerts',
+    empty: 'Nothing is firing.',
     I: Bell,
     kind: 'Alert',
     cols: [
@@ -306,12 +320,13 @@ export const RES_META = {
       ['Severity', 'severity'],
       ['Message', 'message'],
       ['Source', 'source'],
-      ['Fired', 'age'],
+      ['Fired', 'firedAt'],
     ],
     acts: ['resolve'],
   },
   soc: {
     l: 'Security',
+    empty: 'No detections.',
     I: Shield,
     kind: 'Detection',
     cols: [

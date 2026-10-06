@@ -25,6 +25,7 @@ export function Status({ s }) {
 }
 
 export function Meter({ v }) {
+  if (v == null || v === '—') return <span className="dim">—</span>;
   const n = Number(v) || 0;
   return (
     <>

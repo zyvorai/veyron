@@ -267,12 +267,16 @@ async fn get_netra_status(State(state): State<SharedState>) -> Json<NetraStatusR
         .map(|u| u.replacen("http://", "https://", 1));
     }
 
-    out.reachable = probe_healthz(&base).await;
+    let (healthy, status) = tokio::join!(
+        probe_healthz(&base),
+        netra_get(&base, "/api/v1/status", &[])
+    );
+    out.reachable = healthy;
     if !out.reachable {
         out.message = Some(format!("Netra health probe failed at {base}/healthz"));
         return Json(out);
     }
-    match netra_get(&base, "/api/v1/status", &[]).await {
+    match status {
         Ok(r) if r.status().is_success() => {
             out.api_authorized = true;
             if let Ok(body) = r.json::<serde_json::Value>().await {
@@ -296,7 +300,7 @@ async fn get_netra_flow_summary(
     State(state): State<SharedState>,
     Query(q): Query<NetraFlowsQuery>,
 ) -> impl IntoResponse {
-    let number = q.number.unwrap_or(500).clamp(1, 5000);
+    let number = q.number.unwrap_or(200).clamp(1, 5000);
     let mut pairs = vec![("number", number.to_string())];
     pairs.extend(ns_pair(q.namespace));
     proxy_netra_json(&state, "/api/v1/flows/summary", &pairs).await

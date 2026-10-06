@@ -14,7 +14,14 @@ import { PageHero } from './PageHero.jsx';
 import { FleetHero } from './FleetHero.jsx';
 import { Reveal, useSeries, PulseFigure, OsBadge, osInfo, EmptyArt } from './story.jsx';
 
-export function Mission({ data, go, onCreate, onConsole, healthOk }) {
+const HOT_PCT = 90;
+
+function listJoin(items) {
+  const xs = [...new Set(items.filter(Boolean))];
+  return xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
+}
+
+export function Mission({ data, go, onCreate, onConsole, healthOk, podSummary }) {
   const vms = data.vms?.rows || [];
   const hosts = data.hosts?.rows || [];
   const run = vms.filter((v) => v.status === 'Running').length;
@@ -23,7 +30,11 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
     ...hosts.filter((h) => ['Cordoned', 'NotReady'].includes(h.status)).map((h) => ['hosts', h]),
     ...(data.pvcs?.rows || []).filter((p) => p.status === 'Pending').map((p) => ['pvcs', p]),
   ];
-  const failedPods = (data.pods?.rows || []).filter((p) => p.status === 'Failed').length;
+  const hot = hosts.filter((h) => (h.cpu ?? 0) >= HOT_PCT || (h.mem ?? 0) >= HOT_PCT);
+  for (const h of hot) {
+    attn.push(['hosts', { ...h, status: 'Warning', why: `Under pressure: CPU ${h.cpu ?? 0}% · memory ${h.mem ?? 0}%` }]);
+  }
+  const failedPods = podSummary?.failed ?? 0;
   const attnRows = failedPods
     ? [...attn.slice(0, 7), ['pods', { id: 'failed-pods', name: `${failedPods.toLocaleString()} failed pod${failedPods === 1 ? '' : 's'}`, status: 'Failed', why: 'Evicted or crashed — safe to clean up' }]]
     : attn;
@@ -35,18 +46,24 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
     Cordoned: 'Cordoned for maintenance',
     NotReady: 'Host not ready',
   };
-  const cpuAvg = hosts.length ? Math.round(hosts.reduce((a, h) => a + (Number(h.cpu) || 0), 0) / hosts.length) : 0;
+  const measured = hosts.filter((h) => h.cpu != null);
+  const cpuAvg = measured.length ? Math.round(measured.reduce((a, h) => a + h.cpu, 0) / measured.length) : null;
   const memGiB = vms.filter((v) => v.status === 'Running').reduce((a, v) => a + (Number(v.ram) || 0), 0);
   const alertCount = (data.alerts?.rows || []).length + attn.length;
-  const series = useSeries({ run, cpu: cpuAvg, mem: memGiB, alerts: alertCount });
+  const series = useSeries({ run, cpu: cpuAvg ?? 0, mem: memGiB, alerts: alertCount });
 
-  const headline = !vms.length
-    ? 'Your private cloud is ready.'
-    : attn.length
-      ? `${attn.length} thing${attn.length === 1 ? '' : 's'} need${attn.length === 1 ? 's' : ''} a look.`
-      : run === vms.length
-        ? 'Everything’s running.'
-        : 'Everything’s healthy.';
+  const needs = attnRows.length;
+  const headline = !healthOk
+    ? 'Can’t reach the cluster reliably.'
+    : hot.length
+      ? `${hot.length === 1 ? 'A host is' : `${hot.length} hosts are`} under pressure.`
+      : needs
+        ? `${needs} thing${needs === 1 ? '' : 's'} need${needs === 1 ? 's' : ''} a look.`
+        : !vms.length
+          ? 'Your private cloud is ready.'
+          : run === vms.length
+            ? 'Everything’s running.'
+            : 'Everything’s healthy.';
   const templates = (data.templates?.rows || []).filter((t) => !/^(ubuntu|debian|fedora|centos|almalinux|rocky|opensuse|windows)$/.test(t.name));
   const seenFamily = new Set();
   const featured = templates
@@ -100,8 +117,15 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
       <section className="pulse-band">
         <Reveal className="pulse-grid">
           <PulseFigure label="Machines running" value={run} unit={`/${vms.length}`} series={series.run} tone="sky" />
-          <PulseFigure label="Host CPU" value={cpuAvg} unit="%" series={series.cpu} tone="violet" sub={`${hosts.length} host${hosts.length === 1 ? '' : 's'}`} />
-          <PulseFigure label="Memory in use" value={memGiB} unit=" GiB" series={series.mem} tone="emerald" />
+          <PulseFigure
+            label="Host CPU"
+            value={cpuAvg ?? '—'}
+            unit={cpuAvg == null ? '' : '%'}
+            series={series.cpu}
+            tone={cpuAvg != null && cpuAvg >= HOT_PCT ? 'amber' : 'violet'}
+            sub={cpuAvg == null ? 'No metrics-server data' : `${hosts.length} host${hosts.length === 1 ? '' : 's'}`}
+          />
+          <PulseFigure label="VM memory" value={memGiB} unit=" GiB" series={series.mem} tone="emerald" sub="Allocated to running machines" />
           <PulseFigure label="Alerts" value={alertCount} series={series.alerts} tone={alertCount ? 'amber' : 'emerald'} />
         </Reveal>
       </section>
@@ -158,7 +182,7 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
           <Reveal className="apple-chapter">
             <div className="kicker">Templates</div>
             <h2>Current releases, ready to boot.</h2>
-            <p>Ubuntu 26.04, Debian 13, Fedora 44, EL10 and Windows Server 2025, with cloud-init and the guest agent built in.</p>
+            <p>{listJoin(featured.map((t) => { const o = osInfo(t.name); return `${o.label} ${o.version || ''}`.trim(); }))}, with cloud-init and the guest agent built in.</p>
             <div className="os-shelf">
               {featured.map((t) => {
                 const o = osInfo(t.name);
@@ -199,7 +223,7 @@ export function Mission({ data, go, onCreate, onConsole, healthOk }) {
                     <i style={{ width: `${Math.min(100, Number(h.mem) || 0)}%` }} data-hot={Number(h.mem) > 85 || undefined} />
                   </span>
                   <span className="cap-num">
-                    {h.cpu}% · {h.mem}%
+                    {h.cpu == null ? '—' : `${h.cpu}%`} · {h.mem == null ? '—' : `${h.mem}%`}
                   </span>
                 </button>
               ))}
@@ -257,7 +281,7 @@ export function ConsoleHub({ vms, onOpen, onCreate }) {
               <span className="screen-meta">
                 <b>{v.name}</b>
                 <small>
-                  {v.os || '—'} · {v.ip || '—'}
+                  {[v.os && v.os !== '—' ? v.os : null, v.ip && v.ip !== '—' ? v.ip : null].filter(Boolean).join(' · ') || v.status}
                 </small>
               </span>
             </Reveal>
@@ -268,39 +292,45 @@ export function ConsoleHub({ vms, onOpen, onCreate }) {
   );
 }
 
+function headroomLine(h) {
+  const part = (r, label) =>
+    r && typeof r.headroom === 'number' ? `${label} ${r.headroom.toLocaleString()} of ${r.total.toLocaleString()} ${r.unit} free` : null;
+  return (
+    [
+      part(h.cpu, 'CPU'),
+      part(h.memory, 'memory'),
+      typeof h.nodes === 'number' && `${h.nodes} node${h.nodes === 1 ? '' : 's'}`,
+      typeof h.additional_avg_vms === 'number' && `room for about ${h.additional_avg_vms} more average VMs`,
+    ]
+      .filter(Boolean)
+      .join(' · ') || 'Not available'
+  );
+}
+
 export function SettingsPage({ theme, setTheme }) {
   const [policy, setPolicy] = useState({ enabled: false, cooldown_secs: 600 });
   const [policyBusy, setPolicyBusy] = useState(false);
-  const [integrations, setIntegrations] = useState([]);
+  const [integrations, setIntegrations] = useState(null);
   const [about, setAbout] = useState({ versions: null, caps: null });
   const [headroom, setHeadroom] = useState(null);
   const [err, setErr] = useState('');
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const [p, integ, versions, caps, hr] = await Promise.all([
-          api.getSelfHealingPolicy().catch(() => ({ enabled: false })),
-          api.integrationsStatus().catch(() => ({ integrations: [] })),
-          api.platformVersions().catch(() => null),
-          api.platformCapabilities().catch(() => null),
-          api.capacityHeadroom().catch(() => null),
-        ]);
-        if (cancelled) return;
-        setPolicy({
-          enabled: !!p.enabled,
-          namespaces: p.namespaces || 'all',
-          cooldown_secs: p.cooldown_secs || 600,
-        });
-        const list = Array.isArray(integ?.integrations) ? integ.integrations : Array.isArray(integ) ? integ : [];
-        setIntegrations(list);
-        setAbout({ versions, caps });
-        setHeadroom(hr);
-      } catch (e) {
-        if (!cancelled) setErr(e.message || String(e));
-      }
-    })();
+    const set = (fn) => (v) => {
+      if (!cancelled) fn(v);
+    };
+    api
+      .getSelfHealingPolicy()
+      .catch(() => ({ enabled: false }))
+      .then(set((p) => setPolicy({ enabled: !!p.enabled, namespaces: p.namespaces || 'all', cooldown_secs: p.cooldown_secs || 600 })));
+    api
+      .integrationsStatus()
+      .catch(() => ({ integrations: [] }))
+      .then(set((integ) => setIntegrations(Array.isArray(integ?.integrations) ? integ.integrations : Array.isArray(integ) ? integ : [])));
+    api.platformVersions().catch(() => null).then(set((versions) => setAbout((a) => ({ ...a, versions }))));
+    api.platformCapabilities().catch(() => null).then(set((caps) => setAbout((a) => ({ ...a, caps }))));
+    api.capacityHeadroom().catch(() => null).then(set(setHeadroom));
     return () => {
       cancelled = true;
     };
@@ -320,7 +350,7 @@ export function SettingsPage({ theme, setTheme }) {
   };
 
   const findInteg = (ids) =>
-    integrations.find((i) => ids.includes(String(i.id || '').toLowerCase()) || ids.includes(String(i.name || '').toLowerCase()));
+    (integrations || []).find((i) => ids.includes(String(i.id || '').toLowerCase()) || ids.includes(String(i.name || '').toLowerCase()));
 
   const netra = findInteg(['netra']);
   const paqtra = findInteg(['paqtra']);
@@ -328,10 +358,14 @@ export function SettingsPage({ theme, setTheme }) {
   const oidc = findInteg(['oidc', 'sso']);
 
   const integRow = (n, d, I, item) => {
-    const ok = item?.configured || item?.probe === 'ok';
-    const detail = item?.configured
-      ? item.endpoint || item.probe || 'Configured'
-      : d;
+    const detail = item?.configured ? item.endpoint || 'Configured' : d;
+    const state = !integrations
+      ? <span className="dim">Checking…</span>
+      : !item?.configured
+        ? <span className="dim">Not configured</span>
+        : item.probe === 'failed'
+          ? <Status s="Failed" />
+          : <Status s="Healthy" />;
     return (
       <div className="srow2" key={n}>
         <I size={16} style={{ color: 'var(--accent)' }} />
@@ -339,7 +373,7 @@ export function SettingsPage({ theme, setTheme }) {
           <b>{n}</b>
           <small>{detail}</small>
         </div>
-        <span className="r">{ok ? <Status s="Healthy" /> : <Status s="Unknown" />}</span>
+        <span className="r">{state}</span>
       </div>
     );
   };
@@ -364,6 +398,8 @@ export function SettingsPage({ theme, setTheme }) {
     ? [
         verLabel(kvVersion.kairon || kvVersion.kairon_version, null) && `Kairon ${verLabel(kvVersion.kairon || kvVersion.kairon_version, null)}`,
         verLabel(kvVersion.veyron || kvVersion.version, null),
+        verLabel(kvVersion.kubevirt, null) && `KubeVirt ${verLabel(kvVersion.kubevirt, null)}`,
+        verLabel(kvVersion.cdi, null) && `CDI ${verLabel(kvVersion.cdi, null)}`,
       ]
         .filter(Boolean)
         .join(' · ') || 'Platform versions available'
@@ -480,10 +516,7 @@ export function SettingsPage({ theme, setTheme }) {
             <div className="srow2">
               <div>
                 <b>Capacity headroom</b>
-                <small>
-                  {JSON.stringify(headroom).slice(0, 120)}
-                  {JSON.stringify(headroom).length > 120 ? '…' : ''}
-                </small>
+                <small>{headroomLine(headroom)}</small>
               </div>
             </div>
           )}
@@ -794,7 +827,7 @@ export function Login({ onSubmit, error }) {
       productName="Veyron"
       eyebrow="Veyron · Zyvor"
       heroTitle="Real VMs. One console."
-      heroLede="Fleet, storage, snapshots, and day-2 operations for Kairon machines — no pods pretending to be VMs."
+      heroLede="Fleet, storage, snapshots and day-2 operations for your virtual machines."
     >
       <form className="card login-card" onSubmit={handleSubmit} noValidate>
         <h1>Sign in.</h1>

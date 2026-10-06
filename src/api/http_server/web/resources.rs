@@ -566,7 +566,12 @@ pub(super) async fn list_nodes_handler(State(state): State<SharedState>) -> impl
         s.kube_client.clone()
     };
 
-    match client.list_nodes().await {
+    let (nodes, usage, vm_counts) = tokio::join!(
+        client.list_nodes(),
+        node_usage(&client),
+        vmis_per_node(&client)
+    );
+    match nodes {
         Ok(nodes) => {
             let items: Vec<NodeItem> = nodes
                 .iter()
@@ -610,7 +615,24 @@ pub(super) async fn list_nodes_handler(State(state): State<SharedState>) -> impl
                         .and_then(|s| s.unschedulable)
                         .unwrap_or(false);
 
+                    let alloc = |k: &str| allocatable.and_then(|a| a.get(k)).map(|v| v.0.as_str());
+                    let (cpu_percent, memory_percent) = match usage.get(&name) {
+                        Some(&(cpu_n, mem_b)) => (
+                            alloc("cpu")
+                                .map(crate::utils::parse_cpu_nanocores)
+                                .and_then(|total| usage_percent(cpu_n, total)),
+                            alloc("memory")
+                                .map(crate::utils::parse_memory_bytes)
+                                .and_then(|total| usage_percent(mem_b, total)),
+                        ),
+                        None => (None, None),
+                    };
+                    let vm_count = vm_counts.get(&name).copied().unwrap_or(0);
+
                     NodeItem {
+                        cpu_percent,
+                        memory_percent,
+                        vm_count,
                         name,
                         status,
                         roles,
@@ -653,9 +675,88 @@ pub(super) async fn list_nodes_handler(State(state): State<SharedState>) -> impl
     }
 }
 
-pub(super) async fn list_pods_handler(
+#[derive(Debug, Deserialize)]
+pub(super) struct PodListQuery {
+    namespace: Option<String>,
+    /// `true` drops Succeeded and Failed pods (completed jobs, evicted or dead pods).
+    #[serde(default)]
+    active: bool,
+}
+
+#[derive(Serialize, Default)]
+pub(super) struct PodSummary {
+    total: usize,
+    running: usize,
+    pending: usize,
+    succeeded: usize,
+    failed: usize,
+    unknown: usize,
+    /// Failed pods per namespace, largest first (top 10).
+    failed_by_namespace: Vec<(String, usize)>,
+}
+
+fn summarize_pods(pods: &[k8s_openapi::api::core::v1::Pod]) -> PodSummary {
+    let mut out = PodSummary {
+        total: pods.len(),
+        ..Default::default()
+    };
+    let mut failed_ns: HashMap<String, usize> = HashMap::new();
+    for pod in pods {
+        match pod.status.as_ref().and_then(|s| s.phase.as_deref()) {
+            Some("Running") => out.running += 1,
+            Some("Pending") => out.pending += 1,
+            Some("Succeeded") => out.succeeded += 1,
+            Some("Failed") => {
+                out.failed += 1;
+                *failed_ns
+                    .entry(pod.metadata.namespace.clone().unwrap_or_default())
+                    .or_default() += 1;
+            }
+            _ => out.unknown += 1,
+        }
+    }
+    let mut by_ns: Vec<_> = failed_ns.into_iter().collect();
+    by_ns.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    by_ns.truncate(10);
+    out.failed_by_namespace = by_ns;
+    out
+}
+
+/// Pod counts by phase — what Mission Control needs, without shipping every pod.
+pub(super) async fn pods_summary_handler(
     State(state): State<SharedState>,
     Query(query): Query<VmQuery>,
+) -> impl IntoResponse {
+    let (client, namespace) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let ns = query.namespace.as_deref().unwrap_or("all");
+    let ns = if ns.is_empty() {
+        namespace.as_str()
+    } else {
+        ns
+    };
+    let pods = if ns == "all" {
+        client.list_all_pods().await
+    } else {
+        client.list_pods(ns).await
+    };
+    match pods {
+        Ok(pods) => {
+            let ctx = req_ctx(HttpMethod::GET, "/api/v1/pods/summary");
+            ok_json(&ApiResponse::success(
+                &summarize_pods(&pods),
+                &ctx.request_id,
+            ))
+        }
+        Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+    }
+}
+
+pub(super) async fn list_pods_handler(
+    State(state): State<SharedState>,
+    Query(query): Query<PodListQuery>,
 ) -> impl IntoResponse {
     let (client, namespace) = {
         let s = state.read().await;
@@ -673,6 +774,13 @@ pub(super) async fn list_pods_handler(
         Ok(pods) => {
             let items: Vec<PodItem> = pods
                 .iter()
+                .filter(|pod| {
+                    !query.active
+                        || !matches!(
+                            pod.status.as_ref().and_then(|s| s.phase.as_deref()),
+                            Some("Succeeded" | "Failed")
+                        )
+                })
                 .map(|pod| {
                     let meta = &pod.metadata;
                     let spec = pod.spec.as_ref();
@@ -686,8 +794,13 @@ pub(super) async fn list_pods_handler(
                         .and_then(|s| s.container_statuses.as_ref())
                         .map(|cs| cs.iter().map(|c| c.restart_count as u32).sum())
                         .unwrap_or(0);
+                    let ready_count = status
+                        .and_then(|s| s.container_statuses.as_ref())
+                        .map(|cs| cs.iter().filter(|c| c.ready).count())
+                        .unwrap_or(0);
 
                     PodItem {
+                        ready: format!("{ready_count}/{}", containers.len()),
                         name: meta.name.clone().unwrap_or_default(),
                         namespace: meta.namespace.clone().unwrap_or_default(),
                         phase: status
@@ -1121,6 +1234,59 @@ pub(super) struct NodeItem {
     age: String,
     /// True when the node is cordoned (`spec.unschedulable`).
     unschedulable: bool,
+    /// Live usage over allocatable from metrics-server; absent when metrics-server is not installed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cpu_percent: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    memory_percent: Option<f64>,
+    /// VirtualMachineInstances scheduled on this node.
+    vm_count: u32,
+}
+
+/// Per-node (CPU nanocores, memory bytes) from `metrics.k8s.io/v1beta1` NodeMetrics.
+async fn node_usage(client: &KubeClient) -> HashMap<String, (u64, u64)> {
+    let gvk = kube::api::GroupVersionKind::gvk("metrics.k8s.io", "v1beta1", "NodeMetrics");
+    let ar = kube::api::ApiResource::from_gvk(&gvk);
+    let api: kube::Api<kube::api::DynamicObject> = kube::Api::all_with(client.client(), &ar);
+    let Ok(list) = api.list(&kube::api::ListParams::default()).await else {
+        return HashMap::new();
+    };
+    list.items
+        .into_iter()
+        .filter_map(|m| {
+            let name = m.metadata.name.clone()?;
+            let usage = m.data.get("usage")?;
+            let cpu = usage.get("cpu")?.as_str()?;
+            let mem = usage.get("memory")?.as_str()?;
+            Some((
+                name,
+                (
+                    crate::utils::parse_cpu_nanocores(cpu),
+                    crate::utils::parse_memory_bytes(mem),
+                ),
+            ))
+        })
+        .collect()
+}
+
+async fn vmis_per_node(client: &KubeClient) -> HashMap<String, u32> {
+    use crate::kube::types::VirtualMachineInstance;
+    let api: kube::Api<VirtualMachineInstance> = kube::Api::all(client.client());
+    let mut counts = HashMap::new();
+    if let Ok(list) = api.list(&kube::api::ListParams::default()).await {
+        for node in list
+            .items
+            .iter()
+            .filter_map(|v| v.status.as_ref()?.node_name.clone())
+        {
+            *counts.entry(node).or_insert(0) += 1;
+        }
+    }
+    counts
+}
+
+fn usage_percent(used: u64, total: u64) -> Option<f64> {
+    (total > 0).then(|| ((used as f64 / total as f64) * 1000.0).round() / 10.0)
 }
 
 #[derive(Serialize)]
@@ -1131,6 +1297,8 @@ pub(super) struct PodItem {
     node_name: String,
     ip: String,
     containers: Vec<String>,
+    /// Ready containers over total, e.g. `1/2`.
+    ready: String,
     restarts: u32,
     age: String,
 }
@@ -1146,3 +1314,59 @@ pub(super) struct ProfileItem {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use k8s_openapi::api::core::v1::{Pod, PodStatus};
+
+    fn pod(ns: &str, phase: &str) -> Pod {
+        Pod {
+            metadata: kube::api::ObjectMeta {
+                namespace: Some(ns.into()),
+                ..Default::default()
+            },
+            status: Some(PodStatus {
+                phase: Some(phase.into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn usage_percent_rounds_and_guards_zero() {
+        assert_eq!(usage_percent(11_880, 12_000), Some(99.0));
+        assert_eq!(usage_percent(1, 3), Some(33.3));
+        assert_eq!(usage_percent(5, 0), None);
+    }
+
+    #[test]
+    fn summarize_pods_counts_phases_and_ranks_failed_namespaces() {
+        let pods = vec![
+            pod("a", "Running"),
+            pod("a", "Failed"),
+            pod("b", "Failed"),
+            pod("b", "Failed"),
+            pod("c", "Succeeded"),
+            pod("c", "Pending"),
+            pod("c", "Weird"),
+        ];
+        let s = summarize_pods(&pods);
+        assert_eq!(
+            (
+                s.total,
+                s.running,
+                s.pending,
+                s.succeeded,
+                s.failed,
+                s.unknown
+            ),
+            (7, 1, 1, 1, 3, 1)
+        );
+        assert_eq!(
+            s.failed_by_namespace,
+            vec![("b".to_string(), 2), ("a".to_string(), 1)]
+        );
+    }
+}

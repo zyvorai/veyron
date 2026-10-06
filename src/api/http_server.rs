@@ -932,6 +932,7 @@ pub mod web {
                     post(crate::api::handlers::nodes::uncordon_node),
                 )
                 .route("/api/v1/pods", get(list_pods_handler))
+                .route("/api/v1/pods/summary", get(pods_summary_handler))
                 .route("/api/v1/pods/:name/logs", get(get_pod_logs_handler))
                 .route(
                     "/api/v1/pods/:ns/:name",

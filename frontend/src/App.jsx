@@ -5,7 +5,7 @@ import {
 import {
   api, getToken, clearSession, getAuthUser, getSavedTheme, setSavedTheme, UNAUTHORIZED_EVENT,
 } from './api.js';
-import { TONE_BY_PAGE, pageLabel, pageBlurb, pageGroup } from './resources.js';
+import { TONE_BY_PAGE, PAGE_ORDER, pageLabel, pageBlurb, pageGroup } from './resources.js';
 import { useResources } from './useResources.js';
 import { Table } from './Table.jsx';
 import { Inspector, ACT } from './Inspector.jsx';
@@ -24,6 +24,39 @@ import { useFocusTrap } from './a11y.js';
 
 function warnCount(rows) {
   return (rows || []).filter((x) => ['Degraded', 'Failed', 'Pending', 'Cordoned'].includes(x.status)).length;
+}
+
+function pageFromHash() {
+  const id = window.location.hash.replace(/^#\/?/, '');
+  return PAGE_ORDER.includes(id) ? id : 'mission';
+}
+
+/** Summary figures above a resource table: [count, label, warn?]. */
+function pageMetrics(page, rows, { okRows, warnRows, podSummary, includeCompleted }) {
+  const count = (f) => rows.filter(f).length;
+  if (page === 'templates') {
+    return [
+      [rows.length, 'templates'],
+      [count((r) => r.os === 'linux'), 'Linux'],
+      [count((r) => r.os === 'windows'), 'Windows'],
+    ];
+  }
+  if (page === 'alerts' || page === 'soc') {
+    return [
+      [rows.length, 'total'],
+      [count((r) => /^warn/i.test(r.severity)), 'warning', true],
+      [count((r) => /^(crit|high|error)/i.test(r.severity)), 'critical', true],
+    ];
+  }
+  const out = [
+    [rows.length, page === 'pods' ? 'shown' : 'total'],
+    [okRows, 'healthy'],
+    [warnRows, 'need a look', true],
+  ];
+  if (page === 'pods' && !includeCompleted && podSummary) {
+    out.push([(podSummary.succeeded || 0) + (podSummary.failed || 0), 'completed hidden']);
+  }
+  return out;
 }
 
 const haystacks = new WeakMap();
@@ -78,7 +111,7 @@ export default function App() {
   const [authed, setAuthed] = useState(() => !!getToken());
   const [loginErr, setLoginErr] = useState('');
   const [user, setUser] = useState(() => getAuthUser());
-  const [page, setPage] = useState('mission');
+  const [page, setPage] = useState(pageFromHash);
   const [view, setView] = useState('list');
   const [qInput, setQInput] = useState('');
   const [q, setQ] = useState('');
@@ -108,6 +141,7 @@ export default function App() {
 
   const {
     data, errors, loading, loaded, lastLoaded, healthOk, notifications, refreshVisible,
+    podSummary, includeCompleted, setIncludeCompleted,
   } = useResources({ enabled: authed, page });
   const load = refreshVisible;
 
@@ -165,6 +199,22 @@ export default function App() {
     warnCount(data.pods.rows) +
     warnCount(data.pvcs.rows) +
     (notifications || []).filter((n) => !n.read).length;
+
+  useEffect(() => {
+    const want = `#/${page}`;
+    if (window.location.hash === want) return;
+    if (window.location.hash) window.history.pushState(null, '', want);
+    else window.history.replaceState(null, '', want);
+  }, [page]);
+
+  useEffect(() => {
+    const onHash = () => {
+      const p = pageFromHash();
+      setPage((cur) => (cur === p ? cur : p));
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
   const go = useCallback(
     (p, id) => {
@@ -534,6 +584,8 @@ export default function App() {
   const sheetTarget = sheetMode === 'logs' ? focusRow : focusRow?.name ? focusRow : null;
   const warnRows = res ? warnCount(res.rows) : 0;
   const okRows = res ? res.rows.filter((r) => ['Running', 'Ready', 'Bound', 'Healthy', 'Succeeded', 'Up'].includes(r.status)).length : 0;
+  const atlasOff = page === 'atlas' && data.atlas?.meta?.configured === false;
+  const metrics = pageMetrics(page, res?.rows || [], { okRows, warnRows, podSummary, includeCompleted });
 
   return (
     <div className="vy" data-theme={theme}>
@@ -598,7 +650,7 @@ export default function App() {
       <main className="stage" data-tone={tone} data-page={page}>
         <Suspense fallback={<div className="empty"><div><b>Loading…</b></div></div>}>
         {page === 'mission' ? (
-          <Mission data={data} go={go} onCreate={openCreate} onConsole={openConsole} healthOk={healthOk} />
+          <Mission data={data} go={go} onCreate={openCreate} onConsole={openConsole} healthOk={healthOk} podSummary={podSummary} />
         ) : page === 'settings' ? (
           <SettingsPage theme={theme} setTheme={setTheme} />
         ) : page === 'monitoring' ? (
@@ -645,6 +697,16 @@ export default function App() {
                     <LayoutGrid size={15} />
                   </button>
                 </div>
+                {page === 'pods' && (
+                  <button
+                    className="btn sm secondary"
+                    aria-pressed={includeCompleted}
+                    onClick={() => setIncludeCompleted(!includeCompleted)}
+                    title="Completed and failed pods are hidden by default"
+                  >
+                    {includeCompleted ? 'Hide completed' : 'Include completed'}
+                  </button>
+                )}
                 <button className="tb" onClick={() => load()} title="Refresh" aria-label="Refresh">
                   <RefreshCw size={15} className={loading ? 'spin' : ''} />
                 </button>
@@ -663,18 +725,12 @@ export default function App() {
                 <h2>{pageLabel(page)}.</h2>
                 <p className="res-lede">{pageBlurb(page)}</p>
                 <div className="res-metrics">
-                  <div>
-                    <b>{res.rows.length}</b>
-                    <span>total</span>
-                  </div>
-                  <div>
-                    <b>{okRows}</b>
-                    <span>healthy</span>
-                  </div>
-                  <div data-warn={warnRows > 0 || undefined}>
-                    <b>{warnRows}</b>
-                    <span>need a look</span>
-                  </div>
+                  {metrics.map(([n, label, warn]) => (
+                    <div key={label} data-warn={(warn && n > 0) || undefined}>
+                      <b>{n.toLocaleString()}</b>
+                      <span>{label}</span>
+                    </div>
+                  ))}
                   {q && (
                     <div>
                       <b>{rows.length}</b>
@@ -701,13 +757,25 @@ export default function App() {
                 <div className="empty">
                   <div>
                     <EmptyArt tone={tone} />
-                    <b>{!loaded(page) ? 'Loading…' : q ? 'Nothing matches.' : `No ${res.l.toLowerCase()} yet.`}</b>
+                    <b>
+                      {!loaded(page)
+                        ? 'Loading…'
+                        : q
+                          ? 'Nothing matches.'
+                          : atlasOff
+                            ? 'Atlas isn’t connected.'
+                            : res.empty || `No ${res.l.toLowerCase()} yet.`}
+                    </b>
                     <p className="lede">
                       {!loaded(page)
                         ? 'Fetching live data from your cluster.'
                         : q
                           ? 'Try a different search, or clear it.'
-                          : page === 'vms'
+                          : atlasOff
+                            ? 'Set VEYRON_ATLAS_URL (and VEYRON_ATLAS_TOKEN if Atlas requires auth) on the Veyron deployment to enable Ceph snapshots and off-cluster backups.'
+                            : page === 'pods' && !includeCompleted
+                              ? 'Completed pods are hidden. Use “Include completed” to show them.'
+                              : page === 'vms'
                             ? 'Create a machine from a current OS template. It takes about a minute.'
                             : pageBlurb(page)}
                     </p>

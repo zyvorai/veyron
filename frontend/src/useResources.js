@@ -11,7 +11,12 @@ import { emptyData, RES_META } from './resources.js';
 export const REFRESH_MS = 30_000;
 
 /** Resources Mission Control and the nav counts need first. */
-export const CORE_KEYS = ['vms', 'hosts', 'pods', 'pvcs', 'alerts', 'templates'];
+export const CORE_KEYS = ['vms', 'hosts', 'pvcs', 'alerts', 'templates'];
+
+/** Pods are loaded only on their own page; listing every pod can be megabytes. */
+const LAZY_KEYS = new Set(['pods']);
+
+const pods = { includeCompleted: false };
 
 async function extraRows(key, fetchRows, mapFn) {
   try {
@@ -38,7 +43,7 @@ const LOADERS = {
     const list = Array.isArray(d?.nodes) ? d.nodes : Array.isArray(d) ? d : [];
     return { rows: list.map(mapGpu) };
   },
-  pods: async () => ({ rows: ((await api.listPods('all')) || []).map(mapPod) }),
+  pods: async () => ({ rows: ((await api.listPods('all', { active: !pods.includeCompleted })) || []).map(mapPod) }),
   pvcs: async () => {
     const [rows, extra] = await Promise.all([
       api.listPvcs('all'),
@@ -58,11 +63,13 @@ const LOADERS = {
   networks: async () => ({ rows: ((await api.listNads('all')) || []).map(mapNetwork) }),
   templates: async () => {
     const catalogP = api.listCatalogTemplates().catch(() => null);
+    const builtinP = api.listTemplates().catch(() => null);
     const extraP = extraRows('templates', () => api.listCatalogProfiles(), mapProfile);
-    const catalog = await catalogP;
-    const raw = catalog?.length ? catalog : await api.listTemplates();
+    const [catalog, builtin] = await Promise.all([catalogP, builtinP]);
+    const sizing = Object.fromEntries((builtin || []).map((t) => [t.name, t]));
+    const raw = catalog?.length ? catalog : builtin;
     const rows = (raw || []).map((t, i) =>
-      t.family != null || t.tags != null ? mapCatalogTemplate(t, i) : mapTemplate(t, i),
+      t.family != null || t.tags != null ? mapCatalogTemplate(t, i, sizing) : mapTemplate(t, i),
     );
     return { rows, extra: await extraP };
   },
@@ -70,15 +77,18 @@ const LOADERS = {
   alerts: async () => ({ rows: ((await api.listAlerts()) || []).map(mapAlert) }),
   soc: async () => ({ rows: ((await api.listSocDetections()) || []).map(mapSoc) }),
   atlas: async () => {
+    const status = await api.atlasStatus().catch(() => null);
+    if (status && status.configured === false) return { rows: [], meta: { configured: false } };
     const [rows, extra] = await Promise.all([
       api.listAtlasVolumes(),
       extraRows('atlas', () => api.listAtlasSnapshots(), mapAtlasSnap),
     ]);
-    return { rows: (rows || []).map(mapAtlasVol), extra };
+    return { rows: (rows || []).map(mapAtlasVol), extra, meta: { configured: true } };
   },
 };
 
 export const ALL_KEYS = Object.keys(LOADERS);
+const BACKGROUND_KEYS = ALL_KEYS.filter((k) => !LAZY_KEYS.has(k));
 
 /**
  * Progressive resource loading: every resource renders as soon as its own request
@@ -90,6 +100,9 @@ export function useResources({ enabled, page }) {
   const [errors, setErrors] = useState({});
   const [pending, setPending] = useState(0);
   const [healthOk, setHealthOk] = useState(true);
+  const [podSummary, setPodSummary] = useState(null);
+  const [includeCompleted, setIncludeCompletedState] = useState(false);
+  const healthMisses = useRef(0);
   const [notifications, setNotifications] = useState([]);
   const [lastLoaded, setLastLoaded] = useState(0);
   const loadedAt = useRef({});
@@ -101,8 +114,8 @@ export function useResources({ enabled, page }) {
     inFlight.current.add(key);
     setPending((n) => n + 1);
     try {
-      const { rows, extra } = await loader();
-      setData((prev) => ({ ...prev, [key]: { ...prev[key], rows, ...(extra ? { extra } : {}) } }));
+      const { rows, extra, meta } = await loader();
+      setData((prev) => ({ ...prev, [key]: { ...prev[key], rows, ...(extra ? { extra } : {}), ...(meta ? { meta } : {}) } }));
       setErrors((prev) => {
         if (!(key in prev)) return prev;
         const next = { ...prev };
@@ -120,20 +133,30 @@ export function useResources({ enabled, page }) {
     }
   }, []);
 
+  const pageRef = useRef(page);
+  pageRef.current = page;
   const refresh = useCallback(
-    (keys = ALL_KEYS) => {
+    (keys = LAZY_KEYS.has(pageRef.current) ? [...BACKGROUND_KEYS, pageRef.current] : BACKGROUND_KEYS) => {
       if (!getToken()) return Promise.resolve();
       return Promise.all([
         ...keys.map(loadKey),
-        api.health().then(() => setHealthOk(true)).catch(() => setHealthOk(false)),
+        api
+          .health()
+          .then(() => {
+            healthMisses.current = 0;
+            setHealthOk(true);
+          })
+          .catch(() => {
+            healthMisses.current += 1;
+            if (healthMisses.current >= 2) setHealthOk(false);
+          }),
+        api.podSummary().then(setPodSummary).catch(() => {}),
         api.listNotifications().then(setNotifications).catch(() => {}),
       ]);
     },
     [loadKey],
   );
 
-  const pageRef = useRef(page);
-  pageRef.current = page;
   const visibleKeys = useCallback(() => {
     const keys = new Set(CORE_KEYS);
     if (LOADERS[pageRef.current]) keys.add(pageRef.current);
@@ -149,7 +172,7 @@ export function useResources({ enabled, page }) {
     }
     let cancelled = false;
     refresh(visibleKeys()).then(() => {
-      if (!cancelled) refresh(ALL_KEYS.filter((k) => !visibleKeys().includes(k)));
+      if (!cancelled) refresh(BACKGROUND_KEYS.filter((k) => !visibleKeys().includes(k)));
     });
     const tick = () => {
       if (document.visibilityState === 'visible') refresh(visibleKeys());
@@ -168,8 +191,20 @@ export function useResources({ enabled, page }) {
     if (Date.now() - (loadedAt.current[page] || 0) > REFRESH_MS) loadKey(page);
   }, [enabled, page, loadKey]);
 
+  const setIncludeCompleted = useCallback(
+    (v) => {
+      pods.includeCompleted = v;
+      setIncludeCompletedState(v);
+      loadKey('pods');
+    },
+    [loadKey],
+  );
+
   return {
     data,
+    podSummary,
+    includeCompleted,
+    setIncludeCompleted,
     errors,
     loading: pending > 0,
     loaded: (key) => !!loadedAt.current[key],
