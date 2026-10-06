@@ -28,6 +28,26 @@ flowchart LR
 | **CLI** (`src/cli/`, `src/handlers/`) | `veyron create`, `list`, `start`, `snapshot`, `deploy`, `generate` and more, using your kubeconfig. |
 | **Kairon** | The VM engine. A `Machine` is desired state; `kairon-controller` places it and `kairon-node` runs it on FluxVM. |
 
+## The console
+
+The top nav groups every page; ⌘K finds any of them. Pages that list large or slow data load only
+while they are open, so the 30-second background refresh stays light.
+
+| Group | Pages |
+|---|---|
+| **Overview** | Mission Control, Consoles, Monitoring, Topology |
+| **Compute** | Virtual machines, Hosts, GPUs, Template Foundry, Images & ISOs, Pods, Workloads, Migrations |
+| **Storage & Network** | Storage, Snapshots, Snapshot schedules, Backups, Storage health, Orphan volumes (dry-run first, then reclaim), Atlas, DR & Velero, Networks, Cilium, Policies & ingress, Netra, Paqtra |
+| **Security** | Alerts, Security (SOC), Threat hunting, Security findings, Compliance, Audit trail, Users & roles |
+| **Operations** | Costs (with budgets), Recommendations, SLOs, Incidents, Events, Logs |
+| **Platform** | Operators, Helm releases, Namespaces & quotas, GitOps & catalog, Custom resources, Clusters |
+
+Clicking a VM opens its details panel: **Info** (spec plus security checks), **Events**, **Guest**
+(agent status, doctor, evidence, fix plan, metrics, migration readiness, filesystems; queried only
+when the guest agent is connected) and **Ops** (power, expose, hotplug, disks, data disks, volume
+hotplug and per-VM migrations). Admin-only actions such as user management, catalog sync and
+orphan reclaim are hidden or disabled for other roles.
+
 ## How a VM request flows
 
 1. The console or CLI sends a VM spec: template, CPU, memory, disks, network, cloud-init.

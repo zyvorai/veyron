@@ -68,7 +68,9 @@ role-scoped keys and SSO ([api.md](api.md), [sso.md](sso.md)).
 ## 4. Create a VM
 
 In the console: **VMs → New VM**, pick a template (Ubuntu, Debian, Fedora, Windows and more), size
-it and start it. Open the console tab for an in-browser VNC session.
+it and start it. Open the console tab for an in-browser VNC session. Click the VM's row for its
+details panel: guest health, disks, snapshots and migrations. To snapshot it on a schedule, use
+**Storage & Network → Snapshot schedules → New** with a cron such as `0 2 * * *` (UTC).
 
 The same through the API:
 

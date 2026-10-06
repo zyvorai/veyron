@@ -47,7 +47,8 @@ Admin-only routes, from `src/api/auth_context.rs`:
 - `VEYRON_API_KEY` is a single key with the `admin` role.
 - `VEYRON_API_KEYS` holds several keys in the form `name:key:role`, comma-separated, for example
   `ops:k1:admin,ci:k2:write,viewer:k3:readonly`. A missing role means `readonly`.
-- Local console accounts are managed under **Settings → Users**, or through `/api/v1/auth/users`.
+- Local console accounts are managed under **Security → Users & roles** (admin only), or through
+  `/api/v1/auth/users`.
 
 ## Route families
 
@@ -57,13 +58,21 @@ Admin-only routes, from `src/api/auth_context.rs`:
 | Compute | `POST /vms/:ns/:name/hotplug`, `PUT /vms/:ns/:name/run-strategy`, `POST /vms/bulk` |
 | Access | `GET/PUT/DELETE /vms/:ns/:name/expose` (SSH), `/rdp-expose` (RDP), `PUT /vms/:ns/:name/network/internet` |
 | Console | `GET /vms/:ns/:name/vnc`, `/serial` (WebSocket, ticket required) |
-| Guests | `GET /vms/:ns/:name/guest/{status,evidence,doctor}`, `POST /vms/:ns/:name/guest/patch` |
-| Data | `/snapshots`, `/backups`, `/clones`, `/storage/orphans`, `/velero/*`, `/atlas/*` |
+| Guests | `GET /vms/:ns/:name/guest/{status,evidence,doctor,fix-plan}`, `/guest-filesystem`, `POST /vms/:ns/:name/guest/patch` |
+| VM disks | `GET /vms/:ns/:name/volumes/status`, `POST …/volumes/{hotplug,hotremove}`, `POST …/storage/data-disk` (+ `/defaults`), `GET …/migrations` |
+| Data | `/snapshots`, `/snapshot-schedules`, `/backups`, `/clones`, `/storage/{usage,pools,orphans}`, `/velero/*`, `/atlas/*` |
 | Images | `/images`, `/images/upload`, `/images/publish` |
-| Fleet | `/nodes`, `/gpus`, `/capacity/headroom`, `/platform/capabilities` |
-| Operations | `/alerts`, `/events`, `/metrics`, `/costs`, `/self-healing/*`, `/soc/*` |
+| Fleet | `/nodes`, `/gpus`, `/pods`, `/workloads`, `/capacity/headroom`, `/platform/capabilities` |
+| Operations | `/alerts`, `/events`, `/incidents/timeline`, `/logs`, `/metrics`, `/costs`, `/costs/budgets`, `/recommendations`, `/slo/*`, `/self-healing/*` |
+| Security | `/soc/*`, `/security/{findings,posture}`, `/compliance/*`, `/audit/{trail,stats}`, `/rbac/*`, `/vms/:ns/:name/security` |
+| Platform | `/operators`, `/helm/releases`, `/namespaces`, `/quotas`, `/gitops/*`, `/catalog/*`, `/custom-resources`, `/clusters` |
+| Network | `/networks`, `/cilium/*`, `/network-policies`, `/ingress` |
 
 Query `?namespace=all` for cluster-wide lists.
+
+Snapshot schedules take standard five-field cron (`minute hour day month weekday`, UTC), for
+example `0 2 * * *`; Veyron stores it with a leading seconds field (`0 0 2 * * *`). Six-field
+expressions are accepted unchanged.
 
 ## Errors
 
