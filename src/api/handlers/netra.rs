@@ -257,6 +257,15 @@ async fn get_netra_status(State(state): State<SharedState>) -> Json<NetraStatusR
     out.configured = true;
     out.base_url = Some(base.clone());
     out.source = Some(source.to_string());
+    if out.external_url.is_none() {
+        out.external_url = super::integrations::discover_nodeport_url(
+            &kube.client(),
+            NETRA_NAMESPACE,
+            NETRA_SERVICE,
+        )
+        .await
+        .map(|u| u.replacen("http://", "https://", 1));
+    }
 
     out.reachable = probe_healthz(&base).await;
     if !out.reachable {

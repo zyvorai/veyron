@@ -283,7 +283,7 @@ async fn first_ready_node_ip(client: &kube::Client) -> Option<String> {
 }
 
 #[cfg(feature = "web")]
-async fn discover_nodeport_url(
+pub(crate) async fn discover_nodeport_url(
     client: &kube::Client,
     namespace: &str,
     name_contains: &str,
