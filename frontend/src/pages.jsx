@@ -130,30 +130,62 @@ export function Mission({ data, go, onCreate, onConsole, healthOk, podSummary })
         </Reveal>
       </section>
 
-      <section className="story-band">
-        <Reveal className="apple-chapter">
-          <div className="kicker">Fleet</div>
-          <h2>{attnRows.length ? 'Needs attention.' : 'All clear.'}</h2>
-          <p>Anything that isn’t in the state you asked for shows up here first.</p>
-          <div className="rows">
-            {attnRows.length === 0 ? (
-              <div className="rows-clear">
-                <CheckCircle size={20} />
-                <span>No degraded, failed or pending resources.</span>
+      <div className="story-duo">
+        <section className="story-band">
+          <Reveal className="apple-chapter">
+            <div className="kicker">Fleet</div>
+            <h2>{attnRows.length ? 'Needs attention.' : 'All clear.'}</h2>
+            <p>Anything that isn’t in the state you asked for shows up here first.</p>
+            <div className="rows">
+              {attnRows.length === 0 ? (
+                <div className="rows-clear">
+                  <CheckCircle size={20} />
+                  <span>No degraded, failed or pending resources.</span>
+                </div>
+              ) : (
+                attnRows.slice(0, 8).map(([k, r]) => (
+                  <button key={`${k}-${r.id}`} onClick={() => go(k, r.why ? undefined : r.id)}>
+                    <Status s={r.status} />
+                    <b>{r.name}</b>
+                    <span className="why">{r.why || why[r.status] || 'Not in the requested state'}</span>
+                    <ChevronRight size={16} />
+                  </button>
+                ))
+              )}
+            </div>
+          </Reveal>
+        </section>
+
+        {hosts.length > 0 && (
+          <section className="story-band">
+            <Reveal className="apple-chapter">
+              <div className="kicker">Capacity</div>
+              <h2>Headroom, per host.</h2>
+              <p>CPU and memory pressure across the nodes running your machines.</p>
+              <div className="cap-list">
+                {hosts.slice(0, 8).map((h) => (
+                  <button key={h.id} className="cap-row" onClick={() => go('hosts', h.id)}>
+                    <span className="cap-name">
+                      <b>{h.name}</b>
+                      <Status s={h.status} />
+                    </span>
+                    <span className="cap-bar" title={`CPU ${h.cpu}%`}>
+                      <i style={{ width: `${Math.min(100, Number(h.cpu) || 0)}%` }} data-hot={Number(h.cpu) > 85 || undefined} />
+                    </span>
+                    <span className="cap-bar mem" title={`Memory ${h.mem}%`}>
+                      <i style={{ width: `${Math.min(100, Number(h.mem) || 0)}%` }} data-hot={Number(h.mem) > 85 || undefined} />
+                    </span>
+                    <span className="cap-num">
+                      {h.cpu == null ? '—' : `${h.cpu}%`} · {h.mem == null ? '—' : `${h.mem}%`}
+                    </span>
+                  </button>
+                ))}
               </div>
-            ) : (
-              attnRows.slice(0, 8).map(([k, r]) => (
-                <button key={`${k}-${r.id}`} onClick={() => go(k, r.why ? undefined : r.id)}>
-                  <Status s={r.status} />
-                  <b>{r.name}</b>
-                  <span className="why">{r.why || why[r.status] || 'Not in the requested state'}</span>
-                  <ChevronRight size={16} />
-                </button>
-              ))
-            )}
-          </div>
-        </Reveal>
-      </section>
+            </Reveal>
+          </section>
+        )}
+
+      </div>
 
       <section className="story-band paper">
         <Reveal className="apple-chapter">
@@ -199,35 +231,6 @@ export function Mission({ data, go, onCreate, onConsole, healthOk, podSummary })
               All templates
               <ChevronRight size={16} />
             </button>
-          </Reveal>
-        </section>
-      )}
-
-      {hosts.length > 0 && (
-        <section className="story-band paper">
-          <Reveal className="apple-chapter">
-            <div className="kicker">Capacity</div>
-            <h2>Headroom, per host.</h2>
-            <p>CPU and memory pressure across the nodes running your machines.</p>
-            <div className="cap-list">
-              {hosts.slice(0, 8).map((h) => (
-                <button key={h.id} className="cap-row" onClick={() => go('hosts', h.id)}>
-                  <span className="cap-name">
-                    <b>{h.name}</b>
-                    <Status s={h.status} />
-                  </span>
-                  <span className="cap-bar" title={`CPU ${h.cpu}%`}>
-                    <i style={{ width: `${Math.min(100, Number(h.cpu) || 0)}%` }} data-hot={Number(h.cpu) > 85 || undefined} />
-                  </span>
-                  <span className="cap-bar mem" title={`Memory ${h.mem}%`}>
-                    <i style={{ width: `${Math.min(100, Number(h.mem) || 0)}%` }} data-hot={Number(h.mem) > 85 || undefined} />
-                  </span>
-                  <span className="cap-num">
-                    {h.cpu == null ? '—' : `${h.cpu}%`} · {h.mem == null ? '—' : `${h.mem}%`}
-                  </span>
-                </button>
-              ))}
-            </div>
           </Reveal>
         </section>
       )}
@@ -409,135 +412,141 @@ export function SettingsPage({ theme, setTheme }) {
     <div className="settings">
       {err && <div className="toast err" style={{ position: 'relative', top: 0, marginBottom: 12 }}>{err}</div>}
       <PageHero kicker="This console" title="Settings" lede="Theme, self-healing, and how this console connects to the cluster." />
-      <div className="sgroup">
-        <h3>Appearance</h3>
-        <div className="sbox">
-          <div className="srow2">
-            <div>
-              <b>Theme</b>
-              <small>Saved on this device.</small>
+      <div className="sgrid">
+        <div className="scol">
+          <div className="sgroup">
+            <h3>Appearance</h3>
+            <div className="sbox">
+              <div className="srow2">
+                <div>
+                  <b>Theme</b>
+                  <small>Saved on this device.</small>
+                </div>
+                <div className="seg r">
+                  {['light', 'dark'].map((x) => (
+                    <button key={x} className="tb" aria-pressed={theme === x} onClick={() => setTheme(x)}>
+                      {x}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="seg r">
-              {['light', 'dark'].map((x) => (
-                <button key={x} className="tb" aria-pressed={theme === x} onClick={() => setTheme(x)}>
-                  {x}
+          </div>
+          <div className="sgroup">
+            <h3>Cluster</h3>
+            <div className="sbox">
+              <div className="srow2">
+                <div>
+                  <b>Auto-heal degraded machines</b>
+                  <small>Restart Failed or Error machines (self-healing policy).</small>
+                </div>
+                <button
+                  className="sw r"
+                  role="switch"
+                  aria-checked={policy.enabled}
+                  disabled={policyBusy}
+                  onClick={() => savePolicy({ ...policy, enabled: !policy.enabled })}
+                >
+                  <i />
                 </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="sgroup">
-        <h3>Cluster</h3>
-        <div className="sbox">
-          <div className="srow2">
-            <div>
-              <b>Auto-heal degraded machines</b>
-              <small>Restart Failed or Error machines (self-healing policy).</small>
-            </div>
-            <button
-              className="sw r"
-              role="switch"
-              aria-checked={policy.enabled}
-              disabled={policyBusy}
-              onClick={() => savePolicy({ ...policy, enabled: !policy.enabled })}
-            >
-              <i />
-            </button>
-          </div>
-          <div className="srow2">
-            <div>
-              <b>Run self-healing now</b>
-              <small>Dry-run reports unhealthy machines; heal restarts them.</small>
-            </div>
-            <div className="r" style={{ display: 'flex', gap: 6 }}>
-              <button
-                className="btn sm secondary"
-                disabled={policyBusy}
-                onClick={async () => {
-                  setPolicyBusy(true);
-                  setErr('');
-                  try {
-                    const r = await api.runSelfHealing(false);
-                    setErr('');
-                    alert(`Dry-run: unhealthy=${r?.unhealthy ?? '?'} (heal=${r?.healed ?? 0})`);
-                  } catch (e) {
-                    setErr(e.message || String(e));
-                  } finally {
-                    setPolicyBusy(false);
-                  }
-                }}
-              >
-                Dry-run
-              </button>
-              <button
-                className="btn sm warn"
-                disabled={policyBusy}
-                onClick={async () => {
-                  if (!window.confirm('Heal unhealthy VMs now?')) return;
-                  setPolicyBusy(true);
-                  setErr('');
-                  try {
-                    const r = await api.runSelfHealing(true);
-                    alert(`Healed ${r?.healed ?? 0} of ${r?.unhealthy ?? '?'}`);
-                  } catch (e) {
-                    setErr(e.message || String(e));
-                  } finally {
-                    setPolicyBusy(false);
-                  }
-                }}
-              >
-                Heal
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="sgroup">
-        <h3>Integrations</h3>
-        <div className="sbox">
-          {integRow('Netra', 'Auto-detected in netra-system, or set VEYRON_NETRA_URL', Network, netra)}
-          {integRow('Paqtra', 'Auto-detected in the paqtra namespace, or set VEYRON_PAQTRA_URL', Network, paqtra)}
-          {integRow('Atlas storage', 'Configure via VEYRON_ATLAS_URL', Database, atlas)}
-          {integRow('Single sign-on', 'Configure via VEYRON_OIDC_*', Shield, oidc)}
-        </div>
-      </div>
-      <div className="sgroup">
-        <h3>About</h3>
-        <div className="sbox">
-          <div className="srow2">
-            <Settings size={16} style={{ color: 'var(--accent)' }} />
-            <div>
-              <b>Veyron Console</b>
-              <small>{versionLine}</small>
-            </div>
-          </div>
-          {headroom && (
-            <div className="srow2">
-              <div>
-                <b>Capacity headroom</b>
-                <small>{headroomLine(headroom)}</small>
+              </div>
+              <div className="srow2">
+                <div>
+                  <b>Run self-healing now</b>
+                  <small>Dry-run reports unhealthy machines; heal restarts them.</small>
+                </div>
+                <div className="r" style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    className="btn sm secondary"
+                    disabled={policyBusy}
+                    onClick={async () => {
+                      setPolicyBusy(true);
+                      setErr('');
+                      try {
+                        const r = await api.runSelfHealing(false);
+                        setErr('');
+                        alert(`Dry-run: unhealthy=${r?.unhealthy ?? '?'} (heal=${r?.healed ?? 0})`);
+                      } catch (e) {
+                        setErr(e.message || String(e));
+                      } finally {
+                        setPolicyBusy(false);
+                      }
+                    }}
+                  >
+                    Dry-run
+                  </button>
+                  <button
+                    className="btn sm warn"
+                    disabled={policyBusy}
+                    onClick={async () => {
+                      if (!window.confirm('Heal unhealthy VMs now?')) return;
+                      setPolicyBusy(true);
+                      setErr('');
+                      try {
+                        const r = await api.runSelfHealing(true);
+                        alert(`Healed ${r?.healed ?? 0} of ${r?.unhealthy ?? '?'}`);
+                      } catch (e) {
+                        setErr(e.message || String(e));
+                      } finally {
+                        setPolicyBusy(false);
+                      }
+                    }}
+                  >
+                    Heal
+                  </button>
+                </div>
               </div>
             </div>
-          )}
-          {about.caps && (
-            <div className="srow2">
-              <div>
-                <b>Capabilities</b>
-                <small>
-                  {[
-                    about.caps.live_migration && 'live migration',
-                    about.caps.machine_backups && 'machine backups',
-                    about.caps.machine_fork && 'VM fork',
-                    about.caps.gpu_passthrough && 'GPU (DRA)',
-                    about.caps.persistent_tpm_efi && 'persistent TPM/EFI',
-                  ]
-                    .filter(Boolean)
-                    .join(' · ') || 'See /api/v1/platform/capabilities'}
-                </small>
-              </div>
+          </div>
+        </div>
+        <div className="scol">
+          <div className="sgroup">
+            <h3>Integrations</h3>
+            <div className="sbox">
+              {integRow('Netra', 'Auto-detected in netra-system, or set VEYRON_NETRA_URL', Network, netra)}
+              {integRow('Paqtra', 'Auto-detected in the paqtra namespace, or set VEYRON_PAQTRA_URL', Network, paqtra)}
+              {integRow('Atlas storage', 'Configure via VEYRON_ATLAS_URL', Database, atlas)}
+              {integRow('Single sign-on', 'Configure via VEYRON_OIDC_*', Shield, oidc)}
             </div>
-          )}
+          </div>
+          <div className="sgroup">
+            <h3>About</h3>
+            <div className="sbox">
+              <div className="srow2">
+                <Settings size={16} style={{ color: 'var(--accent)' }} />
+                <div>
+                  <b>Veyron Console</b>
+                  <small>{versionLine}</small>
+                </div>
+              </div>
+              {headroom && (
+                <div className="srow2">
+                  <div>
+                    <b>Capacity headroom</b>
+                    <small>{headroomLine(headroom)}</small>
+                  </div>
+                </div>
+              )}
+              {about.caps && (
+                <div className="srow2">
+                  <div>
+                    <b>Capabilities</b>
+                    <small>
+                      {[
+                        about.caps.live_migration && 'live migration',
+                        about.caps.machine_backups && 'machine backups',
+                        about.caps.machine_fork && 'VM fork',
+                        about.caps.gpu_passthrough && 'GPU (DRA)',
+                        about.caps.persistent_tpm_efi && 'persistent TPM/EFI',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'See /api/v1/platform/capabilities'}
+                    </small>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -3,6 +3,8 @@
    (--ink, --pane, --line, --accent, ...) alias onto them so component rules
    keep working. */
 :root {
+  --page-max: 1920px;
+  --page-gutter: clamp(16px, 3vw, 56px);
   color-scheme: light;
   --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
@@ -473,7 +475,7 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
   word-break: break-word;
 }
 .bell-panel {
-  position: fixed; top: 54px; right: max(16px, calc((100vw - 1180px) / 2)); z-index: 45; width: min(360px, 92vw);
+  position: fixed; top: 54px; right: max(var(--page-gutter), calc((100vw - var(--page-max)) / 2 + var(--page-gutter))); z-index: 45; width: min(360px, 92vw);
   max-height: 420px; overflow: auto; border-radius: 12px; background: var(--menu);
   box-shadow: 0 0 0 0.5px var(--line), 0 18px 40px rgba(0, 0, 0, 0.28);
   -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
@@ -497,9 +499,13 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .field label { text-align: right; color: var(--ink-2); }
 
 
-.settings { flex: 1; overflow: auto; background: var(--pane); padding: 0 var(--space-lg) var(--space-xl); }
-.settings .apple-chapter { max-width: 760px; margin: 0 auto; padding: var(--space-xl) 0 var(--space-md); }
-.sgroup { max-width: 760px; margin: 0 auto 22px; }
+.settings { flex: 1; overflow: auto; background: var(--pane); padding: 0 var(--page-gutter) var(--space-xl); }
+.settings .apple-chapter { max-width: calc(var(--page-max) - 2 * var(--page-gutter)); margin: 0 auto; padding: var(--space-xl) 0 var(--space-md); }
+.sgrid { max-width: calc(var(--page-max) - 2 * var(--page-gutter)); margin: 0 auto; }
+.sgroup { margin: 0 0 22px; }
+@media (min-width: 1200px) {
+  .sgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; align-items: start; }
+}
 .sgroup h3 {
   font-family: var(--font-display);
   font-size: 15px; font-weight: 600; color: var(--ink-2); margin: 0 0 8px 12px;
@@ -540,8 +546,8 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .vy .link { font-size: 17px; color: var(--apple-link); display: inline-flex; align-items: center; gap: 2px; }
 .vy .link:hover { text-decoration: underline; }
 .specs {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  max-width: 980px; margin: 0 auto; padding: 36px 32px 40px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  max-width: var(--page-max); margin: 0 auto; padding: 36px var(--page-gutter) 40px;
   border-top: 1px solid var(--line);
 }
 .specs div { text-align: center; }
@@ -553,7 +559,7 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .specs span { font-size: 13px; color: var(--ink-2); margin-top: 4px; display: block; }
 
 .apple-chapter {
-  max-width: 980px; margin: 0 auto; padding: 64px 32px 72px;
+  width: 100%; max-width: var(--page-max); margin: 0 auto; padding: 64px var(--page-gutter) 72px;
 }
 /* Hero-lite header for dense/data pages — sits inside .list, which already
    supplies the horizontal gutter, so this only controls vertical rhythm. */
@@ -607,6 +613,15 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .hub-page .apple-chapter { padding-top: 40px; padding-bottom: 24px; }
 .hub-page .grid { padding: 0 var(--space-lg); }
 .chapter-page { flex: 1; overflow: auto; background: var(--void); }
+/* Two consecutive data bands (e.g. Netra connection + traffic) sit side by side on wide screens. */
+@media (min-width: 1280px) {
+  .chapter-page:has(> .apple-band + .apple-band) {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start;
+    padding-inline: max(0px, calc((100% - var(--page-max)) / 2));
+  }
+  .chapter-page:has(> .apple-band + .apple-band) > :not(.apple-band) { grid-column: 1 / -1; }
+  .chapter-page:has(> .apple-band + .apple-band) > .apple-band { background: transparent; }
+}
 
 .spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
