@@ -55,15 +55,24 @@ async fn get_scheduling_status(
     let s = state.read().await;
 
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
-    let pods = if namespace == "all" {
-        use k8s_openapi::api::core::v1::Pod;
-        let api: kube::api::Api<Pod> = kube::api::Api::all(s.client().client());
-        api.list(&kube::api::ListParams::default())
+    let pods = {
+        use k8s_openapi::api::core::v1::{Pod, PodSpec, PodStatus};
+        s.client()
+            .map_pods((namespace != "all").then_some(namespace.as_str()), |p| {
+                Some(Pod {
+                    spec: p.spec.map(|sp| PodSpec {
+                        node_name: sp.node_name,
+                        ..Default::default()
+                    }),
+                    status: p.status.map(|st| PodStatus {
+                        phase: st.phase,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+            })
             .await
-            .map(|list| list.items)
             .unwrap_or_default()
-    } else {
-        s.client().list_pods(&namespace).await.unwrap_or_default()
     };
     let nodes = s.client().list_nodes().await.unwrap_or_default();
     let events = if namespace == "all" {

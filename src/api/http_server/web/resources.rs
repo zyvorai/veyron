@@ -763,11 +763,22 @@ pub(super) async fn pods_summary_handler(
     if let Some(cached) = cached_pod_summary(ns) {
         return ok_json(&ApiResponse::success(&cached, &ctx.request_id));
     }
-    let pods = if ns == "all" {
-        client.list_all_pods().await
-    } else {
-        client.list_pods(ns).await
-    };
+    use k8s_openapi::api::core::v1::{Pod, PodStatus};
+    let pods = client
+        .map_pods((ns != "all").then_some(ns), |p| {
+            Some(Pod {
+                metadata: kube::api::ObjectMeta {
+                    namespace: p.metadata.namespace,
+                    ..Default::default()
+                },
+                status: p.status.map(|s| PodStatus {
+                    phase: s.phase,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            })
+        })
+        .await;
     match pods {
         Ok(pods) => {
             let summary = summarize_pods(&pods);
@@ -775,6 +786,47 @@ pub(super) async fn pods_summary_handler(
             ok_json(&ApiResponse::success(&summary, &ctx.request_id))
         }
         Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+    }
+}
+
+fn pod_item(pod: &k8s_openapi::api::core::v1::Pod) -> PodItem {
+    let meta = &pod.metadata;
+    let spec = pod.spec.as_ref();
+    let status = pod.status.as_ref();
+
+    let containers: Vec<String> = spec
+        .map(|s| s.containers.iter().map(|c| c.name.clone()).collect())
+        .unwrap_or_default();
+
+    let restarts: u32 = status
+        .and_then(|s| s.container_statuses.as_ref())
+        .map(|cs| cs.iter().map(|c| c.restart_count as u32).sum())
+        .unwrap_or(0);
+    let ready_count = status
+        .and_then(|s| s.container_statuses.as_ref())
+        .map(|cs| cs.iter().filter(|c| c.ready).count())
+        .unwrap_or(0);
+
+    PodItem {
+        ready: format!("{ready_count}/{}", containers.len()),
+        name: meta.name.clone().unwrap_or_default(),
+        namespace: meta.namespace.clone().unwrap_or_default(),
+        phase: status
+            .and_then(|s| s.phase.clone())
+            .unwrap_or_else(|| "Unknown".to_string()),
+        node_name: spec
+            .and_then(|s| s.node_name.clone())
+            .unwrap_or_else(|| "N/A".to_string()),
+        ip: status
+            .and_then(|s| s.pod_ip.clone())
+            .unwrap_or_else(|| "N/A".to_string()),
+        containers,
+        restarts,
+        age: meta
+            .creation_timestamp
+            .as_ref()
+            .map(|t| format_age(&t.0))
+            .unwrap_or_default(),
     }
 }
 
@@ -788,64 +840,19 @@ pub(super) async fn list_pods_handler(
     };
     let ns = query.namespace.as_deref().unwrap_or(&namespace);
 
-    let pods_result = if ns == "all" {
-        client.list_all_pods().await
-    } else {
-        client.list_pods(ns).await
-    };
+    let scope = (ns != "all").then_some(ns);
+    let pods_result = client
+        .map_pods(scope, |pod| {
+            let active = !matches!(
+                pod.status.as_ref().and_then(|s| s.phase.as_deref()),
+                Some("Succeeded" | "Failed")
+            );
+            (!query.active || active).then(|| pod_item(&pod))
+        })
+        .await;
 
     match pods_result {
-        Ok(pods) => {
-            let items: Vec<PodItem> = pods
-                .iter()
-                .filter(|pod| {
-                    !query.active
-                        || !matches!(
-                            pod.status.as_ref().and_then(|s| s.phase.as_deref()),
-                            Some("Succeeded" | "Failed")
-                        )
-                })
-                .map(|pod| {
-                    let meta = &pod.metadata;
-                    let spec = pod.spec.as_ref();
-                    let status = pod.status.as_ref();
-
-                    let containers: Vec<String> = spec
-                        .map(|s| s.containers.iter().map(|c| c.name.clone()).collect())
-                        .unwrap_or_default();
-
-                    let restarts: u32 = status
-                        .and_then(|s| s.container_statuses.as_ref())
-                        .map(|cs| cs.iter().map(|c| c.restart_count as u32).sum())
-                        .unwrap_or(0);
-                    let ready_count = status
-                        .and_then(|s| s.container_statuses.as_ref())
-                        .map(|cs| cs.iter().filter(|c| c.ready).count())
-                        .unwrap_or(0);
-
-                    PodItem {
-                        ready: format!("{ready_count}/{}", containers.len()),
-                        name: meta.name.clone().unwrap_or_default(),
-                        namespace: meta.namespace.clone().unwrap_or_default(),
-                        phase: status
-                            .and_then(|s| s.phase.clone())
-                            .unwrap_or_else(|| "Unknown".to_string()),
-                        node_name: spec
-                            .and_then(|s| s.node_name.clone())
-                            .unwrap_or_else(|| "N/A".to_string()),
-                        ip: status
-                            .and_then(|s| s.pod_ip.clone())
-                            .unwrap_or_else(|| "N/A".to_string()),
-                        containers,
-                        restarts,
-                        age: meta
-                            .creation_timestamp
-                            .as_ref()
-                            .map(|t| format_age(&t.0))
-                            .unwrap_or_default(),
-                    }
-                })
-                .collect();
+        Ok(items) => {
             let ctx = req_ctx(HttpMethod::GET, "/api/v1/pods");
             ok_json(&ApiResponse::success(&items, &ctx.request_id))
         }
@@ -868,10 +875,16 @@ pub(super) async fn get_pod_logs_handler(
     let scope = query.namespace.as_deref().unwrap_or(&default_ns);
 
     let pod_ns = if scope == "all" {
-        let pods = client.list_all_pods().await.unwrap_or_default();
-        pods.into_iter()
-            .find(|p| p.metadata.name.as_deref() == Some(name.as_str()))
-            .and_then(|p| p.metadata.namespace)
+        client
+            .map_pods(None, |p| {
+                (p.metadata.name.as_deref() == Some(name.as_str()))
+                    .then_some(p.metadata.namespace)
+                    .flatten()
+            })
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .next()
             .unwrap_or(default_ns)
     } else {
         scope.to_string()

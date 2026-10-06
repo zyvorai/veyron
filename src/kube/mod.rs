@@ -67,6 +67,15 @@ pub const VM_NAME_LABEL: &str = "vm.kubevirt.io/name";
 /// mapping pods back to VMs on pre-1.8 clusters. Never use it in selectors.
 pub const VM_NAME_LABEL_LEGACY: &str = "kubevirt.io/domain";
 
+const POD_LIST_PAGE_SIZE: u32 = 500;
+
+fn strip_managed_fields(
+    mut pod: k8s_openapi::api::core::v1::Pod,
+) -> k8s_openapi::api::core::v1::Pod {
+    pod.metadata.managed_fields = None;
+    pod
+}
+
 /// Dashboard: KubeVirt + CDI readiness from the cluster API.
 #[derive(Debug, Clone, Serialize)]
 pub struct PlatformReadiness {
@@ -948,19 +957,39 @@ impl KubeClient {
 
     /// List pods in a namespace
     pub async fn list_pods(&self, namespace: &str) -> Result<Vec<k8s_openapi::api::core::v1::Pod>> {
-        let pods: Api<k8s_openapi::api::core::v1::Pod> =
-            Api::namespaced(self.client.clone(), namespace);
-        let lp = ListParams::default();
-        let pod_list = pods.list(&lp).await?;
-        Ok(pod_list.items)
+        self.map_pods(Some(namespace), |p| Some(strip_managed_fields(p)))
+            .await
     }
 
     /// List pods in all namespaces (for `namespace=all` dashboards).
     pub async fn list_all_pods(&self) -> Result<Vec<k8s_openapi::api::core::v1::Pod>> {
-        let pods: Api<k8s_openapi::api::core::v1::Pod> = Api::all(self.client.clone());
-        let lp = ListParams::default();
-        let pod_list = pods.list(&lp).await?;
-        Ok(pod_list.items)
+        self.map_pods(None, |p| Some(strip_managed_fields(p))).await
+    }
+
+    /// Page through pods (one namespace, or all when `None`) and map each page as it
+    /// arrives. Clusters with thousands of dead pods OOM the API if the full list is
+    /// deserialized at once, so callers should map down to just the fields they need.
+    pub async fn map_pods<T>(
+        &self,
+        namespace: Option<&str>,
+        mut f: impl FnMut(k8s_openapi::api::core::v1::Pod) -> Option<T>,
+    ) -> Result<Vec<T>> {
+        let pods: Api<k8s_openapi::api::core::v1::Pod> = match namespace {
+            Some(ns) => Api::namespaced(self.client.clone(), ns),
+            None => Api::all(self.client.clone()),
+        };
+        let mut lp = ListParams::default().limit(POD_LIST_PAGE_SIZE);
+        let mut out = Vec::new();
+        loop {
+            let page = pods.list(&lp).await?;
+            let next = page.metadata.continue_.filter(|c| !c.is_empty());
+            out.extend(page.items.into_iter().filter_map(&mut f));
+            match next {
+                Some(token) => lp = lp.continue_token(&token),
+                None => break,
+            }
+        }
+        Ok(out)
     }
 
     /// List pods in one namespace or cluster-wide (`scope == "all"`), with RBAC-safe fan-out.
