@@ -5,6 +5,9 @@ import {
   mapSnapshot, mapBackup, mapImage, mapNetwork, mapTemplate,
   mapGpu, mapAlert, mapSoc, mapAtlasVol, mapAtlasSnap, mapMigration,
   mapCatalogTemplate, mapDataSource,
+  mapRecommendation, mapClusterEvent, mapIncident, mapAudit, mapFinding,
+  mapOperator, mapHelmRelease, mapQuota, mapCustomResource, mapWorkload,
+  mapOrphan, mapSchedule, mapNetworkPolicy, mapIngress,
 } from './api.js';
 import { emptyData, RES_META } from './resources.js';
 
@@ -13,8 +16,16 @@ export const REFRESH_MS = 30_000;
 /** Resources Mission Control and the nav counts need first. */
 export const CORE_KEYS = ['vms', 'hosts', 'pvcs', 'alerts', 'templates'];
 
-/** Pods are loaded only on their own page; listing every pod can be megabytes. */
-const LAZY_KEYS = new Set(['pods']);
+/**
+ * Loaded only while their own page is open: pods can be megabytes, and the
+ * operations/platform lists would add a dozen requests to every background refresh.
+ */
+const LAZY_KEYS = new Set([
+  'pods', 'recommendations', 'events', 'incidents', 'findings', 'audit',
+  'operators', 'helm', 'quotas', 'crds', 'workloads', 'orphans', 'schedules', 'netpols',
+]);
+
+const VEYRON_CR_KINDS = ['veyronvms', 'blueprints', 'policies', 'insights', 'actions'];
 
 const pods = { includeCompleted: false };
 
@@ -84,6 +95,56 @@ const LOADERS = {
       extraRows('atlas', () => api.listAtlasSnapshots(), mapAtlasSnap),
     ]);
     return { rows: (rows || []).map(mapAtlasVol), extra, meta: { configured: true } };
+  },
+  recommendations: async () => ({ rows: (await api.listRecommendations()).map(mapRecommendation) }),
+  events: async () => ({ rows: (await api.recentEvents()).map(mapClusterEvent) }),
+  incidents: async () => {
+    const d = await api.incidents();
+    return {
+      rows: (d.events || []).map(mapIncident),
+      meta: { open: d.open_incidents ?? 0, critical: d.critical ?? 0, resolved24h: d.resolved_last_24h ?? 0 },
+    };
+  },
+  findings: async () => {
+    const [rows, posture] = await Promise.all([api.securityFindings(), api.securityPosture().catch(() => null)]);
+    return { rows: rows.map(mapFinding), meta: posture ? { score: posture.overall_score, risk: posture.risk_level } : {} };
+  },
+  audit: async () => ({ rows: (await api.auditTrail()).map(mapAudit) }),
+  operators: async () => ({ rows: (await api.listOperators()).map(mapOperator) }),
+  helm: async () => ({ rows: (await api.listHelmReleases()).map(mapHelmRelease) }),
+  quotas: async () => {
+    const [rows, extra] = await Promise.all([
+      api.listQuotas(),
+      extraRows('quotas', () => api.listNamespaces(), (n, i) => {
+        const name = typeof n === 'string' ? n : n?.name || `ns-${i}`;
+        return { id: name, name };
+      }),
+    ]);
+    return { rows: rows.map(mapQuota), extra };
+  },
+  crds: async () => {
+    const [rows, extra] = await Promise.all([
+      api.listCustomResources(),
+      extraRows(
+        'crds',
+        async () =>
+          Promise.all(
+            VEYRON_CR_KINDS.map(async (k) => ({ k, items: await api.listVeyronCrs(k).catch(() => null) })),
+          ),
+        ({ k, items }) => ({ id: k, name: k, count: items == null ? '—' : items.length }),
+      ),
+    ]);
+    return { rows: rows.map(mapCustomResource), extra };
+  },
+  workloads: async () => ({ rows: (await api.listWorkloads()).map(mapWorkload) }),
+  orphans: async () => ({ rows: (await api.storageOrphans()).map(mapOrphan) }),
+  schedules: async () => ({ rows: (await api.listSnapshotSchedules()).map(mapSchedule) }),
+  netpols: async () => {
+    const [rows, extra] = await Promise.all([
+      api.networkPolicies(),
+      extraRows('netpols', () => api.listIngresses(), mapIngress),
+    ]);
+    return { rows: rows.map(mapNetworkPolicy), extra };
   },
 };
 

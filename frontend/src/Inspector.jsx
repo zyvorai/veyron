@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
   Play, Square, Pause, ArrowLeftRight, Terminal, Camera, Trash2, RefreshCw,
-  Activity, Copy, HardDrive, Ban, CheckCircle, Network, Monitor, Zap,
+  Activity, Copy, HardDrive, Ban, CheckCircle, Network, Monitor, Zap, Unlink,
 } from 'lucide-react';
 import { Status, Spark } from './status.jsx';
 import { api } from './api.js';
+import { VmGuest, VmDisks } from './VmExtras.jsx';
 
 export const ACT = {
   start: ['Start', Play],
@@ -27,6 +28,7 @@ export const ACT = {
   publish: ['Publish', HardDrive],
   resolve: ['Resolve', CheckCircle],
   ack: ['Acknowledge', CheckCircle],
+  reclaim: ['Reclaim…', Unlink],
 };
 
 const RUN_STRATEGIES = ['Always', 'Manual', 'Halted', 'RerunOnFailure'];
@@ -74,7 +76,7 @@ function VmOps({ row, onDone }) {
       api.getRdpExpose(ns, name).catch(() => null),
       api.getGuestStatus(ns, name).catch(() => null),
       api.getInternet(ns, name).catch(() => null),
-      api.getDrift(ns, name).catch(() => null),
+      row.managed ? api.getDrift(ns, name).catch(() => null) : null,
     ]);
     setExpose(ex);
     setRdp(rd);
@@ -215,7 +217,9 @@ function VmOps({ row, onDone }) {
         </h4>
         <small className="ops-hint">
           {guest
-            ? `Agent: ${guest.agent_connected ?? guest.status ?? guest.connected ?? 'ok'}`
+            ? guest.connected || guest.guest_agent_connected
+              ? 'Guest agent connected'
+              : 'Guest agent not connected — these actions need it'
             : 'Guest status unavailable'}
         </small>
         <div className="ops-acts">
@@ -339,6 +343,8 @@ function VmOps({ row, onDone }) {
           Set strategy
         </button>
       </div>
+
+      <VmDisks row={row} onDone={onDone} />
     </div>
   );
 }
@@ -347,6 +353,7 @@ export function Inspector({ res, row, hide, onAct, onOpsDone }) {
   const [tab, setTab] = useState('Info');
   const [events, setEvents] = useState([]);
   const [metrics, setMetrics] = useState(null);
+  const [security, setSecurity] = useState(null);
   const [loadingExtra, setLoadingExtra] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -354,19 +361,22 @@ export function Inspector({ res, row, hide, onAct, onOpsDone }) {
     setTab('Info');
     setEvents([]);
     setMetrics(null);
+    setSecurity(null);
     setMoreOpen(false);
     if (!row || res?.kind !== 'VirtualMachine') return;
     let cancelled = false;
     setLoadingExtra(true);
     (async () => {
       try {
-        const [ev, met] = await Promise.all([
+        const [ev, met, sec] = await Promise.all([
           api.vmEvents(row.ns || 'default', row.name).catch(() => []),
           api.vmMetrics(row.name, row.ns || 'default').catch(() => null),
+          api.vmSecurity(row.ns || 'default', row.name).catch(() => null),
         ]);
         if (!cancelled) {
           setEvents(Array.isArray(ev) ? ev.slice(0, 12) : []);
           setMetrics(met);
+          setSecurity(sec);
         }
       } finally {
         if (!cancelled) setLoadingExtra(false);
@@ -391,6 +401,10 @@ export function Inspector({ res, row, hide, onAct, onOpsDone }) {
   }
 
   const infoRows = (res.insp || []).map(([l, k]) => [l, row[k]]);
+  if (res.kind === 'VirtualMachine' && security?.score != null) {
+    infoRows.push(['Security score', `${security.score} / 100`]);
+    for (const c of security.checks || []) infoRows.push([c.name, `${c.pass ? '✓' : '✗'} ${c.detail || ''}`.trim()]);
+  }
   const eventRows =
     events.length > 0
       ? events.map((e) => [
@@ -400,7 +414,7 @@ export function Inspector({ res, row, hide, onAct, onOpsDone }) {
       : [['Events', loadingExtra ? 'Loading…' : 'No recent events']];
 
   const isVm = res.kind === 'VirtualMachine';
-  const tabNames = isVm ? ['Info', 'Events', 'Ops'] : ['Info', 'Events'];
+  const tabNames = isVm ? ['Info', 'Events', 'Guest', 'Ops'] : ['Info', 'Events'];
   const acts = resolveActs(res, row);
   const primary = acts.slice(0, 4);
   const more = acts.slice(4);
@@ -458,6 +472,8 @@ export function Inspector({ res, row, hide, onAct, onOpsDone }) {
       </div>
       {tab === 'Ops' && isVm ? (
         <VmOps row={row} onDone={(l) => onOpsDone?.(l)} />
+      ) : tab === 'Guest' && isVm ? (
+        <VmGuest row={row} />
       ) : (
         <div className="form">
           {(tab === 'Events' ? eventRows : infoRows).map(([l, v], i) => (

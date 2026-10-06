@@ -402,6 +402,48 @@ else
 fi
 check_json_grep "GET /api/v1/cilium/flows" \
     "${BASE}/api/v1/cilium/flows?namespace=all" 'flow_source'
+
+echo "  (console operations / security / platform pages)"
+check_http_200 "GET /api/v1/costs/budgets" "${BASE}/api/v1/costs/budgets"
+check_http_200 "GET /api/v1/recommendations" "${BASE}/api/v1/recommendations?namespace=all"
+check_http_200 "GET /api/v1/slo/objectives" "${BASE}/api/v1/slo/objectives?namespace=all"
+check_http_200 "GET /api/v1/slo/burn-rate" "${BASE}/api/v1/slo/burn-rate?namespace=all"
+check_json_grep "GET /api/v1/incidents/timeline" \
+    "${BASE}/api/v1/incidents/timeline?namespace=all" '"events"\s*:'
+check_json_grep "GET /api/v1/logs" "${BASE}/api/v1/logs?namespace=all" '"total_1h"'
+check_json_grep "GET /api/v1/logs/query" "${BASE}/api/v1/logs/query?namespace=all&limit=5" '"entries"\s*:'
+check_http_200 "GET /api/v1/compliance/reports" "${BASE}/api/v1/compliance/reports?namespace=all"
+check_http_200 "GET /api/v1/audit/trail" "${BASE}/api/v1/audit/trail?namespace=all"
+check_json_grep "GET /api/v1/audit/stats" "${BASE}/api/v1/audit/stats?namespace=all" '"total_events"'
+check_json_grep "GET /api/v1/auth/users" "${BASE}/api/v1/auth/users" '"username"'
+check_http_200 "GET /api/v1/rbac/roles" "${BASE}/api/v1/rbac/roles?namespace=all"
+check_http_200 "GET /api/v1/rbac/bindings" "${BASE}/api/v1/rbac/bindings?namespace=all"
+check_http_200 "GET /api/v1/soc/hunts" "${BASE}/api/v1/soc/hunts"
+check_http_200 "GET /api/v1/soc/playbooks" "${BASE}/api/v1/soc/playbooks"
+check_http_200 "GET /api/v1/operators" "${BASE}/api/v1/operators?namespace=all"
+check_http_200 "GET /api/v1/helm/releases" "${BASE}/api/v1/helm/releases?namespace=all"
+check_http_200 "GET /api/v1/quotas" "${BASE}/api/v1/quotas?namespace=all"
+check_json_grep "GET /api/v1/clusters" "${BASE}/api/v1/clusters" '"clusters"\s*:'
+check_http_200 "GET /api/v1/workloads" "${BASE}/api/v1/workloads?namespace=all"
+check_json_grep "GET /api/v1/storage/usage" "${BASE}/api/v1/storage/usage?namespace=all" '"usage"\s*:'
+check_json_grep "GET /api/v1/storage/pools" "${BASE}/api/v1/storage/pools" '"pools"\s*:'
+check_json_grep "GET /api/v1/storage/orphans" "${BASE}/api/v1/storage/orphans?namespace=all" '"orphans"\s*:'
+check_json_grep "GET /api/v1/cilium/status" "${BASE}/api/v1/cilium/status" '"agent_count"'
+check_http_200 "GET /api/v1/cilium/policies" "${BASE}/api/v1/cilium/policies?namespace=all"
+check_http_200 "GET /api/v1/ingress" "${BASE}/api/v1/ingress?namespace=all"
+first_vm=$(echo "${vms_body}" | grep -oE '"name"\s*:\s*"[^"]+"\s*,\s*"namespace"\s*:\s*"[^"]+"' | head -1)
+if [[ -n "${first_vm}" ]]; then
+    vm_name=$(echo "${first_vm}" | sed -E 's/.*"name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
+    vm_ns=$(echo "${first_vm}" | sed -E 's/.*"namespace"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
+    vm_base="${BASE}/api/v1/vms/${vm_ns}/${vm_name}"
+    check_json_grep "GET /api/v1/vms/:ns/:name/security (${vm_name})" "${vm_base}/security" '"score"'
+    check_http_200 "GET /api/v1/vms/:ns/:name/migrations (${vm_name})" "${vm_base}/migrations"
+    check_json_grep "GET /api/v1/vms/:ns/:name/guest-filesystem (${vm_name})" "${vm_base}/guest-filesystem" '"available"'
+    check_json_grep "GET /api/v1/vms/:ns/:name/storage/data-disk/defaults (${vm_name})" \
+        "${vm_base}/storage/data-disk/defaults" '"default_size_gi"'
+else
+    echo "  ○ per-VM console checks — skipped, no VMs currently exist"
+fi
 # Console assets are content-hashed by the Vite build — extract the actual
 # filenames from the served shell rather than hardcoding them.
 console_html=$(curl -skS --connect-timeout 15 --max-time 45 "${BASE}/console" || true)

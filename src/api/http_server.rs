@@ -1356,6 +1356,10 @@ pub mod web {
         log::error!("API error (sanitized for client): {msg}");
         let lower = msg.to_lowercase();
 
+        if lower.starts_with("invalid cron expression") {
+            return "Invalid cron expression — use five fields (minute hour day month weekday, UTC), e.g. 0 2 * * *".to_string();
+        }
+
         // Forge VM / CRUD: Kubernetes returns NotFound for missing namespaces and missing APIs —
         // distinguish those instead of collapsing everything to "Resource not found".
         if lower.contains("namespaces") && lower.contains("not found") {

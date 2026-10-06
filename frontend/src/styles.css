@@ -384,6 +384,7 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
   min-height: 38px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--line);
 }
 .ops-row small { display: block; color: var(--ink-3); font-size: 11px; margin-top: 2px; }
+.ops-val { max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
 .ops-hint { display: block; color: var(--ink-3); font-size: 12px; margin-bottom: 8px; }
 .ops-acts { display: flex; flex-wrap: wrap; gap: 6px; }
 .ops-fields {
@@ -622,6 +623,39 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
   .chapter-page:has(> .apple-band + .apple-band) > :not(.apple-band) { grid-column: 1 / -1; }
   .chapter-page:has(> .apple-band + .apple-band) > .apple-band { background: transparent; }
 }
+
+/* Insight dashboards (insights.jsx) */
+.insight-band { width: 100%; background: var(--pane); }
+.insight-page .apple-chapter.insight-chapter { padding-top: 48px; padding-bottom: 56px; }
+.insight-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.insight-acts { display: flex; gap: 8px; }
+.apple-chapter p.insight-lede { max-width: 72ch; margin-bottom: 18px; }
+.insight-chapter .table-card { margin-top: 18px; }
+.insight-chapter .rows + .insight-note, .insight-chapter .table-card + .insight-note { margin-top: 14px; }
+.insight-note { font-size: 13px; color: var(--ink-3); margin: 14px 0 0; line-height: 1.45; max-width: 90ch; }
+.insight-note.warn { color: var(--warning-text); }
+.insight-form {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-top: 18px;
+}
+.insight-form label {
+  display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-3); min-width: 150px;
+}
+.insight-form label.grow { flex: 1 1 260px; }
+.insight-form input, .insight-form select {
+  height: 36px; padding: 0 12px; border-radius: var(--radius-md); background: var(--fill-tertiary);
+  border: 1px solid var(--hairline-1); color: var(--text-primary); font: inherit; font-size: 14px;
+}
+.insight-form input:focus, .insight-form select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring, rgba(41, 151, 255, 0.25)); }
+.insight-form .btn { height: 36px; }
+.insight-filter { margin-top: 18px; max-width: 320px; }
+.insight-more { margin-top: 12px; }
+.insight-pre {
+  margin-top: 14px; padding: 14px; border-radius: 12px; background: var(--fill-tertiary); font-family: var(--mono);
+  font-size: 12px; max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+}
+.vt-acts { display: inline-flex; gap: 6px; justify-content: flex-end; width: 100%; }
+.vt-acts .btn { white-space: nowrap; }
+.specs div[data-warn] b { color: var(--orange); }
 
 .spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

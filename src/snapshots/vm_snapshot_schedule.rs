@@ -22,7 +22,7 @@ pub struct SnapshotScheduleRecord {
     pub vm_name: String,
     #[serde(default)]
     pub enabled: bool,
-    /// Standard 5-field cron (UTC).
+    /// Cron in UTC: standard 5-field, or 6-field with leading seconds.
     pub cron: String,
     #[serde(default)]
     pub snapshot_prefix: String,
@@ -99,6 +99,17 @@ pub async fn delete_schedule_cm(client: Client, namespace: &str, name: &str) -> 
     Ok(())
 }
 
+/// The `cron` crate requires a leading seconds field; accept standard 5-field
+/// cron by running it at second 0.
+pub fn normalize_cron(expr: &str) -> String {
+    let expr = expr.trim();
+    if expr.split_whitespace().count() == 5 {
+        format!("0 {expr}")
+    } else {
+        expr.to_string()
+    }
+}
+
 /// Create a snapshot schedule ConfigMap.
 pub async fn upsert_schedule_cm(
     client: Client,
@@ -109,7 +120,8 @@ pub async fn upsert_schedule_cm(
     enabled: bool,
     max_snapshots: u32,
 ) -> Result<String> {
-    Schedule::from_str(cron_expr.trim()).context("invalid cron expression")?;
+    let cron_expr = normalize_cron(cron_expr);
+    Schedule::from_str(&cron_expr).context("invalid cron expression")?;
 
     let id: u64 = rand::random();
     let cm_name = format!("veyron-sschedule-{id:x}");
@@ -117,7 +129,7 @@ pub async fn upsert_schedule_cm(
     let rec = SnapshotScheduleRecord {
         vm_name: vm_name.to_string(),
         enabled,
-        cron: cron_expr.trim().to_string(),
+        cron: cron_expr,
         snapshot_prefix: snapshot_prefix.unwrap_or("sched").to_string(),
         last_run: None,
         max_snapshots,
@@ -177,7 +189,7 @@ pub async fn snapshot_schedule_tick(client: Client) -> Result<()> {
             continue;
         }
 
-        let schedule = match Schedule::from_str(rec.cron.trim()) {
+        let schedule = match Schedule::from_str(&normalize_cron(&rec.cron)) {
             Ok(s) => s,
             Err(e) => {
                 log::warn!("bad cron in {}: {}", name, e);
@@ -263,4 +275,21 @@ pub async fn snapshot_schedule_tick(client: Client) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod cron_tests {
+    use super::*;
+
+    #[test]
+    fn five_field_cron_is_accepted() {
+        assert_eq!(normalize_cron(" 0 2 * * * "), "0 0 2 * * *");
+        assert!(Schedule::from_str(&normalize_cron("0 2 * * *")).is_ok());
+    }
+
+    #[test]
+    fn six_field_cron_is_unchanged() {
+        assert_eq!(normalize_cron("0 0 3 * * *"), "0 0 3 * * *");
+        assert!(Schedule::from_str(&normalize_cron("*/30 * * * * *")).is_ok());
+    }
 }

@@ -136,7 +136,9 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
 
 Vite + React + JSX app served at **`GET /console`** (+ `/console/assets/*`), embedded via `include_dir!("frontend/dist")` in `http_server.rs`. Auth-exempt shell; API calls use `X-API-Key` from `localStorage['veyron_api_key']`.
 
-- Resource-registry UI: Mission Control, ConsoleHub, VMs, Hosts, Images, Pods, Templates, Capsules (empty), Storage, Snapshots, Backups, Networks, Settings
+- Resource-registry UI: Mission Control, ConsoleHub, VMs, Hosts, Images, Pods, Workloads, Templates, Storage, Snapshots, Snapshot schedules, Orphan volumes, Backups, Networks, Policies & ingress, Alerts, Security, Findings, Audit trail, Recommendations, Incidents, Events, Operators, Helm, Namespaces & quotas, Custom resources, Settings. Lists outside the core set are in `LAZY_KEYS` (`useResources.js`) so they load only while their page is open.
+- Dashboards in `frontend/src/insights.jsx` (`INSIGHT_PAGES` in `resources.js`): Costs (+budgets), SLOs, Logs, Compliance, Threat hunting, Users & roles, GitOps & catalog, Clusters, Storage health, Cilium. VM inspector tabs: Info (+security checks), Events, Guest (`VmExtras.jsx`: doctor/evidence/metrics/migrate-score/filesystems, only queried when the guest agent is connected), Ops (+disks, data-disk, volume hotplug, per-VM migrations).
+- Snapshot schedule cron accepts standard 5-field expressions (`normalize_cron` prepends seconds for the `cron` crate).
 - Build: `cd frontend && npm install && npm run build` before local `cargo build --features web` (Dockerfile `frontend-builder` stage does this)
 - Dev: `cd frontend && npm run dev` (proxies `/api` to `https://127.0.0.1:5151`)
 

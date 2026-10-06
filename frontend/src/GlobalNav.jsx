@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Search, Bell, Sun, Moon, Plus, Menu, X, LogOut, Settings } from 'lucide-react';
-import { NAV, RES_META, pageLabel } from './resources.js';
+import { NAV, RES_META, CHAPTER_ICONS, pageLabel } from './resources.js';
 import zyvorLogomark from './assets/zyvor-logomark.svg';
 
 const OPEN_DELAY_MS = 120;
@@ -236,7 +236,7 @@ export function GlobalNav({
             <p className="gn-mega-eyebrow">{g.g}</p>
             <div className="gn-mega-grid">
               {g.items.map(([id, , blurb], i) => {
-                const I = RES_META[id]?.I;
+                const I = RES_META[id]?.I || CHAPTER_ICONS[id];
                 const n = data[id]?.rows?.length;
                 return (
                   <button

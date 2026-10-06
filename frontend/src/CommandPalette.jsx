@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, CornerDownLeft, Plus, Sun, Moon, Terminal, ArrowRight } from 'lucide-react';
-import { NAV, RES_META, pageLabel, pageBlurb } from './resources.js';
+import { NAV, RES_META, CHAPTER_ICONS, pageLabel, pageBlurb } from './resources.js';
 import { Status } from './status.jsx';
 import { useFocusTrap } from './a11y.js';
 
@@ -61,7 +61,7 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
           group: 'Pages',
           label: pageLabel(id),
           hint: pageBlurb(id) || g.g,
-          I: RES_META[id]?.I || ArrowRight,
+          I: RES_META[id]?.I || CHAPTER_ICONS[id] || ArrowRight,
           run: () => go(id),
         });
       }

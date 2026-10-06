@@ -7,14 +7,17 @@ function Cell({ col, row }) {
   const v = row[k];
   if (t === 'st') return <Status s={v} />;
   if (t === 'meter') return <Meter v={v} />;
+  if (t === 'act') return <span className="vt-acts">{v}</span>;
   if (k === 'name') return <span className="name">{v}</span>;
   return <span className={t === 'm' ? 'mono dim' : t === 'n' ? '' : ''}>{v ?? '—'}{unit && v != null && v !== '—' ? unit : ''}</span>;
 }
 
-export function Table({ cols, rows, selected, focus, onRow, onMenu }) {
-  const [sort, setSort] = useState({ k: 'name', d: 1 });
+/** `initialSort={null}` keeps the rows in the order given (e.g. newest first) until a header is clicked. */
+export function Table({ cols, rows, selected, focus, onRow, onMenu, initialSort = { k: 'name', d: 1 } }) {
+  const [sort, setSort] = useState(initialSort);
   const sorted = useMemo(() => {
     const arr = [...rows];
+    if (!sort) return arr;
     arr.sort((a, b) => {
       const av = a[sort.k];
       const bv = b[sort.k];
@@ -35,17 +38,17 @@ export function Table({ cols, rows, selected, focus, onRow, onMenu }) {
               key={c[0]}
               className={c[2] === 'n' ? 'num' : ''}
               tabIndex={0}
-              aria-sort={sort.k === c[0] ? (sort.d > 0 ? 'ascending' : 'descending') : 'none'}
-              onClick={() => setSort({ k: c[0], d: sort.k === c[0] ? -sort.d : 1 })}
+              aria-sort={sort?.k === c[0] ? (sort.d > 0 ? 'ascending' : 'descending') : 'none'}
+              onClick={() => setSort({ k: c[0], d: sort?.k === c[0] ? -sort.d : 1 })}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  setSort({ k: c[0], d: sort.k === c[0] ? -sort.d : 1 });
+                  setSort({ k: c[0], d: sort?.k === c[0] ? -sort.d : 1 });
                 }
               }}
             >
               {c[1]}
-              {sort.k === c[0] && (
+              {sort?.k === c[0] && (
                 <span className="s">
                   <ChevronDown size={11} style={{ transform: sort.d < 0 ? 'rotate(180deg)' : '' }} />
                 </span>

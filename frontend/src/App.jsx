@@ -16,6 +16,19 @@ const TopologyPage = chapter('TopologyPage');
 const DrPage = chapter('DrPage');
 const NetraPage = chapter('NetraPage');
 const PaqtraPage = chapter('PaqtraPage');
+const insight = (name) => lazy(() => import('./insights.jsx').then((m) => ({ default: m[name] })));
+const INSIGHTS = {
+  costs: insight('CostsPage'),
+  slo: insight('SloPage'),
+  logs: insight('LogsPage'),
+  compliance: insight('CompliancePage'),
+  hunting: insight('HuntingPage'),
+  users: insight('UsersPage'),
+  gitops: insight('GitopsPage'),
+  clusters: insight('ClustersPage'),
+  storagehealth: insight('StorageHealthPage'),
+  cilium: insight('CiliumPage'),
+};
 import { Status } from './status.jsx';
 import { GlobalNav } from './GlobalNav.jsx';
 import { CommandPalette } from './CommandPalette.jsx';
@@ -32,8 +45,65 @@ function pageFromHash() {
 }
 
 /** Summary figures above a resource table: [count, label, warn?]. */
-function pageMetrics(page, rows, { okRows, warnRows, podSummary, includeCompleted }) {
+const sumBy = (rows, k) => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
+
+/** Per-page headline numbers; pages not listed get total / healthy / need a look. */
+const PAGE_METRICS = {
+  recommendations: (rows, count) => [
+    [rows.length, 'ideas'],
+    [count((r) => /high|critical/i.test(r.status)), 'high priority', true],
+  ],
+  events: (rows, count) => [
+    [rows.length, 'recent'],
+    [count((r) => r.status === 'Warning'), 'warnings', true],
+  ],
+  incidents: (rows, count, meta) => [
+    [meta?.open ?? count((r) => r.status !== 'Resolved'), 'open', true],
+    [meta?.critical ?? count((r) => /crit/i.test(r.status)), 'critical', true],
+    [meta?.resolved24h ?? 0, 'resolved in 24h'],
+  ],
+  findings: (rows, count, meta) => [
+    ...(meta?.score != null ? [[meta.score, 'posture score']] : []),
+    [rows.length, 'findings'],
+    [count((r) => /high|critical/i.test(r.status)), 'high or critical', true],
+  ],
+  audit: (rows, count) => [
+    [rows.length, 'entries'],
+    [new Set(rows.map((r) => r.user)).size, 'actors'],
+    [count((r) => r.status === 'Warning'), 'warnings', true],
+  ],
+  operators: (rows, count) => [
+    [rows.length, 'operators'],
+    [count((r) => r.status === 'Running'), 'running'],
+    [count((r) => r.status !== 'Running'), 'need a look', true],
+  ],
+  helm: (rows, count) => [
+    [rows.length, 'releases'],
+    [count((r) => r.status === 'deployed'), 'deployed'],
+    [count((r) => !/deployed|superseded/.test(r.status)), 'need a look', true],
+  ],
+  quotas: (rows) => [[rows.length, 'quotas']],
+  crds: (rows, count) => [
+    [rows.length, 'definitions'],
+    [count((r) => r.count > 0), 'in use'],
+    [sumBy(rows, 'count'), 'objects'],
+  ],
+  workloads: (rows, count) => [
+    [rows.length, 'workloads'],
+    [count((r) => r.status === 'Ready'), 'ready'],
+    [count((r) => r.status !== 'Ready'), 'need a look', true],
+  ],
+  orphans: (rows) => [[rows.length, 'unattached claims', true]],
+  schedules: (rows, count) => [
+    [rows.length, 'schedules'],
+    [count((r) => r.status === 'Enabled'), 'enabled'],
+  ],
+  netpols: (rows) => [[rows.length, 'policies']],
+};
+
+function pageMetrics(page, rows, { okRows, warnRows, podSummary, includeCompleted, meta }) {
   const count = (f) => rows.filter(f).length;
+  if (PAGE_METRICS[page]) return PAGE_METRICS[page](rows, count, meta);
   if (page === 'templates') {
     return [
       [rows.length, 'templates'],
@@ -236,6 +306,31 @@ export default function App() {
     setInitialTemplate(typeof tpl === 'string' ? tpl : null);
     setSheet('new');
   }, []);
+
+  const createSchedule = async () => {
+    const vmNames = (data.vms?.rows || []).map((v) => `${v.ns}/${v.name}`);
+    const target = window.prompt(`Snapshot which VM? (namespace/name)\n\n${vmNames.slice(0, 12).join('\n')}`, vmNames[0] || '');
+    if (!target) return;
+    const [ns, vm] = target.includes('/') ? target.trim().split('/') : ['default', target.trim()];
+    const cron = window.prompt('Cron schedule (UTC)', '0 2 * * *');
+    if (!cron) return;
+    const keep = window.prompt('Keep how many snapshots? (0 keeps all)', '7');
+    if (keep == null) return;
+    try {
+      await api.createSnapshotSchedule({
+        namespace: ns,
+        vm_name: vm,
+        cron: cron.trim(),
+        max_snapshots: Math.max(0, parseInt(keep, 10) || 0),
+      });
+      await load();
+      showToast(`Schedule for ${vm} created`);
+    } catch (e) {
+      showToast(e.message || String(e), true);
+    }
+  };
+
+  const onNew = () => (page === 'schedules' ? createSchedule() : openCreate());
 
   const openConsole = useCallback((vm) => {
     setPage('vms');
@@ -455,6 +550,36 @@ export default function App() {
       } else if (page === 'atlas') {
         showToast('Use Atlas snapshot actions from the snapshots table below, or Ceph snap in VM Ops', true);
         return;
+      } else if (page === 'schedules') {
+        if (a !== 'delete') {
+          showToast(`Unsupported schedule action: ${a}`, true);
+          return;
+        }
+        if (!window.confirm(`Delete ${targets.length} snapshot schedule(s)? Existing snapshots are kept.`)) return;
+        for (const t of targets) await api.deleteSnapshotSchedule(t.ns, t.name);
+      } else if (page === 'orphans') {
+        if (a !== 'reclaim') {
+          showToast(`Unsupported volume action: ${a}`, true);
+          return;
+        }
+        if (user?.role !== 'admin') {
+          showToast('Reclaiming volumes needs an admin account', true);
+          return;
+        }
+        for (const ns of new Set(targets.map((t) => t.ns))) {
+          const preview = await api.reclaimOrphans({ namespace: ns });
+          const names = (preview.candidates || preview.orphans || []).map((o) => o.name);
+          if (!names.length) {
+            showToast(`Nothing to reclaim in ${ns}`);
+            continue;
+          }
+          const ok = window.confirm(
+            `Dry run: reclaiming ${ns} would permanently delete ${names.length} volume(s):\n\n${names.join('\n')}\n\n` +
+              'These claims are not referenced by any VM, but a pod may still mount them. Delete them?',
+          );
+          if (!ok) return;
+          await api.reclaimOrphans({ namespace: ns, confirm: true });
+        }
       } else {
         showToast(`${a} on ${page}: no API for this action`, true);
         return;
@@ -588,7 +713,7 @@ export default function App() {
   const warnRows = res ? warnCount(res.rows) : 0;
   const okRows = res ? res.rows.filter((r) => ['Running', 'Ready', 'Bound', 'Healthy', 'Succeeded', 'Up'].includes(r.status)).length : 0;
   const atlasOff = page === 'atlas' && data.atlas?.meta?.configured === false;
-  const metrics = pageMetrics(page, res?.rows || [], { okRows, warnRows, podSummary, includeCompleted });
+  const metrics = pageMetrics(page, res?.rows || [], { okRows, warnRows, podSummary, includeCompleted, meta: res?.meta });
 
   return (
     <div className="vy" data-theme={theme}>
@@ -617,7 +742,7 @@ export default function App() {
         canCreate={canCreate}
         onCreate={() => {
           if (!res) setPage('vms');
-          openCreate();
+          onNew();
         }}
         user={user}
         onLogout={onLogout}
@@ -666,6 +791,11 @@ export default function App() {
           <NetraPage />
         ) : page === 'paqtra' ? (
           <PaqtraPage />
+        ) : INSIGHTS[page] ? (
+          (() => {
+            const Page = INSIGHTS[page];
+            return <Page key={page} user={user} showToast={showToast} />;
+          })()
         ) : page === 'console' ? (
           <ConsoleHub
             vms={data.vms.rows}
@@ -714,7 +844,7 @@ export default function App() {
                   <RefreshCw size={15} className={loading ? 'spin' : ''} />
                 </button>
                 {res.canCreate && (
-                  <button className="btn primary sm" onClick={() => openCreate()}>
+                  <button className="btn primary sm" onClick={onNew}>
                     <Plus size={14} />
                     New
                   </button>
@@ -786,7 +916,7 @@ export default function App() {
                     </p>
                     {loaded(page) && !q && res.canCreate && (
                       <div className="acts">
-                        <button className="pill" onClick={() => openCreate()}>
+                        <button className="pill" onClick={onNew}>
                           <Plus size={16} />
                           {page === 'vms' ? 'Create a machine' : `New ${res.kind}`}
                         </button>
@@ -829,7 +959,16 @@ export default function App() {
                 </div>
               ) : (
                 <div className="table-card">
-                  <Table cols={res.cols} rows={rows} selected={selected} focus={focus} onRow={onRow} onMenu={onMenu} />
+                  <Table
+                    key={page}
+                    cols={res.cols}
+                    rows={rows}
+                    selected={selected}
+                    focus={focus}
+                    onRow={onRow}
+                    onMenu={onMenu}
+                    {...(res.chrono ? { initialSort: null } : {})}
+                  />
                 </div>
               )}
 

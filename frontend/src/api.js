@@ -245,6 +245,7 @@ export function mapVm(raw, i) {
     id: `${ns}/${name}`,
     name,
     ns,
+    managed: raw.veyron_managed !== false,
     status: String(status).replace(/^VMI?Phase/, '') || 'Unknown',
     cpu: parseCount(raw.cpu ?? raw.cpus ?? raw.vcpus ?? raw.spec?.cpu),
     ram: parseMemGi(raw.memory || raw.ram || raw.memory_gi),
@@ -718,7 +719,382 @@ export const api = {
     unwrap(await request(`/api/v1/paqtra/flows?limit=50${verdict ? `&verdict=${verdict}` : ''}`))?.flows || [],
   paqtraDrops: async () => unwrap(await request('/api/v1/paqtra/drops'))?.drops || [],
   paqtraPosture: async () => unwrap(await request('/api/v1/paqtra/posture')) || {},
+
+  // Operations
+  costs: async () => listOf(await request('/api/v1/costs?namespace=all'), 'costs'),
+  costSummary: async () => unwrap(await request('/api/v1/costs/summary?namespace=all')) || {},
+  costForecast: async () => unwrap(await request('/api/v1/costs/forecast?namespace=all')) || {},
+  listBudgets: async () => listOf(await request('/api/v1/costs/budgets'), 'budgets'),
+  createBudget: (body) => request('/api/v1/costs/budgets', { method: 'POST', body: JSON.stringify(body) }),
+  deleteBudget: (name) => request(`/api/v1/costs/budgets/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  listRecommendations: async () => listOf(await request('/api/v1/recommendations?namespace=all'), 'recommendations'),
+  sloObjectives: async () => listOf(await request('/api/v1/slo/objectives?namespace=all'), 'objectives'),
+  sloBurnRate: async () => listOf(await request('/api/v1/slo/burn-rate?namespace=all'), 'burn_rates'),
+  recentEvents: async () => listOf(await request('/api/v1/events/recent?namespace=all'), 'events'),
+  incidents: async () => unwrap(await request('/api/v1/incidents/timeline?namespace=all')) || {},
+  logs: async () => unwrap(await request('/api/v1/logs?namespace=all')) || {},
+  queryLogs: async ({ search = '', level = '', limit = 200 } = {}) => {
+    const p = new URLSearchParams({ namespace: 'all', limit: String(limit) });
+    if (search) p.set('search', search);
+    if (level) p.set('level', level);
+    return listOf(await request(`/api/v1/logs/query?${p}`), 'entries');
+  },
+
+  // Security
+  complianceStatus: async () => listOf(await request('/api/v1/compliance/status?namespace=all'), 'frameworks'),
+  complianceReports: async () => listOf(await request('/api/v1/compliance/reports?namespace=all'), 'reports'),
+  auditTrail: async () => listOf(await request('/api/v1/audit/trail?namespace=all'), 'entries'),
+  auditStats: async () => unwrap(await request('/api/v1/audit/stats?namespace=all')) || {},
+  securityFindings: async () => listOf(await request('/api/v1/security/findings?namespace=all'), 'findings'),
+  securityPosture: async () => unwrap(await request('/api/v1/security/posture?namespace=all')) || {},
+  listUsers: async () => listOf(await request('/api/v1/auth/users'), 'users'),
+  createUser: (body) => request('/api/v1/auth/users', { method: 'POST', body: JSON.stringify(body) }),
+  deleteUser: (username) => request(`/api/v1/auth/users/${encodeURIComponent(username)}`, { method: 'DELETE' }),
+  setUserPassword: (username, password) =>
+    request(`/api/v1/auth/users/${encodeURIComponent(username)}/password`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }),
+  rbacRoles: async () => listOf(await request('/api/v1/rbac/roles?namespace=all'), 'roles'),
+  rbacBindings: async () => listOf(await request('/api/v1/rbac/bindings?namespace=all'), 'bindings'),
+  socHunts: async () => listOf(await request('/api/v1/soc/hunts'), 'hunts'),
+  runSocHunt: (body) => request('/api/v1/soc/hunts/run', { method: 'POST', body: JSON.stringify(body) }),
+  socPlaybooks: async () => listOf(await request('/api/v1/soc/playbooks'), 'playbooks'),
+  triggerSocPlaybook: (id, eventType) =>
+    request(`/api/v1/soc/playbooks/${encodeURIComponent(id)}/trigger`, {
+      method: 'POST',
+      body: JSON.stringify({ playbook_id: id, event_type: eventType }),
+    }),
+  socAttackSurface: async () => unwrap(await request('/api/v1/soc/attack-surface?namespace=all')) || {},
+  socExportStatus: async () => listOf(await request('/api/v1/soc/export/status'), 'exporters'),
+  socEvents: async () => listOf(await request('/api/v1/soc/events?limit=50'), 'events'),
+
+  // Platform
+  listOperators: async () => listOf(await request('/api/v1/operators?namespace=all'), 'operators'),
+  listHelmReleases: async () => listOf(await request('/api/v1/helm/releases?namespace=all'), 'releases'),
+  listNamespaces: async () => listOf(await request('/api/v1/namespaces'), 'namespaces'),
+  listQuotas: async () => listOf(await request('/api/v1/quotas?namespace=all'), 'quotas'),
+  gitopsStatus: async () => unwrap(await request('/api/v1/gitops/status?namespace=all')) || {},
+  gitopsSync: (body = { force: false, dry_run: true }) =>
+    request('/api/v1/gitops/sync', { method: 'POST', body: JSON.stringify(body) }).then(unwrap),
+  catalogStatus: async () => unwrap(await request('/api/v1/catalog/status')) || {},
+  catalogSync: () => request('/api/v1/catalog/sync', { method: 'POST' }).then(unwrap),
+  listCustomResources: async () =>
+    listOf(await request('/api/v1/custom-resources', { timeout: 45_000 }), 'resources'),
+  listVeyronCrs: async (kind) => listOf(await request(`/api/v1/crds/${kind}?namespace=all`), 'items'),
+  listClusters: async () => unwrap(await request('/api/v1/clusters')) || {},
+  listWorkloads: async () => listOf(await request('/api/v1/workloads?namespace=all'), 'workloads'),
+
+  // Storage & network
+  storageUsage: async () => listOf(await request('/api/v1/storage/usage?namespace=all'), 'usage'),
+  storagePools: async () => listOf(await request('/api/v1/storage/pools'), 'pools'),
+  storageOrphans: async () => listOf(await request('/api/v1/storage/orphans?namespace=all'), 'orphans'),
+  reclaimOrphans: async ({ namespace = 'all', confirm = false } = {}) =>
+    unwrap(
+      await request(`/api/v1/storage/orphans?namespace=${encodeURIComponent(namespace)}${confirm ? '&confirm=true' : ''}`, {
+        method: 'DELETE',
+      }),
+    ) || {},
+  listSnapshotSchedules: async () => listOf(await request('/api/v1/snapshot-schedules?namespace=all'), 'schedules'),
+  createSnapshotSchedule: (body) =>
+    request('/api/v1/snapshot-schedules', { method: 'POST', body: JSON.stringify(body) }),
+  deleteSnapshotSchedule: (ns, name) =>
+    request(`/api/v1/snapshot-schedules/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  ciliumStatus: async () => unwrap(await request('/api/v1/cilium/status')) || {},
+  ciliumPolicies: async () => listOf(await request('/api/v1/cilium/policies?namespace=all'), 'policies'),
+  ciliumFlows: async () => unwrap(await request('/api/v1/cilium/flows?namespace=all')) || {},
+  networkPolicies: async () => listOf(await request('/api/v1/network-policies?namespace=all'), 'policies'),
+  listIngresses: async () => listOf(await request('/api/v1/ingress?namespace=all'), 'ingresses'),
+
+  // Per-VM extras
+  guestDoctor: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/guest/doctor`, { timeout: 45_000 })),
+  guestEvidence: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/guest/evidence`, { timeout: 45_000 })),
+  guestFixPlan: async (ns, name) =>
+    unwrap(await request(`${vmPath(ns, name)}/guest/fix-plan`, { method: 'POST', body: '{}' })),
+  guestMetrics: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/guest/metrics`, { timeout: 45_000 })),
+  guestMigrateScore: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/guest/migrate-score`, { timeout: 45_000 })),
+  guestFilesystem: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/guest-filesystem`)) || {},
+  vmSecurity: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/security`)) || {},
+  vmMigrations: async (ns, name) => listOf(await request(`${vmPath(ns, name)}/migrations`), 'migrations'),
+  cancelVmMigration: (ns, name, mig) =>
+    request(`${vmPath(ns, name)}/migrations/${encodeURIComponent(mig)}`, { method: 'DELETE' }),
+  vmVolumes: async (ns, name) => listOf(await request(`${vmPath(ns, name)}/volumes/status`), 'volumes'),
+  hotplugVolume: (ns, name, volumeName, pvcName) =>
+    request(`${vmPath(ns, name)}/volumes/hotplug`, {
+      method: 'POST',
+      body: JSON.stringify({ volume_name: volumeName, pvc_name: pvcName }),
+    }),
+  hotremoveVolume: (ns, name, volumeName) =>
+    request(`${vmPath(ns, name)}/volumes/hotremove`, { method: 'POST', body: JSON.stringify({ volume_name: volumeName }) }),
+  dataDiskDefaults: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/storage/data-disk/defaults`)) || {},
+  addDataDisk: async (ns, name, body) =>
+    unwrap(await request(`${vmPath(ns, name)}/storage/data-disk`, { method: 'POST', body: JSON.stringify(body) })),
 };
+
+function vmPath(ns, name) {
+  return `/api/v1/vms/${encodeURIComponent(ns || 'default')}/${encodeURIComponent(name)}`;
+}
+
+/** Unwraps a list endpoint that answers with either a bare array or `{ <key>: [...] }`. */
+export function listOf(j, key) {
+  const u = unwrap(j);
+  if (Array.isArray(u)) return u;
+  if (u && Array.isArray(u[key])) return u[key];
+  return [];
+}
+
+const titleCase = (s) => String(s || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+export function money(v, currency = 'USD') {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '—';
+  return n.toLocaleString(undefined, {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'narrowSymbol',
+    maximumFractionDigits: n >= 100 ? 0 : 2,
+  });
+}
+
+export function mapRecommendation(raw, i) {
+  return {
+    id: raw.id || `rec-${i}`,
+    name: raw.title || raw.id || `Recommendation ${i + 1}`,
+    status: raw.priority || 'Medium',
+    category: titleCase(raw.category).replace(/\s+/g, ' ') || '—',
+    resource: raw.resource || '—',
+    savings: raw.estimated_savings != null ? money(raw.estimated_savings) : '—',
+    effort: raw.effort || '—',
+    impact: raw.impact || '—',
+    description: raw.description || '—',
+  };
+}
+
+export function mapClusterEvent(raw, i) {
+  return {
+    id: `${raw.timestamp || ''}-${raw.involved_object || ''}-${i}`,
+    name: raw.involved_object || raw.reason || `event-${i}`,
+    status: raw.type || 'Normal',
+    reason: raw.reason || '—',
+    ns: raw.namespace || '—',
+    message: tidyEventMessage(raw.message) || '—',
+    age: relTime(raw.timestamp),
+    at: raw.timestamp || '—',
+  };
+}
+
+export function mapIncident(raw, i) {
+  return {
+    id: raw.id ? `${raw.id}-${i}` : `inc-${i}`,
+    name: raw.title || raw.id || `Incident ${i + 1}`,
+    status: raw.resolved ? 'Resolved' : raw.severity || 'warning',
+    kind: titleCase(raw.kind) || '—',
+    vm: raw.vm_name || '—',
+    ns: raw.namespace || '—',
+    description: raw.description || '—',
+    age: relTime(raw.timestamp),
+    at: raw.timestamp || '—',
+  };
+}
+
+export function mapAudit(raw, i) {
+  return {
+    id: raw.id || `audit-${i}`,
+    name: raw.resource_name || raw.action || `entry-${i}`,
+    status: raw.outcome || '—',
+    user: raw.user || '—',
+    action: raw.action || '—',
+    type: raw.resource_type || '—',
+    ns: raw.namespace || '—',
+    details: tidyEventMessage(raw.details) || '—',
+    age: relTime(raw.timestamp),
+    at: raw.timestamp || '—',
+  };
+}
+
+export function mapFinding(raw, i) {
+  return {
+    id: raw.id || `finding-${i}`,
+    name: raw.title || raw.id || `Finding ${i + 1}`,
+    status: raw.severity || 'Medium',
+    category: raw.category || '—',
+    resource: raw.resource || '—',
+    description: raw.description || '—',
+    recommendation: raw.recommendation || '—',
+    age: relTime(raw.detected_at),
+  };
+}
+
+export function mapUser(raw) {
+  return {
+    id: raw.username,
+    name: raw.username,
+    status: 'Active',
+    role: raw.role || 'readonly',
+    display: raw.display_name || '—',
+    age: relTime(raw.created_at),
+    created: raw.created_at || '—',
+  };
+}
+
+export function mapRole(raw, i) {
+  const rules = Array.isArray(raw.rules) ? raw.rules : [];
+  const verbs = [...new Set(rules.flatMap((r) => r.verbs || []))];
+  return {
+    id: `${raw.namespace || 'cluster'}/${raw.name || i}`,
+    name: raw.name || `role-${i}`,
+    status: raw.namespace ? 'Namespaced' : 'Cluster',
+    ns: raw.namespace || 'cluster-wide',
+    rules: rules.length,
+    verbs: verbs.includes('*') ? 'all (*)' : verbs.slice(0, 6).join(', ') || '—',
+    groups: [...new Set(rules.flatMap((r) => r.api_groups || []))].map((g) => g || 'core').slice(0, 6).join(', ') || '—',
+  };
+}
+
+export function mapBinding(raw, i) {
+  const subjects = Array.isArray(raw.subjects) ? raw.subjects : [];
+  return {
+    id: `${raw.namespace || 'cluster'}/${raw.name || i}`,
+    name: raw.name || `binding-${i}`,
+    role: raw.role_name || '—',
+    ns: raw.namespace || 'cluster-wide',
+    subjects: subjects.map((s) => `${s.kind}:${s.namespace ? `${s.namespace}/` : ''}${s.name}`).join(', ') || '—',
+  };
+}
+
+export function mapOperator(raw, i) {
+  const managed = Array.isArray(raw.managed_resources) ? raw.managed_resources : [];
+  return {
+    id: `${raw.namespace || ''}/${raw.name || i}`,
+    name: raw.name || `operator-${i}`,
+    status: raw.status || 'Unknown',
+    ns: raw.namespace || '—',
+    version: present(raw.version),
+    managed: managed.length,
+    managedList: managed.join(', ') || '—',
+  };
+}
+
+export function mapHelmRelease(raw, i) {
+  const chart = [raw.chart, raw.chart_version].filter(Boolean).join('-');
+  return {
+    id: `${raw.namespace || ''}/${raw.name || i}`,
+    name: raw.name || `release-${i}`,
+    status: raw.status || 'unknown',
+    ns: raw.namespace || '—',
+    chart: chart || '—',
+    app: present(raw.app_version),
+    revision: raw.revision ?? '—',
+    age: relTime(raw.updated_at),
+  };
+}
+
+export function mapQuota(raw, i) {
+  const pair = (used, limit) => (limit ? `${used || '0'} / ${limit}` : '—');
+  return {
+    id: `${raw.namespace || ''}/${raw.name || i}`,
+    name: raw.name || `quota-${i}`,
+    ns: raw.namespace || '—',
+    cpu: pair(raw.cpu_used, raw.cpu_limit),
+    memory: pair(raw.memory_used, raw.memory_limit),
+    vms: raw.vm_limit != null ? `${raw.vm_count ?? 0} / ${raw.vm_limit}` : '—',
+  };
+}
+
+export function mapCustomResource(raw, i) {
+  return {
+    id: raw.name || `crd-${i}`,
+    name: raw.kind || raw.name || `crd-${i}`,
+    crd: raw.name || '—',
+    group: raw.group || '—',
+    version: raw.version || '—',
+    scope: raw.scope || '—',
+    count: raw.instance_count ?? 0,
+  };
+}
+
+export function mapWorkload(raw, i) {
+  return {
+    id: `${raw.namespace || ''}/${raw.workload_type || ''}/${raw.name || i}`,
+    name: raw.name || `workload-${i}`,
+    status: raw.status || 'Unknown',
+    type: raw.workload_type || '—',
+    ns: raw.namespace || '—',
+    ready: raw.replicas != null ? `${raw.ready_replicas ?? 0}/${raw.replicas}` : '—',
+    cpu: present(raw.cpu_request),
+    memory: present(raw.memory_request),
+  };
+}
+
+export function mapOrphan(raw, i) {
+  return {
+    id: `${raw.namespace || ''}/${raw.name || i}`,
+    name: raw.name || `pvc-${i}`,
+    status: 'Unattached',
+    ns: raw.namespace || 'default',
+    sc: raw.storage_class || '—',
+    size: raw.capacity || '—',
+  };
+}
+
+export function mapSchedule(raw, i) {
+  return {
+    id: `${raw.namespace || ''}/${raw.name || i}`,
+    name: raw.name || `schedule-${i}`,
+    status: raw.enabled === false ? 'Disabled' : 'Enabled',
+    ns: raw.namespace || 'default',
+    vm: raw.vm_name || '—',
+    cron: raw.cron || '—',
+    prefix: raw.snapshot_prefix || '—',
+    keep: raw.max_snapshots ? raw.max_snapshots : 'all',
+    lastRun: relTime(raw.last_run),
+  };
+}
+
+const selectorText = (sel) =>
+  sel && typeof sel === 'object' && Object.keys(sel).length
+    ? Object.entries(sel).map(([k, v]) => `${k}=${v}`).join(', ')
+    : 'all pods';
+
+export function mapCiliumPolicy(raw, i) {
+  return {
+    id: `${raw.namespace || 'cluster'}/${raw.name || i}`,
+    name: raw.name || `policy-${i}`,
+    status: raw.enforcement || 'Enabled',
+    kind: raw.policy_kind || 'CNP',
+    ns: raw.namespace || 'cluster-wide',
+    selector: selectorText(raw.endpoint_selector),
+    ingress: raw.ingress_rules ?? 0,
+    egress: raw.egress_rules ?? 0,
+  };
+}
+
+export function mapNetworkPolicy(raw, i) {
+  return {
+    id: `${raw.namespace || ''}/${raw.name || i}`,
+    name: raw.name || `netpol-${i}`,
+    ns: raw.namespace || '—',
+    types: (raw.policy_types || []).join(', ') || '—',
+    selector: selectorText(raw.pod_selector),
+    ingress: raw.ingress_rules ?? 0,
+    egress: raw.egress_rules ?? 0,
+    age: relTime(raw.created_at),
+  };
+}
+
+export function mapIngress(raw, i) {
+  const rules = Array.isArray(raw.rules) ? raw.rules : [];
+  return {
+    id: `${raw.namespace || ''}/${raw.name || i}`,
+    name: raw.name || `ingress-${i}`,
+    ns: raw.namespace || '—',
+    cls: raw.class_name || '—',
+    hosts: (raw.hosts || []).join(', ') || '—',
+    tls: raw.tls ? 'Yes' : 'No',
+    backends: rules.map((r) => `${r.path || '/'} → ${r.service_name}:${r.service_port}`).join(', ') || '—',
+    age: relTime(raw.created_at),
+  };
+}
 
 export function mapGpu(raw, i) {
   const node = raw.node || raw.name || `gpu-${i}`;
