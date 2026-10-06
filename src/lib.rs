@@ -75,6 +75,14 @@ pub mod servicemesh;
 pub mod snapshots;
 pub mod soc;
 
+// AI platform: tool registry, agent loop, proposals, MCP, sandboxes
+#[cfg(feature = "web")]
+pub mod ai;
+#[cfg(feature = "web")]
+pub mod mcp;
+#[cfg(feature = "web")]
+pub mod sandbox;
+
 // Operator CRD types (veyron.io/v1alpha1)
 pub mod operator_crds;
 
@@ -1140,6 +1148,15 @@ pub async fn run(mut cli: Cli) -> Result<()> {
         Commands::GroupsAddUser { group, user } => {
             handlers::multitenancy::handle_groups_add_user(group, user)?
         }
+
+        #[cfg(feature = "web")]
+        Commands::Mcp {
+            url,
+            api_key,
+            insecure,
+        } => mcp::bridge::run_stdio(&url, api_key.as_deref(), insecure).await?,
+        #[cfg(not(feature = "web"))]
+        Commands::Mcp { .. } => anyhow::bail!("`veyron mcp` needs a build with the web feature"),
 
         // ========== DEVELOPER EXPERIENCE & TOOLING ==========
         Commands::Completions {

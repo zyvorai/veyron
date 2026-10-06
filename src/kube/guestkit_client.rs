@@ -151,6 +151,79 @@ pub async fn qga_execute_for_vmi(
     parse_virsh_qga_output(&stdout, &stderr)
 }
 
+/// Decoded QGA `guest-exec-status` result, with stdout, stderr and the exit code kept apart.
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize)]
+pub struct GuestExecOutput {
+    pub exited: bool,
+    pub exit_code: Option<i64>,
+    pub signal: Option<i64>,
+    pub stdout: String,
+    pub stderr: String,
+    pub truncated: bool,
+}
+
+/// Decode `guest-exec-status` (accepts both `exitcode` and `exit-code` spellings).
+pub fn decode_guest_exec_status(v: &Value) -> GuestExecOutput {
+    use base64::Engine;
+    let b64 = |keys: &[&str]| -> String {
+        keys.iter()
+            .find_map(|k| v.get(*k).and_then(|x| x.as_str()))
+            .and_then(|b| base64::engine::general_purpose::STANDARD.decode(b).ok())
+            .map(|d| String::from_utf8_lossy(&d).into_owned())
+            .unwrap_or_default()
+    };
+    let int = |keys: &[&str]| keys.iter().find_map(|k| v.get(*k).and_then(|x| x.as_i64()));
+    let flag = |k: &str| v.get(k).and_then(|x| x.as_bool()).unwrap_or(false);
+    let exit_code = int(&["exitcode", "exit-code", "exit_code"]);
+    GuestExecOutput {
+        exited: flag("exited") || exit_code.is_some(),
+        exit_code,
+        signal: int(&["signal"]),
+        stdout: b64(&["out-data", "out_data"]),
+        stderr: b64(&["err-data", "err_data"]),
+        truncated: flag("out-truncated") || flag("err-truncated"),
+    }
+}
+
+/// A resolved QGA channel (launcher pod + libvirt domain) for issuing many
+/// commands without re-discovering them each time.
+pub struct QgaSession {
+    pods: Api<Pod>,
+    pod_name: String,
+    domain: String,
+}
+
+impl QgaSession {
+    pub async fn open(client: Client, namespace: &str, vmi_name: &str) -> Result<Self> {
+        let pod_name = find_virt_launcher_pod(&client, namespace, vmi_name).await?;
+        let pods: Api<Pod> = Api::namespaced(client, namespace);
+        let domain = discover_libvirt_domain(&pods, &pod_name).await?;
+        Ok(Self {
+            pods,
+            pod_name,
+            domain,
+        })
+    }
+
+    /// Run one QGA command; returns its `return` value.
+    pub async fn execute(&self, execute: &Value, timeout_secs: u64) -> Result<Value> {
+        let (stdout, stderr) = exec_in_virt_launcher(
+            &self.pods,
+            &self.pod_name,
+            vec![
+                "virsh".to_string(),
+                "qemu-agent-command".to_string(),
+                "--timeout".to_string(),
+                timeout_secs.max(5).to_string(),
+                self.domain.clone(),
+                serde_json::to_string(execute)?,
+            ],
+        )
+        .await?;
+        parse_virsh_qga_output(&stdout, &stderr)
+    }
+}
+
 fn parse_virsh_qga_output(stdout: &str, stderr: &str) -> Result<Value> {
     let out = stdout.trim();
     if !out.is_empty() {

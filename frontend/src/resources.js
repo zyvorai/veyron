@@ -3,7 +3,7 @@ import {
   Cpu, Bell, Shield, Database, ArrowLeftRight, Activity, Map, Cloud, Radar, Waypoints,
   Lightbulb, ListTree, Siren, ShieldAlert, ScrollText, Boxes, Ship, Gauge, Puzzle, Layers,
   Unlink, CalendarClock, Route, Wallet, Target, FileText, ClipboardCheck, Crosshair, Users,
-  GitBranch, Globe, HeartPulse, Shuffle,
+  GitBranch, Globe, HeartPulse, Shuffle, Sparkles, ClipboardList, SearchCheck, Container, BrainCircuit,
 } from 'lucide-react';
 
 /** Schema only — rows come from the API. */
@@ -745,6 +745,17 @@ export const NAV = [
       ['clusters', 'Clusters', 'Kubeconfig contexts this API can switch to.'],
     ],
   },
+  {
+    g: 'AI',
+    tone: 'violet',
+    items: [
+      ['ai', 'Veyron AI', 'Assistant, MCP, model and guardrails.'],
+      ['proposals', 'Proposals', 'Changes the AI drafted, waiting for a human.'],
+      ['investigations', 'Investigations', 'Root-cause reports for failures, written automatically.'],
+      ['sandboxes', 'Sandboxes', 'Disposable VMs where agents run code.'],
+      ['models', 'Models', 'Serve an open model inside your cluster.'],
+    ],
+  },
   { g: 'Settings', tone: 'graphite', page: 'settings', items: [['settings', 'Settings', 'Accounts, policy and integrations.']] },
 ];
 
@@ -781,11 +792,14 @@ export const INSIGHT_PAGES = [
   'costs', 'slo', 'logs', 'compliance', 'hunting', 'users', 'gitops', 'clusters', 'storagehealth', 'cilium',
 ];
 
-export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra', 'paqtra', ...INSIGHT_PAGES]);
+/** Veyron AI pages, served by aipages.jsx. */
+export const AI_PAGES = ['ai', 'proposals', 'investigations', 'sandboxes', 'models'];
+
+export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra', 'paqtra', ...INSIGHT_PAGES, ...AI_PAGES]);
 
 /** Story pages that render full-bleed, without the local toolbar. */
 export const FULL_BLEED_PAGES = new Set([
-  'mission', 'console', 'monitoring', 'topology', 'dr', 'netra', 'paqtra', ...INSIGHT_PAGES,
+  'mission', 'console', 'monitoring', 'topology', 'dr', 'netra', 'paqtra', ...INSIGHT_PAGES, ...AI_PAGES,
 ]);
 
 export const CHAPTER_ICONS = {
@@ -804,4 +818,9 @@ export const CHAPTER_ICONS = {
   clusters: Globe,
   storagehealth: HeartPulse,
   cilium: Shuffle,
+  ai: Sparkles,
+  proposals: ClipboardList,
+  investigations: SearchCheck,
+  sandboxes: Container,
+  models: BrainCircuit,
 };

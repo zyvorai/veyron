@@ -7,7 +7,7 @@ import { Table } from './Table.jsx';
 import { PageHero } from './PageHero.jsx';
 
 /** Loads every source independently so one slow or failing endpoint never blanks the page. */
-function useSources(sources) {
+export function useSources(sources) {
   const [state, setState] = useState({});
   const [busy, setBusy] = useState(false);
   const reload = useCallback(async () => {
@@ -34,7 +34,7 @@ function useSources(sources) {
   return { get, err, loaded, busy, reload };
 }
 
-function Shell({ kicker, title, lede, busy, onRefresh, children }) {
+export function Shell({ kicker, title, lede, busy, onRefresh, children }) {
   return (
     <div className="chapter-page insight-page">
       <PageHero kicker={kicker} title={title} lede={lede} onRefresh={onRefresh} busy={busy} />
@@ -43,7 +43,7 @@ function Shell({ kicker, title, lede, busy, onRefresh, children }) {
   );
 }
 
-function Specs({ items }) {
+export function Specs({ items }) {
   return (
     <section className="apple-band-paper">
       <div className="specs">
@@ -59,7 +59,7 @@ function Specs({ items }) {
 }
 
 /** `wide` bands span the full page; plain bands pair up side by side on wide screens. */
-function Band({ kicker, title, lede, wide, actions, children }) {
+export function Band({ kicker, title, lede, wide, actions, children }) {
   return (
     <section className={wide ? 'insight-band' : 'apple-band'}>
       <div className="apple-chapter insight-chapter">
@@ -75,11 +75,11 @@ function Band({ kicker, title, lede, wide, actions, children }) {
   );
 }
 
-function Note({ children, warn }) {
+export function Note({ children, warn }) {
   return <p className={`insight-note${warn ? ' warn' : ''}`}>{children}</p>;
 }
 
-function DataTable({ cols, rows, empty, loading, error, filter, limit = 50, chrono }) {
+export function DataTable({ cols, rows, empty, loading, error, filter, limit = 50, chrono }) {
   const [q, setQ] = useState('');
   const [all, setAll] = useState(false);
   const shown = useMemo(() => {
@@ -119,7 +119,7 @@ function DataTable({ cols, rows, empty, loading, error, filter, limit = 50, chro
 const isAdmin = (user) => user?.role === 'admin';
 const pct = (v) => (v == null || !Number.isFinite(Number(v)) ? '—' : `${Math.round(Number(v) * 10) / 10}%`);
 const yesNo = (v) => (v == null ? '—' : v ? 'Yes' : 'No');
-const titleCase = (s) => String(s || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+export const titleCase = (s) => String(s || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 function downloadJson(filename, data) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
@@ -130,7 +130,7 @@ function downloadJson(filename, data) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function run(showToast, fn, done) {
+export async function run(showToast, fn, done) {
   try {
     await fn();
     if (done) showToast(done);

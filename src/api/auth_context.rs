@@ -7,10 +7,12 @@ use axum::http::Method;
 
 use crate::api::http_server::web::ApiRole;
 
-/// Authenticated caller role attached to each authorized request.
+/// Authenticated caller attached to each authorized request.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AuthContext {
     pub role: ApiRole,
+    /// Who is calling: API key name, local username, JWT/OIDC `sub`, or `ws-ticket`.
+    pub subject: String,
 }
 
 impl AuthContext {
@@ -19,7 +21,7 @@ impl AuthContext {
     }
 }
 
-fn role_rank(role: &ApiRole) -> u8 {
+pub fn role_rank(role: &ApiRole) -> u8 {
     match role {
         ApiRole::ReadOnly => 0,
         ApiRole::Write => 1,
@@ -51,6 +53,23 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
         None => std::borrow::Cow::Borrowed(path),
     };
     let path: &str = &canonical;
+
+    // AI requests that only read or draft. Anything they want to change becomes a
+    // proposal that a Write/Admin caller must approve, and MCP tools check roles per tool.
+    if matches!(
+        path,
+        "/api/v1/ai/chat/stream"
+            | "/api/v1/ai/chat"
+            | "/api/v1/ai/search"
+            | "/api/v1/ai/intent/vm"
+            | "/api/v1/ai/policies/draft"
+            | "/mcp"
+    ) {
+        return ApiRole::ReadOnly;
+    }
+    if path == "/api/v1/ai/settings/llm" || path.starts_with("/api/v1/ai/mcp-servers") {
+        return ApiRole::Admin;
+    }
 
     if path.starts_with("/api/v1/clusters/") && path.ends_with("/activate") {
         return ApiRole::Admin;
@@ -233,6 +252,7 @@ mod tests {
     fn write_blocked_from_admin_route() {
         let ctx = AuthContext {
             role: ApiRole::Write,
+            subject: "ci".into(),
         };
         assert!(!ctx.allows(&ApiRole::Admin));
         assert!(ctx.allows(&ApiRole::Write));

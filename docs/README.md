@@ -17,6 +17,7 @@ Kubernetes API.
 | Windows guests and golden images | [windows.md](windows.md) |
 | Two racks or two sites | [multi-site.md](multi-site.md) |
 | Security operations (detections, SIEM export) | [soc.md](soc.md) |
+| AI assistant, MCP, proposals, sandboxes, in-cluster models | [ai.md](ai.md) |
 | Prometheus, Atlas, Netra, Paqtra, Copilot and more | [integrations.md](integrations.md) |
 
 **Status.** Kairon is replacing KubeVirt and CDI as Veyron's VM engine. Until that work ships, the

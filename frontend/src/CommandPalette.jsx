@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, CornerDownLeft, Plus, Sun, Moon, Terminal, ArrowRight } from 'lucide-react';
+import { Search, CornerDownLeft, Plus, Sun, Moon, Terminal, ArrowRight, Sparkles, Filter } from 'lucide-react';
+import { api } from './api.js';
+import { applyFilter, looksLikeQuestion } from './aisearch.js';
 import { NAV, RES_META, CHAPTER_ICONS, pageLabel, pageBlurb } from './resources.js';
 import { Status } from './status.jsx';
 import { useFocusTrap } from './a11y.js';
@@ -27,8 +29,9 @@ function loadRecent() {
 }
 
 /** ⌘K palette: jump to pages, resources and actions. */
-export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, onCreate, onConsole }) {
+export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, onCreate, onConsole, onAsk }) {
   const [q, setQ] = useState('');
+  const [found, setFound] = useState(null);
   const [idx, setIdx] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
@@ -38,6 +41,7 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
   useEffect(() => {
     if (open) {
       setQ('');
+      setFound(null);
       setIdx(0);
       setTimeout(() => inputRef.current?.focus(), 10);
     }
@@ -94,6 +98,43 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
   }, [data, theme, go, onCreate, onToggleTheme, onConsole]);
 
   const results = useMemo(() => {
+    const askItems = [];
+    if (q.trim() && looksLikeQuestion(q)) {
+      const text = q.trim().replace(/^\?\s*/, '');
+      askItems.push({
+        key: 'ask:find',
+        group: 'Ask',
+        label: `Find: ${text}`,
+        hint: 'Filter what is loaded, in plain language',
+        I: Filter,
+        keep: true,
+        run: () => runFind(text),
+      });
+      if (onAsk) {
+        askItems.push({
+          key: 'ask:ai',
+          group: 'Ask',
+          label: `Ask Veyron AI: ${text}`,
+          hint: 'Opens the assistant (⌘J)',
+          I: Sparkles,
+          run: () => onAsk(text),
+        });
+      }
+    }
+    if (found) {
+      const res = data[found.filter.resource];
+      const head = { key: 'found:head', group: found.explanation, label: `${found.rows.length} match${found.rows.length === 1 ? '' : 'es'}`, hint: found.source === 'llm' ? 'Interpreted by the model' : 'Interpreted by rules', I: Filter };
+      const rows = found.rows.slice(0, 60).map((r) => ({
+        key: `found:${r.id}`,
+        group: found.explanation,
+        label: r.name,
+        hint: [r.ns, r.os && r.os !== '—' ? r.os : null, r.host && r.host !== '—' ? r.host : null].filter(Boolean).join(' · '),
+        status: r.status,
+        I: res?.I || ArrowRight,
+        run: () => go(found.filter.resource, r.id),
+      }));
+      return [...askItems, head, ...rows];
+    }
     if (!q.trim()) {
       const recent = loadRecent();
       const byKey = new Map(items.map((it) => [it.key, it]));
@@ -108,12 +149,27 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
       .slice(0, 40)
       .map((x) => x.it);
     const order = [...new Set(ranked.map((it) => it.group))];
-    return order.flatMap((g) => ranked.filter((it) => it.group === g));
-  }, [items, q]);
+    const grouped = order.flatMap((g) => ranked.filter((it) => it.group === g));
+    return ranked.length && !looksLikeQuestion(q) ? [...grouped, ...askItems] : [...askItems, ...grouped];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, found, data, onAsk]);
 
   useEffect(() => {
     setIdx(0);
+    setFound(null);
   }, [q]);
+
+  async function runFind(text) {
+    setFound({ filter: { resource: 'vms' }, rows: [], explanation: 'Searching…', source: '' });
+    try {
+      const r = await api.aiSearch(text);
+      const rows = applyFilter(data[r.filter.resource]?.rows || [], r.filter);
+      setFound({ ...r, rows });
+      setIdx(1);
+    } catch (e) {
+      setFound({ filter: { resource: 'vms' }, rows: [], explanation: `Search failed: ${e.message}`, source: '' });
+    }
+  }
 
   useEffect(() => {
     listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
@@ -123,6 +179,11 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
 
   const choose = (it) => {
     if (!it) return;
+    if (it.keep) {
+      it.run?.();
+      return;
+    }
+    if (!it.run) return;
     const rec = [it.key, ...loadRecent().filter((k) => k !== it.key)].slice(0, 5);
     try {
       localStorage.setItem(RECENT_KEY, JSON.stringify(rec));
@@ -159,7 +220,7 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKey}
-            placeholder="Search machines, hosts, pages and actions"
+            placeholder="Search, or ask: stopped windows vms with more than 8 GB"
             aria-label="Search"
           />
           <kbd>esc</kbd>

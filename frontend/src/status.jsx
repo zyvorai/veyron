@@ -8,6 +8,7 @@ export const SC = {
   Degraded: 'var(--orange)',
   Pending: 'var(--yellow)',
   Provisioning: 'var(--accent)',
+  Installing: 'var(--accent)',
   Paused: 'var(--yellow)',
   Failed: 'var(--red)',
   Up: 'var(--green)',

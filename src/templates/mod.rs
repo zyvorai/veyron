@@ -607,6 +607,65 @@ fn default_ubuntu_cloud_init() -> String {
     linux_guestkit_cloud_init("ubuntu", &generate_random_password(), true)
 }
 
+/// Cloud-config keys whose lists are concatenated (template first) instead of replaced.
+const CLOUD_INIT_APPEND_KEYS: &[&str] = &[
+    "packages",
+    "write_files",
+    "runcmd",
+    "bootcmd",
+    "ssh_authorized_keys",
+    "users",
+    "mounts",
+];
+
+/// Merge caller user-data into a template's cloud-config so the GuestKit bootstrap
+/// survives. A `#!` script runs after the template's commands; anything that is not
+/// a cloud-config mapping replaces the template payload as before.
+pub fn merge_cloud_init(base: &str, custom: &str) -> String {
+    use serde_yml::{Mapping, Value};
+    let custom_map: Mapping = if custom.trim_start().starts_with("#!") {
+        let mut m = Mapping::new();
+        let mut file = Mapping::new();
+        file.insert("path".into(), "/usr/local/sbin/veyron-user-data.sh".into());
+        file.insert("permissions".into(), "0755".into());
+        file.insert("content".into(), custom.into());
+        m.insert(
+            "write_files".into(),
+            Value::Sequence(vec![Value::Mapping(file)]),
+        );
+        m.insert(
+            "runcmd".into(),
+            Value::Sequence(vec!["/usr/local/sbin/veyron-user-data.sh".into()]),
+        );
+        m
+    } else {
+        match serde_yml::from_str::<Value>(custom) {
+            Ok(Value::Mapping(m)) => m,
+            _ => return custom.to_string(),
+        }
+    };
+    let Ok(Value::Mapping(mut merged)) = serde_yml::from_str::<Value>(base) else {
+        return custom.to_string();
+    };
+    for (k, v) in custom_map {
+        let append = k
+            .as_str()
+            .is_some_and(|k| CLOUD_INIT_APPEND_KEYS.contains(&k));
+        match (merged.get_mut(&k), v) {
+            (Some(Value::Sequence(existing)), Value::Sequence(extra)) if append => {
+                existing.extend(extra)
+            }
+            (_, v) => {
+                merged.insert(k, v);
+            }
+        }
+    }
+    match serde_yml::to_string(&Value::Mapping(merged)) {
+        Ok(body) => format!("#cloud-config\n{body}"),
+        Err(_) => custom.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -625,6 +684,36 @@ mod tests {
         let ubuntu = manager.get("ubuntu").unwrap();
         assert_eq!(ubuntu.cpu.cores, 2);
         assert_eq!(ubuntu.memory.size, "4Gi");
+    }
+
+    #[test]
+    fn merge_cloud_init_keeps_guestkit_bootstrap() {
+        let base = default_ubuntu_cloud_init();
+        let merged = merge_cloud_init(
+            &base,
+            "#cloud-config\npackages:\n  - jq\nruncmd:\n  - echo hi\nhostname: llm\n",
+        );
+        let v: serde_yml::Value = serde_yml::from_str(&merged).unwrap();
+        let pkgs: Vec<_> = v["packages"]
+            .as_sequence()
+            .unwrap()
+            .iter()
+            .filter_map(|p| p.as_str())
+            .collect();
+        assert_eq!(pkgs, vec!["curl", "jq"]);
+        let run = v["runcmd"].as_sequence().unwrap();
+        assert_eq!(
+            run.first().and_then(|r| r.as_str()),
+            Some("/usr/local/sbin/veyron-install-guestkit.sh")
+        );
+        assert_eq!(run.last().and_then(|r| r.as_str()), Some("echo hi"));
+        assert_eq!(v["hostname"].as_str(), Some("llm"));
+        assert!(merged.starts_with("#cloud-config\n") && merged.contains("guestkit-agent"));
+
+        let script = merge_cloud_init(&base, "#!/bin/sh\necho x\n");
+        assert!(script.contains("veyron-user-data.sh") && script.contains("guestkit-agent"));
+
+        assert_eq!(merge_cloud_init(&base, "just text"), "just text");
     }
 
     #[test]

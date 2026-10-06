@@ -90,6 +90,10 @@ rules:
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "watch"]
+  # VeyronPolicy facts: RDP Services and snapshot-schedule ConfigMaps
+  - apiGroups: [""]
+    resources: ["services", "configmaps"]
+    verbs: ["get", "list", "watch"]
 
   # Per-VM internet egress (CiliumNetworkPolicy or NetworkPolicy)
   - apiGroups: ["cilium.io"]

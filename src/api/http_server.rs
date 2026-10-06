@@ -193,6 +193,9 @@ pub mod web {
                     }
                 }
             }
+            for (name, key, role) in crate::ai::exec::internal_keys() {
+                api_keys.push(ApiKeyEntry { key, role, name });
+            }
 
             let mut active_kube_context = None;
             let bootstrap = KubeClient::new().await?;
@@ -227,6 +230,13 @@ pub mod web {
 
         pub fn client(&self) -> &KubeClient {
             &self.kube_client
+        }
+
+        pub fn api_key_name(&self, key: &str) -> Option<String> {
+            self.api_keys
+                .iter()
+                .find(|e| constant_time_eq(key.as_bytes(), e.key.as_bytes()))
+                .map(|e| e.name.clone())
         }
 
         /// Authenticate an API key and return its role.
@@ -419,6 +429,11 @@ pub mod web {
     ) -> impl IntoResponse {
         let method = request.method().to_string();
         let path = request.uri().path().to_string();
+        let actor = request
+            .extensions()
+            .get::<AuthContext>()
+            .map(|c| c.subject.clone())
+            .unwrap_or_else(|| "api".to_string());
         let response = next.run(request).await;
         let outcome = if response.status().is_success() {
             "success"
@@ -431,7 +446,7 @@ pub mod web {
         let outcome_c = outcome.to_string();
         tokio::spawn(async move {
             crate::api::handlers::soc::record_api_audit(
-                &state_c, "api", &method_c, &path_c, &outcome_c,
+                &state_c, &actor, &method_c, &path_c, &outcome_c,
             )
             .await;
         });
@@ -479,12 +494,44 @@ pub mod web {
         None
     }
 
+    /// Best-effort caller identity for audit and AI proposals. The role was already
+    /// verified by `resolve_api_role`; this only names who holds it.
+    async fn resolve_subject(state: &SharedState, key: &str, headers: &HeaderMap) -> String {
+        let s = state.read().await;
+        if let Some(name) = s.api_key_name(key) {
+            if name.starts_with(crate::ai::exec::INTERNAL_KEY_PREFIX) {
+                let on_behalf = headers
+                    .get(crate::ai::exec::ON_BEHALF_HEADER)
+                    .and_then(|v| v.to_str().ok())
+                    .unwrap_or("unknown");
+                return format!("{on_behalf} (via Veyron AI)");
+            }
+            return name;
+        }
+        drop(s);
+        jwt_unverified_subject(key).unwrap_or_else(|| "bearer".to_string())
+    }
+
+    fn jwt_unverified_subject(token: &str) -> Option<String> {
+        use base64::Engine;
+        let payload = token.split('.').nth(1)?;
+        let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(payload.trim_end_matches('='))
+            .ok()?;
+        let claims: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+        ["email", "preferred_username", "sub"]
+            .iter()
+            .find_map(|k| claims.get(*k).and_then(|v| v.as_str()))
+            .map(str::to_string)
+    }
+
     fn authorize_request(
         role: ApiRole,
+        subject: String,
         method: &axum::http::Method,
         path: &str,
     ) -> Result<AuthContext, (StatusCode, Json<serde_json::Value>)> {
-        let ctx = AuthContext { role };
+        let ctx = AuthContext { role, subject };
         let required = auth_context::min_role_for_route(method, path);
         if !ctx.allows(&required) {
             let msg = if required == ApiRole::Admin {
@@ -548,6 +595,7 @@ pub mod web {
                 if crate::api::ws_ticket::consume_ws_ticket(&ticket) {
                     let ctx = AuthContext {
                         role: ApiRole::Write,
+                        subject: "ws-ticket".to_string(),
                     };
                     let mut request = request;
                     request.extensions_mut().insert(ctx);
@@ -583,7 +631,8 @@ pub mod web {
                 let role = resolve_api_role(&state, &key, true)
                     .await
                     .unwrap_or(ApiRole::Admin);
-                match authorize_request(role, &method, path) {
+                let subject = resolve_subject(&state, &key, &headers).await;
+                match authorize_request(role, subject, &method, path) {
                     Ok(ctx) => {
                         let mut request = request;
                         request.extensions_mut().insert(ctx);
@@ -593,7 +642,12 @@ pub mod web {
                 }
             }
             Some(key) => match resolve_api_role(&state, &key, false).await {
-                Some(role) => match authorize_request(role, &method, path) {
+                Some(role) => match authorize_request(
+                    role,
+                    resolve_subject(&state, &key, &headers).await,
+                    &method,
+                    path,
+                ) {
                     Ok(ctx) => {
                         let mut request = request;
                         request.extensions_mut().insert(ctx);
@@ -735,7 +789,10 @@ pub mod web {
                 get(serial_websocket_handler),
             )
             .route("/api/v1/ws/metrics", get(metrics_websocket_handler))
-            .with_state(state.clone());
+            .with_state(state.clone())
+            .merge(crate::ai::api::long_lived_router(state.clone()))
+            .merge(crate::mcp::server::router(state.clone()))
+            .merge(crate::sandbox::router(state.clone()));
 
         let timed_rest =
             Router::new()
@@ -1063,12 +1120,18 @@ pub mod web {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
             interval.tick().await;
+            {
+                let s = schedule_state.read().await;
+                crate::ai::models::refresh_override(&s.kube_client.client(), &s.namespace).await;
+            }
+            let mut ai_ticks: u64 = 0;
             loop {
                 interval.tick().await;
-                let client = {
+                let (client, api_ns) = {
                     let s = schedule_state.read().await;
-                    s.kube_client.client()
+                    (s.kube_client.client(), s.namespace.clone())
                 };
+                crate::ai::models::refresh_override(&client, &api_ns).await;
                 if !disable_scheduler_lease {
                     match crate::snapshots::scheduler_lease::acquire_snapshot_scheduler_leader(
                         client.clone(),
@@ -1101,9 +1164,12 @@ pub mod web {
                 {
                     log::warn!("self-healing tick: {}", e);
                 }
+                ai_ticks = ai_ticks.wrapping_add(1);
+                crate::ai::leader_tick(schedule_state.clone(), ai_ticks);
             }
         });
-        let app = build_router(state);
+        let app = build_router(state.clone());
+        crate::ai::exec::install_router(app.clone());
         let addr = format!("{}:{}", host, port);
 
         if let Some(tls) = tls_config {
@@ -1568,22 +1634,44 @@ pub mod web {
 
         #[test]
         fn readonly_can_read_but_not_mutate() {
-            assert!(authorize_request(ApiRole::ReadOnly, &Method::GET, "/api/v1/vms").is_ok());
-            let err = authorize_request(ApiRole::ReadOnly, &Method::POST, "/api/v1/vms")
-                .expect_err("readonly must not create VMs");
+            assert!(
+                authorize_request(ApiRole::ReadOnly, "t".into(), &Method::GET, "/api/v1/vms")
+                    .is_ok()
+            );
+            let err =
+                authorize_request(ApiRole::ReadOnly, "t".into(), &Method::POST, "/api/v1/vms")
+                    .expect_err("readonly must not create VMs");
             assert_eq!(err.0, StatusCode::FORBIDDEN);
         }
 
         #[test]
         fn write_can_mutate_but_admin_routes_stay_admin() {
-            assert!(authorize_request(ApiRole::Write, &Method::POST, "/api/v1/vms/bulk").is_ok());
             assert!(
-                authorize_request(ApiRole::Write, &Method::POST, "/api/v1/platform/upgrade")
-                    .is_err()
+                authorize_request(
+                    ApiRole::Write,
+                    "t".into(),
+                    &Method::POST,
+                    "/api/v1/vms/bulk"
+                )
+                .is_ok()
             );
             assert!(
-                authorize_request(ApiRole::Admin, &Method::POST, "/api/v1/platform/upgrade")
-                    .is_ok()
+                authorize_request(
+                    ApiRole::Write,
+                    "t".into(),
+                    &Method::POST,
+                    "/api/v1/platform/upgrade"
+                )
+                .is_err()
+            );
+            assert!(
+                authorize_request(
+                    ApiRole::Admin,
+                    "t".into(),
+                    &Method::POST,
+                    "/api/v1/platform/upgrade"
+                )
+                .is_ok()
             );
         }
 

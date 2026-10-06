@@ -183,6 +183,9 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 | `src/tui/` | Full ratatui-based TUI; `AppState` (VMs, namespaces, selection), `interactive_app.rs`, theming |
 | `src/handlers/` | CLI command implementations (vm, backup, cost, gitops, crds, infra…) |
 | `src/operator_crds/` | Veyron CRD types under `veyron.io/v1alpha1` |
+| `src/ai/` | Veyron AI: tool `registry.rs` (Read/Change/Sandbox/External kinds; Change tools only create **proposals** — `{method,path,body,summary,min_role}` steps replayed through the API router by `exec::call` on approval), `agent.rs` (tool-calling loop), `incidents.rs` (investigations), `predictive.rs` (forecasts), `intent.rs`/`search.rs`/`policy.rs`, `models.rs` (in-cluster llama.cpp/vLLM model VMs + `veyron-ai-llm` ConfigMap/Secret setting, re-read every minute by `refresh_override`). Routes in `ai/api.rs`; read/draft AI routes are ReadOnly, `/ai/settings/llm` + `/ai/mcp-servers*` Admin. See `docs/ai.md`. |
+| `src/mcp/` | `server.rs` = `POST /mcp` (Streamable HTTP, role-filtered tools); `client.rs` = external MCP servers (`veyron-ai-mcp-servers` CM + `veyron-ai-mcp-tokens` Secret, tools as `ext.<server>.<tool>` / OpenAI-safe `ext__a__b`, write tools ⇒ admin proposals, `x-veyron-mcp-client` hop header prevents loops); `bridge.rs` = `veyron mcp` stdio bridge. |
+| `src/sandbox/` | Agent sandboxes: warm pool of Ubuntu VMs in `veyron-sandboxes` (deny-all egress NetworkPolicy, exec/files over guest agent), owner + TTL, `VEYRON_SANDBOX_*`; Kairon backend behind `--features kairon`. |
 | `src/soc/` | Security operations: `SecurityEvent`, ConfigMap event/detection store, collectors, detection rules, SIEM export (`export/elastic`, `splunk`, `sentinel`, `qradar`), hunts, ASM, SOAR webhooks — API `handlers/soc.rs`. See `docs/soc.md`. |
 | `src/trial.rs`, `src/bin/trial-tool.rs` | 30-day evaluation licensing for the standalone client tarball, feature-gated (`trial`) so it never affects in-cluster/production builds. See `docs/deploy.md`. |
 
@@ -213,6 +216,8 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 - **Cluster-wide pod lists**: use `KubeClient::map_pods(scope, |pod| …)`, which pages 500 at a time and maps each page down to the fields you need. Never `Api::<Pod>::all(..).list(&ListParams::default())` without a label selector: on the reference cluster (~12.6k mostly dead pods) a single unpaged list took the API from 4Mi to ~650Mi and two concurrent ones OOMKilled it at the 1Gi limit. `list_pods`/`list_all_pods` page too and strip `managedFields`, but still hold every pod.
 - **Async in handlers**: closures inside `.map()` on iterators cannot be async. Pre-fetch async data (e.g. VM counts per namespace) before the `.map()` call.
 - **virt-launcher pod selectors**: always select by **`vm.kubevirt.io/name`** (`kube::VM_NAME_LABEL`) — KubeVirt 1.8 launchers do NOT carry the old `kubevirt.io/domain` label (Services selecting on it get zero endpoints; this bit SSH expose, logs-by-VM, OpenCost, and guest Prometheus). `kubevirt.io/domain` (`VM_NAME_LABEL_LEGACY`) is acceptable only as a read fallback when mapping pods→VMs. RDP expose historically uses `kubevirt.io/vm`, which 1.8 still sets.
+- **Guest DNS needs Cilium `socketLB.hostNamespaceOnly: true`** (`bpf-lb-sock-hostns-only: "true"` in `cilium-config`, set in `scripts/cluster/cilium-k3s-values.yaml`). With kube-proxy replacement and full socket-LB coverage, KubeVirt guests' NAT-forwarded traffic to ClusterIPs (kube-dns, GuestKit download, model endpoints) is never translated — no VM ever reaches `AgentConnected`, sandboxes never become ready. Found and fixed on 175.110.122.71 on 2026-10-06; check `cilium-dbg status --verbose` → `Socket LB Coverage: Hostns-only`.
+- **Custom cloud-init on Linux templates is merged, not replaced** (`templates::merge_cloud_init`, `VMConfigBuilder::merge_cloud_init`): list keys (`packages`, `write_files`, `runcmd`, `bootcmd`, `ssh_authorized_keys`, `users`, `mounts`) append, other keys override, `#!` scripts become a `write_files` + `runcmd` entry — so GuestKit bootstrap survives user cloud-init.
 
 ## Environment variables
 
@@ -244,6 +249,9 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 | `VEYRON_KRYTON_URL` | Optional. Kryton machine-API base URL. Enables `/api/v1/kryton/*` (machines, catalog, golden-image bootstrap into `kryton-images/<id>`). Unset ⇒ `/kryton/status` reports `configured:false`, other routes 503. |
 | `VEYRON_KRYTON_TOKEN` / `VEYRON_KRYTON_PROJECT` | Kryton bearer API key / optional project (`?project=`) |
 | `VEYRON_VGPU_LIVE_MIGRATION` | Set to `1` ONLY after verifying the licensed NVIDIA vGPU host stack + KubeVirt actually live-migrate mdev VMIs (Phase 2 attestation). Relaxes the migration gate for vGPU-only VMs and enables `day2_ops.vgpu_live_migration` (when mdev resources are present). Upstream KubeVirt ≤1.8 does NOT support this — never set on plain passthrough clusters. |
+| `VEYRON_AI_URL`, `VEYRON_AI_API_KEY`, `VEYRON_AI_MODEL` | Bring-your-own OpenAI-compatible LLM for Veyron AI (fallback when no model is chosen in Settings / `veyron-ai-llm` ConfigMap). Also `VEYRON_AI_MAX_TOOL_ROUNDS`, `VEYRON_AI_TIMEOUT_SECS`, `VEYRON_AI_RATE_LIMIT_PER_MIN`, `VEYRON_AI_NAMESPACE`, `VEYRON_AI_PREDICTIVE=0`, `VEYRON_AI_INVESTIGATOR=0`. See `docs/ai.md`. |
+| `VEYRON_MCP_ALLOW_SELF_APPROVE` | `1` lets `write`-role MCP callers approve proposals over MCP (default: admin only). |
+| `VEYRON_SANDBOX_*` | `NAMESPACE` (`veyron-sandboxes`), `POOL_SIZE` (1), `MAX_PER_OWNER` (3), `MAX_TTL_MINUTES` (1440), `TEMPLATE` (`ubuntu-24.04`), `MEMORY` (`1Gi`), `WAIT_SECS` (240). |
 | `VEYRON_ALLOW_PUBLIC_RDP` | Set to `1` to permit `PUT /rdp-expose` with `service_type: NodePort`/`LoadBalancer`. **Default: refused with 403** — a bare 3389 NodePort puts Windows auth on the network with no gateway/MFA/TLS. Prefer `ClusterIP` + VPN/zero-trust gateway or `kubectl port-forward`. |
 | `VEYRON_VM_BACKEND` | `kubevirt` (default) or `kairon` (requires the `kairon` cargo feature; unknown values fall back to `kubevirt` with a warning). Selects which platform backs `/api/v1/vms` CRUD and power operations. |
 | `VEYRON_TRIAL_TOKEN` | Only read on `--features trial` builds (the evaluation client tarball). Overrides the `trial.token` file lookup (next to the binary, then `~/.config/veyron/trial.token`) — set to the token's contents. See `docs/deploy.md`. |
@@ -320,7 +328,8 @@ redirect happen."
 
 | Script | Covers |
 |---|---|
-| `./scripts/verify-veyron-remote.sh HOST` | API smoke |
+| `./scripts/verify-veyron-remote.sh HOST` | API smoke (incl. AI + MCP section) |
+| `VEYRON_API_KEY=… ./scripts/test-ai-remote.sh HOST` | AI E2E: MCP, sandbox exec/files, intent → proposal → approve → VM → investigation, policy draft, search, forecast, MCP client loopback; opt-in `VEYRON_E2E_LLM=1`, `VEYRON_E2E_MODEL=1` |
 | `./scripts/test-vm-daily-ops-remote.sh HOST` | Create/start/stop/pause, VNC ticket, SSH/RDP expose, snapshots |
 | `./scripts/customer-readiness.sh HOST [--ssh-user U] [--full]` | Full go-live gate |
 

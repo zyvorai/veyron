@@ -2233,7 +2233,7 @@ pub(super) async fn create_vm_handler(
     // Apply cloud-init
     if let Some(ref ci) = req.cloud_init {
         if !ci.is_empty() {
-            builder = builder.cloud_init(ci);
+            builder = builder.merge_cloud_init(ci);
         }
     }
 

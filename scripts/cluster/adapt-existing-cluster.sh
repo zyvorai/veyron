@@ -267,6 +267,28 @@ elif sudo test -f /etc/containerd/config.toml; then
   fi
 fi
 
+# ── 5b. Cilium socket LB must not cover pod namespaces ───────────────────────
+# With kube-proxy replacement, full socket-LB coverage skips per-packet ClusterIP
+# translation for KubeVirt guests (their traffic is NAT-forwarded inside the
+# virt-launcher pod), so guests cannot reach kube-dns: no GuestKit, no guest
+# agent, no sandboxes.
+if $K -n kube-system get cm cilium-config >/dev/null 2>&1; then
+  echo; echo "5b) Cilium socket LB (KubeVirt guest DNS)"
+  KPR="$($K -n kube-system get cm cilium-config -o jsonpath='{.data.kube-proxy-replacement}' 2>/dev/null)"
+  HOSTNS="$($K -n kube-system get cm cilium-config -o jsonpath='{.data.bpf-lb-sock-hostns-only}' 2>/dev/null)"
+  if [[ "${KPR}" != "true" && "${KPR}" != "strict" ]]; then
+    ok "kube-proxy replacement off — socket LB does not affect guests"
+  elif [[ "${HOSTNS}" == "true" ]]; then
+    ok "socket LB limited to the host namespace"
+  else
+    warn "socket LB covers pod namespaces — KubeVirt guests cannot resolve cluster DNS"
+    run "set bpf-lb-sock-hostns-only=true in cilium-config" \
+      $K -n kube-system patch cm cilium-config --type merge -p '{"data":{"bpf-lb-sock-hostns-only":"true"}}'
+    run "restart the cilium DaemonSet" \
+      $K -n kube-system rollout restart ds/cilium
+  fi
+fi
+
 # ── 6. Report blockers we will NOT auto-fix ──────────────────────────────────
 echo; echo "6) Blockers requiring a human"
 NODE_COUNT="$($K get nodes --no-headers 2>/dev/null | wc -l | tr -d ' ')"

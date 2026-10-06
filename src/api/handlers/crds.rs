@@ -171,14 +171,14 @@ pub fn router(state: SharedState) -> Router {
         .route("/crds/veyronvms", get(list_veyron_vms))
         .route("/crds/veyronvms", post(create_veyron_vm))
         .route(
-            "/crds/veyronvms/{ns}/{name}",
+            "/crds/veyronvms/:ns/:name",
             get(get_veyron_vm).delete(delete_veyron_vm),
         )
         // VeyronBlueprint endpoints
         .route("/crds/blueprints", get(list_blueprints))
         .route("/crds/blueprints", post(create_blueprint))
         .route(
-            "/crds/blueprints/{ns}/{name}",
+            "/crds/blueprints/:ns/:name",
             get(get_blueprint)
                 .put(update_blueprint)
                 .delete(delete_blueprint),
@@ -187,20 +187,20 @@ pub fn router(state: SharedState) -> Router {
         .route("/crds/policies", get(list_policies))
         .route("/crds/policies", post(create_policy))
         .route(
-            "/crds/policies/{ns}/{name}",
+            "/crds/policies/:ns/:name",
             get(get_policy).delete(delete_policy),
         )
         // VeyronInsight endpoints
         .route("/crds/insights", get(list_insights))
         .route(
-            "/crds/insights/{ns}/{name}",
+            "/crds/insights/:ns/:name",
             get(get_insight).delete(delete_insight),
         )
         // VeyronAction endpoints
         .route("/crds/actions", get(list_actions))
         .route("/crds/actions", post(create_action))
         .route(
-            "/crds/actions/{ns}/{name}",
+            "/crds/actions/:ns/:name",
             get(get_action).delete(delete_action),
         )
         .route("/crds/actions/:ns/:name/approve", post(approve_action))
@@ -586,15 +586,39 @@ async fn get_policy(
     }
 }
 
+/// `POST /crds/policies` body: the policy spec plus an optional name and namespace.
+#[derive(serde::Deserialize)]
+pub struct CreatePolicyReq {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub namespace: Option<String>,
+    #[serde(flatten)]
+    pub spec: VeyronPolicySpec,
+}
+
 #[cfg(feature = "web")]
 async fn create_policy(
     State(state): State<SharedState>,
-    Json(spec): Json<VeyronPolicySpec>,
+    Json(req): Json<CreatePolicyReq>,
 ) -> Result<Json<VeyronPolicySummary>, (StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
-    let ns = &s.namespace;
+    let bad = |m: String| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "INVALID_NAME", "message": m})),
+        )
+    };
+    let ns = &match req.namespace.as_deref().filter(|n| !n.is_empty()) {
+        Some(n) => crate::ai::registry::safe_name(n).map_err(bad)?,
+        None => s.namespace.clone(),
+    };
+    let spec = req.spec;
     let api: Api<VeyronPolicy> = Api::namespaced(s.client().client().clone(), ns);
-    let name = format!("pol-{}", random_suffix());
+    let name = match req.name.as_deref().filter(|n| !n.is_empty()) {
+        Some(n) => crate::ai::registry::safe_name(n).map_err(bad)?,
+        None => format!("pol-{}", random_suffix()),
+    };
     let p = VeyronPolicy::new(&name, spec.clone());
     match api.create(&PostParams::default(), &p).await {
         Ok(created) => Ok(Json(VeyronPolicySummary {

@@ -3,6 +3,12 @@
 #
 # Used by k8s/install-cluster-prereqs.sh and k8s/bootstrap/ensure-cilium-pod-egress.sh
 kubeProxyReplacement: true
+# KubeVirt guests reach ClusterIP Services (kube-dns, GuestKit) through the
+# launcher's NAT, not a socket, so socket-LB must stay in the host namespace
+# and pod traffic must use per-packet service translation. Without this,
+# guest DNS to 10.43.0.10 is never answered.
+socketLB:
+  hostNamespaceOnly: true
 k8sServiceHost: 127.0.0.1
 k8sServicePort: 6443
 routingMode: native

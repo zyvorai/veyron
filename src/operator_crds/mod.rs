@@ -532,10 +532,90 @@ pub struct VeyronPolicySpec {
     pub severity: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub framework: Option<String>,
-    /// Label selector to match VeyronVMs this policy applies to.
+    /// Label selector to match VeyronVMs this policy applies to (a Kubernetes
+    /// `LabelSelector`, as the operator reads it).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub selector: Option<std::collections::BTreeMap<String, String>>,
+    pub selector: Option<PolicyLabelSelector>,
     pub rules: Vec<CRDPolicyRule>,
+}
+
+#[derive(Serialize, Clone, Debug, Default, PartialEq, JsonSchema)]
+pub struct PolicyLabelSelector {
+    #[serde(
+        rename = "matchLabels",
+        default,
+        skip_serializing_if = "std::collections::BTreeMap::is_empty"
+    )]
+    pub match_labels: std::collections::BTreeMap<String, String>,
+    #[serde(
+        rename = "matchExpressions",
+        default,
+        skip_serializing_if = "Vec::is_empty"
+    )]
+    pub match_expressions: Vec<LabelSelectorRequirement>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct LabelSelectorRequirement {
+    pub key: String,
+    /// In, NotIn, Exists or DoesNotExist
+    pub operator: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub values: Vec<String>,
+}
+
+impl PolicyLabelSelector {
+    pub fn matches(&self, labels: &std::collections::BTreeMap<String, String>) -> bool {
+        self.match_labels
+            .iter()
+            .all(|(k, v)| labels.get(k) == Some(v))
+            && self.match_expressions.iter().all(|r| {
+                let have = labels.get(&r.key);
+                match r.operator.as_str() {
+                    "In" => have.is_some_and(|v| r.values.contains(v)),
+                    "NotIn" => have.is_none_or(|v| !r.values.contains(v)),
+                    "Exists" => have.is_some(),
+                    "DoesNotExist" => have.is_none(),
+                    _ => false,
+                }
+            })
+    }
+}
+
+/// Accepts a `LabelSelector`, or the flat `{key: value}` map older clients sent.
+impl<'de> Deserialize<'de> for PolicyLabelSelector {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let v = serde_json::Value::deserialize(d)?;
+        let obj = v.as_object().cloned().unwrap_or_default();
+        if obj.contains_key("matchLabels") || obj.contains_key("matchExpressions") {
+            let match_labels = obj
+                .get("matchLabels")
+                .cloned()
+                .map(serde_json::from_value)
+                .transpose()
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_default();
+            let match_expressions = obj
+                .get("matchExpressions")
+                .cloned()
+                .map(serde_json::from_value)
+                .transpose()
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_default();
+            return Ok(Self {
+                match_labels,
+                match_expressions,
+            });
+        }
+        let match_labels = obj
+            .into_iter()
+            .filter_map(|(k, v)| v.as_str().map(|s| (k, s.to_string())))
+            .collect();
+        Ok(Self {
+            match_labels,
+            match_expressions: vec![],
+        })
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -561,6 +641,22 @@ pub struct VeyronPolicyStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "violatingVMs")]
     pub violating_vms: Option<i32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub violations: Vec<PolicyViolationStatus>,
+    #[serde(rename = "lastEvaluated", skip_serializing_if = "Option::is_none")]
+    pub last_evaluated: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct PolicyViolationStatus {
+    #[serde(rename = "vmName", default)]
+    pub vm_name: String,
+    #[serde(default)]
+    pub namespace: String,
+    #[serde(rename = "ruleName", default)]
+    pub rule_name: String,
+    #[serde(default)]
+    pub message: String,
 }
 
 // =============================================================================

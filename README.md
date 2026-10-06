@@ -100,10 +100,23 @@ A frosted top nav with mega-menus, a ⌘K palette for everything, a live fleet m
 | GPU and Windows workloads don't fit generic tooling | **GPU passthrough with a live-migration guard**, and Windows golden images with sysprep, domain join and RDP guardrails. |
 | Everyone shares one admin password | **Admin, write and read-only roles**, multiple keys, local accounts and OIDC SSO with Keycloak, Okta, Auth0 or Azure AD. |
 | Security finds exposed VMs after the fact | **A built-in SOC:** detections for public RDP and SSH, policy gaps and drift, export to Elastic, Splunk, Sentinel and QRadar. |
+| You want AI help without giving a bot the keys | **Veyron AI:** an MCP server, incident investigations and forecasts, where every change is a proposal a human approves. |
 
 ![Capabilities at a glance: Run, Protect, Observe, Secure](docs/assets/readme-capabilities.jpg)
 
 Veyron keeps no database: VM state lives in Kubernetes, settings in labeled ConfigMaps, and anything the engine can't do returns `501` with a reason, never a fake success. Details: [docs/architecture.md](docs/architecture.md).
+
+---
+
+## Veyron AI
+
+An operator that asks first: it reads your cluster with your permissions, investigates failures on its own, and turns every change into a proposal a human approves.
+
+![Veyron AI: MCP server, proposals, sandboxes, investigations, forecasts and in-cluster models](docs/assets/readme-ai.jpg)
+
+- **Use it from any agent.** Point Claude, Cursor or your own agent at `https://<node-ip>:30151/mcp` with an API key. Tools are filtered by role, and tools from your other MCP servers can be added too. [Setup](docs/ai.md#mcp-server)
+- **Nothing changes by itself.** Change tools draft proposals with the exact API calls, the role required and whether they can be undone. Approval runs them through the normal API and audit trail. [Safety model](docs/ai.md#safety-model)
+- **Sandboxes and models in your cluster.** Agents run code in disposable VMs with no network by default, and one click serves llama.cpp or vLLM so nothing leaves your network. [Sandboxes](docs/ai.md#agent-sandboxes) · [Models](docs/ai.md#running-a-model-in-the-cluster)
 
 ---
 

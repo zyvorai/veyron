@@ -141,8 +141,29 @@ fn resolve_model(key: &str) -> String {
         })
 }
 
+static RUNTIME_OVERRIDE: once_cell::sync::Lazy<std::sync::RwLock<Option<LlmConfig>>> =
+    once_cell::sync::Lazy::new(|| std::sync::RwLock::new(None));
+
+/// Point Veyron AI at a different endpoint at runtime (e.g. a model served in-cluster).
+/// `None` reverts to the `VEYRON_AI_*` environment.
+pub fn set_runtime_override(cfg: Option<LlmConfig>) {
+    if let Ok(mut g) = RUNTIME_OVERRIDE.write() {
+        *g = cfg;
+    }
+}
+
+pub fn runtime_override() -> Option<LlmConfig> {
+    RUNTIME_OVERRIDE.read().ok().and_then(|g| g.clone())
+}
+
 pub fn llm_config() -> Option<LlmConfig> {
-    let key = resolve_api_key()?;
+    runtime_override().or_else(env_llm_config)
+}
+
+/// The LLM configured through environment variables, ignoring any in-cluster override.
+pub fn env_llm_config() -> Option<LlmConfig> {
+    // Self-hosted OpenAI-compatible servers (vLLM, llama.cpp, Ollama) usually need no key.
+    let key = resolve_api_key().or_else(|| env_nonempty("VEYRON_AI_URL").map(|_| String::new()))?;
     let base_url = resolve_base_url(&key);
     let model = resolve_model(&key);
     Some(LlmConfig {
@@ -422,6 +443,22 @@ async fn post_chat(cfg: &LlmConfig, body: &serde_json::Value) -> anyhow::Result<
         .unwrap_or_default())
 }
 
+/// Optional attribution headers some gateways (OpenRouter) use.
+pub fn extra_headers() -> Vec<(&'static str, String)> {
+    let mut out = Vec::new();
+    if let Some(referer) =
+        env_nonempty("VEYRON_AI_HTTP_REFERER").or_else(|| env_nonempty("OPENROUTER_HTTP_REFERER"))
+    {
+        out.push(("HTTP-Referer", sanitize_header_value(&referer)));
+    }
+    if let Some(title) =
+        env_nonempty("VEYRON_AI_APP_TITLE").or_else(|| env_nonempty("OPENROUTER_APP_TITLE"))
+    {
+        out.push(("X-Title", sanitize_header_value(&title)));
+    }
+    out
+}
+
 #[cfg(feature = "web")]
 async fn post_chat_raw(cfg: &LlmConfig, body: &serde_json::Value) -> anyhow::Result<ChatResponse> {
     let client = reqwest::Client::builder()
@@ -432,7 +469,10 @@ async fn post_chat_raw(cfg: &LlmConfig, body: &serde_json::Value) -> anyhow::Res
     } else {
         format!("{}/chat/completions", cfg.base_url)
     };
-    let mut req = client.post(url).bearer_auth(&cfg.api_key);
+    let mut req = client.post(url);
+    if !cfg.api_key.is_empty() {
+        req = req.bearer_auth(&cfg.api_key);
+    }
     if let Some(referer) =
         env_nonempty("VEYRON_AI_HTTP_REFERER").or_else(|| env_nonempty("OPENROUTER_HTTP_REFERER"))
     {

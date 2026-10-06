@@ -41,6 +41,11 @@ Admin-only routes, from `src/api/auth_context.rs`:
 - `/soc/playbooks/*`
 - `/images/publish`
 - `/platform/*`, except the public GuestKit binary download
+- `/ai/settings/llm` and `/ai/mcp-servers*` (even `GET`)
+
+AI routes that only read or draft (`/ai/chat`, `/ai/chat/stream`, `/ai/search`, `/ai/intent/vm`,
+`/ai/policies/draft`, `/mcp`) need only `readonly`; anything they want to change becomes a
+proposal that needs the step's role to approve. See [ai.md](ai.md).
 
 ### Keys
 
@@ -67,6 +72,11 @@ Admin-only routes, from `src/api/auth_context.rs`:
 | Security | `/soc/*`, `/security/{findings,posture}`, `/compliance/*`, `/audit/{trail,stats}`, `/rbac/*`, `/vms/:ns/:name/security` |
 | Platform | `/operators`, `/helm/releases`, `/namespaces`, `/quotas`, `/gitops/*`, `/catalog/*`, `/custom-resources`, `/clusters` |
 | Network | `/networks`, `/cilium/*`, `/network-policies`, `/ingress` |
+| AI | `GET /ai/{status,tools,forecast,investigations}`, `POST /ai/{chat,chat/stream,search,intent/vm}`, `POST /ai/policies/{draft,preview}`, `POST /ai/investigations/run` |
+| AI proposals | `GET /ai/proposals`, `GET /ai/proposals/:id`, `POST /ai/proposals/:id/{approve,reject}` |
+| AI models | `GET/POST /ai/models`, `DELETE /ai/models/:ns/:name`, `GET/PUT /ai/settings/llm` |
+| MCP | `POST /mcp` (MCP server, Streamable HTTP), `GET/PUT /ai/mcp-servers`, `POST /ai/mcp-servers/:server/call` |
+| Sandboxes | `GET/POST /sandboxes`, `GET/DELETE /sandboxes/:id`, `POST /sandboxes/:id/exec`, `GET/PUT /sandboxes/:id/files` |
 
 Query `?namespace=all` for cluster-wide lists.
 

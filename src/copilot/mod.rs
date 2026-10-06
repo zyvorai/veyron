@@ -59,7 +59,10 @@ pub use guest_filesystem::guest_filesystem_report;
 pub use guest_inspector::guest_inspector;
 pub use integrations_advisor::integrations_advisor;
 pub use intent::CopilotIntent;
-pub use llm::{AiMode, ai_mode, ai_rate_limit_per_min, status_snapshot};
+pub use llm::{
+    AiMode, LlmConfig, ai_mode, ai_rate_limit_per_min, env_llm_config, extra_headers, llm_config,
+    runtime_override, set_runtime_override, status_snapshot, timeout_secs,
+};
 pub use migration_advisor::migration_advisor;
 pub use network_lens::network_lens;
 pub use node_advisor::node_advisor;
@@ -70,6 +73,7 @@ pub use scheduling::{scheduling_explainer, scheduling_fleet_advisor};
 pub use security_sentinel::{security_sentinel, security_sentinel_fleet};
 pub use slo_advisor::slo_advisor;
 pub use storage_doctor::storage_doctor;
+pub use tools::{ToolInvokeArgs, invoke_tool, tool_definitions};
 pub use velero_dr_advisor::velero_dr_advisor;
 pub use yaml_build::{YamlBuildRequest, yaml_preview};
 

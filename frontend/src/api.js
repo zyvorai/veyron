@@ -829,7 +829,134 @@ export const api = {
   dataDiskDefaults: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/storage/data-disk/defaults`)) || {},
   addDataDisk: async (ns, name, body) =>
     unwrap(await request(`${vmPath(ns, name)}/storage/data-disk`, { method: 'POST', body: JSON.stringify(body) })),
+
+  // Veyron AI
+  aiStatus: async () => unwrap(await request('/api/v1/ai/status')) || {},
+  aiTools: async () => asArray(await request('/api/v1/ai/tools')),
+  aiChat: async (body) =>
+    unwrap(await request('/api/v1/ai/chat', { method: 'POST', body: JSON.stringify(body), timeout: 300_000 })),
+  listProposals: async (status) =>
+    asArray(await request(`/api/v1/ai/proposals${status ? `?status=${encodeURIComponent(status)}` : ''}`)),
+  getProposal: async (id) => unwrap(await request(`/api/v1/ai/proposals/${encodeURIComponent(id)}`)),
+  approveProposal: async (id, preSnapshot = false) =>
+    unwrap(
+      await request(`/api/v1/ai/proposals/${encodeURIComponent(id)}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ pre_snapshot: preSnapshot }),
+      }),
+    ),
+  rejectProposal: async (id) =>
+    unwrap(await request(`/api/v1/ai/proposals/${encodeURIComponent(id)}/reject`, { method: 'POST' })),
+  aiSearch: async (query) =>
+    unwrap(await request('/api/v1/ai/search', { method: 'POST', body: JSON.stringify({ query }), timeout: 60_000 })),
+  aiIntentVm: async (body) =>
+    unwrap(await request('/api/v1/ai/intent/vm', { method: 'POST', body: JSON.stringify(body), timeout: 90_000 })),
+  aiPolicyDraft: async (description) =>
+    unwrap(
+      await request('/api/v1/ai/policies/draft', {
+        method: 'POST',
+        body: JSON.stringify({ description }),
+        timeout: 90_000,
+      }),
+    ),
+  aiPolicyPreview: async (policy, submit = false) =>
+    unwrap(
+      await request('/api/v1/ai/policies/preview', { method: 'POST', body: JSON.stringify({ policy, submit }) }),
+    ),
+  listInvestigations: async () => asArray(await request('/api/v1/ai/investigations')),
+  runInvestigation: async (body) =>
+    unwrap(
+      await request('/api/v1/ai/investigations/run', { method: 'POST', body: JSON.stringify(body), timeout: 180_000 }),
+    ),
+  aiForecast: async () => unwrap(await request('/api/v1/ai/forecast')) || {},
+  listModels: async () => asArray(await request('/api/v1/ai/models')),
+  createModel: async (body) =>
+    unwrap(await request('/api/v1/ai/models', { method: 'POST', body: JSON.stringify(body) })),
+  deleteModel: (ns, name) =>
+    request(`/api/v1/ai/models/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  getLlmSetting: async () => unwrap(await request('/api/v1/ai/settings/llm')) || {},
+  putLlmSetting: async (body) =>
+    unwrap(await request('/api/v1/ai/settings/llm', { method: 'PUT', body: JSON.stringify(body) })),
+  listMcpServers: async () => asArray(await request('/api/v1/ai/mcp-servers')),
+  putMcpServers: async (servers) =>
+    unwrap(await request('/api/v1/ai/mcp-servers', { method: 'PUT', body: JSON.stringify({ servers }) })),
+  listSandboxes: async () => unwrap(await request('/api/v1/sandboxes')) || {},
+  createSandbox: async (body) =>
+    unwrap(await request('/api/v1/sandboxes', { method: 'POST', body: JSON.stringify(body), timeout: 300_000 })),
+  deleteSandbox: (id) => request(`/api/v1/sandboxes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  sandboxExec: async (id, command, timeoutSecs = 60) =>
+    unwrap(
+      await request(`/api/v1/sandboxes/${encodeURIComponent(id)}/exec`, {
+        method: 'POST',
+        body: JSON.stringify({ command, timeout_secs: timeoutSecs }),
+        timeout: (timeoutSecs + 30) * 1000,
+      }),
+    ),
 };
+
+/**
+ * Stream an agent run over SSE. `onEvent` gets each `{type, ...}` event; resolves when the
+ * stream ends. Pass an AbortSignal to stop.
+ */
+export async function streamAiChat(body, onEvent, signal) {
+  const headers = { 'Content-Type': 'application/json', Accept: 'text/event-stream' };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const resp = await fetch('/api/v1/ai/chat/stream', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (resp.status === 401) onUnauthorized();
+  if (!resp.ok || !resp.body) {
+    const text = await resp.text().catch(() => '');
+    let msg = `HTTP ${resp.status}`;
+    try {
+      const j = JSON.parse(text);
+      msg = j.error?.message || j.message || msg;
+    } catch {
+      if (text) msg = text.slice(0, 200);
+    }
+    throw httpError(msg, resp.status);
+  }
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let cut;
+    while ((cut = buf.indexOf('\n\n')) >= 0) {
+      const chunk = buf.slice(0, cut);
+      buf = buf.slice(cut + 2);
+      const data = chunk
+        .split('\n')
+        .filter((l) => l.startsWith('data:'))
+        .map((l) => l.slice(5).replace(/^ /, ''))
+        .join('\n');
+      if (!data) continue;
+      try {
+        onEvent(JSON.parse(data));
+      } catch {
+        /* ignore malformed event */
+      }
+    }
+  }
+}
+
+/** Role needed to approve a proposal: the highest step role, at least write. */
+export function proposalApproverRole(p) {
+  const rank = { readonly: 0, write: 1, admin: 2 };
+  const top = (p?.steps || []).reduce((m, s) => Math.max(m, rank[s.min_role] ?? 1), 1);
+  return top >= 2 ? 'admin' : 'write';
+}
+
+export function canApprove(user, p) {
+  const rank = { readonly: 0, write: 1, admin: 2 };
+  return (rank[user?.role] ?? 0) >= rank[proposalApproverRole(p)];
+}
 
 function vmPath(ns, name) {
   return `/api/v1/vms/${encodeURIComponent(ns || 'default')}/${encodeURIComponent(name)}`;

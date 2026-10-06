@@ -90,7 +90,17 @@ pub fn is_ai_rate_limited_path(path: &str, method: &str) -> bool {
     if method != "POST" {
         return false;
     }
-    path == "/api/v1/experience/copilot/chat" || path == "/api/v1/experience/copilot/ask"
+    matches!(
+        path,
+        "/api/v1/experience/copilot/chat"
+            | "/api/v1/experience/copilot/ask"
+            | "/api/v1/ai/chat"
+            | "/api/v1/ai/chat/stream"
+            | "/api/v1/ai/search"
+            | "/api/v1/ai/intent/vm"
+            | "/api/v1/ai/policies/draft"
+            | "/api/v1/ai/investigations/run"
+    )
 }
 
 #[cfg(test)]

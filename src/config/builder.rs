@@ -335,6 +335,22 @@ impl VMConfigBuilder {
         self
     }
 
+    /// Like [`Self::cloud_init`], but merged into a template's GuestKit bootstrap
+    /// instead of replacing it.
+    pub fn merge_cloud_init(self, user_data: impl Into<String>) -> Self {
+        let user = user_data.into();
+        let merged = match &self.config.cloud_init {
+            Some(ci)
+                if matches!(ci.delivery, crate::config::CloudInitDelivery::NoCloud)
+                    && ci.user_data.contains("guestkit-agent") =>
+            {
+                crate::templates::merge_cloud_init(&ci.user_data, &user)
+            }
+            _ => user,
+        };
+        self.cloud_init(merged)
+    }
+
     /// User data delivered via config-drive ISO (`cloudInitConfigDrive`), e.g. Cloudbase-Init on Windows.
     ///
     /// Veyron creates a Secret with userdata and references it from the volume (see API create VM path).

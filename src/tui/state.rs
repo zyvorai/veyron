@@ -103,6 +103,55 @@ pub struct VmInfo {
     /// Non-zero means the VM can never live-migrate.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub gpu_count: Option<u32>,
+    /// Template or OS hint from labels, else the container disk image name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub os: Option<String>,
+}
+
+const OS_LABELS: &[&str] = &[
+    "veyron.io/template",
+    "vm.kubevirt.io/template",
+    "veyron.io/os",
+    "kubevirt.io/os",
+];
+const GUEST_OS_LABELS: &[&str] = &["veyron.io/guest-os", "zorvia.io/guest-os"];
+
+/// `quay.io/containerdisks/ubuntu:22.04` → `ubuntu 22.04`.
+fn os_from_image(image: &str) -> Option<String> {
+    let image = image.split('@').next().unwrap_or(image);
+    let last = image.rsplit('/').next()?;
+    let (repo, tag) = last.split_once(':').unwrap_or((last, ""));
+    if repo.is_empty() {
+        return None;
+    }
+    Some(if tag.is_empty() || tag == "latest" {
+        repo.to_string()
+    } else {
+        format!("{repo} {tag}")
+    })
+}
+
+fn vm_os_hint(vm: &crate::kube::types::VirtualMachine) -> Option<String> {
+    let labels = vm.metadata.labels.as_ref();
+    let annotations = vm.metadata.annotations.as_ref();
+    let pick = |keys: &[&str]| {
+        keys.iter().find_map(|k| {
+            labels
+                .and_then(|l| l.get(*k))
+                .or_else(|| annotations.and_then(|a| a.get(*k)))
+                .filter(|v| !v.is_empty())
+                .cloned()
+        })
+    };
+    pick(OS_LABELS)
+        .or_else(|| {
+            vm.spec.template.spec.volumes.as_ref().and_then(|vols| {
+                vols.iter()
+                    .find_map(|v| v.container_disk.as_ref())
+                    .and_then(|c| os_from_image(&c.image))
+            })
+        })
+        .or_else(|| pick(GUEST_OS_LABELS))
 }
 
 impl VmInfo {
@@ -243,6 +292,7 @@ impl VmInfo {
             drift_message: None,
             guest_agent_connected: None,
             gpu_count,
+            os: vm_os_hint(vm),
         }
     }
 
@@ -1259,5 +1309,26 @@ impl SortMode {
             Self::AgeAsc => "Age ↑",
             Self::AgeDesc => "Age ↓",
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::os_from_image;
+
+    #[test]
+    fn os_hint_from_container_disk_image() {
+        assert_eq!(
+            os_from_image("quay.io/containerdisks/ubuntu:22.04").as_deref(),
+            Some("ubuntu 22.04")
+        );
+        assert_eq!(
+            os_from_image("quay.io/containerdisks/fedora:latest").as_deref(),
+            Some("fedora")
+        );
+        assert_eq!(
+            os_from_image("registry:5000/debian@sha256:abc").as_deref(),
+            Some("debian")
+        );
     }
 }

@@ -151,6 +151,7 @@ pub fn all_routes(
         .merge(catalog::router(state.clone()))
         .merge(experience::router(state.clone()))
         .merge(copilot::router(state.clone()))
+        .merge(crate::ai::api::router(state.clone()))
         .merge(security::router(state.clone()))
         .merge(soc::router(state.clone()))
         .merge(compliance::router(state.clone()))

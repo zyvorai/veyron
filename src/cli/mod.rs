@@ -2265,6 +2265,21 @@ pub enum Commands {
         user: String,
     },
 
+    /// Bridge a stdio MCP client (Claude Desktop, Cursor) to a Veyron API's /mcp endpoint
+    Mcp {
+        /// Veyron API base URL (or VEYRON_URL)
+        #[arg(long, env = "VEYRON_URL", default_value = "https://127.0.0.1:5151")]
+        url: String,
+
+        /// API key (or VEYRON_API_KEY)
+        #[arg(long, env = "VEYRON_API_KEY", hide_env_values = true)]
+        api_key: Option<String>,
+
+        /// Accept a self-signed TLS certificate
+        #[arg(long)]
+        insecure: bool,
+    },
+
     // ========== DEVELOPER EXPERIENCE & TOOLING ==========
     /// Generate shell completions
     Completions {

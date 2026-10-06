@@ -15,7 +15,6 @@
 // with `--bundle-url` / `--iso`.
 
 use anyhow::{Context, Result, anyhow, bail};
-use base64::Engine;
 use serde_json::{Value, json};
 use std::time::Duration;
 
@@ -713,18 +712,14 @@ async fn guest_exec(
             }
         }
     }
-    let decode = |key: &str| -> Option<String> {
-        resp.get(key)
-            .and_then(|v| v.as_str())
-            .and_then(|b| base64::engine::general_purpose::STANDARD.decode(b).ok())
-            .map(|d| String::from_utf8_lossy(&d).into_owned())
-    };
-    let mut out = decode("out-data").unwrap_or_default();
-    if let Some(err) = decode("err-data") {
-        if !err.trim().is_empty() {
-            out.push_str("\n[stderr] ");
-            out.push_str(err.trim());
-        }
+    let r = kube::guestkit_client::decode_guest_exec_status(&resp);
+    let mut out = r.stdout;
+    if !r.stderr.trim().is_empty() {
+        out.push_str("\n[stderr] ");
+        out.push_str(r.stderr.trim());
+    }
+    if let Some(code) = r.exit_code.filter(|c| *c != 0) {
+        out.push_str(&format!("\n[exit code {code}]"));
     }
     if out.trim().is_empty() {
         out = format!("(no output; raw: {resp})");

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import {
-  Search, Plus, List, LayoutGrid, Trash2, X, Info, RefreshCw, Download, Activity,
+  Search, Plus, List, LayoutGrid, Trash2, X, Info, RefreshCw, Download, Activity, Sparkles,
 } from 'lucide-react';
 import {
   api, getToken, clearSession, getAuthUser, getSavedTheme, setSavedTheme, UNAUTHORIZED_EVENT,
@@ -29,9 +29,19 @@ const INSIGHTS = {
   storagehealth: insight('StorageHealthPage'),
   cilium: insight('CiliumPage'),
 };
+const aiPage = (name) => lazy(() => import('./aipages.jsx').then((m) => ({ default: m[name] })));
+const AI_PAGE_COMPONENTS = {
+  ai: aiPage('AiHomePage'),
+  proposals: aiPage('ProposalsPage'),
+  investigations: aiPage('InvestigationsPage'),
+  sandboxes: aiPage('SandboxesPage'),
+  models: aiPage('ModelsPage'),
+};
 import { Status } from './status.jsx';
 import { GlobalNav } from './GlobalNav.jsx';
 import { CommandPalette } from './CommandPalette.jsx';
+import { InvestigationStrip } from './InvestigationStrip.jsx';
+import { Assistant } from './Assistant.jsx';
 import { EmptyArt, OsBadge, Reveal } from './story.jsx';
 import { useFocusTrap } from './a11y.js';
 
@@ -200,6 +210,8 @@ export default function App() {
   const [initialTemplate, setInitialTemplate] = useState(null);
   const [showBell, setShowBell] = useState(false);
   const [toast, setToast] = useState(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiSeed, setAiSeed] = useState(null);
   const back = useRef([]);
   const inspRef = useRef(null);
 
@@ -207,7 +219,7 @@ export default function App() {
   const showToast = useCallback((msg, err = false) => {
     setToast({ msg, err });
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 4000);
+    toastTimer.current = setTimeout(() => setToast(null), err ? 9000 : 4000);
   }, []);
 
   const {
@@ -659,6 +671,11 @@ export default function App() {
   useEffect(() => {
     const k = (e) => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        setAiOpen((o) => !o);
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setPalette((p) => !p);
@@ -670,6 +687,7 @@ export default function App() {
         return;
       }
       if (e.key === 'Escape') {
+        setAiOpen(false);
         setMenu(null);
         setSheet(null);
         setShowBell(false);
@@ -713,11 +731,35 @@ export default function App() {
   const warnRows = res ? warnCount(res.rows) : 0;
   const okRows = res ? res.rows.filter((r) => ['Running', 'Ready', 'Bound', 'Healthy', 'Succeeded', 'Up'].includes(r.status)).length : 0;
   const atlasOff = page === 'atlas' && data.atlas?.meta?.configured === false;
+  const askAi = (question) => {
+    setAiSeed(question || null);
+    setAiOpen(true);
+  };
+  const aiContext = {
+    page,
+    ...(page === 'vms' && focusRow ? { namespace: focusRow.ns || 'default', vm_name: focusRow.name } : {}),
+  };
   const metrics = pageMetrics(page, res?.rows || [], { okRows, warnRows, podSummary, includeCompleted, meta: res?.meta });
 
   return (
     <div className="vy" data-theme={theme}>
-      {toast && <div className={`toast ${toast.err ? 'err' : ''}`}>{toast.msg}</div>}
+      {toast && (
+        <div className={`toast ${toast.err ? 'err' : ''}`}>
+          {toast.msg}
+          {toast.err && (
+            <button
+              type="button"
+              className="toast-ai"
+              onClick={() => {
+                setToast(null);
+                askAi(`This error appeared in the console: "${toast.msg}". What does it mean and how do I fix it?`);
+              }}
+            >
+              <Sparkles size={12} /> Ask AI
+            </button>
+          )}
+        </div>
+      )}
 
       <GlobalNav
         page={page}
@@ -726,6 +768,7 @@ export default function App() {
         theme={theme}
         onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         onSearch={() => setPalette(true)}
+        onAi={() => setAiOpen((o) => !o)}
         onBell={() =>
           setShowBell((b) => {
             const next = !b;
@@ -791,6 +834,11 @@ export default function App() {
           <NetraPage />
         ) : page === 'paqtra' ? (
           <PaqtraPage />
+        ) : AI_PAGE_COMPONENTS[page] ? (
+          (() => {
+            const Page = AI_PAGE_COMPONENTS[page];
+            return <Page key={page} user={user} showToast={showToast} onAsk={() => askAi()} />;
+          })()
         ) : INSIGHTS[page] ? (
           (() => {
             const Page = INSIGHTS[page];
@@ -886,6 +934,8 @@ export default function App() {
                   </button>
                 </div>
               )}
+
+              {page === 'incidents' && <InvestigationStrip onOpen={() => go('investigations')} />}
 
               {rows.length === 0 ? (
                 errors[page] && !loaded(page) ? null : (
@@ -1040,6 +1090,11 @@ export default function App() {
               row={focusRow}
               hide={false}
               onAct={(a) => act(a, new Set([focus].filter(Boolean)))}
+              onAskAi={
+                res.kind === 'VirtualMachine'
+                  ? (row) => askAi(`Check ${row.ns || 'default'}/${row.name}: is anything wrong with it, and is it sized right?`)
+                  : undefined
+              }
               onOpsDone={(l) => {
                 showToast(`${l} · done`);
                 load();
@@ -1060,11 +1115,25 @@ export default function App() {
           initialTemplate={initialTemplate}
           onClose={() => setSheet(null)}
           onCreate={create}
+          user={user}
         />
       )}
 
+      <Assistant
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        context={aiContext}
+        user={user}
+        seed={aiSeed}
+        onSeedUsed={() => setAiSeed(null)}
+      />
+
       <CommandPalette
         open={palette}
+        onAsk={(q) => {
+          setPalette(false);
+          askAi(q);
+        }}
         onClose={() => setPalette(false)}
         data={data}
         go={go}

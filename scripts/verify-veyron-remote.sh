@@ -444,6 +444,46 @@ if [[ -n "${first_vm}" ]]; then
 else
     echo "  ○ per-VM console checks — skipped, no VMs currently exist"
 fi
+echo ""
+echo "  (Veyron AI + MCP)"
+check_json_grep "GET /api/v1/ai/status" "${BASE}/api/v1/ai/status" '"llm_configured"'
+check_json_grep "GET /api/v1/ai/tools" "${BASE}/api/v1/ai/tools" '"name"\s*:\s*"list_vms"'
+check_json_ok "GET /api/v1/ai/proposals" "${BASE}/api/v1/ai/proposals" yes
+check_json_ok "GET /api/v1/ai/investigations" "${BASE}/api/v1/ai/investigations" yes
+check_json_ok "GET /api/v1/ai/forecast" "${BASE}/api/v1/ai/forecast" yes
+check_json_ok "GET /api/v1/ai/models" "${BASE}/api/v1/ai/models" yes
+check_json_grep "GET /api/v1/ai/settings/llm" "${BASE}/api/v1/ai/settings/llm" '"source"'
+check_json_ok "GET /api/v1/ai/mcp-servers" "${BASE}/api/v1/ai/mcp-servers" yes
+check_json_ok "GET /api/v1/sandboxes" "${BASE}/api/v1/sandboxes" yes
+ai_post() {
+    curl -skS --connect-timeout 15 --max-time 90 -H "X-API-Key: ${KEY}" \
+        -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+        -X POST "$1" -d "$2" || true
+}
+check_post_grep() {
+    local name="$1" body="$2" pattern="$3"
+    if echo "${body}" | grep -qE "${pattern}"; then
+        echo "  ✔ ${name}"
+    else
+        echo "  ✗ ${name}"
+        echo "${body}" | head -c 400 | sed 's/^/    /'
+        echo ""
+        FAIL=$((FAIL + 1))
+    fi
+}
+check_post_grep "POST /api/v1/ai/search" \
+    "$(ai_post "${BASE}/api/v1/ai/search" '{"query":"running vms with more than 2 cpus"}')" '"resource"\s*:\s*"vms"'
+check_post_grep "POST /api/v1/ai/intent/vm (plan only)" \
+    "$(ai_post "${BASE}/api/v1/ai/intent/vm" '{"text":"small ubuntu vm called verify-intent"}')" '"total_monthly"'
+check_post_grep "POST /mcp initialize" \
+    "$(ai_post "${BASE}/mcp" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"verify","version":"1"}}}')" \
+    '"serverInfo"'
+check_post_grep "POST /mcp tools/list" \
+    "$(ai_post "${BASE}/mcp" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}')" '"name"\s*:\s*"list_vms"'
+check_post_grep "POST /mcp tools/call list_templates" \
+    "$(ai_post "${BASE}/mcp" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_templates","arguments":{}}}')" \
+    '"isError"\s*:\s*false'
+
 # Console assets are content-hashed by the Vite build — extract the actual
 # filenames from the served shell rather than hardcoding them.
 console_html=$(curl -skS --connect-timeout 15 --max-time 45 "${BASE}/console" || true)

@@ -5,11 +5,17 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -35,6 +41,9 @@ type VeyronPolicyReconciler struct {
 // +kubebuilder:rbac:groups=veyron.io,resources=veyronpolicies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=veyron.io,resources=veyronpolicies/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=veyron.io,resources=veyronvms,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=services;configmaps,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch
+// +kubebuilder:rbac:groups=cilium.io,resources=ciliumnetworkpolicies,verbs=get;list;watch
 
 func (r *VeyronPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
@@ -98,9 +107,10 @@ func (r *VeyronPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Evaluate rules against each matching VM
 	var violations []veyronv1alpha1.PolicyViolation
 	compliantCount := 0
+	facts := r.namespaceFacts(ctx, req.Namespace)
 
 	for _, vm := range matchingVMs {
-		vmViolations := r.evaluateRules(&policy, &vm)
+		vmViolations := r.evaluateRules(&policy, &vm, facts)
 		if len(vmViolations) == 0 {
 			compliantCount++
 		} else {
@@ -141,13 +151,115 @@ func (r *VeyronPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 }
 
+// VMFacts are per-VM properties that live outside the VeyronVM spec.
+type VMFacts struct {
+	RDPExposed          map[string]bool
+	InternetEgress      map[string]bool
+	HasSnapshotSchedule map[string]bool
+}
+
+func (f *VMFacts) rdp() map[string]bool {
+	if f == nil {
+		return nil
+	}
+	return f.RDPExposed
+}
+
+func (f *VMFacts) egress() map[string]bool {
+	if f == nil {
+		return nil
+	}
+	return f.InternetEgress
+}
+
+func (f *VMFacts) schedules() map[string]bool {
+	if f == nil {
+		return nil
+	}
+	return f.HasSnapshotSchedule
+}
+
+func (f *VMFacts) get(m map[string]bool, vm string) bool {
+	if f == nil || m == nil {
+		return false
+	}
+	return m[vm]
+}
+
+// rdpTarget returns the VM a Service exposes on 3389, if any.
+func rdpTarget(svc *corev1.Service) string {
+	vm := ""
+	for _, k := range []string{"kubevirt.io/vm", "vm.kubevirt.io/name", "kubevirt.io/domain"} {
+		if v := svc.Spec.Selector[k]; v != "" {
+			vm = v
+			break
+		}
+	}
+	if vm == "" {
+		return ""
+	}
+	for _, p := range svc.Spec.Ports {
+		if p.Port == 3389 || p.TargetPort.IntValue() == 3389 {
+			return vm
+		}
+	}
+	return ""
+}
+
+// namespaceFacts gathers RDP exposure, per-VM internet egress policies and
+// snapshot schedules for a namespace. Missing permissions or CRDs leave a fact false.
+func (r *VeyronPolicyReconciler) namespaceFacts(ctx context.Context, ns string) *VMFacts {
+	f := &VMFacts{RDPExposed: map[string]bool{}, InternetEgress: map[string]bool{}, HasSnapshotSchedule: map[string]bool{}}
+
+	var svcs corev1.ServiceList
+	if err := r.List(ctx, &svcs, client.InNamespace(ns)); err == nil {
+		for i := range svcs.Items {
+			if vm := rdpTarget(&svcs.Items[i]); vm != "" {
+				f.RDPExposed[vm] = true
+			}
+		}
+	}
+
+	var nps networkingv1.NetworkPolicyList
+	if err := r.List(ctx, &nps, client.InNamespace(ns)); err == nil {
+		for _, np := range nps.Items {
+			if vm := strings.TrimPrefix(np.Name, "veyron-net-"); vm != np.Name {
+				f.InternetEgress[vm] = true
+			}
+		}
+	}
+	cnps := &unstructured.UnstructuredList{}
+	cnps.SetAPIVersion("cilium.io/v2")
+	cnps.SetKind("CiliumNetworkPolicyList")
+	if err := r.List(ctx, cnps, client.InNamespace(ns)); err == nil {
+		for _, c := range cnps.Items {
+			if vm := strings.TrimPrefix(c.GetName(), "veyron-net-"); vm != c.GetName() {
+				f.InternetEgress[vm] = true
+			}
+		}
+	}
+
+	var cms corev1.ConfigMapList
+	if err := r.List(ctx, &cms, client.InNamespace(ns), client.MatchingLabels{"veyron.io/type": "snapshot-schedule"}); err == nil {
+		for _, cm := range cms.Items {
+			var rec struct {
+				VMName  string `json:"vm_name"`
+				Enabled bool   `json:"enabled"`
+			}
+			if json.Unmarshal([]byte(cm.Data["schedule.json"]), &rec) == nil && rec.Enabled && rec.VMName != "" {
+				f.HasSnapshotSchedule[rec.VMName] = true
+			}
+		}
+	}
+	return f
+}
+
 // evaluateRules checks a VM against all policy rules.
-// Uses simple field-based evaluation. CEL evaluation can be added when cel-go is integrated.
-func (r *VeyronPolicyReconciler) evaluateRules(policy *veyronv1alpha1.VeyronPolicy, vm *veyronv1alpha1.VeyronVM) []veyronv1alpha1.PolicyViolation {
+func (r *VeyronPolicyReconciler) evaluateRules(policy *veyronv1alpha1.VeyronPolicy, vm *veyronv1alpha1.VeyronVM, facts *VMFacts) []veyronv1alpha1.PolicyViolation {
 	var violations []veyronv1alpha1.PolicyViolation
 
 	for _, rule := range policy.Spec.Rules {
-		compliant := evaluateCondition(rule.Condition, vm)
+		compliant := evaluateCondition(rule.Condition, vm, facts)
 		if !compliant {
 			violations = append(violations, veyronv1alpha1.PolicyViolation{
 				VMName:    vm.Name,
@@ -164,7 +276,7 @@ func (r *VeyronPolicyReconciler) evaluateRules(policy *veyronv1alpha1.VeyronPoli
 
 // evaluateCondition evaluates a policy rule condition against a VM.
 // First checks built-in conditions for fast path, then falls back to CEL evaluation.
-func evaluateCondition(condition string, vm *veyronv1alpha1.VeyronVM) bool {
+func evaluateCondition(condition string, vm *veyronv1alpha1.VeyronVM, facts *VMFacts) bool {
 	// Fast path: built-in conditions
 	switch condition {
 	case "spec.enableTpm == true":
@@ -188,7 +300,7 @@ func evaluateCondition(condition string, vm *veyronv1alpha1.VeyronVM) bool {
 	}
 
 	// Slow path: CEL expression evaluation
-	result, err := evaluateCEL(condition, vm)
+	result, err := evaluateCEL(condition, vm, facts)
 	if err != nil {
 		log.Log.Info("CEL evaluation failed, treating as non-compliant",
 			"condition", condition, "vm", vm.Name, "error", err.Error())
@@ -198,11 +310,14 @@ func evaluateCondition(condition string, vm *veyronv1alpha1.VeyronVM) bool {
 }
 
 // evaluateCEL evaluates a CEL expression against a VM specification.
-// The VM fields are exposed as CEL variables: cpu_cores, memory_size,
-// enable_tpm, enable_rng, has_cloud_init, has_eviction_strategy,
-// num_disks, num_interfaces, template, name, namespace.
-func evaluateCEL(expression string, vm *veyronv1alpha1.VeyronVM) (bool, error) {
+// Variables: cpu_cores, cpu_sockets, cpu_threads, memory_size, memory_gib,
+// enable_tpm, enable_rng, has_cloud_init, has_eviction_strategy, has_firmware,
+// has_features, num_disks, num_interfaces, template, name, namespace, running,
+// rdp_exposed, internet_egress, gpu_count, has_snapshot_schedule, labels.
+// Keep in sync with the Rust dry-run evaluator in src/ai/policy.rs.
+func evaluateCEL(expression string, vm *veyronv1alpha1.VeyronVM, facts *VMFacts) (bool, error) {
 	env, err := cel.NewEnv(
+		cel.CrossTypeNumericComparisons(true),
 		cel.Variable("cpu_cores", cel.UintType),
 		cel.Variable("cpu_sockets", cel.UintType),
 		cel.Variable("cpu_threads", cel.UintType),
@@ -219,6 +334,12 @@ func evaluateCEL(expression string, vm *veyronv1alpha1.VeyronVM) (bool, error) {
 		cel.Variable("name", cel.StringType),
 		cel.Variable("namespace", cel.StringType),
 		cel.Variable("running", cel.BoolType),
+		cel.Variable("memory_gib", cel.DoubleType),
+		cel.Variable("rdp_exposed", cel.BoolType),
+		cel.Variable("internet_egress", cel.BoolType),
+		cel.Variable("gpu_count", cel.IntType),
+		cel.Variable("has_snapshot_schedule", cel.BoolType),
+		cel.Variable("labels", cel.MapType(cel.StringType, cel.StringType)),
 	)
 	if err != nil {
 		return false, fmt.Errorf("creating CEL environment: %w", err)
@@ -244,6 +365,19 @@ func evaluateCEL(expression string, vm *veyronv1alpha1.VeyronVM) (bool, error) {
 	if vm.Spec.Running != nil {
 		running = *vm.Spec.Running
 	}
+	memGiB := 0.0
+	if q, err := resource.ParseQuantity(vm.Spec.Memory.Size); err == nil {
+		memGiB = float64(q.Value()) / float64(1<<30)
+	}
+	vmLabels := map[string]string{}
+	for k, v := range vm.Labels {
+		vmLabels[k] = v
+	}
+	for k, v := range vm.Spec.Labels {
+		if _, ok := vmLabels[k]; !ok {
+			vmLabels[k] = v
+		}
+	}
 	vars := map[string]interface{}{
 		"cpu_cores":             uint64(vm.Spec.CPU.Cores),
 		"cpu_sockets":           uint64(vm.Spec.CPU.Sockets),
@@ -261,6 +395,12 @@ func evaluateCEL(expression string, vm *veyronv1alpha1.VeyronVM) (bool, error) {
 		"name":                  vm.Name,
 		"namespace":             vm.Namespace,
 		"running":               running,
+		"memory_gib":            memGiB,
+		"rdp_exposed":           facts.get(facts.rdp(), vm.Name),
+		"internet_egress":       facts.get(facts.egress(), vm.Name),
+		"gpu_count":             int64(len(vm.Spec.GPUs)),
+		"has_snapshot_schedule": facts.get(facts.schedules(), vm.Name),
+		"labels":                vmLabels,
 	}
 
 	out, _, err := prg.Eval(vars)

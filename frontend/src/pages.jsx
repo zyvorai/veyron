@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { IntentPanel } from './IntentPanel.jsx';
+import { ForecastBand } from './ForecastBand.jsx';
+import { McpServersBox } from './McpServersBox.jsx';
 import { useFocusTrap } from './a11y.js';
 import {
   ChevronRight, ArrowRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
@@ -186,6 +189,8 @@ export function Mission({ data, go, onCreate, onConsole, healthOk, podSummary })
         )}
 
       </div>
+
+      <ForecastBand go={go} />
 
       <section className="story-band paper">
         <Reveal className="apple-chapter">
@@ -510,6 +515,10 @@ export function SettingsPage({ theme, setTheme }) {
             </div>
           </div>
           <div className="sgroup">
+            <h3>AI tools from MCP servers</h3>
+            <McpServersBox />
+          </div>
+          <div className="sgroup">
             <h3>About</h3>
             <div className="sbox">
               <div className="srow2">
@@ -627,7 +636,7 @@ const SIZES = [
 ];
 const FAMILY_ALIASES = /^(ubuntu|debian|fedora|centos|almalinux|rocky|opensuse|windows)$/;
 
-export function NewSheet({ res, templates, storageClasses, initialTemplate, onClose, onCreate }) {
+export function NewSheet({ res, templates, storageClasses, initialTemplate, onClose, onCreate, user }) {
   const isVm = res.kind === 'VirtualMachine';
   const osTemplates = (templates || []).filter((t) => !FAMILY_ALIASES.test(t.name));
   const pickable = osTemplates.length ? osTemplates : templates || [];
@@ -680,6 +689,16 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
         {isVm ? (
           <div className="create">
             <div className="create-main">
+              <IntentPanel
+                user={user}
+                onUseSpec={(spec) => {
+                  if (spec.template) setTemplate(spec.template);
+                  if (spec.name) setName(spec.name);
+                  const cpus = spec.cpus || 0;
+                  setSizeId(cpus >= 8 ? 'L' : cpus >= 4 ? 'M' : 'S');
+                }}
+              />
+
               <h3 className="create-step">
                 <span>1</span> Choose an operating system
               </h3>

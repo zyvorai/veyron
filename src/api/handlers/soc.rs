@@ -292,4 +292,7 @@ fn is_soc_audit_path(path: &str, method: &str) -> bool {
         || path.contains("/expose")
         || path.contains("/guest-agent")
         || path.contains("/soc/")
+        || path.contains("/ai/proposals")
+        || path.contains("/ai/models")
+        || path.contains("/sandboxes")
 }

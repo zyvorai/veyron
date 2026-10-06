@@ -199,6 +199,7 @@ mod kairon {
             gpu_count: m
                 .has_device_claims()
                 .then_some(m.spec.device_claims.len() as u32),
+            os: m.image_ref(),
         }
     }
 

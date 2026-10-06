@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Play, Square, Pause, ArrowLeftRight, Terminal, Camera, Trash2, RefreshCw,
-  Activity, Copy, HardDrive, Ban, CheckCircle, Network, Monitor, Zap, Unlink,
+  Activity, Copy, HardDrive, Ban, CheckCircle, Network, Monitor, Zap, Unlink, Sparkles,
 } from 'lucide-react';
 import { Status, Spark } from './status.jsx';
 import { api } from './api.js';
@@ -349,7 +349,7 @@ function VmOps({ row, onDone }) {
   );
 }
 
-export function Inspector({ res, row, hide, onAct, onOpsDone }) {
+export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi }) {
   const [tab, setTab] = useState('Info');
   const [events, setEvents] = useState([]);
   const [metrics, setMetrics] = useState(null);
@@ -436,6 +436,11 @@ export function Inspector({ res, row, hide, onAct, onOpsDone }) {
             </>
           )}
         </div>
+        {onAskAi && (
+          <button type="button" className="btn sm secondary insp-ai" onClick={() => onAskAi(row)}>
+            <Sparkles size={12} /> Ask AI
+          </button>
+        )}
       </div>
       {res.spark && (
         <div className="spark">

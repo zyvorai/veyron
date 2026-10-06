@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, Bell, Sun, Moon, Plus, Menu, X, LogOut, Settings } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Plus, Menu, X, LogOut, Settings, Sparkles } from 'lucide-react';
 import { NAV, RES_META, CHAPTER_ICONS, pageLabel } from './resources.js';
 import zyvorLogomark from './assets/zyvor-logomark.svg';
 
@@ -12,7 +12,7 @@ export function ZyvorMark({ size = 22 }) {
 
 /** apple.com-style global navigation: frosted bar, hover mega-menus, mobile sheet. */
 export function GlobalNav({
-  page, go, data, theme, onToggleTheme, onSearch, onBell, alerts, healthOk, loading, canCreate, onCreate, user, onLogout,
+  page, go, data, theme, onToggleTheme, onSearch, onAi, onBell, alerts, healthOk, loading, canCreate, onCreate, user, onLogout,
 }) {
   const [openGroup, setOpenGroup] = useState(null);
   const [mobile, setMobile] = useState(false);
@@ -123,6 +123,11 @@ export function GlobalNav({
             <span>Search</span>
             <kbd>⌘K</kbd>
           </button>
+          {onAi && (
+            <button type="button" className="gn-icon gn-ai" onClick={onAi} title="Veyron AI (⌘J)" aria-label="Veyron AI">
+              <Sparkles size={15} />
+            </button>
+          )}
           <span className={`gn-live${healthOk ? '' : ' warn'}`} title={healthOk ? 'API healthy' : 'API not responding reliably'}>
             <i />
             {loading ? 'Syncing' : healthOk ? 'Live' : 'Degraded'}
