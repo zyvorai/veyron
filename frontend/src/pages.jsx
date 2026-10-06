@@ -830,7 +830,7 @@ export function Login({ onSubmit, error }) {
       productName="Veyron"
       eyebrow="Veyron · Zyvor"
       heroTitle="Real VMs. One console."
-      heroLede="Fleet, storage, snapshots and day-2 operations for your virtual machines."
+      heroLede="Fleet, storage, snapshots and day‑2 operations for your virtual machines."
     >
       <form className="card login-card" onSubmit={handleSubmit} noValidate>
         <h1>Sign in.</h1>
