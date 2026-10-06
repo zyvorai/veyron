@@ -484,12 +484,12 @@ check_api_json "Cost Explorer /costs/summary" \
 check_api_json "Cost Explorer /costs/forecast" \
   "/api/v1/costs/forecast?namespace=all" 'projected_monthly'
 
-check_api_json "PacketWolf /packetwolf/status" \
-  "/api/v1/packetwolf/status" '"reachable"\s*:\s*true'
-check_api_json "PacketWolf /packetwolf/network/overview" \
-  "/api/v1/packetwolf/network/overview?namespace=all" 'live_connections'
-check_api_json "PacketWolf /packetwolf/flows" \
-  "/api/v1/packetwolf/flows?limit=5" '"flows"\s*:'
+check_api_json "Netra /netra/status" \
+  "/api/v1/netra/status" '"api_authorized"\s*:\s*true'
+check_api_json "Netra /netra/flows/summary" \
+  "/api/v1/netra/flows/summary?number=100" '"verdicts"\s*:'
+check_api_json "Netra /netra/vms" \
+  "/api/v1/netra/vms" '"items"\s*:'
 check_api_json "Network Intelligence /cilium/flows" \
   "/api/v1/cilium/flows?namespace=all" 'flow_source'
 

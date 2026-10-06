@@ -150,16 +150,16 @@ spec:
             - name: VEYRON_ARGOCD_TOKEN
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.integrations.packetwolfUrl }}
-            - name: VEYRON_PACKETWOLF_URL
+            {{- with .Values.integrations.netraUrl }}
+            - name: VEYRON_NETRA_URL
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.integrations.packetwolfExternalUrl }}
-            - name: VEYRON_PACKETWOLF_EXTERNAL_URL
+            {{- with .Values.integrations.netraExternalUrl }}
+            - name: VEYRON_NETRA_EXTERNAL_URL
               value: {{ . | quote }}
             {{- end }}
-            {{- with .Values.integrations.packetwolfApiKey }}
-            - name: VEYRON_PACKETWOLF_API_KEY
+            {{- with .Values.integrations.netraApiKey }}
+            - name: VEYRON_NETRA_API_KEY
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.ai.url }}

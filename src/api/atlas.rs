@@ -9,7 +9,7 @@
 //! instead of re-implementing Ceph itself. This is the additive HTTP surface: it never
 //! replaces Veyron's native KubeVirt `VolumeSnapshot` flow — it sits alongside it.
 //!
-//! Configuration mirrors the PacketWolf integration:
+//! Configuration mirrors the Netra integration:
 //! - `VEYRON_ATLAS_URL`   — Atlas gateway base URL, e.g. `http://atlas-gateway.zyvor:5110`
 //! - `VEYRON_ATLAS_TOKEN` — optional HS256 JWT bearer (required when `ATLAS_AUTH_REQUIRED=1`)
 //! - `VEYRON_ATLAS_TENANT`— optional tenant id used for created volumes/backups (default `global`)
@@ -39,7 +39,7 @@ pub fn atlas_tenant() -> String {
 
 /// Reject obviously-unsafe base URLs. Atlas is an **admin-configured** in-cluster backend
 /// (typically a ClusterIP service, or `127.0.0.1:5110` in dev), not an attacker-controlled
-/// proxy target, so — unlike the PacketWolf proxy validator — loopback is allowed. We still
+/// proxy target, so — unlike the Netra proxy validator — loopback is allowed. We still
 /// block non-http(s) schemes and the cloud metadata endpoint to keep SSRF surface minimal.
 #[cfg(feature = "web")]
 pub fn validate_atlas_url(url: &str) -> Result<(), String> {

@@ -46,13 +46,13 @@ pub mod monitoring;
 pub mod multus;
 pub mod namespace_scope;
 pub mod namespaces;
+pub mod netra;
 pub mod network;
 pub mod network_policies;
 pub mod nodes;
 pub mod notifications;
 pub mod observability;
 pub mod operators;
-pub mod packetwolf;
 pub mod performance;
 pub mod pods;
 pub mod quotas;
@@ -184,5 +184,5 @@ pub fn all_routes(
         .merge(velero::router(state.clone()))
         .merge(clusters::router(state.clone()))
         .merge(integrations::router(state.clone()))
-        .merge(packetwolf::router(state.clone()))
+        .merge(netra::router(state.clone()))
 }

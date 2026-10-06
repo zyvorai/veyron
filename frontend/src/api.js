@@ -662,7 +662,11 @@ export const api = {
   createVeleroRestore: (body) =>
     request('/api/v1/velero/restores', { method: 'POST', body: JSON.stringify(body) }),
   drFailback: (body) => request('/api/v1/dr/failback', { method: 'POST', body: JSON.stringify(body) }),
-  packetwolfStatus: async () => unwrap(await request('/api/v1/packetwolf/status')) || {},
+  netraStatus: async () => unwrap(await request('/api/v1/netra/status')) || {},
+  netraFlowSummary: async (ns = 'all') =>
+    unwrap(await request(`/api/v1/netra/flows/summary?namespace=${encodeURIComponent(ns)}`)) || {},
+  netraVms: async (ns = 'all') =>
+    asArray(await request(`/api/v1/netra/vms?namespace=${encodeURIComponent(ns)}`)),
 };
 
 export function mapGpu(raw, i) {

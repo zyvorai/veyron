@@ -133,10 +133,10 @@ const DEFINITIONS: &[IntegrationDef] = &[
         feeds: "Detection fired / playbook triggers",
     },
     IntegrationDef {
-        id: "packetwolf",
-        name: "PacketWolf",
-        env_var: "VEYRON_PACKETWOLF_URL",
-        feeds: "Network Brain health, Cilium/Hubble intelligence (GET /api/v1/packetwolf/status)",
+        id: "netra",
+        name: "Netra",
+        env_var: "VEYRON_NETRA_URL",
+        feeds: "eBPF network observability: flows, drops, VM traffic (GET /api/v1/netra/status)",
     },
     IntegrationDef {
         id: "atlas",
@@ -201,7 +201,7 @@ fn in_app_open(id: &str) -> Option<IntegrationOpenLink> {
         "trivy" => ("security", "Open security"),
         "jaeger" => ("traces", "Open traces"),
         "elastic" | "splunk" | "sentinel" | "qradar" | "soar" => ("soc", "Open SOC"),
-        "packetwolf" => ("cilium", "Open Cilium"),
+        "netra" => ("netra", "Open Netra"),
         "atlas" => ("snapshots", "Open snapshots"),
         _ => return None,
     };
@@ -320,7 +320,7 @@ async fn resolve_external_open(
         "alertmanager" => "VEYRON_ALERTMANAGER_EXTERNAL_URL",
         "argocd" => "VEYRON_ARGOCD_EXTERNAL_URL",
         "jaeger" => "VEYRON_JAEGER_EXTERNAL_URL",
-        "packetwolf" => "VEYRON_PACKETWOLF_EXTERNAL_URL",
+        "netra" => "VEYRON_NETRA_EXTERNAL_URL",
         _ => return None,
     };
     if let Some(url) = crate::api::integrations::env_var(external_env) {
@@ -349,15 +349,18 @@ async fn resolve_external_open(
                 .map(|u| external_open("Open Argo CD", u));
         }
         "jaeger" => ("monitoring", "jaeger"),
-        "packetwolf" => {
-            for ns in ["packetwolf", "cilium-system"] {
-                if let Some(u) = discover_nodeport_url(client, ns, "packetwolf-ui").await {
-                    return Some(external_open("Open PacketWolf UI", u));
-                }
+        "netra" => {
+            let ns = crate::api::handlers::netra::NETRA_NAMESPACE;
+            let svc = crate::api::handlers::netra::NETRA_SERVICE;
+            if let Some(u) = discover_nodeport_url(client, ns, svc).await {
+                return Some(external_open(
+                    "Open Netra",
+                    u.replacen("http://", "https://", 1),
+                ));
             }
             return raw_url
                 .and_then(base_url_from_env)
-                .map(|u| external_open("Open PacketWolf API", u));
+                .map(|u| external_open("Open Netra", u));
         }
         _ => return None,
     };
@@ -382,12 +385,22 @@ async fn get_integrations_status(
     State(state): State<SharedState>,
 ) -> Json<IntegrationsStatusResponse> {
     let kube_client = state.read().await.client().client().clone();
+    let netra_base = {
+        let kube = state.read().await.kube_client.clone();
+        crate::api::handlers::netra::netra_base_url(&kube)
+            .await
+            .map(|(url, _)| url)
+    };
     let mut integrations = Vec::with_capacity(DEFINITIONS.len() + 1);
     let mut configured_count = 0u32;
     let mut probe_futures = Vec::new();
 
     for def in DEFINITIONS {
-        let raw = crate::api::integrations::env_var(def.env_var);
+        let raw = if def.id == "netra" {
+            netra_base.clone()
+        } else {
+            crate::api::integrations::env_var(def.env_var)
+        };
         let configured = raw.is_some();
         if configured {
             configured_count += 1;
@@ -416,7 +429,9 @@ async fn get_integrations_status(
                 } else {
                     probe_futures.push((def.id, url.to_string(), None));
                 }
-            } else if def.id == "packetwolf" || def.id == "atlas" {
+            } else if def.id == "netra" {
+                // Probed below with Netra's own client (self-signed TLS).
+            } else if def.id == "atlas" {
                 let health = if url.trim_end_matches('/').ends_with("/health") {
                     url.to_string()
                 } else {
@@ -431,7 +446,7 @@ async fn get_integrations_status(
             None
         } else if matches!(
             def.id,
-            "grafana" | "argocd" | "prometheus" | "alertmanager" | "jaeger" | "packetwolf"
+            "grafana" | "argocd" | "prometheus" | "alertmanager" | "jaeger" | "netra"
         ) {
             resolve_external_open(&kube_client, def.id, raw.as_deref())
                 .await
@@ -516,6 +531,10 @@ async fn get_integrations_status(
             "splunk" => crate::soc::export::splunk::probe().await,
             "sentinel" => crate::soc::export::sentinel::probe().await,
             "qradar" => crate::soc::export::qradar::probe().await,
+            "netra" => match netra_base.as_deref() {
+                Some(base) => crate::api::handlers::netra::probe_healthz(base).await,
+                None => false,
+            },
             _ => continue,
         };
         item.probe = if ok {

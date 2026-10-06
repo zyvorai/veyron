@@ -14,7 +14,7 @@ const chapter = (name) => lazy(() => import('./chapters.jsx').then((m) => ({ def
 const MonitoringPage = chapter('MonitoringPage');
 const TopologyPage = chapter('TopologyPage');
 const DrPage = chapter('DrPage');
-const PacketWolfPage = chapter('PacketWolfPage');
+const NetraPage = chapter('NetraPage');
 import { Status } from './status.jsx';
 import { GlobalNav } from './GlobalNav.jsx';
 import { CommandPalette } from './CommandPalette.jsx';
@@ -606,8 +606,8 @@ export default function App() {
           <TopologyPage />
         ) : page === 'dr' ? (
           <DrPage showToast={showToast} />
-        ) : page === 'network-brain' ? (
-          <PacketWolfPage />
+        ) : page === 'netra' ? (
+          <NetraPage />
         ) : page === 'console' ? (
           <ConsoleHub
             vms={data.vms.rows}

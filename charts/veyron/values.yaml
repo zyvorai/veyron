@@ -86,9 +86,11 @@ integrations:
   alertmanagerUrl: ""
   argocdUrl: ""
   argocdToken: ""
-  packetwolfUrl: ""
-  packetwolfExternalUrl: ""
-  packetwolfApiKey: ""
+  # Netra: auto-detected from the netra Service in netra-system; set netraUrl only when it
+  # runs elsewhere. netraApiKey defaults to Netra's lab default (Admin@321).
+  netraUrl: ""
+  netraExternalUrl: ""
+  netraApiKey: ""
   existingSecret: ""
 
 oidc:

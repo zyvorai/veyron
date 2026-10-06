@@ -9,7 +9,7 @@ API.
 ## How to configure
 
 - **Automatic:** during `deploy-remote.sh`, `scripts/lib/bootstrap-integrations.sh` finds
-  Prometheus, Grafana, Alertmanager, Argo CD, PacketWolf and Atlas Services in the cluster and
+  Prometheus, Grafana, Alertmanager, Argo CD, Netra and Atlas Services in the cluster and
   writes their URLs into the `veyron-integrations` Secret. Skip it with
   `VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP=1`.
 - **Manual:** fill in
@@ -89,10 +89,28 @@ Veyron's built-in templates follow the Kryton catalog. `rocky-10` and `rocky-9` 
 golden DataSource `kryton-images/rocky-*`, because the public Rocky containerdisk needs
 registry credentials. Bootstrap the image in Kryton before creating Rocky VMs.
 
-## PacketWolf: network intelligence
+## Netra: network observability
 
-With `VEYRON_PACKETWOLF_URL` set, Veyron shows PacketWolf health and proxies its network overview
-and flows. PacketWolf uses JWT login: set `VEYRON_PACKETWOLF_USERNAME` and
-`VEYRON_PACKETWOLF_PASSWORD`. Veyron caches the token and refreshes it before it expires.
-`VEYRON_PACKETWOLF_API_KEY` exists only for older deployments that accept static keys. The
-`/status` health probe is unauthenticated, so "reachable" alone doesn't prove the login works.
+[Netra](https://github.com/zyvorai/netra) is Zyvor's eBPF network observability product. Veyron
+shows its health, a flow summary (verdicts, protocols, drop reasons, top destinations) and Netra's
+per-VM network view, including which VMs are locked down, on the console's **Netra** page.
+
+There is nothing to configure when Netra runs in the same cluster: Veyron finds the `netra` Service
+in `netra-system` and talks to `https://netra.netra-system.svc:30870`.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `VEYRON_NETRA_URL` | auto-detected | Netra controller URL when it runs outside `netra-system` |
+| `VEYRON_NETRA_API_KEY` | `Admin@321` | Netra's `NETRA_API_KEY`, sent as `Authorization: Bearer` |
+| `VEYRON_NETRA_EXTERNAL_URL` | NodePort, set by bootstrap | Browser link for **Open Netra** |
+| `VEYRON_NETRA_TLS_VERIFY` | off | `1` verifies Netra's certificate (it is self-signed by default) |
+
+The key default matches Netra's own lab default, so a fresh Netra install works without setup. If
+you rotate `NETRA_API_KEY`, set `VEYRON_NETRA_API_KEY` to the same value; otherwise the status shows
+"Unauthorized".
+
+| Route | Netra endpoint |
+|---|---|
+| `GET /api/v1/netra/status` | `/healthz` and `/api/v1/status` (version, agents, mode, flow rate) |
+| `GET /api/v1/netra/flows/summary?namespace=&number=` | `/api/v1/flows/summary` |
+| `GET /api/v1/netra/vms?namespace=` | `/api/v1/vms` |

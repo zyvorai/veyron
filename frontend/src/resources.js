@@ -381,7 +381,7 @@ export const NAV = [
       ['atlas', null, 'Ceph snapshots and S3 backups via Atlas.'],
       ['dr', 'DR & Velero', 'Failover, failback and cluster backups.'],
       ['networks', null, 'Secondary networks and CIDRs.'],
-      ['network-brain', 'PacketWolf', 'Flows and network intelligence.'],
+      ['netra', 'Netra', 'eBPF flows, drops and VM network view.'],
     ],
   },
   {
@@ -423,14 +423,14 @@ export function pageBlurb(id) {
   return '';
 }
 
-export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'network-brain']);
+export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra']);
 
 /** Story pages that render full-bleed, without the local toolbar. */
-export const FULL_BLEED_PAGES = new Set(['mission', 'console', 'monitoring', 'topology', 'dr', 'network-brain']);
+export const FULL_BLEED_PAGES = new Set(['mission', 'console', 'monitoring', 'topology', 'dr', 'netra']);
 
 export const CHAPTER_ICONS = {
   monitoring: Activity,
   topology: Map,
   dr: Cloud,
-  'network-brain': Radar,
+  netra: Radar,
 };

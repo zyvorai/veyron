@@ -295,8 +295,12 @@ export function DrPage({ showToast }) {
   );
 }
 
-export function PacketWolfPage() {
+const fmtCount = (n) => (typeof n === 'number' ? n.toLocaleString() : '—');
+
+export function NetraPage() {
   const [status, setStatus] = useState(null);
+  const [flows, setFlows] = useState(null);
+  const [vms, setVms] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -304,10 +308,21 @@ export function PacketWolfPage() {
     setBusy(true);
     setErr('');
     try {
-      setStatus(await api.packetwolfStatus());
+      const st = await api.netraStatus();
+      setStatus(st);
+      if (st?.api_authorized) {
+        const [summary, vmList] = await Promise.allSettled([api.netraFlowSummary(), api.netraVms()]);
+        setFlows(summary.status === 'fulfilled' ? summary.value : null);
+        setVms(vmList.status === 'fulfilled' ? vmList.value : []);
+        const failed = [summary, vmList].find((r) => r.status === 'rejected');
+        if (failed) setErr(failed.reason?.message || String(failed.reason));
+      } else {
+        setFlows(null);
+        setVms([]);
+      }
     } catch (e) {
       setErr(e.message || String(e));
-      setStatus({ configured: false, reachable: false, error: e.message });
+      setStatus({ configured: false, reachable: false });
     } finally {
       setBusy(false);
     }
@@ -317,13 +332,18 @@ export function PacketWolfPage() {
     load();
   }, []);
 
-  const ok = status?.reachable || status?.configured || status?.ok;
+  const ok = Boolean(status?.api_authorized);
+  const headline = ok ? 'Connected' : status?.reachable ? 'Unauthorized' : status?.configured ? 'Unreachable' : 'Not installed';
+  const verdicts = Object.entries(flows?.verdicts || {}).sort((x, y) => y[1] - x[1]);
+  const protocols = Object.entries(flows?.protocols || {}).sort((x, y) => y[1] - x[1]);
+  const drops = flows?.dropReasons || [];
+  const destinations = flows?.topDestinations || [];
 
   return (
     <ChapterShell
-      kicker="Network brain"
-      title="PacketWolf"
-      lede="Cilium / PacketWolf integration health for the console."
+      kicker="Network"
+      title="Netra"
+      lede="eBPF network observability for VM and pod traffic: flows, drops and per-VM lockdown."
       onRefresh={load}
       busy={busy}
     >
@@ -331,30 +351,131 @@ export function PacketWolfPage() {
       <section className="apple-band">
         <div className="apple-chapter">
           <div className="kicker">Connection</div>
-          <h2>{ok ? 'Reachable' : 'Not configured'}</h2>
+          <h2>{headline}</h2>
           <p>
-            {status?.endpoint ||
-              status?.url ||
-              status?.message ||
-              status?.error ||
-              'Set VEYRON_PACKETWOLF_URL (and login credentials) on the API.'}
+            {status?.message ||
+              (status?.base_url
+                ? `${status.base_url}${status.source === 'discovered' ? ' (found in netra-system)' : ''}`
+                : 'Install Netra in netra-system or set VEYRON_NETRA_URL on the API.')}
           </p>
           <div className="rows" style={{ marginTop: 20 }}>
             <button type="button" disabled>
               <Status s={ok ? 'Healthy' : 'Unknown'} />
               <b>Health</b>
-              <span className="why">{ok ? 'Probe succeeded' : 'Integration absent or unreachable'}</span>
+              <span className="why">{ok ? 'Controller reachable and API key accepted' : 'No authorized connection'}</span>
             </button>
             {status?.version && (
               <button type="button" disabled>
                 <Radar size={14} />
                 <b>Version</b>
-                <span className="why">{String(status.version)}</span>
+                <span className="why">
+                  {status.version}
+                  {status.datapath ? ` · ${status.datapath}` : ''}
+                  {status.mode ? ` · ${status.mode} mode` : ''}
+                </span>
               </button>
+            )}
+            {typeof status?.agents === 'number' && (
+              <button type="button" disabled>
+                <Status s={status.stale_agents ? 'Warning' : 'Healthy'} />
+                <b>Agents</b>
+                <span className="why">
+                  {status.agents} reporting{status.stale_agents ? `, ${status.stale_agents} stale` : ''}
+                </span>
+              </button>
+            )}
+            {typeof status?.flows_per_second === 'number' && (
+              <button type="button" disabled>
+                <Activity size={14} />
+                <b>Flow rate</b>
+                <span className="why">{status.flows_per_second.toFixed(1)} flows/s</span>
+              </button>
+            )}
+            {status?.external_url && (
+              <a className="row-link" href={status.external_url} target="_blank" rel="noreferrer">
+                <ChevronRight size={14} />
+                <b>Open Netra</b>
+                <span className="why">{status.external_url}</span>
+              </a>
             )}
           </div>
         </div>
       </section>
+      {ok && (
+        <section className="apple-band">
+          <div className="apple-chapter">
+            <div className="kicker">Traffic · last {fmtCount(flows?.total)} flows</div>
+            <div className="rows">
+              {verdicts.map(([v, n]) => (
+                <button type="button" key={`v-${v}`} disabled>
+                  <Status s={v === 'DROPPED' || v === 'ERROR' ? 'Failed' : 'Healthy'} />
+                  <b>{v}</b>
+                  <span className="why">{fmtCount(n)}</span>
+                </button>
+              ))}
+              {protocols.map(([p, n]) => (
+                <button type="button" key={`p-${p}`} disabled>
+                  <b>{p}</b>
+                  <span className="why">{fmtCount(n)}</span>
+                </button>
+              ))}
+              {!verdicts.length && (
+                <button type="button" disabled>
+                  <b>No flows sampled</b>
+                  <span className="why">Netra returned an empty window.</span>
+                </button>
+              )}
+            </div>
+            {drops.length > 0 && (
+              <>
+                <div className="kicker" style={{ marginTop: 28 }}>Drop reasons</div>
+                <div className="rows">
+                  {drops.map((d) => (
+                    <button type="button" key={d.name} disabled>
+                      <Status s="Failed" />
+                      <b>{d.name}</b>
+                      <span className="why">{fmtCount(d.count)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            {destinations.length > 0 && (
+              <>
+                <div className="kicker" style={{ marginTop: 28 }}>Top destinations</div>
+                <div className="rows">
+                  {destinations.map((d) => (
+                    <button type="button" key={d.name} disabled>
+                      <b className="mono">{d.name}</b>
+                      <span className="why">{fmtCount(d.count)} flows</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            <div className="kicker" style={{ marginTop: 28 }}>VM network view · {vms.length}</div>
+            <div className="rows">
+              {vms.map((vm) => (
+                <button type="button" key={`${vm.namespace}/${vm.name}`} disabled>
+                  <Status s={vm.lockedDown ? 'Warning' : vm.running ? 'Running' : 'Stopped'} />
+                  <b>
+                    {vm.namespace}/{vm.name}
+                  </b>
+                  <span className="why">
+                    {[vm.podIP, vm.node, vm.lockedDown ? 'locked down' : null].filter(Boolean).join(' · ') || vm.phase || '—'}
+                  </span>
+                </button>
+              ))}
+              {!vms.length && (
+                <button type="button" disabled>
+                  <b>No VMs seen by Netra</b>
+                  <span className="why">Netra lists running virt-launcher pods.</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
     </ChapterShell>
   );
 }

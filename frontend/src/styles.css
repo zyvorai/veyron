@@ -573,11 +573,14 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
   font-size: 17px; color: var(--ink-2); margin-top: 8px; max-width: 42ch; line-height: 1.4;
 }
 .rows { margin-top: 22px; border-top: 1px solid var(--line); }
-.rows button {
+.rows button,
+.rows a.row-link {
   display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 4px;
   border-bottom: 1px solid var(--line); font-size: 15px; background: transparent;
 }
-.rows button:hover { background: var(--hover); }
+.rows button:hover,
+.rows a.row-link:hover { background: var(--hover); }
+.rows a.row-link { color: inherit; text-decoration: none; }
 .rows b { font-family: var(--mono); font-weight: 600; }
 .rows .why { color: var(--ink-2); flex: 1; }
 .rows svg { color: var(--ink-3); }
