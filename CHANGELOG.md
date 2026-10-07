@@ -23,6 +23,22 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Veyron AI** ([docs/ai.md](docs/ai.md)). Bring any OpenAI-compatible model, or deploy one
+  in-cluster (llama.cpp on CPU, vLLM on GPU) and select it from the console. Chat with tools,
+  intent-to-VM planning, natural-language search, policy drafting, capacity forecasts and
+  automatic incident investigations. Every change is a **proposal** that a human approves;
+  pending proposals expire after `VEYRON_AI_PROPOSAL_TTL_HOURS` (default 72).
+- **MCP server and client.** `/mcp` exposes Veyron's tools to external agents; registered external
+  MCP servers show up as `ext.<name>.*` tools.
+- **Sandboxes.** Disposable KubeVirt VMs from a warm pool for agent code execution
+  (`/api/v1/sandboxes`). They're hidden from the VM list unless `include_sandboxes=true`.
+- **`scripts/console-audit.sh`**: headless layout and console-error audit of every page in the
+  React console, part of `customer-readiness.sh`. Replaces the stale dashboard audit.
+- **`scripts/test-ai-remote.sh`**: Veyron AI end-to-end (MCP, sandboxes, proposals, investigations,
+  policy, search, forecast; `VEYRON_E2E_MODEL=1` also deploys and uses an in-cluster model).
+- `adapt-existing-cluster.sh` checks the terminated-pod GC threshold and Cilium's socket-LB
+  `hostns-only` setting (needed for KubeVirt guest DNS).
+- VM list rows carry an `os` hint from template labels or the container disk image.
 - **Kryton integration.** `/api/v1/kryton/*` proxies the Kryton machine API: status, catalog,
   machines, power, snapshots, golden-image bootstrap and jobs (`VEYRON_KRYTON_URL`,
   `VEYRON_KRYTON_TOKEN`, `VEYRON_KRYTON_PROJECT`).
@@ -31,8 +47,19 @@ All notable changes to this project are documented here. The format follows
   Server 2025. `ubuntu`, `debian`, `windows` and the other bare family names now point at the newest
   release; Windows templates default to 80 GiB disks with TPM.
 
+### Fixed
+
+- Cloud-init user-data over 2048 bytes is stored in a Secret instead of being rejected by KubeVirt.
+- Cloud-init Secret references used the wrong field name (`userDataSecretRef` instead of
+  `secretRef`) and were silently dropped, in both the API and the operator.
+- In-cluster llama.cpp models default to a 16k context (the agent prompt overflowed 4k), and
+  requests to an in-cluster model get a 300 s timeout.
+- The investigator no longer opens incidents for VMs that are being deleted.
+- Paqtra status checks no longer time out on a cold cache.
+
 ### Removed
 
+- `scripts/dashboard-layout-audit.sh` (targeted the retired dashboard).
 - Retired templates for end-of-life or placeholder images: Ubuntu 18.04/20.04, Fedora 42/43,
   CentOS Stream 8, Debian 11, AlmaLinux/Rocky 8, RHEL, Oracle Linux, Alpine, Arch, openSUSE
   Tumbleweed, FreeBSD, Flatcar, Talos and Windows 10.

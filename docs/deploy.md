@@ -31,7 +31,17 @@ init container. Then check it:
 ```bash
 ./scripts/verify-veyron-remote.sh <host>
 ./scripts/preflight-veyron-remote.sh <host>      # grades cluster capabilities, exits non-zero on failure
+VEYRON_API_KEY=... ./scripts/console-audit.sh --host <host>   # layout + console errors on every console page
+VEYRON_API_KEY=... ./scripts/test-ai-remote.sh <host>        # Veyron AI end-to-end
 ```
+
+On an existing cluster, `scripts/cluster/adapt-existing-cluster.sh` reports what Veyron needs
+(dry run by default). `--apply` fixes it in place, including two settings that are easy to miss:
+
+- **Cilium socket LB `hostns-only`**: without it, KubeVirt guests can't reach cluster DNS, so guest
+  agents never connect and sandboxes never become ready. Restarts the Cilium DaemonSet.
+- **Terminated-pod GC threshold** (1000): the k3s default of 12500 lets dead pods pile up and fill
+  the disk. Restarts k3s.
 
 ## 2. Helm
 
