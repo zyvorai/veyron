@@ -61,5 +61,14 @@ Inside the guest, install the standard NVIDIA driver and run `nvidia-smi`.
 | Host console goes dark after prep | Expected: the host gave its only GPU away. Keep IPMI or SSH access |
 | Migration returns 409 | By design. Use a cold move |
 
-**vGPU (licensed, datacenter cards)** is the next phase. Live migration of vGPU VMs stays off
-unless `VEYRON_VGPU_LIVE_MIGRATION=1` is set after verifying that the host stack supports it.
+## Scope and roadmap
+
+Veyron covers GPUs attached to VMs: passthrough, the inventory, the create-time preflight and the
+migration guard. **vGPU (licensed, datacenter cards)** VMs can be requested with `vgpu_profile`,
+but live migration of vGPU VMs stays off unless `VEYRON_VGPU_LIVE_MIGRATION=1` is set after
+verifying that the host stack supports it.
+
+The GPU platform roadmap lives in [Gryvia](https://github.com/zyvorai/gryvia): GPU node
+preparation (NVIDIA GPU Operator), GPU-aware job admission with Kueue, tenants, quotas and GPU-hour
+metering, and GPU health checks with quarantine and reset. Use Gryvia for containerized training and
+inference, and Veyron when the workload needs a full VM.
