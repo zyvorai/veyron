@@ -110,8 +110,8 @@ takes seconds.
 - Env: `VEYRON_SANDBOX_NAMESPACE`, `VEYRON_SANDBOX_POOL_SIZE` (1), `VEYRON_SANDBOX_MAX_PER_OWNER`
   (3), `VEYRON_SANDBOX_MAX_TTL_MINUTES` (1440), `VEYRON_SANDBOX_TEMPLATE` (`ubuntu-24.04`),
   `VEYRON_SANDBOX_MEMORY` (`1Gi`), `VEYRON_SANDBOX_WAIT_SECS` (240).
-- On a `--features kairon` build with `VEYRON_VM_BACKEND=kairon`, sandboxes are Firecracker
-  machines instead, forked from `VEYRON_SANDBOX_KAIRON_PARENT` when set.
+- On Kairon (the default engine), sandboxes are Firecracker machines, forked from
+  `VEYRON_SANDBOX_KAIRON_PARENT` when set.
 
 ## Running a model in the cluster
 
@@ -138,9 +138,9 @@ Linux templates already carry cloud-init that installs GuestKit. Cloud-init sent
 `runcmd`, `bootcmd`, `ssh_authorized_keys`, `users` and `mounts` are appended, other keys take your
 value, and a `#!` script runs once as an extra `runcmd`. GuestKit keeps working.
 
-## Cluster requirement: guest DNS with Cilium
+## Cluster requirement: guest DNS with Cilium (legacy KubeVirt)
 
-KubeVirt guests reach cluster Services (DNS, the GuestKit download, model endpoints) through the
+On the legacy `VEYRON_VM_BACKEND=kubevirt` path, KubeVirt guests reach cluster Services (DNS, the GuestKit download, model endpoints) through the
 virt-launcher pod's NAT. With Cilium's kube-proxy replacement, socket load balancing must be
 limited to the host namespace or these packets are never translated, and guests can't resolve
 anything:

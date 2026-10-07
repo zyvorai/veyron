@@ -23,6 +23,7 @@ Useful environment variables:
 | `VEYRON_DEPLOY_NO_CACHE=1` | Clean image rebuild |
 | `VEYRON_SKIP_GUESTKIT_PREP=1` | Skip re-syncing the GuestKit build context |
 | `VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1` | Don't apply the Cilium egress policies |
+| `VEYRON_INSTALL_CDI=1` | Install CDI too (legacy KubeVirt only; Kairon needs none) |
 | `DEPLOY_SSH_TIMEOUT`, `DEPLOY_SSH_PORT` | SSH settings |
 
 The API serves HTTPS on `hostPort` 5151 and NodePort 30151 with a self-signed certificate made by an
@@ -38,10 +39,26 @@ VEYRON_API_KEY=... ./scripts/test-ai-remote.sh <host>        # Veyron AI end-to-
 On an existing cluster, `scripts/cluster/adapt-existing-cluster.sh` reports what Veyron needs
 (dry run by default). `--apply` fixes it in place, including two settings that are easy to miss:
 
-- **Cilium socket LB `hostns-only`**: without it, KubeVirt guests can't reach cluster DNS, so guest
+- **Cilium socket LB `hostns-only`**: without it, legacy KubeVirt guests can't reach cluster DNS, so guest
   agents never connect and sandboxes never become ready. Restarts the Cilium DaemonSet.
 - **Terminated-pod GC threshold** (1000): the k3s default of 12500 lets dead pods pile up and fill
   the disk. Restarts k3s.
+
+## Kairon settings
+
+Veyron runs VMs on Kairon. It needs no KubeVirt and no CDI, but it does need:
+
+- **The kairon-node relay** for consoles, guest exec, logs and VM-state snapshots. Put
+  `VEYRON_KAIRON_NODE_URL` (for example `http://<node-ip>:8090`) and `KAIRON_NODE_CONSOLE_TOKEN` in
+  the optional `veyron-kairon` Secret; `deploy/k8s.yaml` loads it when present. Add
+  `VEYRON_KAIRON_NODE_TLS_INSECURE=1` if the relay uses a self-signed certificate.
+- **An image cache on every Kairon node** (`KAIRON_IMAGE_CACHE_DIR`, writable by kairon-node). VMs
+  booted from templates or imports download their disk into it.
+- **Kairon `v1beta1` CRDs** (current Kairon `main`). An older Kairon that serves only `v1alpha1`
+  makes every VM call fail with "Resource not found"; upgrade Kairon first.
+
+`VEYRON_VM_BACKEND` defaults to Kairon. Set `kubevirt` only to keep managing an existing KubeVirt
+cluster; Veyron never switches to it on its own.
 
 ## 2. Helm
 

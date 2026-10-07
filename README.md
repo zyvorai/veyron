@@ -100,6 +100,7 @@ A frosted top nav with mega-menus, a ⌘K palette for everything, a live fleet m
 | GPU and Windows workloads don't fit generic tooling | **GPU passthrough with a live-migration guard**, and Windows golden images with sysprep, domain join and RDP guardrails. |
 | Everyone shares one admin password | **Admin, write and read-only roles**, multiple keys, local accounts and OIDC SSO with Keycloak, Okta, Auth0 or Azure AD. |
 | Security finds exposed VMs after the fact | **A built-in SOC:** detections for public RDP and SSH, policy gaps and drift, export to Elastic, Splunk, Sentinel and QRadar. |
+| You're leaving VMware, Hyper-V or Azure | **VM import:** [h2kvm](https://github.com/zyvorai/h2kvm) fixes each guest offline and `--deploy-kairon` boots it as a Kairon `Machine` through `POST /api/v1/imports`. No KubeVirt, no CDI. Or use the console's import form. |
 | You want AI help without giving a bot the keys | **Veyron AI:** an MCP server, incident investigations and forecasts, where every change is a proposal a human approves. |
 
 ![Capabilities at a glance: Run, Protect, Observe, Secure, Veyron AI](docs/assets/readme-capabilities.jpg)
@@ -155,7 +156,9 @@ Helm, plain manifests, the production checklist and the standalone client tarbal
 | SOC detections and SIEM export | Stable |
 | GPU passthrough | Phase 1 (whole-GPU); vGPU next |
 | Atlas (Ceph) protection, Kryton lab machines, Netra, Paqtra | Integration, needs those products |
-| Kairon engine | In progress: replacing KubeVirt and CDI |
+| Kairon engine | Default and only engine; KubeVirt is an explicit legacy opt-in (`VEYRON_VM_BACKEND=kubevirt`) |
+| VM import (h2kvm → Kairon) | Stable (verified live, 2026-10-07) |
+| Multi-node live migration on Kairon | API done; hardware matrix needs a second node |
 
 ---
 
@@ -168,6 +171,7 @@ Helm, plain manifests, the production checklist and the standalone client tarbal
 | Deploy and production checklist | [docs/deploy.md](docs/deploy.md) |
 | API, roles and keys | [docs/api.md](docs/api.md) |
 | Single sign-on | [docs/sso.md](docs/sso.md) |
+| Migrate VMs from VMware, Hyper-V, Azure | [docs/migrate.md](docs/migrate.md) |
 | GPU · Windows · multi-site | [docs/gpu.md](docs/gpu.md) · [docs/windows.md](docs/windows.md) · [docs/multi-site.md](docs/multi-site.md) |
 | SOC and integrations | [docs/soc.md](docs/soc.md) · [docs/integrations.md](docs/integrations.md) |
 
@@ -188,6 +192,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately 
 |---|---|
 | **Veyron** | The console, API and CLI for VMs on Kubernetes |
 | **[Kairon](https://github.com/zyvorai/kairon)** | The VM engine: `Machine`s on FluxVM and KVM, without KubeVirt |
+| **[h2kvm](https://github.com/zyvorai/h2kvm)** | Offline guest repair and conversion from vSphere, ESXi, Azure and disk files, landing on Kairon via Veyron |
 | **[FluxVM](https://github.com/zyvorai/fluxvm)** | The VMM layer under Kairon: QEMU, Cloud Hypervisor, Firecracker and its own hypervisor behind one REST API |
 | **[Kryton](https://github.com/zyvorai/zyvor-kryton)** | Machine API for lab and edge Windows/Linux hosts (dockur, libvirt), plus checksum-pinned golden images |
 | **[Atlas](https://github.com/zyvorai/zyvor-atlas)** | Storage control plane: Ceph snapshots, clones and S3 backups for VM disks |

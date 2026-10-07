@@ -13,6 +13,7 @@ Kubernetes API.
 | Deploy to a cluster, Helm, client tarball, trial builds | [deploy.md](deploy.md) |
 | API keys, roles, routes | [api.md](api.md) |
 | Single sign-on with Keycloak, Okta, Auth0 or Azure AD | [sso.md](sso.md) |
+| Migrate VMs from VMware, Hyper-V, Azure (h2kvm) | [migrate.md](migrate.md) |
 | GPU virtual machines | [gpu.md](gpu.md) |
 | Windows guests and golden images | [windows.md](windows.md) |
 | Two racks or two sites | [multi-site.md](multi-site.md) |
@@ -20,8 +21,9 @@ Kubernetes API.
 | AI assistant, MCP, proposals, sandboxes, in-cluster models | [ai.md](ai.md) |
 | Prometheus, Atlas, Netra, Paqtra, Copilot and more | [integrations.md](integrations.md) |
 
-**Status.** Kairon is replacing KubeVirt and CDI as Veyron's VM engine. Until that work ships, the
-released build still manages KubeVirt `VirtualMachine`s; pages note where that matters.
+**Status.** Kairon is Veyron's VM engine. Veyron never falls back to KubeVirt on its own; only an
+explicit `VEYRON_VM_BACKEND=kubevirt` brings the legacy path back. On Kairon, KubeVirt/CDI-only
+routes return `501 KUBEVIRT_ONLY`. Pages note where a feature still needs the legacy path.
 
 ## Enterprise workflow center
 

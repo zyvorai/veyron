@@ -42,9 +42,22 @@ curl -sk -X POST "https://$HOST:30151/api/v1/vms" \
 VMs never share a disk; each one gets its own clone. Publishing a new version changes what future
 clones receive and leaves existing VMs alone.
 
-With Kairon, images come from the Machine image catalog (HTTP or OCI sources, pinned by digest).
-Today's build uses CDI DataVolumes and DataSources, which needs a shared StorageClass;
-`./scripts/preflight-veyron-remote.sh` reports whether `windows_golden_images` is available.
+The upload and publish routes above use CDI DataVolumes and DataSources, so they only work with the
+legacy `VEYRON_VM_BACKEND=kubevirt`; on Kairon they return `501 KUBEVIRT_ONLY`.
+
+On Kairon, a Windows image is an HTTP(S) disk pinned by SHA-256. Publish the sealed QCOW2 (or a
+VMDK/VHDX/OVA) anywhere the nodes can reach, then create the VM with `POST /api/v1/imports`. Kairon
+caches the disk once per node and gives every VM its own overlay, so VMs still never share writes:
+
+```bash
+curl -sk -X POST "https://$HOST:30151/api/v1/imports" \
+  -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"name":"win01","namespace":"customer-a","image_url":"https://images.example/ws2022-v3.qcow2",
+       "sha256":"<sha256sum of the file>","cpus":4,"memory":"8Gi","secure_boot":true,"tpm":true}'
+```
+
+Migrating existing Windows VMs from VMware or Hyper-V works the same way through h2kvm, which
+injects the VirtIO drivers offline first; see [migrate.md](migrate.md).
 
 ## Unattended setup and domain join
 
@@ -59,7 +72,8 @@ in-guest logs. See [`examples/windows-domain-join/`](../examples/windows-domain-
 ## Remote Desktop
 
 ```bash
-# Turn on RDP inside a running guest (guest agent must be connected)
+# Turn on RDP inside a running guest (guest agent must be connected; on Kairon this runs
+# the same PowerShell through the kairon-node relay)
 curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" \
   "https://$HOST:30151/api/v1/vms/default/win01/guest-agent/enable-rdp"
 
@@ -67,6 +81,10 @@ curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" \
 curl -sk -X PUT -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
   "https://$HOST:30151/api/v1/vms/default/win01/rdp-expose" -d '{"service_type":"ClusterIP"}'
 ```
+
+On Kairon, `rdp-expose` needs a port forward declared when the VM was created (`forwards` on
+`POST /imports`) or a bridged guest with a routable address. A guest on Kairon's default user-mode
+network (`10.0.2.15`) gets a `409` explaining why.
 
 Public RDP (`NodePort` or `LoadBalancer`) is refused with `403` unless `VEYRON_ALLOW_PUBLIC_RDP=1`:
 a bare port 3389 puts Windows sign-in on the network with no gateway, MFA or TLS. Use a VPN, a

@@ -107,7 +107,7 @@ The **operator** uses **`operator/config/rbac/role.yaml`** (and **`charts/veyron
 
 ## Architecture
 
-Veyron is a dual-mode binary: a **CLI tool** and an **HTTP API + React console** for managing KubeVirt VMs on Kubernetes.
+Veyron is a dual-mode binary: a **CLI tool** and an **HTTP API + React console** for managing VMs on Kubernetes. The VM engine is **Kairon** (`Machine` CRDs) by default; KubeVirt is a legacy path only behind an explicit `VEYRON_VM_BACKEND=kubevirt` (most KubeVirt-era sections below describe that path).
 
 ### Kubernetes operator (`operator/`)
 

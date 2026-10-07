@@ -7,7 +7,9 @@ From an empty Kubernetes cluster to a running VM in the Veyron console.
 ## What you need
 
 - A Kubernetes cluster (k3s works well) whose VM hosts are Linux with `/dev/kvm`.
-- [Kairon](https://github.com/zyvorai/kairon) installed in `kairon-system`, with FluxVM on each VM host.
+- [Kairon](https://github.com/zyvorai/kairon) installed in `kairon-system`, with FluxVM on each VM host
+  and an image cache on each node (`KAIRON_IMAGE_CACHE_DIR`, Helm `node.imageCacheDir`). Template
+  disks and imported VMs download into it; without it they stop in `Error`.
 - `kubectl` and `helm` on your workstation, and SSH access to one cluster node for the remote
   deploy script.
 
@@ -22,7 +24,8 @@ Check a host before you start:
 ```bash
 kubectl label node <vm-host> kairon.zyvor.dev/capable=true
 helm upgrade --install kairon oci://ghcr.io/zyvorai/charts/kairon \
-  -n kairon-system --create-namespace
+  -n kairon-system --create-namespace \
+  --set node.imageCacheDir=/var/lib/fluxvm/images/cache
 ```
 
 ## 2. Deploy Veyron
@@ -35,6 +38,16 @@ The remote script syncs the source to a node, builds the images there and applie
 ```
 
 Or use the Helm chart in [`charts/veyron`](../charts/veyron) (see [deploy.md](deploy.md)).
+
+For the browser console, guest commands and VM-state snapshots, Veyron talks to each node's
+kairon-node relay. Give it the address and token in an optional Secret:
+
+```bash
+kubectl -n veyron-system create secret generic veyron-kairon \
+  --from-literal=VEYRON_KAIRON_NODE_URL=http://<node-ip>:8090 \
+  --from-literal=KAIRON_NODE_CONSOLE_TOKEN=<kairon-node console token>
+kubectl -n veyron-system rollout restart deploy/veyron-api
+```
 
 ## 3. Sign in
 
@@ -96,4 +109,4 @@ VEYRON_API_KEY=<key> ./scripts/test-vm-daily-ops-remote.sh <host>  # VM lifecycl
 ```
 
 Next: [architecture.md](architecture.md) for how it works, [deploy.md](deploy.md) for production
-settings.
+settings, [migrate.md](migrate.md) to bring existing VMs over.
