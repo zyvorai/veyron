@@ -580,6 +580,26 @@ spec:
               value: '${NODE_PORT}'
             - name: VEYRON_CLUSTER_DNS
               value: '10.43.0.10'
+          # Same optional Secrets as deploy/k8s.yaml (Kairon relay, SSO, Atlas, RBAC keys…).
+          envFrom:
+            - secretRef:
+                name: veyron-integrations
+                optional: true
+            - secretRef:
+                name: veyron-atlas-auth
+                optional: true
+            - secretRef:
+                name: veyron-kryton-auth
+                optional: true
+            - secretRef:
+                name: veyron-oidc
+                optional: true
+            - secretRef:
+                name: veyron-kairon
+                optional: true
+            - secretRef:
+                name: veyron-rbac-keys
+                optional: true
           ports:
             - containerPort: 5151
               name: https
