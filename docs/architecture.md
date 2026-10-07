@@ -74,6 +74,13 @@ import form hands Veyron a disk URL and its SHA-256, and Veyron creates a Machin
 and token go in an optional `veyron-kairon` Secret (`VEYRON_VM_BACKEND`,
 `VEYRON_KAIRON_NODE_URL`, `KAIRON_NODE_CONSOLE_TOKEN`), which the deployment loads if present.
 
+Images replace CDI. Uploads (`PUT /api/v1/image-store/:name`) stream into a content-addressed store
+on the `veyron-image-store` PVC; `POST /api/v1/machine-images` publishes an upload, or any URL plus
+SHA-256, as a cluster-scoped Kairon `MachineImage`. A VM names the image (`image`) or an ISO
+(`iso`), kairon-controller pins its source and digest before scheduling, and kairon-node downloads
+it from Veyron into its digest-keyed cache. ISOs attach as SATA CD-ROMs on a blank root disk;
+`root_volume` puts the root disk on a PVC that kairon-node fills from the image on first start.
+
 A few things behave differently on Kairon:
 
 - **Stop** powers the VM off (`Halted`) and keeps its disk; start boots the same disk again.

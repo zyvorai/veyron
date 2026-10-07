@@ -98,6 +98,7 @@ A frosted top nav with mega-menus, a ⌘K palette for everything, a live fleet m
 | Day 2 means a pile of scripts | **Day-2 operations as buttons and API calls:** hotplug, bulk actions, node maintenance, guest patching, disk reclaim, self-healing. |
 | A bad upgrade or a deleted disk turns into an outage | **Snapshots, clones, backups and DR failback**, plus Ceph snapshots and off-cluster S3 backups through [Atlas](https://zyvor.dev). |
 | GPU and Windows workloads don't fit generic tooling | **GPU passthrough with a live-migration guard**, and Windows golden images with sysprep, domain join and RDP guardrails. |
+| You need ISOs and golden images without CDI | **An image catalog on Kairon:** upload ISOs and disk images from the console or API, publish versioned `MachineImage`s, install Windows or Linux from an ISO, and keep root disks on a PVC. |
 | Everyone shares one admin password | **Admin, write and read-only roles**, multiple keys, local accounts and OIDC SSO with Keycloak, Okta, Auth0 or Azure AD. |
 | Security finds exposed VMs after the fact | **A built-in SOC:** detections for public RDP and SSH, policy gaps and drift, export to Elastic, Splunk, Sentinel and QRadar. |
 | You're leaving VMware, Hyper-V or Azure | **VM import:** [h2kvm](https://github.com/zyvorai/h2kvm) fixes each guest offline and `--deploy-kairon` boots it as a Kairon `Machine` through `POST /api/v1/imports`. No KubeVirt, no CDI. Or use the console's import form. |

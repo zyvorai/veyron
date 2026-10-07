@@ -16,6 +16,7 @@ Kubernetes API.
 | Migrate VMs from VMware, Hyper-V, Azure (h2kvm) | [migrate.md](migrate.md) |
 | GPU virtual machines | [gpu.md](gpu.md) |
 | Windows guests and golden images | [windows.md](windows.md) |
+| Image catalog, uploads, ISO installs (no CDI) | [api.md § Images on Kairon](api.md#images-on-kairon-no-cdi) |
 | Two racks or two sites | [multi-site.md](multi-site.md) |
 | Security operations (detections, SIEM export) | [soc.md](soc.md) |
 | AI assistant, MCP, proposals, sandboxes, in-cluster models | [ai.md](ai.md) |

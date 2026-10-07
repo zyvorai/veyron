@@ -16,38 +16,42 @@ The `windows*` templates (`src/templates/mod.rs`) set:
 - RNG, a USB tablet and IO threads.
 
 Windows templates boot a blank root disk on purpose. The same template serves both an ISO install
-and a clone from a golden image.
+(`iso`) and a VM from a golden image (`image`).
 
 ## Golden images
 
-The model is: install once, seal with sysprep, publish a versioned image, and clone a private disk
-for every VM.
+The model is: install once, seal with sysprep, publish a versioned image, and give every VM its own
+copy-on-write disk on top of it.
 
-1. **Upload** the ISO or QCOW2: `POST /api/v1/images/upload`.
-2. **Install and seal** a builder VM: load the `viostor` driver from the VirtIO CD when no disk
-   shows, install the drivers and the QEMU guest agent, then run
-   `Sysprep.exe /generalize /shutdown /oobe /mode:vm`.
-3. **Publish** (admin only): `POST /api/v1/images/publish`. Veyron refuses an image that hasn't
-   finished importing.
+1. **Install and seal** a builder VM from the Windows ISO (see the next section): load the
+   `viostor` driver from the VirtIO CD when Setup shows no disk, install the drivers and the QEMU
+   guest agent, then run `Sysprep.exe /generalize /shutdown /oobe /mode:vm`. A Packer pipeline that
+   produces a sealed QCOW2 works just as well.
+2. **Upload** the sealed QCOW2 (or VMDK/VHDX/OVA) into Veyron's image store, or host it on any
+   HTTP(S) server the nodes can reach.
+3. **Publish** it (admin only) as a `MachineImage` of kind `disk`, with a new name per version.
 4. **Create VMs** from the catalog:
 
 ```bash
-curl -sk -X POST "https://$HOST:30151/api/v1/vms" \
-  -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+curl -sk -X PUT -H "X-API-Key: $VEYRON_API_KEY" --data-binary @ws2022-v3.qcow2 \
+  "https://$HOST:30151/api/v1/image-store/ws2022-v3.qcow2"
+curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  "https://$HOST:30151/api/v1/machine-images" \
+  -d '{"name":"windows-server-2022-v3","from_store":"ws2022-v3.qcow2","os":"windows",
+       "family":"windows-server-2022","version":"v3","cpu":"4","memory":"8Gi","disk_size":"80Gi"}'
+
+curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  "https://$HOST:30151/api/v1/vms" \
   -d '{"name":"win01","namespace":"customer-a","template":"windows-2022","disk_size":"150Gi",
-       "image":{"name":"windows-server-2022","namespace":"vm-images"},
-       "sysprep_secret":"win01-sysprep"}'
+       "image":{"name":"windows-server-2022-v3"},"sysprep_secret":"win01-sysprep"}'
 ```
 
-VMs never share a disk; each one gets its own clone. Publishing a new version changes what future
-clones receive and leaves existing VMs alone.
+Kairon caches each image once per node and gives every VM its own overlay, so VMs never share
+writes. Publishing a new version changes what future VMs receive and leaves existing VMs alone. Add
+`"root_volume":"<pvc>"` to keep the root disk on a PVC instead of the node.
 
-The upload and publish routes above use CDI DataVolumes and DataSources, so they only work with the
-legacy `VEYRON_VM_BACKEND=kubevirt`; on Kairon they return `501 KUBEVIRT_ONLY`.
-
-On Kairon, a Windows image is an HTTP(S) disk pinned by SHA-256. Publish the sealed QCOW2 (or a
-VMDK/VHDX/OVA) anywhere the nodes can reach, then create the VM with `POST /api/v1/imports`. Kairon
-caches the disk once per node and gives every VM its own overlay, so VMs still never share writes:
+To boot a migrated or externally hosted disk without publishing it, `POST /api/v1/imports` takes a
+URL and SHA-256 directly:
 
 ```bash
 curl -sk -X POST "https://$HOST:30151/api/v1/imports" \
@@ -55,6 +59,10 @@ curl -sk -X POST "https://$HOST:30151/api/v1/imports" \
   -d '{"name":"win01","namespace":"customer-a","image_url":"https://images.example/ws2022-v3.qcow2",
        "sha256":"<sha256sum of the file>","cpus":4,"memory":"8Gi","secure_boot":true,"tpm":true}'
 ```
+
+On the legacy `VEYRON_VM_BACKEND=kubevirt` backend the same steps use CDI instead:
+`POST /api/v1/images/upload`, `POST /api/v1/images/publish` (a DataSource) and `image` with a
+`namespace`. On Kairon those CDI routes return `501 KUBEVIRT_ONLY`.
 
 Migrating existing Windows VMs from VMware or Hyper-V works the same way through h2kvm, which
 injects the VirtIO drivers offline first; see [migrate.md](migrate.md).

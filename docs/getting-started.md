@@ -85,6 +85,11 @@ it and start it. Open the console tab for an in-browser VNC session. Click the V
 details panel: guest health, disks, snapshots and migrations. To snapshot it on a schedule, use
 **Storage & Network → Snapshot schedules → New** with a cron such as `0 2 * * *` (UTC).
 
+To install from your own ISO or boot your own disk image, upload it first under **Images → New →
+Upload a file** (it lands in the Kairon image catalog), then choose it under **Boot from** when
+creating the VM. See [windows.md](windows.md#installing-from-an-iso-on-kairon) and
+[api.md](api.md#images-on-kairon-no-cdi).
+
 The same through the API:
 
 ```bash
