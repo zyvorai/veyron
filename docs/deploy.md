@@ -57,6 +57,16 @@ Veyron runs VMs on Kairon. It needs no KubeVirt and no CDI, but it does need:
 - **Kairon `v1beta1` CRDs** (current Kairon `main`). An older Kairon that serves only `v1alpha1`
   makes every VM call fail with "Resource not found"; upgrade Kairon first.
 
+- **An image store volume** for console/API uploads (`PUT /api/v1/image-store/:name`).
+  `deploy/k8s.yaml` and `deploy-k8s-remote.sh` create a 50 GiB `veyron-image-store` PVC on the
+  default StorageClass; in Helm, `imageStore.persistence`, `size`, `storageClass` and
+  `existingClaim`. Nodes download uploads from the API's NodePort (self-signed TLS, so
+  `insecureSkipTLSVerify` is set and the SHA-256 guards the bytes). Point them elsewhere with
+  `VEYRON_IMAGE_STORE_PUBLIC_URL` (add `VEYRON_IMAGE_STORE_INSECURE_TLS=1` for a self-signed
+  certificate), and move the store with `VEYRON_IMAGE_STORE_DIR`.
+- **Kairon with `MachineImage` and install-media support** (Kairon PR 32 and FluxVM PR 142) for the
+  image catalog, ISO installs and PVC root disks.
+
 `VEYRON_VM_BACKEND` defaults to Kairon. Set `kubevirt` only to keep managing an existing KubeVirt
 cluster; Veyron never switches to it on its own.
 

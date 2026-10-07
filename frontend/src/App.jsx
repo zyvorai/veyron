@@ -491,7 +491,13 @@ export default function App() {
         }
       } else if (page === 'images') {
         for (const t of targets) {
-          if (a === 'delete') await api.deleteImage(t.ns || 'default', t.name);
+          if (t.catalog) {
+            if (a === 'delete') await api.deleteMachineImage(t.name);
+            else {
+              showToast(`${t.name} is already in the catalog`, true);
+              return;
+            }
+          } else if (a === 'delete') await api.deleteImage(t.ns || 'default', t.name);
           else if (a === 'publish') {
             const ds = window.prompt('DataSource catalog name', t.name);
             if (!ds) return;
@@ -609,7 +615,10 @@ export default function App() {
     }
   };
 
-  const create = async ({ name, template, cls, size, url, sha256, format, cidr, cpus, memory }) => {
+  const create = async ({
+    name, template, cls, size, url, sha256, format, cidr, cpus, memory,
+    boot, catalogImage, iso, mode, file, imgKind, os, onProgress,
+  }) => {
     try {
       const kind = (res || data.vms).kind;
       if (kind === 'VirtualMachine') {
@@ -624,6 +633,8 @@ export default function App() {
         if (size && size !== '10 Gi' && size !== '10Gi') {
           body.disk_size = String(size).replace(/\s+/g, '');
         }
+        if (boot === 'catalog' && catalogImage) body.image = { name: catalogImage };
+        if (boot === 'iso' && iso) body.iso = iso;
         await api.createVm(body);
         setSheet(null);
         await load();
@@ -638,6 +649,22 @@ export default function App() {
         setSheet(null);
         await load();
         showToast(`Created PVC ${name}`);
+      } else if (kind === 'Image' && mode === 'upload') {
+        const catalogName = name.toLowerCase().replace(/[^a-z0-9.-]/g, '-').replace(/^[-.]+|[-.]+$/g, '');
+        const ext = (file.name.match(/\.([a-z0-9]+)$/i)?.[1] || '').toLowerCase();
+        const storeName = `${catalogName}.${ext || 'img'}`;
+        const isIso = imgKind === 'iso';
+        await api.uploadImage(storeName, file, { format: isIso ? 'iso' : undefined, onProgress });
+        await api.publishMachineImage({
+          name: catalogName,
+          from_store: storeName,
+          kind: imgKind,
+          os: os || undefined,
+          display_name: name,
+        });
+        setSheet(null);
+        await load();
+        showToast(`Uploaded ${file.name} as ${isIso ? 'install media' : 'a boot image'} "${catalogName}"`);
       } else if (kind === 'Image') {
         await api.importVm({
           name: name.toLowerCase().replace(/[^a-z0-9-]/g, '-'),

@@ -111,6 +111,13 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     if path == "/api/v1/images/publish" {
         return ApiRole::Admin;
     }
+    // Kairon's MachineImage catalog is cluster-scoped and shared by every
+    // namespace; removing an upload can break images that still point at it.
+    if path.starts_with("/api/v1/machine-images")
+        || (method == Method::DELETE && path.starts_with("/api/v1/image-store/"))
+    {
+        return ApiRole::Admin;
+    }
     if path.starts_with("/api/v1/platform/") && path != "/api/v1/platform/guestkit/binary" {
         return ApiRole::Admin;
     }
@@ -171,6 +178,30 @@ mod tests {
         assert_eq!(
             min_role_for_route(&Method::POST, "/api/v1/snapshots/default/my-snap/restore"),
             ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn kairon_image_catalog_roles() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/machine-images"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::DELETE, "/api/v1/veyron/machine-images/win"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::DELETE, "/api/v1/image-store/win.iso"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::PUT, "/api/v1/image-store/win.iso"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/machine-images"),
+            ApiRole::ReadOnly
         );
     }
 

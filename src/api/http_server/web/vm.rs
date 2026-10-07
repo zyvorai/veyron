@@ -2230,6 +2230,18 @@ pub(super) struct CreateVmRequest {
     /// boots an empty disk and there is nothing to install from.
     #[serde(default)]
     image: Option<CreateVmImageReq>,
+    /// Kairon: install from this catalog ISO (`MachineImage` kind iso) onto a
+    /// blank root disk of `disk_size` (default: the template's, else 60Gi).
+    #[serde(default)]
+    iso: Option<String>,
+    /// Kairon: second CD-ROM with drivers (kind iso). Windows templates default
+    /// to `virtio-win` when that image exists; `""` attaches none.
+    #[serde(default)]
+    driver_iso: Option<String>,
+    /// Kairon: PVC (Filesystem mode, empty) to hold the root disk; seeded from
+    /// `image` or left blank for an `iso` install.
+    #[serde(default)]
+    root_volume: Option<String>,
     /// Windows unattended setup: Secret (preferred) or ConfigMap holding
     /// `autounattend.xml`. Mounted as sysprep CD-ROM media.
     #[serde(default)]
@@ -2295,6 +2307,142 @@ pub(super) struct CreateVmImageReq {
     /// (`inferFromVolume`). Default true; ignored if `profile`/`cpus` are given.
     #[serde(default = "default_true")]
     infer: bool,
+}
+
+#[cfg(feature = "kairon")]
+use crate::api::handlers::machine_images::{KIND_DISK, KIND_ISO};
+
+/// 400 unless `name` is a Kairon `MachineImage` of `kind`.
+#[cfg(feature = "kairon")]
+async fn check_kairon_catalog_image(
+    state: &SharedState,
+    name: &str,
+    kind: &str,
+) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+    use crate::api::handlers::machine_images::{catalog_kind, get_catalog_image};
+    let client = state.read().await.kube_client.client();
+    match get_catalog_image(&client, name).await {
+        Ok(Some(img)) if catalog_kind(&img) == kind => Ok(()),
+        Ok(Some(img)) => Err(err_json(
+            400,
+            "INVALID_IMAGE",
+            &format!(
+                "MachineImage '{name}' is kind {}, expected {kind}",
+                catalog_kind(&img)
+            ),
+        )),
+        Ok(None) => Err(err_json(
+            400,
+            "INVALID_IMAGE",
+            &format!(
+                "MachineImage '{name}' not found; publish it with POST /api/v1/machine-images"
+            ),
+        )),
+        Err(e) => Err(err_json(500, "INTERNAL_ERROR", &sanitize_error(&e))),
+    }
+}
+
+/// Kairon install media and PVC root disk: `iso` turns the root into a blank
+/// disk with the ISO (and drivers) attached; `root_volume` puts the root disk
+/// on a PVC that Kairon seeds.
+#[cfg(feature = "kairon")]
+async fn apply_kairon_install_media(
+    state: &SharedState,
+    req: &CreateVmRequest,
+    config: &mut crate::config::VMConfig,
+) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+    use crate::config::{DiskConfig, DiskDeviceType, DiskSource};
+    if !crate::api::vm_backend::is_kairon() {
+        return Err(err_json(
+            400,
+            "KAIRON_REQUIRED",
+            "iso, driver_iso and root_volume need the Kairon backend; on KubeVirt upload \
+             install media with POST /api/v1/images/upload",
+        ));
+    }
+    let catalog_cd = |name: &str, iso: &str| DiskConfig {
+        name: name.into(),
+        size: "0".into(),
+        storage_class: None,
+        boot_order: 0,
+        source: DiskSource::GoldenImage {
+            name: iso.into(),
+            namespace: String::new(),
+            from_pvc: false,
+            storage_class: None,
+            volume_mode: None,
+        },
+        device_type: DiskDeviceType::CDROM,
+        bus: Some("sata".into()),
+        cache: None,
+        io: None,
+    };
+    if let Some(iso) = req.iso.as_deref() {
+        if req.image.is_some() {
+            return Err(err_json(
+                400,
+                "INVALID_IMAGE",
+                "image and iso are mutually exclusive",
+            ));
+        }
+        check_kairon_catalog_image(state, iso, KIND_ISO).await?;
+        let Some(root) = config
+            .disks
+            .iter_mut()
+            .find(|d| d.device_type == DiskDeviceType::Disk)
+        else {
+            return Err(err_json(
+                400,
+                "INVALID_IMAGE",
+                "template has no root disk to install onto",
+            ));
+        };
+        root.source = DiskSource::Blank;
+        if let Some(ds) = &req.disk_size {
+            root.size = ds.clone();
+        }
+        config.disks.push(catalog_cd("install", iso));
+
+        let windows = req
+            .template
+            .as_deref()
+            .is_some_and(|t| t.starts_with("windows"));
+        let driver = match req.driver_iso.as_deref() {
+            Some("") => None,
+            Some(d) => Some((d, true)),
+            None if windows => Some(("virtio-win", false)),
+            None => None,
+        };
+        if let Some((d, explicit)) = driver {
+            match check_kairon_catalog_image(state, d, KIND_ISO).await {
+                Ok(()) => config.disks.push(catalog_cd("drivers", d)),
+                Err(e) if explicit => return Err(e),
+                Err(_) => {}
+            }
+        }
+    } else if req.driver_iso.as_deref().is_some_and(|d| !d.is_empty()) {
+        return Err(err_json(400, "INVALID_IMAGE", "driver_iso needs iso"));
+    }
+    if let Some(claim) = req.root_volume.as_deref().filter(|c| !c.is_empty()) {
+        config.annotations.insert(
+            crate::kairon::converter::ROOT_VOLUME_ANNOTATION.to_string(),
+            claim.to_string(),
+        );
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "kairon"))]
+async fn apply_kairon_install_media(
+    _state: &SharedState,
+    _req: &CreateVmRequest,
+    _config: &mut crate::config::VMConfig,
+) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+    Err(err_json(
+        400,
+        "KAIRON_REQUIRED",
+        "iso, driver_iso and root_volume need a Kairon-enabled build",
+    ))
 }
 
 /// Namespace holding the golden-image catalog when the caller doesn't say.
@@ -2534,7 +2682,20 @@ pub(super) async fn create_vm_handler(
         // PVC instead of silently shipping an unusable "0" — CDI also
         // requires the clone target to be >= the source, so matching it
         // is the only value that's always valid.
-        if !disk_size_explicit {
+        #[cfg(feature = "kairon")]
+        if crate::api::vm_backend::is_kairon() {
+            if let Err(resp) = check_kairon_catalog_image(&state, &img.name, KIND_DISK).await {
+                return resp;
+            }
+            // Kairon sizes from the image (or its MachineImage defaults); a
+            // template's size would be sent as diskSize and may be too small.
+            if !disk_size_explicit {
+                if let Some(disk) = config.disks.first_mut() {
+                    disk.size = "0".into();
+                }
+            }
+        }
+        if !disk_size_explicit && !crate::api::vm_backend::is_kairon() {
             let client = { state.read().await.kube_client.client() };
             match resolve_golden_image_size(&client, &img.name, &img_ns, img.from_pvc).await {
                 Some(size) => {
@@ -2594,6 +2755,12 @@ pub(super) async fn create_vm_handler(
                 kind: None,
                 infer_from_volume: Some(root_name),
             });
+        }
+    }
+
+    if req.iso.is_some() || req.root_volume.is_some() || req.driver_iso.is_some() {
+        if let Err(resp) = apply_kairon_install_media(&state, &req, &mut config).await {
+            return resp;
         }
     }
 

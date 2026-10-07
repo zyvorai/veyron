@@ -67,6 +67,7 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 | VM disks | `GET /vms/:ns/:name/volumes/status`, `POST …/volumes/{hotplug,hotremove}`, `POST …/storage/data-disk` (+ `/defaults`), `GET …/migrations` |
 | Data | `/snapshots`, `/snapshot-schedules`, `/backups`, `/clones`, `/storage/{usage,pools,orphans}`, `/velero/*`, `/atlas/*` |
 | Images | `/images`, `/images/catalog` (CDI `/images/upload`, `/images/publish` are KubeVirt-only) |
+| Image catalog (Kairon) | `GET/POST /machine-images`, `DELETE /machine-images/:name`, `PUT /image-store/:name` (raw body upload), `GET /image-store`, `DELETE /image-store/:name` |
 | Imports | `GET/POST /imports`, `GET /imports/:ns/:name` — boot a migrated disk (h2kvm) on Kairon from a URL + SHA-256 |
 | Guest logs | `GET /vms/:ns/:name/logs?tail=` |
 | Fleet | `/nodes`, `/gpus`, `/pods`, `/workloads`, `/capacity/headroom`, `/platform/capabilities` |
@@ -79,6 +80,45 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 | AI models | `GET/POST /ai/models`, `DELETE /ai/models/:ns/:name`, `GET/PUT /ai/settings/llm` |
 | MCP | `POST /mcp` (MCP server, Streamable HTTP), `GET/PUT /ai/mcp-servers`, `POST /ai/mcp-servers/:server/call` |
 | Sandboxes | `GET/POST /sandboxes`, `GET/DELETE /sandboxes/:id`, `POST /sandboxes/:id/exec`, `GET/PUT /sandboxes/:id/files` |
+
+### Images on Kairon (no CDI)
+
+Kairon replaces CDI with its own catalog. Upload a file into Veyron's image store, publish it as a
+cluster-scoped `MachineImage`, then create VMs from it by name:
+
+```bash
+# 1. Upload (Write role). The body is the raw file; Veyron hashes it while it streams.
+curl -sk -X PUT -H "X-API-Key: $VEYRON_API_KEY" --data-binary @ws2022.iso \
+  "https://$HOST:30151/api/v1/image-store/ws2022.iso"
+
+# 2. Publish (Admin). kind defaults to iso for .iso uploads, disk otherwise.
+curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  "https://$HOST:30151/api/v1/machine-images" \
+  -d '{"name":"ws2022-iso","from_store":"ws2022.iso","os":"windows"}'
+
+# Or publish a disk that already lives on an HTTP(S) server
+#   {"name":"ubuntu-24.04","url":"https://…/noble.qcow2","sha256":"…","format":"qcow2",
+#    "kind":"disk","disk_size":"20Gi","cpu":"2","memory":"4Gi"}
+
+# 3a. Boot from a catalog disk image
+#   POST /vms {"name":"web1","template":"ubuntu-24.04","image":{"name":"ubuntu-24.04"}}
+# 3b. Install from an ISO onto a blank disk (Windows templates add the virtio-win CD when that
+#     MachineImage exists; "driver_iso" picks another, "" attaches none)
+#   POST /vms {"name":"win01","template":"windows-2022","iso":"ws2022-iso","disk_size":"80Gi"}
+# 3c. Put the root disk on a PVC (empty, Filesystem mode); Kairon seeds it on first start
+#   POST /vms {…, "image":{"name":"ubuntu-24.04"}, "root_volume":"web1-root"}
+```
+
+Kairon nodes download uploads from `GET /api/v1/image-store/blobs/<sha256>`. That path needs no
+credentials (kairon-node sends none): the digest works as the capability and every node checks the
+bytes against it. Publishing an upload writes the blob URL into the `MachineImage`; set
+`VEYRON_IMAGE_STORE_PUBLIC_URL` when nodes should use another address than the API's NodePort.
+Deleting an upload that a `MachineImage` still uses answers `409 IN_USE`. On KubeVirt these routes
+answer `501 KAIRON_REQUIRED`; `iso`, `driver_iso` and `root_volume` on `POST /vms` answer `400`.
+
+`image` on Kairon resolves a `MachineImage`, not a CDI DataSource. Without `disk_size` the root disk
+takes the image's size (or the `MachineImage`'s `defaults.diskSize`); a size smaller than the image
+fails rather than truncating it. VMs with install media attached can't live-migrate.
 
 Query `?namespace=all` for cluster-wide lists. `GET /vms` leaves agent sandbox VMs out unless
 you pass `include_sandboxes=true` or ask for their namespace.

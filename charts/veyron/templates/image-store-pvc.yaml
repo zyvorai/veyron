@@ -1,0 +1,19 @@
+{{- if and .Values.imageStore.persistence (not .Values.imageStore.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "veyron.fullname" . }}-image-store
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veyron.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- with .Values.imageStore.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.imageStore.size }}
+{{- end }}

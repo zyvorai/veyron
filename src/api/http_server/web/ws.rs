@@ -298,7 +298,11 @@ pub(super) async fn kubevirt_subresource_ws_proxy(
                 ns,
                 vmi_name
             );
-            (url, Some(token), !crate::kairon::relay::tls_insecure())
+            #[cfg(feature = "kairon")]
+            let verify = !crate::kairon::relay::tls_insecure();
+            #[cfg(not(feature = "kairon"))]
+            let verify = true;
+            (url, Some(token), verify)
         }
         Upstream::KubeVirt(subpath) => {
             let config = match kube::Config::infer().await {

@@ -4,7 +4,7 @@ import {
   mapVm, mapNode, mapPod, mapPvc, mapClass,
   mapSnapshot, mapBackup, mapImage, mapNetwork, mapTemplate,
   mapGpu, mapAlert, mapSoc, mapAtlasVol, mapAtlasSnap, mapMigration,
-  mapCatalogTemplate, mapDataSource,
+  mapCatalogTemplate, mapDataSource, mapMachineImage, mapStoredImage,
   mapRecommendation, mapClusterEvent, mapIncident, mapAudit, mapFinding,
   mapOperator, mapHelmRelease, mapQuota, mapCustomResource, mapWorkload,
   mapOrphan, mapSchedule, mapNetworkPolicy, mapIngress,
@@ -28,6 +28,13 @@ const LAZY_KEYS = new Set([
 const VEYRON_CR_KINDS = ['veyronvms', 'blueprints', 'policies', 'insights', 'actions'];
 
 const pods = { includeCompleted: false };
+
+const UPLOAD_COLS = [
+  ['name', 'Name'],
+  ['cls', 'Format', 'm'],
+  ['prov', 'Digest', 'm'],
+  ['total', 'Size', 'n'],
+];
 
 async function extraRows(key, fetchRows, mapFn) {
   try {
@@ -65,6 +72,19 @@ const LOADERS = {
   snapshots: async () => ({ rows: ((await api.listSnapshots()) || []).map(mapSnapshot) }),
   backups: async () => ({ rows: ((await api.listBackups()) || []).map(mapBackup) }),
   images: async () => {
+    // Kairon: the MachineImage catalog plus raw uploads; KubeVirt answers 501.
+    try {
+      const [catalog, store] = await Promise.all([
+        api.listMachineImages(),
+        api.listImageStore().catch(() => []),
+      ]);
+      return {
+        rows: (catalog || []).map(mapMachineImage),
+        extra: { title: 'Uploads', cols: UPLOAD_COLS, rows: (store || []).map(mapStoredImage) },
+      };
+    } catch (e) {
+      if (e.status !== 501) throw e;
+    }
     const [rows, extra] = await Promise.all([
       api.listImages(),
       extraRows('images', () => api.listDataSources(), mapDataSource),

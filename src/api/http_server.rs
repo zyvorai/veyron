@@ -789,6 +789,10 @@ pub mod web {
             .merge(crate::ai::api::long_lived_router(state.clone()))
             .merge(crate::mcp::server::router(state.clone()))
             .merge(crate::sandbox::router(state.clone()));
+        #[cfg(feature = "kairon")]
+        let long_lived_ws = long_lived_ws.merge(
+            crate::api::handlers::machine_images::transfer_router(state.clone()),
+        );
 
         let timed_rest =
             Router::new()

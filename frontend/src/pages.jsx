@@ -651,31 +651,77 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
   const [sha256, setSha256] = useState('');
   const [format, setFormat] = useState('qcow2');
   const [cidr, setCidr] = useState('10.244.100.0/24');
+  // Kairon image catalog: boot a VM from a catalog image or install from an ISO.
+  const [catalog, setCatalog] = useState(null);
+  const [boot, setBoot] = useState('template');
+  const [catalogImage, setCatalogImage] = useState('');
+  const [iso, setIso] = useState('');
+  const [installSize, setInstallSize] = useState('60Gi');
+  // Image sheet: upload a file, or import a migrated disk by URL.
+  const [mode, setMode] = useState('upload');
+  const [file, setFile] = useState(null);
+  const [imgKind, setImgKind] = useState('iso');
+  const [imgOs, setImgOs] = useState('windows');
+  const [progress, setProgress] = useState(null);
+  useEffect(() => {
+    if (!isVm && res.kind !== 'Image') return;
+    let live = true;
+    api
+      .listMachineImages()
+      .then((rows) => live && setCatalog(rows || []))
+      .catch(() => live && setCatalog(null));
+    return () => {
+      live = false;
+    };
+  }, [isVm, res.kind]);
+  const diskImages = (catalog || []).filter((m) => m.kind !== 'iso' && !m.deprecated);
+  const isoImages = (catalog || []).filter((m) => m.kind === 'iso' && !m.deprecated);
   const preset = SIZES.find((s) => s.id === sizeId);
   const o = osInfo(template);
   const [suffix] = useState(() => Math.random().toString(36).slice(2, 6));
   const suggested = `${o.family}-${suffix}`;
   const finalName = name || (isVm ? suggested : '');
 
-  const isImport = res.kind === 'Image';
+  const isImage = res.kind === 'Image';
+  // Uploading needs the Kairon catalog; on KubeVirt the sheet stays import-only.
+  const canUpload = isImage && catalog !== null;
+  const isUpload = canUpload && mode === 'upload';
+  const isImport = isImage && !isUpload;
   const canCreate =
     !!finalName &&
+    progress === null &&
     (!isImport || (/^https?:\/\//.test(url.trim()) && /^(sha256:)?[0-9a-fA-F]{64}$/.test(sha256.trim()))) &&
-    (!isVm || !!template);
+    (!isUpload || !!file) &&
+    (!isVm || (!!template && (boot !== 'catalog' || !!catalogImage) && (boot !== 'iso' || !!iso)));
+  const pickFile = (f) => {
+    setFile(f);
+    if (!f) return;
+    const iso = /\.iso$/i.test(f.name);
+    setImgKind(iso ? 'iso' : 'disk');
+    if (!name) setName(f.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9.-]/g, '-'));
+  };
   const sheetRef = useRef(null);
   useFocusTrap(sheetRef);
-  const submit = () =>
-    onCreate({
-      name: finalName,
-      template,
-      cls,
-      size,
-      url,
-      sha256,
-      format,
-      cidr,
-      ...(isVm ? { cpus: preset.cpus, memory: preset.memory } : {}),
-    });
+  const submit = async () => {
+    if (isUpload) setProgress(0);
+    try {
+      await onCreate({
+        name: finalName,
+        template,
+        cls,
+        size: isVm && boot === 'iso' ? installSize : size,
+        url,
+        sha256,
+        format,
+        cidr,
+        ...(isVm ? { cpus: preset.cpus, memory: preset.memory, boot, catalogImage, iso } : {}),
+        ...(isImage ? { mode: isUpload ? 'upload' : 'import', file, imgKind, os: imgOs, onProgress: setProgress } : {}),
+      });
+    } finally {
+      setProgress(null);
+    }
+  };
+  const imageTitle = isUpload ? 'Add an image or ISO' : 'Import a migrated VM';
 
   return (
     <div className="scrim" onClick={onClose}>
@@ -684,13 +730,13 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
         className={`sheet${isVm ? ' sheet--wide' : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label={isVm ? 'Create a machine' : isImport ? 'Import a migrated VM' : `New ${res.kind}`}
+        aria-label={isVm ? 'Create a machine' : isImage ? imageTitle : `New ${res.kind}`}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sheet-h">
           <Plus size={15} />
-          {isVm ? 'Create a machine' : isImport ? 'Import a migrated VM' : `New ${res.kind}`}
+          {isVm ? 'Create a machine' : isImage ? imageTitle : `New ${res.kind}`}
           <button className="tb x" onClick={onClose} aria-label="Close">
             <X size={15} />
           </button>
@@ -734,6 +780,62 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
                 })}
               </div>
 
+              {(diskImages.length > 0 || isoImages.length > 0) && (
+                <>
+                  <h3 className="create-step">
+                    <span>·</span> Boot from
+                  </h3>
+                  <div className="seg" style={{ width: 'fit-content', marginBottom: 10 }}>
+                    {[
+                      ['template', 'Template image'],
+                      ...(diskImages.length ? [['catalog', 'Catalog image']] : []),
+                      ...(isoImages.length ? [['iso', 'Install from ISO']] : []),
+                    ].map(([id, label]) => (
+                      <button key={id} type="button" className="tb" aria-pressed={boot === id} onClick={() => setBoot(id)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {boot === 'catalog' && (
+                    <div className="field">
+                      <label>Image</label>
+                      <select value={catalogImage} onChange={(e) => setCatalogImage(e.target.value)}>
+                        <option value="">Choose an image…</option>
+                        {diskImages.map((m) => (
+                          <option key={m.name} value={m.name}>
+                            {m.display_name || m.name}
+                            {m.version ? ` (${m.version})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {boot === 'iso' && (
+                    <>
+                      <div className="field">
+                        <label>Install media</label>
+                        <select value={iso} onChange={(e) => setIso(e.target.value)}>
+                          <option value="">Choose an ISO…</option>
+                          {isoImages.map((m) => (
+                            <option key={m.name} value={m.name}>
+                              {m.display_name || m.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Disk size</label>
+                        <input value={installSize} onChange={(e) => setInstallSize(e.target.value)} />
+                      </div>
+                      <p className="ops-hint">
+                        Starts with a blank disk and the ISO in the CD drive; finish setup from the console. Windows
+                        templates also get the virtio-win driver CD when that image is in the catalog.
+                      </p>
+                    </>
+                  )}
+                </>
+              )}
+
               <h3 className="create-step">
                 <span>2</span> Pick a size
               </h3>
@@ -770,6 +872,12 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
                 <dd>{preset.note}</dd>
                 <dt>Template</dt>
                 <dd className="mono">{template || '—'}</dd>
+                {boot !== 'template' && (
+                  <>
+                    <dt>{boot === 'iso' ? 'Installs from' : 'Image'}</dt>
+                    <dd className="mono">{(boot === 'iso' ? iso : catalogImage) || '—'}</dd>
+                  </>
+                )}
                 <dt>Starts</dt>
                 <dd>Immediately</dd>
               </dl>
@@ -802,6 +910,49 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
                     <label>Size</label>
                     <input value={size} onChange={(e) => setSize(e.target.value)} />
                   </div>
+                </>
+              )}
+              {canUpload && (
+                <div className="seg" style={{ width: 'fit-content', margin: '4px 0 10px' }}>
+                  {[
+                    ['upload', 'Upload a file'],
+                    ['import', 'Import a migrated VM'],
+                  ].map(([id, label]) => (
+                    <button key={id} type="button" className="tb" aria-pressed={mode === id} onClick={() => setMode(id)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {isUpload && (
+                <>
+                  <p className="ops-hint">
+                    Adds an ISO (install media) or a disk image (qcow2, raw, VMDK, VHD/VHDX, OVA) to the Kairon image
+                    catalog. Nodes download it from Veyron and check it against its SHA-256.
+                  </p>
+                  <div className="field">
+                    <label>File</label>
+                    <input type="file" accept=".iso,.qcow2,.img,.raw,.vmdk,.vhd,.vhdx,.ova" onChange={(e) => pickFile(e.target.files?.[0] || null)} />
+                  </div>
+                  <div className="field">
+                    <label>Use as</label>
+                    <select value={imgKind} onChange={(e) => setImgKind(e.target.value)}>
+                      <option value="iso">Install media (ISO)</option>
+                      <option value="disk">Boot disk</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>OS</label>
+                    <select value={imgOs} onChange={(e) => setImgOs(e.target.value)}>
+                      <option value="windows">Windows</option>
+                      <option value="linux">Linux</option>
+                    </select>
+                  </div>
+                  {progress !== null && (
+                    <p className="ops-hint" role="status">
+                      Uploading… {Math.round(progress * 100)}%
+                    </p>
+                  )}
                 </>
               )}
               {isImport && (

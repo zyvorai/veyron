@@ -31,6 +31,13 @@ All notable changes to this project are documented here. The format follows
   [h2kvm](https://github.com/zyvorai/h2kvm) (qcow2, raw, OVA, VMDK, VHD/X) as a Kairon Machine
   from an HTTP(S) URL pinned by SHA-256; h2kvm's new `--deploy-kairon` calls it, and the
   console's Images page now opens an import form.
+- **Images without CDI.** On Kairon, uploads stream into Veyron's image store
+  (`PUT /api/v1/image-store/:name`), `POST /api/v1/machine-images` publishes them (or any URL +
+  SHA-256) as a versioned Kairon `MachineImage`, and `POST /vms` takes `image` (a catalog disk),
+  `iso` + `driver_iso` (install onto a blank disk; Windows templates add `virtio-win`) and
+  `root_volume` (a PVC Kairon seeds from the image). The console's Images page lists the catalog
+  and uploads with progress, and the new-VM sheet gains **Boot from**: template, catalog image or
+  ISO install. The API deployment now mounts a `veyron-image-store` PVC.
 - **Full Kairon backend.** The whole VM API runs on Kairon Machines: pause, clone, run strategy, CPU/memory hotplug, live/cold migration with cancel,
   snapshots and backups, guest exec/patch/disk reclaim, VM logs (`GET /vms/:ns/:name/logs`),
   VNC and serial consoles through the kairon-node relay, and SSH/RDP expose. Stopping a Kairon

@@ -190,8 +190,9 @@ impl Machine {
                 return Some(u.to_string());
             }
         }
-        img.catalog_name
+        img.image_ref
             .clone()
+            .or_else(|| img.catalog_name.clone())
             .filter(|s| !s.is_empty())
             .or_else(|| img.path.clone().filter(|s| !s.is_empty()))
             .or_else(|| {

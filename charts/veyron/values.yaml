@@ -59,6 +59,14 @@ resources:
     cpu: "1"
     memory: 1Gi
 
+# Kairon image uploads (PUT /api/v1/image-store/:name), served to kairon-node.
+# Disabled ⇒ emptyDir (uploads are lost when the pod restarts).
+imageStore:
+  persistence: true
+  size: 50Gi
+  storageClass: ""
+  existingClaim: ""
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

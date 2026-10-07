@@ -141,6 +141,70 @@ async function request(path, opts = {}) {
   return body;
 }
 
+/**
+ * Stream a file into the Kairon image store. XHR rather than fetch: fetch has no
+ * upload progress, and multi-GB ISOs need it.
+ */
+function uploadImage(name, file, { format, replace, onProgress } = {}) {
+  return new Promise((resolve, reject) => {
+    const q = new URLSearchParams();
+    if (format) q.set('format', format);
+    if (replace) q.set('replace', 'true');
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', `/api/v1/image-store/${encodeURIComponent(name)}?${q}`);
+    const token = getToken();
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    if (onProgress) xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
+    xhr.onerror = () => reject(Object.assign(new Error('Upload failed: network error'), { network: true }));
+    xhr.onload = () => {
+      let body = null;
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        /* non-JSON error page */
+      }
+      if (xhr.status === 401) onUnauthorized();
+      if (xhr.status >= 200 && xhr.status < 300) resolve(unwrap(body));
+      else reject(httpError(body?.error?.message || `Upload failed: HTTP ${xhr.status}`, xhr.status));
+    };
+    xhr.send(file);
+  });
+}
+
+export function mapMachineImage(raw, i) {
+  const name = raw.name || `mimg-${i}`;
+  return {
+    id: `catalog/${name}`,
+    name,
+    ns: '—',
+    catalog: true,
+    kind: raw.kind || 'disk',
+    type: raw.kind === 'iso' ? 'ISO' : `Disk${raw.format ? ` · ${raw.format}` : ''}`,
+    size: raw.defaults?.disk_size || '—',
+    os: raw.os || raw.family || '—',
+    age: raw.created ? raw.created.slice(0, 10) : '—',
+    src: raw.source || '—',
+    version: raw.version || '',
+    display: raw.display_name || name,
+  };
+}
+
+export function mapStoredImage(raw, i) {
+  const name = raw.name || `upload-${i}`;
+  return {
+    id: `store/${name}`,
+    name,
+    ns: '—',
+    stored: true,
+    cls: raw.format || '—',
+    prov: (raw.digest || '').slice(0, 19),
+    total: fmtBytes(raw.size),
+    used: 0,
+    vols: '—',
+  };
+}
+
 export function unwrap(j) {
   if (j == null) return j;
   if (typeof j === 'object' && 'success' in j && j.success === true && 'data' in j) return j.data;
@@ -504,6 +568,13 @@ export const api = {
   importImage: (body) => request('/api/v1/images/import', { method: 'POST', body: JSON.stringify(body) }),
   importVm: (body) => request('/api/v1/imports', { method: 'POST', body: JSON.stringify(body) }),
   listImports: (namespace = 'all') => request(`/api/v1/imports?namespace=${encodeURIComponent(namespace)}`),
+  // Kairon image catalog (MachineImage) and the upload store behind it.
+  listMachineImages: () => request('/api/v1/machine-images').then(asArray),
+  publishMachineImage: (body) => request('/api/v1/machine-images', { method: 'POST', body: JSON.stringify(body) }),
+  deleteMachineImage: (name) => request(`/api/v1/machine-images/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  listImageStore: () => request('/api/v1/image-store').then(asArray),
+  deleteStoredImage: (name) => request(`/api/v1/image-store/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  uploadImage,
   createNad: (body) => request('/api/v1/network/nads', { method: 'POST', body: JSON.stringify(body) }),
   deleteNad: (ns, name) =>
     request(`/api/v1/network/nads/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`, { method: 'DELETE' }),

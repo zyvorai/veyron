@@ -299,7 +299,16 @@ spec:
               mountPath: /tls
               readOnly: true
             {{- end }}
+            - name: image-store
+              mountPath: /var/lib/veyron/image-store
       volumes:
+        - name: image-store
+          {{- if .Values.imageStore.persistence }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.imageStore.existingClaim | default (printf "%s-image-store" (include "veyron.fullname" .)) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         {{- if .Values.tls.enabled }}
         - name: tls-certs
           {{- if .Values.tls.existingSecret }}

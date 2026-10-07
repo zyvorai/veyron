@@ -17,6 +17,18 @@ pub fn is_auth_exempt_path(path: &str) -> bool {
         || path == "/favicon.ico"
         || path == "/dashboard"
         || path == "/dashboard/"
+        || is_image_blob_path(path)
+}
+
+/// Image-store blobs are fetched by kairon-node without credentials; the
+/// sha256 in the path is the capability and nodes verify the bytes against it.
+fn is_image_blob_path(path: &str) -> bool {
+    path.strip_prefix("/api/v1/image-store/blobs/")
+        .is_some_and(|h| {
+            h.len() == 64
+                && h.bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
 }
 
 /// Where the legacy `/dashboard` URL sends the browser. The query string must survive:

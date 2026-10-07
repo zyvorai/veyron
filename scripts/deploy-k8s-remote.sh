@@ -466,6 +466,22 @@ stringData:
   jwt-issuer: "${JWT_ISSUER}"
   admin-password: "${ADMIN_PASSWORD}"
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: veyron-image-store
+  namespace: ${NS}
+  labels:
+    app.kubernetes.io/name: veyron
+    app.kubernetes.io/component: image-store
+spec:
+  # Kairon image uploads (PUT /api/v1/image-store/:name), served to kairon-node.
+  # Default StorageClass; RWO is enough (one API replica, maxSurge 0).
+  accessModes: ['ReadWriteOnce']
+  resources:
+    requests:
+      storage: 50Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -604,11 +620,16 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
+            - name: image-store
+              mountPath: /var/lib/veyron/image-store
       volumes:
         - name: tls-certs
           emptyDir: {}
         - name: tmp
           emptyDir: {}
+        - name: image-store
+          persistentVolumeClaim:
+            claimName: veyron-image-store
 ---
 apiVersion: v1
 kind: Service

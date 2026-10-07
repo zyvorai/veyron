@@ -46,6 +46,8 @@ pub mod ingress;
 pub mod integrations;
 pub mod kryton;
 pub mod logs;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod machine_images;
 pub mod metrics;
 pub mod migration_policies;
 pub mod migrations;
@@ -200,6 +202,8 @@ pub fn all_routes(
         .merge(paqtra::router(state.clone()))
         .merge(gryvia::router(state.clone()));
     #[cfg(feature = "kairon")]
-    let router = router.merge(imports::router(state.clone()));
+    let router = router
+        .merge(imports::router(state.clone()))
+        .merge(machine_images::router(state.clone()));
     router
 }

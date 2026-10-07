@@ -9,7 +9,9 @@
 //! accepted and ignored — FluxVM picks its own device model per backend.
 
 use super::types::*;
-use crate::config::{BootloaderType, DiskDeviceType, DiskSource, NetworkType, VMConfig};
+use crate::config::{
+    BootloaderType, DiskConfig, DiskDeviceType, DiskSource, NetworkType, VMConfig,
+};
 use anyhow::{Result, bail};
 use std::collections::BTreeMap;
 
@@ -169,6 +171,8 @@ fn apply_disks(config: &VMConfig, spec: &mut MachineSpec) -> Result<()> {
     });
 
     let mut boot_set = false;
+    let mut boot_from_volume = false;
+    let mut blank_root: Option<&DiskConfig> = None;
     for disk in disks {
         match &disk.source {
             DiskSource::ContainerDisk { image } if !boot_set => {
@@ -178,10 +182,12 @@ fn apply_disks(config: &VMConfig, spec: &mut MachineSpec) -> Result<()> {
                     oci: Some(image),
                     ..Default::default()
                 });
+                spec.image.disk_size = disk_size(&disk.size);
                 boot_set = true;
             }
             DiskSource::GoldenImage { name, .. } if !boot_set => {
-                spec.image.catalog_name = Some(name.clone());
+                spec.image.image_ref = Some(name.clone());
+                spec.image.disk_size = disk_size(&disk.size);
                 boot_set = true;
             }
             DiskSource::PVC { name } | DiskSource::DataVolume { name } if !boot_set => {
@@ -194,6 +200,7 @@ fn apply_disks(config: &VMConfig, spec: &mut MachineSpec) -> Result<()> {
                     },
                 );
                 boot_set = true;
+                boot_from_volume = true;
             }
             DiskSource::PVC { name } | DiskSource::DataVolume { name } => {
                 spec.disks.push(MachineDisk {
@@ -202,9 +209,12 @@ fn apply_disks(config: &VMConfig, spec: &mut MachineSpec) -> Result<()> {
                     ..Default::default()
                 });
             }
-            // Blank disks were the KubeVirt ISO-install target; Kairon boots
-            // from an image, so a blank disk carries no information.
-            DiskSource::Blank => {}
+            // A blank disk only matters as the target of an ISO install.
+            DiskSource::Blank => {
+                if blank_root.is_none() {
+                    blank_root = Some(disk);
+                }
+            }
             DiskSource::ContainerDisk { image } => {
                 bail!(
                     "disk '{}': only the boot disk may be an OCI image ({image})",
@@ -219,7 +229,74 @@ fn apply_disks(config: &VMConfig, spec: &mut MachineSpec) -> Result<()> {
             }
         }
     }
+
+    // Install media: catalog ISOs only. Template CD-ROMs that are KubeVirt
+    // containerDisks (the VirtIO driver CD, cloud-init, sysprep) don't apply.
+    for disk in config
+        .disks
+        .iter()
+        .filter(|d| d.device_type == DiskDeviceType::CDROM)
+    {
+        if let DiskSource::GoldenImage { name, .. } = &disk.source {
+            spec.cdroms.push(MachineCdrom {
+                name: sanitize_disk_name(&disk.name),
+                image_ref: Some(name.clone()),
+                ..Default::default()
+            });
+        }
+    }
+    if !spec.cdroms.is_empty() && !boot_set {
+        spec.image.blank = true;
+        spec.image.disk_size = Some(
+            blank_root
+                .and_then(|d| disk_size(&d.size))
+                .unwrap_or_else(|| DEFAULT_INSTALL_DISK_SIZE.to_string()),
+        );
+    }
+
+    // Root disk on a PVC: Kairon seeds the empty claim from the image (or
+    // creates it blank) on first start, then boots an overlay on top of it.
+    if let Some(claim) = config
+        .annotations
+        .get(ROOT_VOLUME_ANNOTATION)
+        .filter(|c| !c.is_empty())
+    {
+        if boot_from_volume {
+            bail!("root volume '{claim}' conflicts with a PVC boot disk");
+        }
+        if spec.image.source.is_none() && spec.image.image_ref.is_none() && !spec.image.blank {
+            bail!("root volume '{claim}' needs an image or ISO install to seed it from");
+        }
+        spec.volumes.insert(
+            0,
+            MachineVolume {
+                name: "root".into(),
+                claim_name: claim.clone(),
+                ..Default::default()
+            },
+        );
+    }
     Ok(())
+}
+
+/// VMConfig annotation naming a PVC to hold the root disk.
+pub const ROOT_VOLUME_ANNOTATION: &str = "veyron.io/root-volume";
+
+/// Root disk for an ISO install when the template's blank disk has no size.
+const DEFAULT_INSTALL_DISK_SIZE: &str = "60Gi";
+
+/// A disk size worth sending to Kairon: templates use `"0"` (or nothing) for
+/// "whatever the image is", which must not shrink the root disk.
+fn disk_size(size: &str) -> Option<String> {
+    let s = size.trim();
+    let digits: String = s
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
+    match digits.parse::<f64>() {
+        Ok(n) if n > 0.0 => Some(s.to_string()),
+        _ => None,
+    }
 }
 
 /// Kairon disk names: `^[a-z0-9][a-z0-9-]{0,31}$`.
@@ -480,6 +557,105 @@ mod tests {
         assert_eq!(m.spec.disks.len(), 1);
         assert_eq!(m.spec.disks[0].name, "data-1");
         assert_eq!(m.spec.disks[0].claim_name, "db-data");
+    }
+
+    fn catalog(name: &str, device: DiskDeviceType) -> DiskConfig {
+        DiskConfig {
+            name: if device == DiskDeviceType::CDROM {
+                "install".into()
+            } else {
+                "root".into()
+            },
+            size: "0".into(),
+            storage_class: None,
+            boot_order: if device == DiskDeviceType::Disk { 1 } else { 0 },
+            source: DiskSource::GoldenImage {
+                name: name.into(),
+                namespace: String::new(),
+                from_pvc: false,
+                storage_class: None,
+                volume_mode: None,
+            },
+            device_type: device,
+            bus: None,
+            cache: None,
+            io: None,
+        }
+    }
+
+    #[test]
+    fn catalog_image_becomes_image_ref_without_shrinking() {
+        let cfg = VMConfigBuilder::new("w")
+            .cpu(2, 1, 1)
+            .memory("4Gi")
+            .add_disk(catalog("windows-2022", DiskDeviceType::Disk))
+            .build();
+        let m = machine_from_config(&cfg).unwrap();
+        assert_eq!(m.spec.image.image_ref.as_deref(), Some("windows-2022"));
+        assert_eq!(m.spec.image.disk_size, None);
+        assert!(m.spec.cdroms.is_empty());
+
+        let mut root = catalog("windows-2022", DiskDeviceType::Disk);
+        root.size = "80Gi".into();
+        let cfg = VMConfigBuilder::new("w").add_disk(root).build();
+        let m = machine_from_config(&cfg).unwrap();
+        assert_eq!(m.spec.image.disk_size.as_deref(), Some("80Gi"));
+    }
+
+    #[test]
+    fn iso_install_is_blank_root_plus_cdroms() {
+        let mut drivers = catalog("virtio-win", DiskDeviceType::CDROM);
+        drivers.name = "drivers".into();
+        let cfg = VMConfigBuilder::new("w")
+            .add_blank_disk("rootdisk", "", 1)
+            .add_disk(catalog("win2022-iso", DiskDeviceType::CDROM))
+            .add_disk(drivers)
+            .add_cdrom("virtio", "quay.io/kubevirt/virtio-container-disk", 3)
+            .build();
+        let m = machine_from_config(&cfg).unwrap();
+        assert!(m.spec.image.blank);
+        assert_eq!(
+            m.spec.image.disk_size.as_deref(),
+            Some(DEFAULT_INSTALL_DISK_SIZE)
+        );
+        assert!(m.spec.image.source.is_none());
+        let names: Vec<_> = m.spec.cdroms.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, ["install", "drivers"]);
+        assert_eq!(m.spec.cdroms[0].image_ref.as_deref(), Some("win2022-iso"));
+    }
+
+    #[test]
+    fn root_volume_is_seeded_from_image_or_blank() {
+        let mut cfg = VMConfigBuilder::new("w")
+            .add_disk(catalog("ubuntu-24.04", DiskDeviceType::Disk))
+            .build();
+        cfg.annotations
+            .insert(ROOT_VOLUME_ANNOTATION.into(), "w-root".into());
+        let m = machine_from_config(&cfg).unwrap();
+        assert_eq!(m.spec.volumes[0].claim_name, "w-root");
+        assert_eq!(m.spec.image.image_ref.as_deref(), Some("ubuntu-24.04"));
+
+        let mut cfg = VMConfigBuilder::new("w")
+            .add_blank_disk("rootdisk", "40Gi", 1)
+            .build();
+        cfg.annotations
+            .insert(ROOT_VOLUME_ANNOTATION.into(), "w-root".into());
+        assert!(machine_from_config(&cfg).is_err());
+
+        let mut cfg = VMConfigBuilder::new("w")
+            .add_pvc_disk("root", "db-root", 1)
+            .build();
+        cfg.annotations
+            .insert(ROOT_VOLUME_ANNOTATION.into(), "w-root".into());
+        assert!(machine_from_config(&cfg).is_err());
+    }
+
+    #[test]
+    fn disk_size_ignores_placeholders() {
+        assert_eq!(disk_size("0"), None);
+        assert_eq!(disk_size(""), None);
+        assert_eq!(disk_size("0Gi"), None);
+        assert_eq!(disk_size("20Gi").as_deref(), Some("20Gi"));
     }
 
     #[test]

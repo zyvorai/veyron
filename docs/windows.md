@@ -59,6 +59,35 @@ curl -sk -X POST "https://$HOST:30151/api/v1/imports" \
 Migrating existing Windows VMs from VMware or Hyper-V works the same way through h2kvm, which
 injects the VirtIO drivers offline first; see [migrate.md](migrate.md).
 
+## Installing from an ISO on Kairon
+
+Kairon attaches ISOs as SATA CD-ROMs, which Windows Setup reads without extra drivers. Upload the
+Windows ISO and the virtio-win driver ISO once, then install as many VMs as you like:
+
+```bash
+for f in ws2022.iso virtio-win.iso; do
+  curl -sk -X PUT -H "X-API-Key: $VEYRON_API_KEY" --data-binary @"$f" \
+    "https://$HOST:30151/api/v1/image-store/$f"
+done
+curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  "https://$HOST:30151/api/v1/machine-images" -d '{"name":"ws2022-iso","from_store":"ws2022.iso","os":"windows"}'
+curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  "https://$HOST:30151/api/v1/machine-images" -d '{"name":"virtio-win","from_store":"virtio-win.iso","os":"windows"}'
+
+curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  "https://$HOST:30151/api/v1/vms" \
+  -d '{"name":"win01","template":"windows-2022","iso":"ws2022-iso","disk_size":"80Gi"}'
+```
+
+The VM starts with a blank 80 GiB disk, the Windows ISO and (because the template is Windows and a
+`virtio-win` image exists) the driver CD. Open the console, load `viostor` from the driver CD when
+Setup shows no disk, and finish the install. OVMF boots the installed disk afterwards, so the ISO
+can stay attached, but a VM with install media can't live-migrate. To make the result a golden
+image, sysprep it and publish its disk as a `MachineImage` of kind `disk`.
+
+The console does the same: **Images → New → Upload a file**, then **VMs → New → Boot from →
+Install from ISO**.
+
 ## Unattended setup and domain join
 
 `sysprep_secret` names a Secret with an `autounattend.xml` key, mounted as CD-ROM media because

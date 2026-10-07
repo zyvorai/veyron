@@ -58,6 +58,9 @@ pub struct MachineSpec {
     /// Hot-attachable PVC-backed SCSI data disks.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub disks: Vec<MachineDisk>,
+    /// Read-only install media (ISO) attached as SATA CD-ROMs from first boot.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub cdroms: Vec<MachineCdrom>,
     /// DRA `ResourceClaim` names mapped to VFIO devices (GPU, SR-IOV).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub device_claims: Vec<DeviceClaimReference>,
@@ -78,6 +81,16 @@ pub struct MachineImage {
     pub source: Option<ImageSource>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalog_name: Option<String>,
+    /// A cluster-scoped `MachineImage` (kind disk); kairon-controller pins its
+    /// source and digest into this spec before the Machine is scheduled.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image_ref: Option<String>,
+    /// Empty root disk of `disk_size`, the target of an ISO install.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub blank: bool,
+    /// Root disk size at creation, e.g. `60Gi`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub disk_size: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -92,6 +105,74 @@ pub struct ImageSource {
     pub format: Option<String>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub repair: bool,
+    /// Download without verifying the server certificate; the digest still
+    /// guards the bytes.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub insecure_skip_tls_verify: bool,
+}
+
+/// One `spec.cdroms` entry: a `MachineImage` of kind iso, or a source + digest.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct MachineCdrom {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image_ref: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<ImageSource>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub digest: Option<String>,
+}
+
+// ---------------------------------------------------------------------------
+// MachineImage (cluster-scoped image catalog)
+// ---------------------------------------------------------------------------
+
+/// A named, versioned boot disk (`kind: disk`) or ISO (`kind: iso`). Generated
+/// as `CatalogImage` because `MachineImage` is already `spec.image`.
+#[derive(CustomResource, Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[kube(
+    group = "kairon.zyvor.dev",
+    version = "v1beta1",
+    kind = "MachineImage",
+    root = "CatalogImage",
+    plural = "machineimages",
+    shortname = "mimg"
+)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogImageSpec {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub family: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    /// `disk` (default) | `iso`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub os: Option<String>,
+    #[serde(default)]
+    pub source: ImageSource,
+    #[serde(default)]
+    pub digest: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub defaults: Option<CatalogImageDefaults>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub deprecated: bool,
+    #[serde(flatten)]
+    pub extra: Extra,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogImageDefaults {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpu: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub disk_size: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
