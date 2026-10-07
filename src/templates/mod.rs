@@ -576,6 +576,9 @@ fn linux_guestkit_cloud_init(user: &str, password: &str, package_update: bool) -
     } else {
         ""
     };
+    // Generated passwords may start with `!`, `@` or `%`, which YAML reads as a tag, a reserved
+    // indicator or a directive.
+    let password = format!("'{}'", password.replace('\'', "''"));
     format!(
         r#"#cloud-config
 user: {user}
@@ -669,6 +672,20 @@ pub fn merge_cloud_init(base: &str, custom: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cloud_init_parses_for_every_password_leading_character() {
+        for c in "abcXYZ019!@#$%'".chars() {
+            let password = format!("{c}rest!@#$%");
+            let ci = linux_guestkit_cloud_init("veyron", &password, true);
+            let v: serde_yml::Value = serde_yml::from_str(&ci)
+                .unwrap_or_else(|e| panic!("password starting with {c:?} broke YAML: {e}"));
+            assert_eq!(v["password"].as_str(), Some(password.as_str()));
+            assert!(
+                merge_cloud_init(&ci, "#cloud-config\nruncmd: [true]\n").contains("guestkit-agent")
+            );
+        }
+    }
 
     #[test]
     fn test_template_manager() {
