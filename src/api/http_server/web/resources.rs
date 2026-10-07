@@ -1160,10 +1160,14 @@ pub(super) struct WsTicketResponse {
     expires_in: u64,
 }
 
-pub(super) async fn ws_ticket_handler() -> impl IntoResponse {
+pub(super) async fn ws_ticket_handler(
+    axum::Extension(caller): axum::Extension<crate::api::auth_context::AuthContext>,
+) -> impl IntoResponse {
     const TTL_SECS: u64 = 60;
-    let ticket =
-        crate::api::ws_ticket::issue_ws_ticket(Some(std::time::Duration::from_secs(TTL_SECS)));
+    let ticket = crate::api::ws_ticket::issue_ws_ticket(
+        caller,
+        Some(std::time::Duration::from_secs(TTL_SECS)),
+    );
     let ctx = req_ctx(HttpMethod::POST, "/api/v1/ws/ticket");
     ok_json(&ApiResponse::success(
         &WsTicketResponse {

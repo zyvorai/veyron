@@ -1,3 +1,4 @@
+import { assessmentPath, operationQuery } from './enterprise.js';
 const TOKEN_STORAGE = 'veyron_auth_token';
 const USER_STORAGE = 'veyron_auth_user';
 const THEME_STORAGE = 'veyron_console_theme';
@@ -1344,3 +1345,10 @@ export function mapDataSource(raw, i) {
     vols: '—',
   };
 }
+
+// Enterprise workflows: assessments read/evaluate; power submission mutates.
+export const enterpriseCapabilities = () => request('/api/v1/enterprise/capabilities');
+export const enterpriseAssessment = (kind, payload) => request(assessmentPath(kind), {method:'POST',body:JSON.stringify(payload)});
+export const enterpriseOperations = (namespace) => request(`/api/v1/enterprise/operations?${operationQuery(namespace)}`);
+export const enterpriseSubmit = (payload) => request(`/api/v1/enterprise/operations?${operationQuery(payload.namespace)}`, {method:'POST',body:JSON.stringify(payload)});
+export const enterpriseCancel = (namespace,id) => request(`/api/v1/enterprise/operations/${encodeURIComponent(id)}/cancel?${operationQuery(namespace)}`, {method:'POST'});

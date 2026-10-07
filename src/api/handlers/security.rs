@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
-#[cfg(feature = "web")]
 use super::feature_context::VmrogueFeatureContext;
 #[cfg(feature = "web")]
 use super::namespace_scope::{self, DashboardNamespaceQuery};

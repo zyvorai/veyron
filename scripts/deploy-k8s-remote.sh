@@ -350,6 +350,10 @@ rules:
   - apiGroups: ['']
     resources: ['namespaces', 'nodes', 'pods', 'pods/log', 'events', 'persistentvolumeclaims', 'configmaps', 'resourcequotas']
     verbs: ['get', 'list', 'watch']
+  # Tenant namespace quota bootstrap/reconciliation
+  - apiGroups: ['']
+    resources: ['resourcequotas']
+    verbs: ['create', 'update', 'patch']
   - apiGroups: ['']
     resources: ['nodes']
     verbs: ['patch', 'update']

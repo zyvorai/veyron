@@ -354,7 +354,6 @@ pub struct PlatformUpgradeRequest {
     pub dry_run: bool,
 }
 
-#[cfg(feature = "web")]
 fn default_true() -> bool {
     true
 }

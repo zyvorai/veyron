@@ -31,6 +31,8 @@ pub struct TenantRecord {
     pub cpu_quota: String,
     pub memory_quota: String,
     pub max_vms: u32,
+    #[serde(default)]
+    pub gpu_quota: u32,
     pub created_at: String,
 }
 
@@ -47,6 +49,8 @@ pub struct CreateTenantRequest {
     pub memory_quota: String,
     #[serde(default = "default_max_vms")]
     pub max_vms: u32,
+    #[serde(default)]
+    pub gpu_quota: u32,
     #[serde(default = "default_true")]
     pub bootstrap_namespace: bool,
 }
@@ -96,6 +100,7 @@ async fn bootstrap_tenant_namespace(
     cpu: &str,
     memory: &str,
     max_vms: u32,
+    gpu_quota: u32,
 ) -> Result<String, String> {
     use k8s_openapi::api::core::v1::{Namespace, ResourceQuota};
     use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
@@ -104,35 +109,73 @@ async fn bootstrap_tenant_namespace(
 
     let ns_name = format!("tenant-{tenant_id}");
     let ns_api: Api<Namespace> = Api::all(client.clone());
-    if ns_api.get(&ns_name).await.is_err() {
-        let mut labels = BTreeMap::new();
-        labels.insert(TENANT_NS_LABEL.to_string(), tenant_id.to_string());
-        labels.insert("veyron.io/managed-by".to_string(), "veyron".to_string());
-        let ns = Namespace {
-            metadata: kube::api::ObjectMeta {
-                name: Some(ns_name.clone()),
-                labels: Some(labels),
+    match ns_api.get_opt(&ns_name).await.map_err(|e| e.to_string())? {
+        Some(ns) => {
+            if ns
+                .metadata
+                .labels
+                .as_ref()
+                .and_then(|l| l.get("veyron.io/vm-backend"))
+                .map(String::as_str)
+                != Some(crate::api::vm_backend::selected().as_str())
+            {
+                return Err("existing namespace needs an explicit matching veyron.io/vm-backend label; inspect inventory before adopting".into());
+            }
+            if ns
+                .metadata
+                .labels
+                .as_ref()
+                .and_then(|l| l.get(TENANT_NS_LABEL))
+                .map(String::as_str)
+                != Some(tenant_id)
+            {
+                return Err("existing namespace is not owned by this tenant".into());
+            }
+        }
+        None => {
+            let mut labels = BTreeMap::new();
+            labels.insert(TENANT_NS_LABEL.to_string(), tenant_id.to_string());
+            labels.insert(
+                "veyron.io/vm-backend".into(),
+                crate::api::vm_backend::selected().as_str().into(),
+            );
+            labels.insert("veyron.io/managed-by".to_string(), "veyron".to_string());
+            let ns = Namespace {
+                metadata: kube::api::ObjectMeta {
+                    name: Some(ns_name.clone()),
+                    labels: Some(labels),
+                    ..Default::default()
+                },
                 ..Default::default()
-            },
-            ..Default::default()
-        };
-        ns_api
-            .create(&PostParams::default(), &ns)
-            .await
-            .map_err(|e| e.to_string())?;
+            };
+            ns_api
+                .create(&PostParams::default(), &ns)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
     }
 
     let rq_api: Api<ResourceQuota> = Api::namespaced(client, &ns_name);
     let rq_name = "tenant-quota";
-    if rq_api.get(rq_name).await.is_err() {
+    let existing = rq_api.get_opt(rq_name).await.map_err(|e| e.to_string())?;
+    {
         let mut hard = BTreeMap::new();
         hard.insert("limits.cpu".to_string(), Quantity(cpu.to_string()));
         hard.insert("limits.memory".to_string(), Quantity(memory.to_string()));
         hard.insert(
-            "count/virtualmachines.kubevirt.io".to_string(),
+            if crate::api::vm_backend::selected().as_str() == "kairon" {
+                "count/machines.kairon.zyvor.dev"
+            } else {
+                "count/virtualmachines.kubevirt.io"
+            }
+            .to_string(),
             Quantity(max_vms.to_string()),
         );
-        let rq = ResourceQuota {
+        hard.insert(
+            "requests.nvidia.com/gpu".into(),
+            Quantity(gpu_quota.to_string()),
+        );
+        let mut rq = ResourceQuota {
             metadata: kube::api::ObjectMeta {
                 name: Some(rq_name.to_string()),
                 namespace: Some(ns_name.clone()),
@@ -144,25 +187,37 @@ async fn bootstrap_tenant_namespace(
             }),
             ..Default::default()
         };
-        rq_api
-            .create(&PostParams::default(), &rq)
-            .await
-            .map_err(|e| e.to_string())?;
+        if let Some(existing) = existing {
+            rq.metadata = existing.metadata;
+            rq_api
+                .replace(rq_name, &PostParams::default(), &rq)
+                .await
+                .map_err(|e| e.to_string())?;
+        } else {
+            rq_api
+                .create(&PostParams::default(), &rq)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
     }
 
     Ok(ns_name)
 }
 
 #[cfg(feature = "web")]
-async fn list_tenants(State(state): State<SharedState>) -> Json<Vec<TenantRecord>> {
+async fn list_tenants(
+    State(state): State<SharedState>,
+) -> Result<Json<Vec<TenantRecord>>, (StatusCode, Json<serde_json::Value>)> {
     let client = {
         let s = state.read().await;
         s.client().client()
     };
-    let cms = list_tenant_cms(client).await.unwrap_or_default();
+    let cms = list_tenant_cms(client)
+        .await
+        .map_err(super::kube_list_error("tenants"))?;
     let mut rows: Vec<TenantRecord> = cms.iter().filter_map(cm_to_tenant).collect();
     rows.sort_by(|a, b| a.id.cmp(&b.id));
-    Json(rows)
+    Ok(Json(rows))
 }
 
 #[cfg(feature = "web")]
@@ -195,15 +250,17 @@ async fn create_tenant(
     State(state): State<SharedState>,
     Json(req): Json<CreateTenantRequest>,
 ) -> Result<Json<TenantRecord>, (StatusCode, Json<serde_json::Value>)> {
-    if req.id.is_empty()
-        || !req
-            .id
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '-')
+    if !crate::enterprise::planning::dns_label(&req.id)
+        || req.id.len() > 56
+        || req.max_vms == 0
+        || !crate::enterprise::planning::quantity(&req.cpu_quota, true).is_ok_and(|n| n > 0)
+        || !crate::enterprise::planning::quantity(&req.memory_quota, false).is_ok_and(|n| n > 0)
     {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({ "error": "tenant id must be alphanumeric with dashes" })),
+            Json(
+                serde_json::json!({"error":"tenant needs lowercase DNS id <=56 characters, positive max_vms and integer resource quantities"}),
+            ),
         ));
     }
 
@@ -220,6 +277,7 @@ async fn create_tenant(
             &req.cpu_quota,
             &req.memory_quota,
             req.max_vms,
+            req.gpu_quota,
         )
         .await
         {
@@ -243,6 +301,7 @@ async fn create_tenant(
         cpu_quota: req.cpu_quota,
         memory_quota: req.memory_quota,
         max_vms: req.max_vms,
+        gpu_quota: req.gpu_quota,
         created_at: chrono::Utc::now().to_rfc3339(),
     };
 

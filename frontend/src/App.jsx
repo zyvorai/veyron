@@ -11,6 +11,7 @@ import { Table } from './Table.jsx';
 import { Inspector, ACT } from './Inspector.jsx';
 import { Mission, ConsoleHub, SettingsPage, ConsoleSheet, NewSheet, Login } from './pages.jsx';
 const chapter = (name) => lazy(() => import('./chapters.jsx').then((m) => ({ default: m[name] })));
+const EnterprisePage = lazy(() => import('./EnterprisePage.jsx'));
 const MonitoringPage = chapter('MonitoringPage');
 const TopologyPage = chapter('TopologyPage');
 const DrPage = chapter('DrPage');
@@ -822,6 +823,8 @@ export default function App() {
         <Suspense fallback={<div className="empty"><div><b>Loading…</b></div></div>}>
         {page === 'mission' ? (
           <Mission data={data} go={go} onCreate={openCreate} onConsole={openConsole} healthOk={healthOk} podSummary={podSummary} />
+        ) : page === 'enterprise' ? (
+          <EnterprisePage user={user} />
         ) : page === 'settings' ? (
           <SettingsPage theme={theme} setTheme={setTheme} />
         ) : page === 'monitoring' ? (

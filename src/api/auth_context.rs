@@ -54,6 +54,13 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     };
     let path: &str = &canonical;
 
+    if path.starts_with("/api/v1/enterprise/assess/")
+        || path == "/api/v1/enterprise/placement"
+        || path == "/api/v1/enterprise/blueprints/validate"
+    {
+        return ApiRole::ReadOnly;
+    }
+
     // AI requests that only read or draft. Anything they want to change becomes a
     // proposal that a Write/Admin caller must approve, and MCP tools check roles per tool.
     if matches!(
@@ -118,6 +125,22 @@ pub fn is_ws_console_path(path: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn enterprise_assessments_are_readonly_but_power_is_write() {
+        for prefix in ["/api/v1", "/api/v1/veyron"] {
+            assert_eq!(
+                min_role_for_route(
+                    &Method::POST,
+                    &format!("{prefix}/enterprise/assess/recovery")
+                ),
+                ApiRole::ReadOnly
+            );
+            assert_eq!(
+                min_role_for_route(&Method::POST, &format!("{prefix}/enterprise/operations")),
+                ApiRole::Write
+            );
+        }
+    }
 
     #[test]
     fn readonly_can_get_vms() {

@@ -16,7 +16,8 @@ use serde::{Deserialize, Serialize};
 use crate::api::http_server::web::SharedState;
 
 #[cfg(feature = "web")]
-use super::namespace_scope::{self, DashboardNamespaceQuery};
+use super::namespace_scope;
+use super::namespace_scope::DashboardNamespaceQuery;
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -182,6 +183,7 @@ async fn resolve_client_role(
     ApiRole::ReadOnly
 }
 
+#[cfg(feature = "web")]
 fn role_label(role: &crate::api::http_server::web::ApiRole) -> &'static str {
     use crate::api::http_server::web::ApiRole;
     match role {

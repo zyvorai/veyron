@@ -31,6 +31,10 @@ pub mod prometheus;
 pub mod routes;
 pub mod server;
 #[cfg(feature = "web")]
+pub mod tenant_admission;
+#[cfg(feature = "web")]
+pub mod tenant_scope;
+#[cfg(feature = "web")]
 pub mod vm_backend;
 pub mod webhooks;
 pub mod websocket;

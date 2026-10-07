@@ -220,3 +220,7 @@ Talk to us: [sales@zyvor.dev](mailto:sales@zyvor.dev?subject=Veyron) · [zyvor.d
 [![Star on GitHub](https://img.shields.io/github/stars/zyvorai/veyron?style=for-the-badge&logo=github&label=Star&color=2997ff)](https://github.com/zyvorai/veyron)
 
 </div>
+
+## Enterprise workflow center
+
+See [enterprise workflow guide](docs/enterprise-workflows.md) for durable power operations, tenant quota reservations, namespace authorization and readiness assessments.

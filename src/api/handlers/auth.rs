@@ -20,7 +20,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
-use crate::kube::user_store::{self, UserAccount};
+use crate::kube::user_store;
+use crate::kube::user_store::UserAccount;
 
 /// Session token lifetime for username+password logins.
 const LOGIN_TOKEN_TTL_SECS: i64 = 24 * 60 * 60;
@@ -73,6 +74,7 @@ pub struct SetPasswordRequest {
     pub password: String,
 }
 
+#[cfg(feature = "web")]
 fn err_json(
     status: StatusCode,
     code: &str,

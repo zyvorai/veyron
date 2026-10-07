@@ -200,6 +200,11 @@ pub struct KubeClient {
 }
 
 impl KubeClient {
+    /// Wrap an explicit client without changing the global kubeconfig/context.
+    pub fn from_client(client: Client) -> Self {
+        Self { client }
+    }
+
     /// Create a new KubeClient using the global kubeconfig if set, or default discovery
     pub async fn new() -> Result<Self> {
         let client = get_client().await?;

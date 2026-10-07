@@ -54,7 +54,7 @@ pub fn selected() -> BackendKind {
 pub enum VmBackend {
     KubeVirt(KubeClient),
     #[cfg(feature = "kairon")]
-    Kairon,
+    Kairon(KubeClient),
 }
 
 impl VmBackend {
@@ -62,7 +62,7 @@ impl VmBackend {
         match selected() {
             BackendKind::KubeVirt => VmBackend::KubeVirt(client.clone()),
             #[cfg(feature = "kairon")]
-            BackendKind::Kairon => VmBackend::Kairon,
+            BackendKind::Kairon => VmBackend::Kairon(client.clone()),
         }
     }
 
@@ -70,20 +70,22 @@ impl VmBackend {
         match self {
             VmBackend::KubeVirt(_) => BackendKind::KubeVirt,
             #[cfg(feature = "kairon")]
-            VmBackend::Kairon => BackendKind::Kairon,
+            VmBackend::Kairon(_) => BackendKind::Kairon,
         }
     }
 
     pub async fn list(&self, scope_ns: &str) -> Result<Vec<VmInfo>> {
         match self {
-            VmBackend::KubeVirt(c) => Ok(c
-                .list_vms_for_scope(scope_ns)
-                .await
-                .iter()
-                .map(VmInfo::from_vm)
-                .collect()),
+            VmBackend::KubeVirt(c) => {
+                let vms = if scope_ns == "all" {
+                    c.list_all_vms().await?
+                } else {
+                    c.list_vms(scope_ns).await?
+                };
+                Ok(vms.iter().map(VmInfo::from_vm).collect())
+            }
             #[cfg(feature = "kairon")]
-            VmBackend::Kairon => kairon::list(scope_ns).await,
+            VmBackend::Kairon(c) => kairon::list(c, scope_ns).await,
         }
     }
 
@@ -92,15 +94,24 @@ impl VmBackend {
         match self {
             VmBackend::KubeVirt(c) => Ok(serde_json::to_value(c.get_vm(ns, name).await?)?),
             #[cfg(feature = "kairon")]
-            VmBackend::Kairon => kairon::get(ns, name).await,
+            VmBackend::Kairon(c) => kairon::get(c, ns, name).await,
+        }
+    }
+
+    fn kube_client(&self) -> &KubeClient {
+        match self {
+            VmBackend::KubeVirt(c) => c,
+            #[cfg(feature = "kairon")]
+            VmBackend::Kairon(c) => c,
         }
     }
 
     pub async fn create(&self, config: &VMConfig) -> Result<()> {
+        crate::api::tenant_admission::reserve(self.kube_client(), config).await?;
         match self {
             VmBackend::KubeVirt(c) => c.create_vm(config).await.map(|_| ()),
             #[cfg(feature = "kairon")]
-            VmBackend::Kairon => kairon::create(config).await,
+            VmBackend::Kairon(c) => kairon::create(c, config).await,
         }
     }
 
@@ -108,7 +119,7 @@ impl VmBackend {
         match self {
             VmBackend::KubeVirt(c) => c.delete_vm(ns, name).await,
             #[cfg(feature = "kairon")]
-            VmBackend::Kairon => kairon::delete(ns, name).await,
+            VmBackend::Kairon(c) => kairon::delete(c, ns, name).await,
         }
     }
 
@@ -116,7 +127,9 @@ impl VmBackend {
         match self {
             VmBackend::KubeVirt(c) => c.start_vm(ns, name).await.map(|_| ()),
             #[cfg(feature = "kairon")]
-            VmBackend::Kairon => kairon::set_power(ns, name, crate::kairon::POWER_RUNNING).await,
+            VmBackend::Kairon(c) => {
+                kairon::set_power(c, ns, name, crate::kairon::POWER_RUNNING).await
+            }
         }
     }
 
@@ -124,7 +137,9 @@ impl VmBackend {
         match self {
             VmBackend::KubeVirt(c) => c.stop_vm(ns, name).await.map(|_| ()),
             #[cfg(feature = "kairon")]
-            VmBackend::Kairon => kairon::set_power(ns, name, crate::kairon::POWER_STOPPED).await,
+            VmBackend::Kairon(c) => {
+                kairon::set_power(c, ns, name, crate::kairon::POWER_STOPPED).await
+            }
         }
     }
 
@@ -132,7 +147,7 @@ impl VmBackend {
         match self {
             VmBackend::KubeVirt(c) => c.restart_vm(ns, name).await.map(|_| ()),
             #[cfg(feature = "kairon")]
-            VmBackend::Kairon => kairon::restart(ns, name).await,
+            VmBackend::Kairon(c) => kairon::restart(c, ns, name).await,
         }
     }
 }
@@ -149,12 +164,12 @@ mod kairon {
     use kube::api::{DeleteParams, ListParams, Patch, PatchParams, PostParams};
     use std::time::Duration;
 
-    async fn api(ns: Option<&str>) -> Result<Api<Machine>> {
-        let client = crate::kube::get_client().await?;
-        Ok(match ns {
+    fn api(c: &KubeClient, ns: Option<&str>) -> Api<Machine> {
+        let client = c.client();
+        match ns {
             Some(ns) => Api::namespaced(client, ns),
             None => Api::all(client),
-        })
+        }
     }
 
     fn age(m: &Machine) -> String {
@@ -203,20 +218,20 @@ mod kairon {
         }
     }
 
-    pub(super) async fn list(scope_ns: &str) -> Result<Vec<VmInfo>> {
+    pub(super) async fn list(c: &KubeClient, scope_ns: &str) -> Result<Vec<VmInfo>> {
         let ns = (scope_ns != "all").then_some(scope_ns);
-        let machines = api(ns).await?.list(&ListParams::default()).await?;
+        let machines = api(c, ns).list(&ListParams::default()).await?;
         Ok(machines.items.iter().map(machine_info).collect())
     }
 
-    pub(super) async fn get(ns: &str, name: &str) -> Result<serde_json::Value> {
-        let m = api(Some(ns)).await?.get(name).await?;
+    pub(super) async fn get(c: &KubeClient, ns: &str, name: &str) -> Result<serde_json::Value> {
+        let m = api(c, Some(ns)).get(name).await?;
         let mut v = serde_json::to_value(&m)?;
         v["info"] = serde_json::to_value(machine_info(&m))?;
         Ok(v)
     }
 
-    pub(super) async fn create(config: &VMConfig) -> Result<()> {
+    pub(super) async fn create(c: &KubeClient, config: &VMConfig) -> Result<()> {
         let mut machine = machine_from_config(config)?;
         machine.metadata.namespace = Some(config.namespace.clone());
         machine
@@ -224,26 +239,23 @@ mod kairon {
             .labels
             .get_or_insert_with(Default::default)
             .insert(LABEL_MANAGED_BY.to_string(), "veyron".to_string());
-        api(Some(&config.namespace))
-            .await?
+        api(c, Some(&config.namespace))
             .create(&PostParams::default(), &machine)
             .await
             .with_context(|| format!("creating Machine {}/{}", config.namespace, config.name))?;
         Ok(())
     }
 
-    pub(super) async fn delete(ns: &str, name: &str) -> Result<()> {
-        api(Some(ns))
-            .await?
+    pub(super) async fn delete(c: &KubeClient, ns: &str, name: &str) -> Result<()> {
+        api(c, Some(ns))
             .delete(name, &DeleteParams::default())
             .await?;
         Ok(())
     }
 
-    pub(super) async fn set_power(ns: &str, name: &str, state: &str) -> Result<()> {
+    pub(super) async fn set_power(c: &KubeClient, ns: &str, name: &str, state: &str) -> Result<()> {
         let patch = serde_json::json!({ "spec": { "powerState": state } });
-        api(Some(ns))
-            .await?
+        api(c, Some(ns))
             .patch(name, &PatchParams::default(), &Patch::Merge(&patch))
             .await?;
         Ok(())
@@ -251,9 +263,9 @@ mod kairon {
 
     /// Kairon has no restart verb: power off, wait for the controller to report the
     /// machine stopped, then power back on.
-    pub(super) async fn restart(ns: &str, name: &str) -> Result<()> {
-        set_power(ns, name, POWER_STOPPED).await?;
-        let machines = api(Some(ns)).await?;
+    pub(super) async fn restart(c: &KubeClient, ns: &str, name: &str) -> Result<()> {
+        set_power(c, ns, name, POWER_STOPPED).await?;
+        let machines = api(c, Some(ns));
         let wait = async {
             loop {
                 tokio::time::sleep(Duration::from_secs(1)).await;
@@ -265,7 +277,7 @@ mod kairon {
         tokio::time::timeout(Duration::from_secs(60), wait)
             .await
             .map_err(|_| anyhow!("Machine '{name}' did not stop within 60 seconds"))??;
-        set_power(ns, name, POWER_RUNNING).await
+        set_power(c, ns, name, POWER_RUNNING).await
     }
 }
 

@@ -725,6 +725,7 @@ export const NAV = [
     g: 'Operations',
     tone: 'emerald',
     items: [
+      ['enterprise', 'Workflow center', 'Readiness assessments and durable VM power requests.'],
       ['costs', 'Costs', 'Monthly estimate, forecast and budgets.'],
       ['recommendations', null, 'Right-sizing and savings ideas.'],
       ['slo', 'SLOs', 'Availability targets and error-budget burn.'],
@@ -795,14 +796,15 @@ export const INSIGHT_PAGES = [
 /** Veyron AI pages, served by aipages.jsx. */
 export const AI_PAGES = ['ai', 'proposals', 'investigations', 'sandboxes', 'models'];
 
-export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra', 'paqtra', ...INSIGHT_PAGES, ...AI_PAGES]);
+export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra', 'paqtra', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES]);
 
 /** Story pages that render full-bleed, without the local toolbar. */
 export const FULL_BLEED_PAGES = new Set([
-  'mission', 'console', 'monitoring', 'topology', 'dr', 'netra', 'paqtra', ...INSIGHT_PAGES, ...AI_PAGES,
+  'mission', 'console', 'monitoring', 'topology', 'dr', 'netra', 'paqtra', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES,
 ]);
 
 export const CHAPTER_ICONS = {
+  enterprise: ClipboardCheck,
   monitoring: Activity,
   topology: Map,
   dr: Cloud,

@@ -592,11 +592,7 @@ pub mod web {
         });
         if auth_context::is_ws_console_path(path) {
             if let Some(ticket) = ws_ticket {
-                if crate::api::ws_ticket::consume_ws_ticket(&ticket) {
-                    let ctx = AuthContext {
-                        role: ApiRole::Write,
-                        subject: "ws-ticket".to_string(),
-                    };
+                if let Some(ctx) = crate::api::ws_ticket::consume_ws_ticket(&ticket) {
                     let mut request = request;
                     request.extensions_mut().insert(ctx);
                     return next.run(request).await.into_response();
@@ -1072,6 +1068,7 @@ pub mod web {
                 state.clone(),
                 soc_audit_middleware,
             ))
+            .layer(middleware::from_fn(crate::api::tenant_scope::middleware))
             .layer(middleware::from_fn_with_state(state, auth_middleware))
             .layer(build_cors_layer())
             .layer(DefaultBodyLimit::max(10 * 1024 * 1024)) // 10 MiB

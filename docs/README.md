@@ -22,3 +22,7 @@ Kubernetes API.
 
 **Status.** Kairon is replacing KubeVirt and CDI as Veyron's VM engine. Until that work ships, the
 released build still manages KubeVirt `VirtualMachine`s; pages note where that matters.
+
+## Enterprise workflow center
+
+See [enterprise workflow guide](enterprise-workflows.md) for durable power operations, tenant quota reservations, namespace authorization and readiness assessments.

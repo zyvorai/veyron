@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
 pub mod alerts;
+#[cfg(feature = "web")]
 pub mod atlas;
 pub mod audit;
 pub mod auth;
@@ -22,6 +23,8 @@ pub mod custom_resources;
 pub mod dependencies;
 pub mod disks;
 pub mod dr;
+#[cfg(feature = "web")]
+pub mod enterprise;
 pub mod events;
 pub mod experience;
 pub mod feature_context;
@@ -183,6 +186,7 @@ pub fn all_routes(
         .merge(dr::router(state.clone()))
         .merge(windows::router())
         .merge(tenants::router(state.clone()))
+        .merge(enterprise::router(state.clone()))
         .merge(multus::router(state.clone()))
         .merge(images::router(state.clone()))
         .merge(velero::router(state.clone()))
