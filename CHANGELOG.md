@@ -56,6 +56,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Linux template cloud-init now quotes the generated password. About one VM in 22 got a password
+  starting with `!`, `@` or `%`, which made the YAML invalid: the guest skipped its user, password
+  and GuestKit setup, and merging custom user-data silently dropped the template's part.
 - Cloud-init user-data over 2048 bytes is stored in a Secret instead of being rejected by KubeVirt.
 - Cloud-init Secret references used the wrong field name (`userDataSecretRef` instead of
   `secretRef`) and were silently dropped, in both the API and the operator.
