@@ -226,8 +226,9 @@ step "Step 3/7: Building container image"
 deploy_ssh "${USER}@${HOST}" "
     set -euo pipefail
     cd ${REMOTE_DIR}
-    cp target/release/veyron /tmp/veyron-binary
-    podman build --format docker --build-arg VIRTCTL_VERSION=${KUBEVIRT_VERSION} -t localhost/veyron:latest -f Dockerfile.deploy /tmp 2>&1 | sed 's/^/  [podman] /'
+    mkdir -p target/image-context
+    cp target/release/veyron target/image-context/veyron-binary
+    podman build --format docker --build-arg VIRTCTL_VERSION=${KUBEVIRT_VERSION} -t localhost/veyron:latest -f Dockerfile.deploy target/image-context 2>&1 | sed 's/^/  [podman] /'
     podman save localhost/veyron:latest | ${IMPORT_CMD} 2>&1
 " || error "Image import failed (non-k3s: install containerd ctr, set VEYRON_CONTAINER_RUNTIME_IMPORT, or push to a registry and adjust the Deployment image / pullPolicy)"
 info "Container image built and imported"
