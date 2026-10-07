@@ -527,7 +527,11 @@ async fn worker(client: KubeClient, mut cm: ConfigMap) -> Result<(), ApiError> {
             op.phase = Phase::Succeeded;
             op.message = "controller power state observed; application health not verified".into();
         }
-        Ok(Err(e)) => {
+        Ok(Err(ExecError::BeforeMutation(e))) => {
+            op.phase = Phase::Failed;
+            op.message = format!("nothing was changed: {e}");
+        }
+        Ok(Err(ExecError::Ambiguous(e))) => {
             op.phase = Phase::NeedsReview;
             op.message = format!("inspect VM before another request: {e}");
         }
@@ -541,7 +545,7 @@ async fn worker(client: KubeClient, mut cm: ConfigMap) -> Result<(), ApiError> {
     api.replace(&op.id, &PostParams::default(), &cm)
         .await
         .map_err(upstream)?;
-    if op.phase == Phase::Succeeded {
+    if matches!(op.phase, Phase::Succeeded | Phase::Failed) {
         let params = DeleteParams {
             preconditions: Some(kube::api::Preconditions {
                 uid: lock.metadata.uid,
@@ -554,17 +558,29 @@ async fn worker(client: KubeClient, mut cm: ConfigMap) -> Result<(), ApiError> {
     // Ambiguous workflows retain the lock for explicit administrator review.
     Ok(())
 }
+/// Errors before the power request is sent leave the VM untouched; later ones are ambiguous.
+enum ExecError {
+    BeforeMutation(String),
+    Ambiguous(String),
+}
+
+impl From<String> for ExecError {
+    fn from(e: String) -> Self {
+        ExecError::Ambiguous(e)
+    }
+}
+
 async fn execute(
     backend: &VmBackend,
     client: &KubeClient,
     api: &Api<ConfigMap>,
     cm: &mut ConfigMap,
     op: &mut Operation,
-) -> Result<(), String> {
+) -> Result<(), ExecError> {
     backend
         .get(&op.namespace, &op.vm)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| ExecError::BeforeMutation(e.to_string()))?;
     match op.action {
         PowerAction::Start => backend.start(&op.namespace, &op.vm).await,
         PowerAction::Stop => backend.stop(&op.namespace, &op.vm).await,
@@ -594,7 +610,7 @@ async fn execute(
                 {
                     op.action == PowerAction::Stop
                 }
-                Err(e) => return Err(e.to_string()),
+                Err(e) => return Err(ExecError::Ambiguous(e.to_string())),
             }
         };
         if observed {

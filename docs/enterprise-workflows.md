@@ -57,8 +57,10 @@ in the workload namespace; there is no automatic record cleanup.
 
 A separate per-VM ConfigMap lock prevents overlapping power workflows in this
 API. Different keys submitted concurrently can yield a failed lock acquisition;
-no power action is sent by that losing workflow. Locks for ambiguous outcomes
-are retained for administrator review. Existing direct start/stop endpoints,
+no power action is sent by that losing workflow. If the VM can't be read before the
+power request is sent (for example it doesn't exist), the operation is `failed` and
+the lock is released. Locks for ambiguous outcomes (`needs_review`, after the request
+was sent) are retained for administrator review. Existing direct start/stop endpoints,
 CLI, operators and other clients do not participate in this lock.
 
 ## Namespace authorization
