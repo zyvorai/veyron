@@ -205,6 +205,22 @@ export function mapStoredImage(raw, i) {
   };
 }
 
+/** A capture job, shown in the Uploads table until it succeeds. */
+export function mapCapture(raw, i) {
+  const name = raw.image || `capture-${i}`;
+  return {
+    id: `capture/${name}`,
+    name,
+    ns: raw.namespace || '—',
+    capture: true,
+    cls: raw.phase === 'Failed' ? `Failed: ${raw.message || ''}`.trim() : `Capturing (${raw.phase})`,
+    prov: `from ${raw.namespace}/${raw.vm}`,
+    total: raw.size ? fmtBytes(raw.size) : '—',
+    used: 0,
+    vols: '—',
+  };
+}
+
 export function unwrap(j) {
   if (j == null) return j;
   if (typeof j === 'object' && 'success' in j && j.success === true && 'data' in j) return j.data;
@@ -574,6 +590,13 @@ export const api = {
   deleteMachineImage: (name) => request(`/api/v1/machine-images/${encodeURIComponent(name)}`, { method: 'DELETE' }),
   listImageStore: () => request('/api/v1/image-store').then(asArray),
   deleteStoredImage: (name) => request(`/api/v1/image-store/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  captureVm: (ns, vm, body) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(vm)}/capture`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  listImageCaptures: () => request('/api/v1/image-captures').then(asArray),
+  deleteImageCapture: (image) => request(`/api/v1/image-captures/${encodeURIComponent(image)}`, { method: 'DELETE' }),
   uploadImage,
   createNad: (body) => request('/api/v1/network/nads', { method: 'POST', body: JSON.stringify(body) }),
   deleteNad: (ns, name) =>

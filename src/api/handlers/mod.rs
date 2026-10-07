@@ -38,6 +38,8 @@ pub mod health;
 pub mod heatmap;
 pub mod helm;
 pub mod hpa;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod image_capture;
 pub mod images;
 #[cfg(all(feature = "web", feature = "kairon"))]
 pub mod imports;
@@ -204,6 +206,7 @@ pub fn all_routes(
     #[cfg(feature = "kairon")]
     let router = router
         .merge(imports::router(state.clone()))
-        .merge(machine_images::router(state.clone()));
+        .merge(machine_images::router(state.clone()))
+        .merge(image_capture::router(state.clone()));
     router
 }

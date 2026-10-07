@@ -374,6 +374,16 @@ export default function App() {
   };
 
   const deleteUpload = async (r) => {
+    if (r.capture) {
+      try {
+        await api.deleteImageCapture(r.name);
+        await load();
+        showToast(`Removed capture ${r.name}`);
+      } catch (e) {
+        showToast(e.message || String(e), true);
+      }
+      return;
+    }
     if (!window.confirm(`Delete upload ${r.name}? Catalog images that use it must be deleted first.`)) return;
     try {
       await api.deleteStoredImage(r.name);
@@ -441,6 +451,16 @@ export default function App() {
             if (a === 'delete') await api.deleteVm(ns, t.name);
             else if (a === 'snapshot') await api.createSnapshot(ns, t.name);
             else if (a === 'clone') await api.cloneVm(ns, t.name, `${t.name}-clone`);
+            else if (a === 'capture') {
+              const image = window.prompt(
+                `Capture ${ns}/${t.name} as a golden image named:\n\nThe guest keeps running; filesystems are frozen briefly when its agent answers.`,
+                `${t.name}-gold-v1`,
+              );
+              if (!image) return;
+              await api.captureVm(ns, t.name, { name: image.trim(), os: /windows/i.test(t.os || '') ? 'windows' : 'linux' });
+              showToast(`Capturing ${t.name} as ${image.trim()} — progress under Images → Uploads`);
+              return;
+            }
             else if (['start', 'stop', 'restart', 'migrate', 'pause', 'unpause'].includes(a)) {
               await api.vmAction(ns, t.name, a);
             } else {
@@ -1083,7 +1103,7 @@ export default function App() {
                     <Table
                       cols={res.extra.cols}
                       rows={res.extra.rows}
-                      rowAction={page === 'images' && res.extra.rows.some((r) => r.stored) ? { label: 'Delete', onClick: deleteUpload } : undefined}
+                      rowAction={page === 'images' && res.extra.rows.some((r) => r.stored || r.capture) ? { label: 'Delete', onClick: deleteUpload } : undefined}
                     />
                   </div>
                 </>

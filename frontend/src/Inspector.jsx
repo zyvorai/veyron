@@ -26,6 +26,7 @@ export const ACT = {
   pause: ['Pause', Pause],
   unpause: ['Unpause', Play],
   publish: ['Publish', HardDrive],
+  capture: ['Capture image', Camera],
   resolve: ['Resolve', CheckCircle],
   ack: ['Acknowledge', CheckCircle],
   reclaim: ['Reclaim…', Unlink],

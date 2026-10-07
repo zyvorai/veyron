@@ -36,20 +36,24 @@ pub const KIND_ISO: &str = "iso";
 const STORE_FORMATS: [&str; 7] = ["iso", "raw", "qcow2", "vmdk", "vhd", "vhdx", "ova"];
 const BLOB_PREFIX: &str = "/api/v1/image-store/blobs/";
 
-type Reply = Result<(StatusCode, Json<Value>), (StatusCode, Json<Value>)>;
+pub(crate) type Reply = Result<(StatusCode, Json<Value>), (StatusCode, Json<Value>)>;
 
-fn fail(status: StatusCode, code: &str, message: impl Into<String>) -> (StatusCode, Json<Value>) {
+pub(crate) fn fail(
+    status: StatusCode,
+    code: &str,
+    message: impl Into<String>,
+) -> (StatusCode, Json<Value>) {
     (
         status,
         Json(json!({"success": false, "error": {"code": code, "message": message.into()}})),
     )
 }
 
-fn ok(status: StatusCode, data: Value) -> Reply {
+pub(crate) fn ok(status: StatusCode, data: Value) -> Reply {
     Ok((status, Json(json!({"success": true, "data": data}))))
 }
 
-fn require_kairon() -> Result<(), (StatusCode, Json<Value>)> {
+pub(crate) fn require_kairon() -> Result<(), (StatusCode, Json<Value>)> {
     if crate::api::vm_backend::is_kairon() {
         Ok(())
     } else {
@@ -165,7 +169,7 @@ impl StoredImage {
     }
 }
 
-async fn read_stored(dir: &FsPath, name: &str) -> Option<StoredImage> {
+pub(crate) async fn read_stored(dir: &FsPath, name: &str) -> Option<StoredImage> {
     let b = tokio::fs::read(name_path(dir, name)).await.ok()?;
     serde_json::from_slice(&b).ok()
 }
@@ -219,6 +223,131 @@ fn upload_format(q: Option<&str>, name: &str) -> Option<String> {
     STORE_FORMATS.contains(&f.as_str()).then_some(f)
 }
 
+/// Why streaming into the store failed; `status` is what an upload returns.
+#[derive(Debug)]
+pub struct StoreError {
+    pub status: StatusCode,
+    pub code: &'static str,
+    pub message: String,
+}
+
+impl StoreError {
+    fn new(status: StatusCode, code: &'static str, message: impl Into<String>) -> Self {
+        Self {
+            status,
+            code,
+            message: message.into(),
+        }
+    }
+
+    fn reply(self) -> (StatusCode, Json<Value>) {
+        fail(self.status, self.code, self.message)
+    }
+}
+
+impl std::fmt::Display for StoreError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+/// Stream `body` into the store as upload `name`, hashing as it goes. `want`
+/// rejects the blob when its digest differs.
+pub async fn store_stream<S, B, E>(
+    dir: &FsPath,
+    name: &str,
+    format: String,
+    mut body: S,
+    want: Option<String>,
+    replace: bool,
+) -> Result<StoredImage, StoreError>
+where
+    S: futures_util::Stream<Item = Result<B, E>> + Unpin,
+    B: AsRef<[u8]>,
+    E: std::fmt::Display,
+{
+    if !replace && read_stored(dir, name).await.is_some() {
+        return Err(StoreError::new(
+            StatusCode::CONFLICT,
+            "ALREADY_EXISTS",
+            format!("image {name} already uploaded; add ?replace=true to overwrite"),
+        ));
+    }
+    let io_err = |e: std::io::Error| {
+        StoreError::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "STORE_FAILED",
+            format!("image store {}: {e}", dir.display()),
+        )
+    };
+    let blobs = dir.join("blobs").join("sha256");
+    tokio::fs::create_dir_all(&blobs).await.map_err(io_err)?;
+    let tmp = blobs.join(format!(".upload-{:016x}", rand::random::<u64>()));
+    let result = async {
+        let mut file = tokio::fs::File::create(&tmp).await.map_err(io_err)?;
+        let mut hasher = Sha256::new();
+        let mut size: u64 = 0;
+        while let Some(chunk) = body.next().await {
+            let chunk = chunk.map_err(|e| {
+                StoreError::new(
+                    StatusCode::BAD_REQUEST,
+                    "UPLOAD_ABORTED",
+                    format!("reading upload: {e}"),
+                )
+            })?;
+            let chunk = chunk.as_ref();
+            hasher.update(chunk);
+            size += chunk.len() as u64;
+            file.write_all(chunk).await.map_err(io_err)?;
+        }
+        file.flush().await.map_err(io_err)?;
+        file.sync_all().await.map_err(io_err)?;
+        Ok::<_, StoreError>((hex::encode(hasher.finalize()), size))
+    }
+    .await;
+    let (hex, size) = match result {
+        Ok(v) => v,
+        Err(e) => {
+            let _ = tokio::fs::remove_file(&tmp).await;
+            return Err(e);
+        }
+    };
+    let digest = format!("sha256:{hex}");
+    if size == 0 {
+        let _ = tokio::fs::remove_file(&tmp).await;
+        return Err(StoreError::new(
+            StatusCode::BAD_REQUEST,
+            "EMPTY_UPLOAD",
+            "upload body is empty",
+        ));
+    }
+    if let Some(want) = want.filter(|w| *w != digest) {
+        let _ = tokio::fs::remove_file(&tmp).await;
+        return Err(StoreError::new(
+            StatusCode::BAD_REQUEST,
+            "DIGEST_MISMATCH",
+            format!("received {digest}, client sent {want}"),
+        ));
+    }
+    tokio::fs::rename(&tmp, blob_path(dir, &hex))
+        .await
+        .map_err(io_err)?;
+    let img = StoredImage {
+        name: name.to_string(),
+        digest,
+        size,
+        format,
+        uploaded_at: chrono::Utc::now().to_rfc3339(),
+    };
+    write_atomic(
+        &name_path(dir, name),
+        &serde_json::to_vec(&img).unwrap_or_default(),
+    )
+    .await
+    .map_err(io_err)?;
+    Ok(img)
+}
+
 /// `PUT /api/v1/image-store/:name?format=iso` — stream the body into the store.
 async fn upload(
     Path(name): Path<String>,
@@ -251,86 +380,16 @@ async fn upload(
         })?),
         None => None,
     };
-    let dir = store_dir();
-    if !q.replace && read_stored(&dir, &name).await.is_some() {
-        return Err(fail(
-            StatusCode::CONFLICT,
-            "ALREADY_EXISTS",
-            format!("image {name} already uploaded; add ?replace=true to overwrite"),
-        ));
-    }
-    let io_err = |e: std::io::Error| {
-        fail(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "STORE_FAILED",
-            format!("image store {}: {e}", dir.display()),
-        )
-    };
-    let blobs = dir.join("blobs").join("sha256");
-    tokio::fs::create_dir_all(&blobs).await.map_err(io_err)?;
-    let tmp = blobs.join(format!(".upload-{:016x}", rand::random::<u64>()));
-    let result = async {
-        let mut file = tokio::fs::File::create(&tmp).await.map_err(io_err)?;
-        let mut hasher = Sha256::new();
-        let mut size: u64 = 0;
-        let mut stream = body.into_data_stream();
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk.map_err(|e| {
-                fail(
-                    StatusCode::BAD_REQUEST,
-                    "UPLOAD_ABORTED",
-                    format!("reading upload: {e}"),
-                )
-            })?;
-            hasher.update(&chunk);
-            size += chunk.len() as u64;
-            file.write_all(&chunk).await.map_err(io_err)?;
-        }
-        file.flush().await.map_err(io_err)?;
-        file.sync_all().await.map_err(io_err)?;
-        Ok::<_, (StatusCode, Json<Value>)>((hex::encode(hasher.finalize()), size))
-    }
-    .await;
-    let (hex, size) = match result {
-        Ok(v) => v,
-        Err(e) => {
-            let _ = tokio::fs::remove_file(&tmp).await;
-            return Err(e);
-        }
-    };
-    let digest = format!("sha256:{hex}");
-    if size == 0 {
-        let _ = tokio::fs::remove_file(&tmp).await;
-        return Err(fail(
-            StatusCode::BAD_REQUEST,
-            "EMPTY_UPLOAD",
-            "upload body is empty",
-        ));
-    }
-    if let Some(want) = want.filter(|w| *w != digest) {
-        let _ = tokio::fs::remove_file(&tmp).await;
-        return Err(fail(
-            StatusCode::BAD_REQUEST,
-            "DIGEST_MISMATCH",
-            format!("received {digest}, client sent {want}"),
-        ));
-    }
-    tokio::fs::rename(&tmp, blob_path(&dir, &hex))
-        .await
-        .map_err(io_err)?;
-    let img = StoredImage {
-        name: name.clone(),
-        digest,
-        size,
+    let img = store_stream(
+        &store_dir(),
+        &name,
         format,
-        uploaded_at: chrono::Utc::now().to_rfc3339(),
-    };
-    write_atomic(
-        &name_path(&dir, &name),
-        &serde_json::to_vec(&img).unwrap_or_default(),
+        body.into_data_stream(),
+        want,
+        q.replace,
     )
     .await
-    .map_err(io_err)?;
+    .map_err(StoreError::reply)?;
     ok(StatusCode::CREATED, img.to_json())
 }
 
@@ -451,7 +510,7 @@ pub fn catalog_kind(m: &CatalogImage) -> &str {
     m.spec.kind.as_deref().unwrap_or(KIND_DISK)
 }
 
-fn catalog_json(m: &CatalogImage) -> Value {
+pub(crate) fn catalog_json(m: &CatalogImage) -> Value {
     json!({
         "name": m.metadata.name,
         "display_name": m.spec.display_name,

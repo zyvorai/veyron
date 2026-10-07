@@ -163,6 +163,53 @@ impl RelayTarget {
         })
     }
 
+    /// Target for node-level relay routes that aren't about one runtime
+    /// (e.g. backup downloads).
+    pub async fn for_node(client: &Client, node: &str) -> Result<Self> {
+        let token = relay_token().ok_or_else(|| {
+            anyhow!("kairon-node relay is not configured: set KAIRON_NODE_CONSOLE_TOKEN from the kairon-console-token Secret")
+        })?;
+        let template = relay_template();
+        let node_ip = if template.contains("{node_ip}") {
+            node_internal_ip(client, node).await?
+        } else {
+            String::new()
+        };
+        Ok(Self {
+            base_url: expand_template(&template, node, &node_ip),
+            runtime_id: String::new(),
+            token,
+        })
+    }
+
+    /// Stream a FluxVM backup's root qcow2 (`GET /backup-root/{name}`). No
+    /// overall timeout: the body is the whole disk.
+    pub async fn backup_root(&self, backup: &str) -> Result<reqwest::Response> {
+        let resp = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(15))
+            .danger_accept_invalid_certs(tls_insecure())
+            .build()
+            .context("build relay HTTP client")?
+            .get(format!(
+                "{}/backup-root/{}",
+                self.base_url,
+                urlencode(backup)
+            ))
+            .bearer_auth(&self.token)
+            .send()
+            .await
+            .context("kairon-node relay backup-root")?;
+        let status = resp.status();
+        if !status.is_success() {
+            let text = resp.text().await.unwrap_or_default();
+            bail!(
+                "kairon-node relay /backup-root returned {status}: {}",
+                text.trim()
+            );
+        }
+        Ok(resp)
+    }
+
     fn url(&self, path: &str) -> String {
         format!(
             "{}/{}/{}",

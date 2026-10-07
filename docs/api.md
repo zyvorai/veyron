@@ -120,6 +120,32 @@ answer `501 KAIRON_REQUIRED`; `iso`, `driver_iso` and `root_volume` on `POST /vm
 takes the image's size (or the `MachineImage`'s `defaults.diskSize`); a size smaller than the image
 fails rather than truncating it. VMs with install media attached can't live-migrate.
 
+#### Capture a VM as a golden image
+
+`POST /api/v1/vms/:ns/:name/capture` (Admin) turns a running or stopped Kairon VM's root disk into a
+new catalog image. It answers `202` and runs in the background: Veyron takes a `MachineBackup`
+(guest filesystems are frozen while the guest agent answers; `"quiesce":"required"` fails without
+it, `"never"` skips it), streams the backup's root qcow2 from the node's kairon-node relay into the
+image store, publishes a `MachineImage` of kind `disk`, then deletes the backup unless
+`"keep_backup":true`.
+
+```bash
+curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  "https://$HOST:30151/api/v1/vms/default/web1/capture" \
+  -d '{"name":"web-gold-v1","os":"linux","disk_size":"20Gi","cpu":"2","memory":"4Gi"}'
+# → {"phase":"BackingUp","backup":"web1-capture-20261008…",…}
+
+curl -sk -H "X-API-Key: $VEYRON_API_KEY" "https://$HOST:30151/api/v1/image-captures"
+# phases: BackingUp → Downloading → Publishing → Succeeded | Failed (with message)
+```
+
+The name must be new in both the catalog and the store (`409` otherwise). Generalize the guest
+first if clones need fresh identities (`cloud-init clean`, Sysprep `/generalize` on Windows). Only
+image-backed root disks can be captured; a root disk on a PVC belongs to `MachineSnapshot`. Job
+records are ConfigMaps labeled `veyron.io/type=image-capture` in the API namespace;
+`DELETE /api/v1/image-captures/:image` removes a finished one. Needs Kairon with the
+`/backup-root` relay route and FluxVM with `GET /v1/backups/{name}/root`.
+
 Query `?namespace=all` for cluster-wide lists. `GET /vms` leaves agent sandbox VMs out unless
 you pass `include_sandboxes=true` or ask for their namespace.
 

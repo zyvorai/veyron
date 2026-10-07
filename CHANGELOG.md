@@ -23,6 +23,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Capture a VM as a golden image (Kairon).** `POST /api/v1/vms/:ns/:name/capture` backs up the
+  VM's root disk, stores it in Veyron's image store and publishes it as a `MachineImage`; track it
+  with `GET /api/v1/image-captures` or the console's "Capture image" VM action.
 - **Kairon only.** Veyron runs VMs on Kairon by default and never falls back to KubeVirt
   (`VEYRON_VM_BACKEND=kubevirt` is an explicit legacy opt-in). KubeVirt/CDI/operator-only
   routes answer `501 KUBEVIRT_ONLY`, readiness reports the Kairon engine, and the deploy

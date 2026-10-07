@@ -115,6 +115,7 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     // namespace; removing an upload can break images that still point at it.
     if path.starts_with("/api/v1/machine-images")
         || (method == Method::DELETE && path.starts_with("/api/v1/image-store/"))
+        || (path.starts_with("/api/v1/vms/") && path.ends_with("/capture"))
     {
         return ApiRole::Admin;
     }
@@ -201,6 +202,14 @@ mod tests {
         );
         assert_eq!(
             min_role_for_route(&Method::GET, "/api/v1/machine-images"),
+            ApiRole::ReadOnly
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/vms/default/web/capture"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/image-captures"),
             ApiRole::ReadOnly
         );
     }

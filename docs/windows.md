@@ -91,7 +91,17 @@ The VM starts with a blank 80 GiB disk, the Windows ISO and (because the templat
 `virtio-win` image exists) the driver CD. Open the console, load `viostor` from the driver CD when
 Setup shows no disk, and finish the install. OVMF boots the installed disk afterwards, so the ISO
 can stay attached, but a VM with install media can't live-migrate. To make the result a golden
-image, sysprep it and publish its disk as a `MachineImage` of kind `disk`.
+image, run `sysprep /generalize /oobe /shutdown`, then capture it:
+
+```bash
+curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  "https://$HOST:30151/api/v1/vms/default/win01/capture" \
+  -d '{"name":"ws2022-gold-v1","os":"windows","cpu":"4","memory":"8Gi"}'
+```
+
+Veyron backs up the root disk, stores it and publishes the `MachineImage`; watch
+`GET /api/v1/image-captures` (or Images → Uploads in the console). See
+[Capture a VM as a golden image](api.md#capture-a-vm-as-a-golden-image).
 
 The console does the same: **Images → New → Upload a file**, then **VMs → New → Boot from →
 Install from ISO**.

@@ -4,7 +4,7 @@ import {
   mapVm, mapNode, mapPod, mapPvc, mapClass,
   mapSnapshot, mapBackup, mapImage, mapNetwork, mapTemplate,
   mapGpu, mapAlert, mapSoc, mapAtlasVol, mapAtlasSnap, mapMigration,
-  mapCatalogTemplate, mapDataSource, mapMachineImage, mapStoredImage,
+  mapCatalogTemplate, mapDataSource, mapMachineImage, mapStoredImage, mapCapture,
   mapRecommendation, mapClusterEvent, mapIncident, mapAudit, mapFinding,
   mapOperator, mapHelmRelease, mapQuota, mapCustomResource, mapWorkload,
   mapOrphan, mapSchedule, mapNetworkPolicy, mapIngress,
@@ -74,13 +74,15 @@ const LOADERS = {
   images: async () => {
     // Kairon: the MachineImage catalog plus raw uploads; KubeVirt answers 501.
     try {
-      const [catalog, store] = await Promise.all([
+      const [catalog, store, captures] = await Promise.all([
         api.listMachineImages(),
         api.listImageStore().catch(() => []),
+        api.listImageCaptures().catch(() => []),
       ]);
+      const pending = (captures || []).filter((c) => c.phase !== 'Succeeded').map(mapCapture);
       return {
         rows: (catalog || []).map(mapMachineImage),
-        extra: { title: 'Uploads', cols: UPLOAD_COLS, rows: (store || []).map(mapStoredImage) },
+        extra: { title: 'Uploads', cols: UPLOAD_COLS, rows: [...pending, ...(store || []).map(mapStoredImage)] },
       };
     } catch (e) {
       if (e.status !== 501) throw e;
