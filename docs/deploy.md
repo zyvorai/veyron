@@ -68,7 +68,7 @@ Veyron runs VMs on Kairon. It needs no KubeVirt and no CDI, but it does need:
   `disk.img` into the PV's hostPath/local directory, and FluxVM must be allowed to open it. With the
   stock `ProtectSystem=strict` unit, add the PV root to kairon-node's `ReadWritePaths` and to
   FluxVM's `allowed_image_dirs`, or seeding fails with a read-only filesystem error.
-- **Kairon with `MachineImage` and install-media support** (Kairon PR 32 and FluxVM PR 142) for the
+- **Kairon with `MachineImage` and install-media support** (current Kairon and FluxVM `main`) for the
   image catalog, ISO installs and PVC root disks.
 
 `VEYRON_VM_BACKEND` defaults to Kairon. Set `kubevirt` only to keep managing an existing KubeVirt
