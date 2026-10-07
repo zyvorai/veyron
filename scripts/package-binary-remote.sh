@@ -254,7 +254,7 @@ cat > "\${OUT_DIR}/\${ARTIFACT}/.package-lib/product.meta" <<'META'
 PRODUCT_NAME=Veyron
 ACCESS_SCHEME=http
 ACCESS_PORT=5151
-ACCESS_PATH=/dashboard
+ACCESS_PATH=/console
 AUTO_FULL_INSTALL=0
 FINISH_EXTRA_1='Cluster (once): ./install-cluster.sh then deploy Veyron in the cluster'
 FINISH_EXTRA_2='Start: set -a && source veyron.env && set +a && ./veyron api-serve --host 0.0.0.0 --port 5151'
@@ -341,7 +341,7 @@ CLUSTER FLAGS (also V9S_* aliases — see CLUSTER_SETUP.txt)
 
 CLIENT
   ./install.sh && nano veyron.env && ./veyron api-serve --host 0.0.0.0 --port 5151
-  http://<host>:5151/dashboard
+  https://<host>:5151/console
 
 UNINSTALL: ./uninstall.sh --yes [--remove-dir]
 README_EOF

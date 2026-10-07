@@ -301,10 +301,10 @@ cmd_status() {
     pod_port=$(${KUBECTL} -n "${NAMESPACE}" get svc veyron-api -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}' 2>/dev/null || echo "")
 
     if [ -n "${pod_port}" ]; then
-        echo "  Dashboard: https://${node_ip}:${pod_port}/dashboard"
+        echo "  Console: https://${node_ip}:${pod_port}/console"
     else
         echo "  Port-forward: ${KUBECTL} -n ${NAMESPACE} port-forward svc/veyron-api 443:443"
-        echo "  Dashboard:    https://localhost:443/dashboard"
+        echo "  Console:      https://localhost:443/console"
     fi
     echo "  API Key:    ${API_KEY:-see $(veyron_hosts_dir)/local.env}"
 }

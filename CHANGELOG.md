@@ -56,10 +56,21 @@ All notable changes to this project are documented here. The format follows
   requests to an in-cluster model get a 300 s timeout.
 - The investigator no longer opens incidents for VMs that are being deleted.
 - Paqtra status checks no longer time out on a cold cache.
+- The legacy `/dashboard` redirect keeps its query string, so an OIDC callback's `?code=` survives;
+  the default OIDC redirect URI is now `/console`.
+- Customer tarball docs (`CLUSTER_SETUP.txt`, `PREREQUISITES.txt`) said "VMRogue" and quoted old
+  KubeVirt/CDI versions; install scripts printed `/dashboard` URLs.
 
 ### Removed
 
-- `scripts/dashboard-layout-audit.sh` (targeted the retired dashboard).
+- `scripts/dashboard-layout-audit.sh` and `scripts/test-remote.sh` (targeted the retired dashboard).
+- Unused scripts: `deploy/remote-deploy.sh`, `demo_colors.sh`, `test_theme.sh`,
+  `bootstrap-remote-alma-fix.sh`, `configure-zyra-openrouter.sh`, `console-actions-smoke.sh`,
+  `publish-ghcr.sh`, `publish-customer-release.sh`, `rebuild-all-customer-tarballs-remote.sh`, and
+  unsourced `scripts/lib` helpers.
+- `deploy/monitoring/` (duplicated the `charts/veyron-monitoring` chart).
+- Unreferenced examples: `demo_theme.rs`, `library_usage.rs`, `batch-web-cluster.yaml`,
+  `custom-blueprint-example.yaml`, `production-database.kubevirt.yaml`, `web-server.kubevirt.yaml`.
 - Retired templates for end-of-life or placeholder images: Ubuntu 18.04/20.04, Fedora 42/43,
   CentOS Stream 8, Debian 11, AlmaLinux/Rocky 8, RHEL, Oracle Linux, Alpine, Arch, openSUSE
   Tumbleweed, FreeBSD, Flatcar, Talos and Windows 10.

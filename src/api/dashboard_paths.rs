@@ -19,6 +19,15 @@ pub fn is_auth_exempt_path(path: &str) -> bool {
         || path == "/dashboard/"
 }
 
+/// Where the legacy `/dashboard` URL sends the browser. The query string must survive:
+/// an OIDC callback landing here carries `?code=&state=`.
+pub fn console_redirect_target(query: Option<&str>) -> String {
+    match query.filter(|q| !q.is_empty()) {
+        Some(q) => format!("/console?{q}"),
+        None => "/console".to_string(),
+    }
+}
+
 /// API prefixes exempt from the global rate limiter for high-frequency GET polling.
 pub const OPERATOR_API_PREFIXES: &[&str] = &[
     "/api/v1/vms",
@@ -126,6 +135,16 @@ mod tests {
         assert!(!is_auth_exempt_path("/api/v1/auth/users"));
         assert!(is_auth_exempt_path("/dashboard"));
         assert!(is_auth_exempt_path("/dashboard/"));
+    }
+
+    #[test]
+    fn dashboard_redirect_keeps_query_string() {
+        assert_eq!(console_redirect_target(None), "/console");
+        assert_eq!(console_redirect_target(Some("")), "/console");
+        assert_eq!(
+            console_redirect_target(Some("code=abc&state=xyz")),
+            "/console?code=abc&state=xyz"
+        );
     }
 
     #[test]

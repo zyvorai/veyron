@@ -1,26 +1,27 @@
-VMRogue — Prerequisites checklist
-=================================
+Veyron — Prerequisites checklist
+================================
 
 CLUSTER (Kubernetes)
   [ ] kubectl works: kubectl cluster-info
   [ ] KubeVirt: kubectl get kubevirt -n kubevirt → phase Deployed
   [ ] CDI (recommended): kubectl get crd datavolumes.cdi.kubevirt.io
   [ ] Cilium (if used): kubectl get crd ciliumnetworkpolicies.cilium.io
+  [ ] Cilium (if used): bpf-lb-sock-hostns-only is "true" in cilium-config
   [ ] Ran ./install-cluster.sh OR cluster was pre-provisioned
   [ ] Ran ./apply-cluster-network.sh if Cilium default-deny egress is enabled
-  [ ] VMRogue deployed in-cluster (Helm/k8s) — separate from this client tarball
+  [ ] Veyron deployed in-cluster (./install-to-kubernetes.sh or Helm)
 
-CLIENT MACHINE (this tarball)
+STANDALONE CLIENT (optional, instead of in-cluster)
   [ ] Linux x86_64
   [ ] ./install.sh completed
-  [ ] vmrogue.env: KUBECONFIG points to admin kubeconfig
-  [ ] vmrogue.env: VMROGUE_API_KEY set
+  [ ] veyron.env: KUBECONFIG points to admin kubeconfig
+  [ ] veyron.env: VEYRON_API_KEY set
   [ ] ./test-cluster.sh passes
   [ ] ./test-package.sh passes
-  [ ] ./vmrogue api-serve --host 0.0.0.0 --port 5151
+  [ ] ./veyron api-serve --host 0.0.0.0 --port 5151
 
 QUICK COMMANDS
   ./install-cluster.sh
+  ./install-to-kubernetes.sh
   ./apply-cluster-network.sh
   ./test-cluster.sh
-  ./test-package.sh

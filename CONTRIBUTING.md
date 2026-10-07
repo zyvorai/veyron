@@ -340,7 +340,6 @@ Or use cargo directly:
 ```bash
 cargo check                          # Check for errors
 cargo doc --open                     # Generate and open docs
-cargo run --example library_usage    # Run example
 ```
 
 ### Debugging

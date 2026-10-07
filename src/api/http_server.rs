@@ -1292,8 +1292,10 @@ pub mod web {
         }
     }
 
-    async fn console_redirect_handler() -> impl IntoResponse {
-        axum::response::Redirect::temporary("/console")
+    async fn console_redirect_handler(uri: axum::http::Uri) -> impl IntoResponse {
+        axum::response::Redirect::temporary(&crate::api::dashboard_paths::console_redirect_target(
+            uri.query(),
+        ))
     }
 
     async fn console_asset_handler(Path(file): Path<String>) -> impl IntoResponse {

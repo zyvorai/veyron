@@ -53,7 +53,7 @@ pkg_step "Package smoke test"
 [[ -x ./test-package.sh ]] && ./test-package.sh || pkg_warn "test-package.sh reported issues"
 pkg_step_done
 
-pkg_install_finish "Veyron" http 5151 "/dashboard" \
+pkg_install_finish "Veyron" http 5151 "/console" \
   "Cluster (once): ./install-cluster.sh → deploy Veyron in cluster" \
   "Start API: set -a && source veyron.env && set +a && ./veyron api-serve --host 0.0.0.0 --port 5151" \
   "Help: cat HELP.txt · ./install.sh --help" \
