@@ -72,3 +72,9 @@ The GPU platform roadmap lives in [Gryvia](https://github.com/zyvorai/gryvia): G
 preparation (NVIDIA GPU Operator), GPU-aware job admission with Kueue, tenants, quotas and GPU-hour
 metering, and GPU health checks with quarantine and reset. Use Gryvia for containerized training and
 inference, and Veyron when the workload needs a full VM.
+
+When both run on one cluster, split GPU nodes with the NVIDIA GPU Operator's
+`nvidia.com/gpu.workload.config` label and label VM nodes `vm-passthrough` or `vm-vgpu`. Veyron
+refuses a GPU VM whose resource exists only on `container` nodes. It does not yet add node affinity,
+so if a resource is advertised on both kinds of node, also pin the VM with a node selector. Veyron's console shows Gryvia's GPU
+nodes, tenants and usage on its **Gryvia** page; see [integrations.md](integrations.md#gryvia-gpu-platform).

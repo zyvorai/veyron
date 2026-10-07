@@ -197,6 +197,12 @@ bootstrap_veyron_integrations() {
         echo "Paqtra detected in paqtra${paqtra_ext:+: ${paqtra_ext}}"
     fi
 
+    # Gryvia: Veyron finds the api-gateway Service and reads its key from gryvia-api-key.
+    if ${k8s} get svc gryvia-api-gateway -n gryvia-system &>/dev/null; then
+        gryvia_ext=$(bootstrap_nodeport_external_url "${k8s}" gryvia-system gryvia-ui https || true)
+        echo "Gryvia detected in gryvia-system${gryvia_ext:+: ${gryvia_ext}}"
+    fi
+
     # Atlas storage control plane — enables Ceph-backed VM disk snapshot/backup/
     # restore. Prefer the real-Ceph gateway (rook-ceph) over the fake/zyvor-system one.
     for atlas_entry in "rook-ceph:atlas-gateway-ceph" "zyvor-system:atlas-gateway" "atlas:atlas-gateway"; do

@@ -70,6 +70,34 @@ pub fn classify_gpu_resource(name: &str) -> GpuResourceKind {
     }
 }
 
+/// NVIDIA GPU Operator per-node workload mode (`container`, `vm-passthrough`, `vm-vgpu`).
+/// Gryvia's bundled GPU Operator sets it when sandbox workloads are enabled.
+pub const GPU_WORKLOAD_CONFIG_LABEL: &str = "nvidia.com/gpu.workload.config";
+
+pub fn gpu_workload_config(node: &Node) -> Option<&str> {
+    node.metadata
+        .labels
+        .as_ref()
+        .and_then(|l| l.get(GPU_WORKLOAD_CONFIG_LABEL))
+        .map(String::as_str)
+}
+
+/// True when the GPU Operator has wired this node's GPUs for pods, not VMs. A VM placed
+/// there gets a container device-plugin allocation that virt-launcher cannot use.
+/// An absent label is not treated as a reservation: plain passthrough clusters never set it.
+pub fn gpus_reserved_for_containers(node: &Node) -> bool {
+    gpu_workload_config(node) == Some("container")
+}
+
+/// GPU resources a VM can actually use on this node.
+pub fn node_vm_gpu_resources(node: &Node) -> Vec<GpuResourceEntry> {
+    if gpus_reserved_for_containers(node) {
+        Vec::new()
+    } else {
+        node_gpu_resources(node)
+    }
+}
+
 /// Extract every GPU extended resource a node advertises.
 pub fn node_gpu_resources(node: &Node) -> Vec<GpuResourceEntry> {
     let status = match node.status.as_ref() {
@@ -205,5 +233,26 @@ mod tests {
     #[test]
     fn no_status_means_no_resources() {
         assert!(node_gpu_resources(&Node::default()).is_empty());
+    }
+
+    fn with_workload(mut node: Node, mode: &str) -> Node {
+        node.metadata.labels = Some(BTreeMap::from([(
+            GPU_WORKLOAD_CONFIG_LABEL.to_string(),
+            mode.to_string(),
+        )]));
+        node
+    }
+
+    #[test]
+    fn container_mode_nodes_offer_no_vm_gpus() {
+        let base = node_with_allocatable(&[("nvidia.com/gpu", "4")]);
+        assert_eq!(node_vm_gpu_resources(&base).len(), 1);
+        let container = with_workload(base.clone(), "container");
+        assert!(gpus_reserved_for_containers(&container));
+        assert!(node_vm_gpu_resources(&container).is_empty());
+        assert_eq!(node_gpu_resources(&container).len(), 1);
+        let passthrough = with_workload(base, "vm-passthrough");
+        assert!(!gpus_reserved_for_containers(&passthrough));
+        assert_eq!(node_vm_gpu_resources(&passthrough).len(), 1);
     }
 }

@@ -16,6 +16,7 @@ const MonitoringPage = chapter('MonitoringPage');
 const TopologyPage = chapter('TopologyPage');
 const DrPage = chapter('DrPage');
 const NetraPage = chapter('NetraPage');
+const GryviaPage = chapter('GryviaPage');
 const PaqtraPage = chapter('PaqtraPage');
 const insight = (name) => lazy(() => import('./insights.jsx').then((m) => ({ default: m[name] })));
 const INSIGHTS = {
@@ -837,6 +838,8 @@ export default function App() {
           <NetraPage />
         ) : page === 'paqtra' ? (
           <PaqtraPage />
+        ) : page === 'gryvia' ? (
+          <GryviaPage />
         ) : AI_PAGE_COMPONENTS[page] ? (
           (() => {
             const Page = AI_PAGE_COMPONENTS[page];

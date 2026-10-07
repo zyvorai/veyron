@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Map, Cloud, Radar, Waypoints, RefreshCw, ChevronRight } from 'lucide-react';
+import { Activity, Map, Cloud, Radar, Waypoints, RefreshCw, ChevronRight, Cpu } from 'lucide-react';
 import { api } from './api.js';
 import { Status } from './status.jsx';
 import { PageHero } from './PageHero.jsx';
@@ -703,6 +703,173 @@ export function PaqtraPage() {
                 <button type="button" disabled>
                   <b>No flows</b>
                   <span className="why">{onlyDropped ? 'No dropped flows in the store.' : 'Paqtra returned no flows.'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+    </ChapterShell>
+  );
+}
+
+export function GryviaPage() {
+  const [status, setStatus] = useState(null);
+  const [nodes, setNodes] = useState([]);
+  const [tenants, setTenants] = useState([]);
+  const [usage, setUsage] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const load = async () => {
+    setBusy(true);
+    setErr('');
+    try {
+      const st = await api.gryviaStatus();
+      setStatus(st);
+      if (st?.api_authorized) {
+        const results = await Promise.allSettled([api.gryviaNodes(), api.gryviaTenants(), api.gryviaUsage('tenant')]);
+        const [n, t, u] = results;
+        setNodes(n.status === 'fulfilled' ? n.value : []);
+        setTenants(t.status === 'fulfilled' ? t.value : []);
+        setUsage(u.status === 'fulfilled' ? u.value : null);
+        const failed = results.find((r) => r.status === 'rejected');
+        if (failed) setErr(failed.reason?.message || String(failed.reason));
+      } else {
+        setNodes([]);
+        setTenants([]);
+        setUsage(null);
+      }
+    } catch (e) {
+      setErr(e.message || String(e));
+      setStatus({ configured: false, reachable: false });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const ok = Boolean(status?.api_authorized);
+  const s = status?.stats || {};
+  const usageRows = usage?.items || [];
+  const currency = usage?.totals?.currency || 'USD';
+
+  return (
+    <ChapterShell
+      kicker="Compute"
+      title="Gryvia"
+      lede="The GPU platform for containerized training and inference. Veyron runs GPU VMs; Gryvia admits GPU jobs, meters GPU-hours and manages tenants."
+      onRefresh={load}
+      busy={busy}
+    >
+      {err && <div className="ops-err page-err">{err}</div>}
+      <section className="apple-band">
+        <div className="apple-chapter">
+          <div className="kicker">Connection</div>
+          <h2>{connectionHeadline(status)}</h2>
+          <p>
+            {!status
+              ? 'Looking for Gryvia in this cluster.'
+              : status.message ||
+                (status.base_url
+                  ? `${status.base_url}${status.source === 'discovered' ? ' (found in gryvia-system)' : ''}`
+                  : 'Install Gryvia in gryvia-system or set VEYRON_GRYVIA_URL on the API.')}
+          </p>
+          <div className="rows" style={{ marginTop: 20 }}>
+            <button type="button" disabled>
+              <Status s={ok ? 'Healthy' : 'Unknown'} />
+              <b>Health</b>
+              <span className="why">
+                {ok
+                  ? `API gateway reachable, key from ${status.key_source === 'env' ? 'VEYRON_GRYVIA_API_KEY' : 'gryvia-api-key'}`
+                  : 'No authorized connection'}
+              </span>
+            </button>
+            {ok && (
+              <button type="button" disabled>
+                <Cpu size={14} />
+                <b>Container GPUs</b>
+                <span className="why">
+                  {fmtCount(s.total_gpus)} total · {fmtCount(s.allocated_gpus)} allocated · {fmtCount(s.available_gpus)} free
+                  {typeof s.utilization_percent === 'number' ? ` · ${s.utilization_percent}% utilized` : ''}
+                </span>
+              </button>
+            )}
+            {ok && (
+              <button type="button" disabled>
+                <Activity size={14} />
+                <b>Jobs</b>
+                <span className="why">
+                  {fmtCount(s.running_jobs)} running · {fmtCount(s.pending_jobs)} pending · {fmtCount(s.failed_jobs)} failed
+                </span>
+              </button>
+            )}
+            {status?.external_url && (
+              <a className="row-link" href={status.external_url} target="_blank" rel="noreferrer">
+                <ChevronRight size={14} />
+                <b>Open Gryvia</b>
+                <span className="why">{status.external_url}</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+      {ok && (
+        <section className="apple-band">
+          <div className="apple-chapter">
+            <div className="kicker">GPU nodes · {nodes.length}</div>
+            <div className="rows">
+              {nodes.map((n) => (
+                <button type="button" key={n.metadata?.name} disabled>
+                  <Status s={n.status?.phase === 'Ready' ? 'Healthy' : n.status?.phase ? 'Warning' : 'Unknown'} />
+                  <b className="mono">{n.spec?.nodeName || n.metadata?.name}</b>
+                  <span className="why">
+                    {[n.spec?.gpuType, typeof n.spec?.gpuCount === 'number' ? `${n.spec.gpuCount} GPUs` : null, n.status?.phase]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                </button>
+              ))}
+              {!nodes.length && (
+                <button type="button" disabled>
+                  <b>No GPU nodes registered</b>
+                  <span className="why">Gryvia registers a node once the NVIDIA GPU Operator labels its GPUs.</span>
+                </button>
+              )}
+            </div>
+            <div className="kicker" style={{ marginTop: 28 }}>Tenants · {tenants.length}</div>
+            <div className="rows">
+              {tenants.map((t) => (
+                <button type="button" key={t.metadata?.name} disabled>
+                  <Status s={t.status?.health === 'Healthy' ? 'Healthy' : t.status?.health ? 'Warning' : 'Unknown'} />
+                  <b>{t.spec?.displayName || t.metadata?.name}</b>
+                  <span className="why">{[t.spec?.namespace, t.status?.health].filter(Boolean).join(' · ')}</span>
+                </button>
+              ))}
+              {!tenants.length && (
+                <button type="button" disabled>
+                  <b>No tenants</b>
+                  <span className="why">Create a GryviaTenant to give a team its own namespace, quota and budget.</span>
+                </button>
+              )}
+            </div>
+            <div className="kicker" style={{ marginTop: 28 }}>GPU-hour usage by tenant</div>
+            <div className="rows">
+              {usageRows.map((u) => (
+                <button type="button" key={u.key} disabled>
+                  <b>{u.key}</b>
+                  <span className="why">
+                    {u.gpuHours} GPU-hours · {u.cost} {currency} · {fmtCount(u.jobs)} jobs
+                  </span>
+                </button>
+              ))}
+              {!usageRows.length && (
+                <button type="button" disabled>
+                  <b>No usage recorded</b>
+                  <span className="why">Usage appears once GPU jobs run under Gryvia.</span>
                 </button>
               )}
             </div>

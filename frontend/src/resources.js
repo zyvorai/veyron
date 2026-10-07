@@ -74,6 +74,7 @@ export const RES_META = {
     insp: [
       ['Product', 'product'],
       ['Type', 'kind'],
+      ['GPU Operator workload', 'workload'],
       ['Resources', 'resources'],
       ['Memory', 'memory'],
       ['Allocatable', 'count'],
@@ -682,6 +683,7 @@ export const NAV = [
       ['vms', null, 'Create, size, start and migrate machines.'],
       ['hosts', null, 'Nodes, load and maintenance.'],
       ['gpus', null, 'Passthrough and vGPU inventory per node.'],
+      ['gryvia', 'Gryvia', 'Container GPU nodes, tenants and GPU-hour usage.'],
       ['templates', null, 'Current OS releases, ready to boot.'],
       ['images', null, 'Golden images and import jobs.'],
       ['pods', null, 'Workloads running next to your VMs.'],
@@ -796,11 +798,11 @@ export const INSIGHT_PAGES = [
 /** Veyron AI pages, served by aipages.jsx. */
 export const AI_PAGES = ['ai', 'proposals', 'investigations', 'sandboxes', 'models'];
 
-export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra', 'paqtra', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES]);
+export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra', 'paqtra', 'gryvia', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES]);
 
 /** Story pages that render full-bleed, without the local toolbar. */
 export const FULL_BLEED_PAGES = new Set([
-  'mission', 'console', 'monitoring', 'topology', 'dr', 'netra', 'paqtra', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES,
+  'mission', 'console', 'monitoring', 'topology', 'dr', 'netra', 'paqtra', 'gryvia', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES,
 ]);
 
 export const CHAPTER_ICONS = {
@@ -810,6 +812,7 @@ export const CHAPTER_ICONS = {
   dr: Cloud,
   netra: Radar,
   paqtra: Waypoints,
+  gryvia: Cpu,
   costs: Wallet,
   slo: Target,
   logs: FileText,

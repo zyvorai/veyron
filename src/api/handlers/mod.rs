@@ -31,6 +31,8 @@ pub mod feature_context;
 pub mod forecasting;
 pub mod gitops;
 pub mod gpus;
+#[cfg(feature = "web")]
+pub mod gryvia;
 pub mod guest_ops;
 pub mod health;
 pub mod heatmap;
@@ -194,4 +196,5 @@ pub fn all_routes(
         .merge(integrations::router(state.clone()))
         .merge(netra::router(state.clone()))
         .merge(paqtra::router(state.clone()))
+        .merge(gryvia::router(state.clone()))
 }

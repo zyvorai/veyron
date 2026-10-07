@@ -5,7 +5,7 @@ import { McpServersBox } from './McpServersBox.jsx';
 import { useFocusTrap } from './a11y.js';
 import {
   ChevronRight, ArrowRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
-  Network, Database, Shield, Settings, Loader2, CheckCircle, Activity,
+  Network, Database, Shield, Settings, Loader2, CheckCircle, Activity, Cpu,
 } from 'lucide-react';
 import { Status } from './status.jsx';
 import { api, loginErrorMessage } from './api.js';
@@ -363,6 +363,7 @@ export function SettingsPage({ theme, setTheme }) {
   const netra = findInteg(['netra']);
   const paqtra = findInteg(['paqtra']);
   const atlas = findInteg(['atlas']);
+  const gryvia = findInteg(['gryvia']);
   const oidc = findInteg(['oidc', 'sso']);
 
   const integRow = (n, d, I, item) => {
@@ -511,6 +512,7 @@ export function SettingsPage({ theme, setTheme }) {
               {integRow('Netra', 'Auto-detected in netra-system, or set VEYRON_NETRA_URL', Network, netra)}
               {integRow('Paqtra', 'Auto-detected in the paqtra namespace, or set VEYRON_PAQTRA_URL', Network, paqtra)}
               {integRow('Atlas storage', 'Configure via VEYRON_ATLAS_URL', Database, atlas)}
+              {integRow('Gryvia GPU platform', 'Auto-detected in gryvia-system, or set VEYRON_GRYVIA_URL', Cpu, gryvia)}
               {integRow('Single sign-on', 'Configure via VEYRON_OIDC_*', Shield, oidc)}
             </div>
           </div>

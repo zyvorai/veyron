@@ -23,6 +23,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Gryvia integration.** Veyron auto-detects [Gryvia](https://github.com/zyvorai/gryvia) in
+  `gryvia-system`, reads its API key from `gryvia-api-key`, and shows its health, container GPU
+  capacity, GPU nodes, tenants and GPU-hour usage on a new **Gryvia** console page
+  (`GET /api/v1/gryvia/{status,nodes,tenants,quotas,usage}`). GPU VMs honor the NVIDIA GPU
+  Operator's `nvidia.com/gpu.workload.config` label: `container` nodes are reported as not
+  VM-usable, and a VM whose GPU only exists there gets `422 GPU_RESERVED_FOR_CONTAINERS`.
+
 - **Veyron AI** ([docs/ai.md](docs/ai.md)). Bring any OpenAI-compatible model, or deploy one
   in-cluster (llama.cpp on CPU, vLLM on GPU) and select it from the console. Chat with tools,
   intent-to-VM planning, natural-language search, policy drafting, capacity forecasts and

@@ -148,4 +148,42 @@ For least privilege, create a read-only Paqtra user and set `VEYRON_PAQTRA_USERN
 | `GET /api/v1/paqtra/status` | `/health`, `/api/v1/cilium/status`, `/api/v1/cluster/health` |
 | `GET /api/v1/paqtra/flows?namespace=&verdict=&limit=` | `/api/v1/flows` (`limit` 1–500, default 100) |
 | `GET /api/v1/paqtra/drops` | `/api/v1/modules/rootcause/drops` |
+
+## Gryvia: GPU platform
+
+[Gryvia](https://github.com/zyvorai/gryvia) is Zyvor's Kubernetes GPU platform for containerized
+training and inference: GPU-aware job admission, tenants, quotas, budgets and GPU-hour metering.
+Veyron runs GPU VMs; Gryvia runs GPU jobs. The console's **Gryvia** page (under Compute) shows
+Gryvia's health, container GPU capacity and job counts, its registered GPU nodes, tenants, and
+GPU-hour usage by tenant.
+
+When Gryvia runs in the same cluster there is nothing to configure. Veyron finds the
+`gryvia-api-gateway` Service in `gryvia-system`, talks to
+`https://gryvia-api-gateway.gryvia-system.svc:8080`, and reads the bearer key from Gryvia's own
+`gryvia-system/gryvia-api-key` Secret (key `GRYVIA_API_KEY`).
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `VEYRON_GRYVIA_URL` | auto-detected | Gryvia api-gateway URL when it runs elsewhere |
+| `VEYRON_GRYVIA_API_KEY` | read from `gryvia-api-key` | Gryvia's `GRYVIA_API_KEY`, sent as `Authorization: Bearer` |
+| `VEYRON_GRYVIA_EXTERNAL_URL` | `gryvia-ui` NodePort | Browser link for **Open Gryvia** |
+| `VEYRON_GRYVIA_TLS_VERIFY` | off | `1` verifies Gryvia's certificate (it is self-signed by default) |
+
+Gryvia's key is an admin key, so every Veyron user with read access sees Gryvia's cluster-wide
+GPU nodes, tenants and usage through these routes. Veyron only calls read endpoints.
+
+| Route | Gryvia endpoint |
+|---|---|
+| `GET /api/v1/gryvia/status` | `/health` and `/api/cluster/stats` (GPUs, utilization, jobs) |
+| `GET /api/v1/gryvia/nodes` | `/api/nodes` |
+| `GET /api/v1/gryvia/tenants` | `/api/tenants` |
+| `GET /api/v1/gryvia/quotas` | `/api/quotas` |
+| `GET /api/v1/gryvia/usage?tenant=&from=&to=&group_by=` | `/api/usage` (`group_by` tenant, sku or day) |
+
+**Sharing GPUs between VMs and jobs.** Passthrough VMs need GPUs bound to `vfio-pci`; Gryvia's jobs
+need them on the NVIDIA driver. With the NVIDIA GPU Operator's sandbox workloads enabled, each node's
+`nvidia.com/gpu.workload.config` label says which side owns its GPUs. Veyron honors it: GPUs on a
+`container` node are reported with `vm_usable: false` in `GET /api/v1/gpus`, and `POST /vms` with a
+GPU returns `422 GPU_RESERVED_FOR_CONTAINERS` when the requested resource only exists on such nodes.
+Label a node `vm-passthrough` (or `vm-vgpu`) to give its GPUs to VMs. See [gpu.md](gpu.md).
 | `GET /api/v1/paqtra/posture` | `/api/v1/security/posture` |

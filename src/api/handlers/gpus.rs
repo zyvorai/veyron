@@ -13,7 +13,9 @@ use serde_json::json;
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
-use crate::kube::gpu_inventory::node_gpu_resources;
+use crate::kube::gpu_inventory::{
+    gpu_workload_config, gpus_reserved_for_containers, node_gpu_resources,
+};
 
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
@@ -44,18 +46,26 @@ async fn list_gpus(State(state): State<SharedState>) -> Json<serde_json::Value> 
     };
 
     let mut total_allocatable: i64 = 0;
+    let mut vm_allocatable: i64 = 0;
     let mut out = Vec::new();
     for n in &nodes {
         let resources = node_gpu_resources(n);
         if resources.is_empty() {
             continue;
         }
-        total_allocatable += resources.iter().map(|r| r.allocatable).sum::<i64>();
+        let vm_usable = !gpus_reserved_for_containers(n);
+        let node_allocatable = resources.iter().map(|r| r.allocatable).sum::<i64>();
+        total_allocatable += node_allocatable;
+        if vm_usable {
+            vm_allocatable += node_allocatable;
+        }
         let labels = n.metadata.labels.as_ref();
         let label = |k: &str| labels.and_then(|m| m.get(k)).cloned();
         out.push(json!({
             "node": n.metadata.name.clone().unwrap_or_default(),
             "resources": resources,
+            "vm_usable": vm_usable,
+            "workload_config": gpu_workload_config(n),
             "labels": {
                 "product": label("nvidia.com/gpu.product"),
                 "memory": label("nvidia.com/gpu.memory"),
@@ -69,5 +79,6 @@ async fn list_gpus(State(state): State<SharedState>) -> Json<serde_json::Value> 
         "nodes": out,
         "gpu_node_count": out.len(),
         "total_allocatable": total_allocatable,
+        "vm_allocatable": vm_allocatable,
     }))
 }

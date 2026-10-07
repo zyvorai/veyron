@@ -150,6 +150,12 @@ const DEFINITIONS: &[IntegrationDef] = &[
         env_var: "VEYRON_ATLAS_URL",
         feeds: "Ceph-backed VM disk snapshot/backup/restore (GET /api/v1/atlas/status)",
     },
+    IntegrationDef {
+        id: "gryvia",
+        name: "Gryvia",
+        env_var: "VEYRON_GRYVIA_URL",
+        feeds: "GPU platform: container GPU nodes, tenants, quotas, GPU-hour usage (GET /api/v1/gryvia/status)",
+    },
 ];
 
 #[cfg(feature = "web")]
@@ -210,6 +216,7 @@ fn in_app_open(id: &str) -> Option<IntegrationOpenLink> {
         "netra" => ("netra", "Open Netra"),
         "paqtra" => ("paqtra", "Open Paqtra"),
         "atlas" => ("snapshots", "Open snapshots"),
+        "gryvia" => ("gryvia", "Open Gryvia"),
         _ => return None,
     };
     Some(IntegrationOpenLink {
@@ -329,6 +336,7 @@ async fn resolve_external_open(
         "jaeger" => "VEYRON_JAEGER_EXTERNAL_URL",
         "netra" => "VEYRON_NETRA_EXTERNAL_URL",
         "paqtra" => "VEYRON_PAQTRA_EXTERNAL_URL",
+        "gryvia" => "VEYRON_GRYVIA_EXTERNAL_URL",
         _ => return None,
     };
     if let Some(url) = crate::api::integrations::env_var(external_env) {
@@ -376,6 +384,12 @@ async fn resolve_external_open(
                 .await
                 .map(|u| external_open("Open Paqtra", u.replacen("http://", "https://", 1)));
         }
+        "gryvia" => {
+            use crate::api::handlers::gryvia::{GRYVIA_NAMESPACE, GRYVIA_UI_SERVICE};
+            return discover_nodeport_url(client, GRYVIA_NAMESPACE, GRYVIA_UI_SERVICE)
+                .await
+                .map(|u| external_open("Open Gryvia", u.replacen("http://", "https://", 1)));
+        }
         _ => return None,
     };
     discover_nodeport_url(client, ns, hint)
@@ -411,6 +425,12 @@ async fn get_integrations_status(
             .await
             .map(|(url, _)| url)
     };
+    let gryvia_base = {
+        let kube = state.read().await.kube_client.clone();
+        crate::api::handlers::gryvia::gryvia_base_url(&kube)
+            .await
+            .map(|(url, _)| url)
+    };
     let mut integrations = Vec::with_capacity(DEFINITIONS.len() + 1);
     let mut configured_count = 0u32;
     let mut probe_futures = Vec::new();
@@ -420,6 +440,8 @@ async fn get_integrations_status(
             netra_base.clone()
         } else if def.id == "paqtra" {
             paqtra_base.clone()
+        } else if def.id == "gryvia" {
+            gryvia_base.clone()
         } else {
             crate::api::integrations::env_var(def.env_var)
         };
@@ -451,7 +473,7 @@ async fn get_integrations_status(
                 } else {
                     probe_futures.push((def.id, url.to_string(), None));
                 }
-            } else if def.id == "netra" || def.id == "paqtra" {
+            } else if matches!(def.id, "netra" | "paqtra" | "gryvia") {
                 // Probed below with the integration's own client.
             } else if def.id == "atlas" {
                 let health = if url.trim_end_matches('/').ends_with("/health") {
@@ -468,7 +490,14 @@ async fn get_integrations_status(
             None
         } else if matches!(
             def.id,
-            "grafana" | "argocd" | "prometheus" | "alertmanager" | "jaeger" | "netra" | "paqtra"
+            "grafana"
+                | "argocd"
+                | "prometheus"
+                | "alertmanager"
+                | "jaeger"
+                | "netra"
+                | "paqtra"
+                | "gryvia"
         ) {
             resolve_external_open(&kube_client, def.id, raw.as_deref())
                 .await
@@ -561,6 +590,10 @@ async fn get_integrations_status(
                 Some(base) => crate::api::handlers::paqtra::probe_health(base)
                     .await
                     .is_some(),
+                None => false,
+            },
+            "gryvia" => match gryvia_base.as_deref() {
+                Some(base) => crate::api::handlers::gryvia::probe_health(base).await,
                 None => false,
             },
             _ => continue,

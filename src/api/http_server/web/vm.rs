@@ -2418,19 +2418,47 @@ pub(super) async fn create_vm_handler(
         use k8s_openapi::api::core::v1::Node;
         let node_api: kube::Api<Node> = kube::Api::all(client.client().clone());
         if let Ok(nodes) = node_api.list(&Default::default()).await {
-            let available: std::collections::BTreeSet<String> = nodes
-                .items
-                .iter()
-                .flat_map(crate::kube::gpu_inventory::node_gpu_resources)
-                .filter(|r| r.allocatable > 0)
-                .map(|r| r.name)
-                .collect();
+            let advertised = |vm_only: bool| -> std::collections::BTreeSet<String> {
+                nodes
+                    .items
+                    .iter()
+                    .flat_map(|n| {
+                        if vm_only {
+                            crate::kube::gpu_inventory::node_vm_gpu_resources(n)
+                        } else {
+                            crate::kube::gpu_inventory::node_gpu_resources(n)
+                        }
+                    })
+                    .filter(|r| r.allocatable > 0)
+                    .map(|r| r.name)
+                    .collect()
+            };
+            let available = advertised(true);
+            let anywhere = advertised(false);
             let missing: Vec<&str> = config
                 .gpus
                 .iter()
                 .map(|g| g.device_name.as_str())
                 .filter(|d| !available.contains(*d))
                 .collect();
+            let container_only: Vec<&str> = missing
+                .iter()
+                .copied()
+                .filter(|d| anywhere.contains(*d))
+                .collect();
+            if !container_only.is_empty() {
+                return err_json(
+                    422,
+                    "GPU_RESERVED_FOR_CONTAINERS",
+                    &format!(
+                        "{} is only advertised on nodes whose NVIDIA GPU Operator workload is \
+                         `container` (GPUs reserved for pods, e.g. Gryvia jobs); label a node \
+                         nvidia.com/gpu.workload.config=vm-passthrough to give its GPUs to VMs, \
+                         or pass \"force\": true to override",
+                        container_only.join(", ")
+                    ),
+                );
+            }
             if !missing.is_empty() {
                 let avail_msg = if available.is_empty() {
                     "no node advertises any GPU resource — run \

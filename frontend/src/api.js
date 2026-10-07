@@ -710,6 +710,11 @@ export const api = {
   createVeleroRestore: (body) =>
     request('/api/v1/velero/restores', { method: 'POST', body: JSON.stringify(body) }),
   drFailback: (body) => request('/api/v1/dr/failback', { method: 'POST', body: JSON.stringify(body) }),
+  gryviaStatus: async () => unwrap(await request('/api/v1/gryvia/status')) || {},
+  gryviaNodes: async () => asArray(await request('/api/v1/gryvia/nodes')),
+  gryviaTenants: async () => asArray(await request('/api/v1/gryvia/tenants')),
+  gryviaUsage: async (groupBy = 'tenant') =>
+    unwrap(await request(`/api/v1/gryvia/usage?group_by=${encodeURIComponent(groupBy)}`)) || {},
   netraStatus: async () => unwrap(await request('/api/v1/netra/status')) || {},
   netraFlowSummary: async (ns = 'all') =>
     unwrap(await request(`/api/v1/netra/flows/summary?namespace=${encodeURIComponent(ns)}`)) || {},
@@ -1232,7 +1237,8 @@ export function mapGpu(raw, i) {
   return {
     id: node,
     name: node,
-    status: alloc > 0 ? 'Ready' : 'Empty',
+    status: raw.vm_usable === false ? 'Containers' : alloc > 0 ? 'Ready' : 'Empty',
+    workload: raw.workload_config || '—',
     product: raw.labels?.product || first.resource_name || '—',
     memory: raw.labels?.memory || '—',
     count: alloc || raw.labels?.count || 0,
