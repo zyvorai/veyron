@@ -13,7 +13,7 @@ function Cell({ col, row }) {
 }
 
 /** `initialSort={null}` keeps the rows in the order given (e.g. newest first) until a header is clicked. */
-export function Table({ cols, rows, selected, focus, onRow, onMenu, initialSort = { k: 'name', d: 1 } }) {
+export function Table({ cols, rows, selected, focus, onRow, onMenu, rowAction, initialSort = { k: 'name', d: 1 } }) {
   const [sort, setSort] = useState(initialSort);
   const sorted = useMemo(() => {
     const arr = [...rows];
@@ -55,6 +55,7 @@ export function Table({ cols, rows, selected, focus, onRow, onMenu, initialSort 
               )}
             </th>
           ))}
+          {rowAction && <th aria-label="Actions" />}
         </tr>
       </thead>
       <tbody>
@@ -83,6 +84,19 @@ export function Table({ cols, rows, selected, focus, onRow, onMenu, initialSort 
                 <Cell col={c} row={r} />
               </td>
             ))}
+            {rowAction && (
+              <td className="num">
+                <button
+                  className="btn sm secondary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    rowAction.onClick(r);
+                  }}
+                >
+                  {rowAction.label}
+                </button>
+              </td>
+            )}
           </tr>
         ))}
       </tbody>

@@ -373,6 +373,17 @@ export default function App() {
     }
   };
 
+  const deleteUpload = async (r) => {
+    if (!window.confirm(`Delete upload ${r.name}? Catalog images that use it must be deleted first.`)) return;
+    try {
+      await api.deleteStoredImage(r.name);
+      await load();
+      showToast(`Deleted upload ${r.name}`);
+    } catch (e) {
+      showToast(e.message || String(e), true);
+    }
+  };
+
   const onMenu = (r, e) => {
     e.preventDefault();
     if (!selected.has(r.id)) {
@@ -1069,7 +1080,11 @@ export default function App() {
                     </div>
                   </div>
                   <div className="table-card">
-                    <Table cols={res.extra.cols} rows={res.extra.rows} />
+                    <Table
+                      cols={res.extra.cols}
+                      rows={res.extra.rows}
+                      rowAction={page === 'images' && res.extra.rows.some((r) => r.stored) ? { label: 'Delete', onClick: deleteUpload } : undefined}
+                    />
                   </div>
                 </>
               )}
