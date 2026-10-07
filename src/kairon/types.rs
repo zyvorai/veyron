@@ -107,7 +107,11 @@ pub struct ImageSource {
     pub repair: bool,
     /// Download without verifying the server certificate; the digest still
     /// guards the bytes.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[serde(
+        rename = "insecureSkipTLSVerify",
+        default,
+        skip_serializing_if = "std::ops::Not::not"
+    )]
     pub insecure_skip_tls_verify: bool,
 }
 

@@ -64,6 +64,10 @@ Veyron runs VMs on Kairon. It needs no KubeVirt and no CDI, but it does need:
   `insecureSkipTLSVerify` is set and the SHA-256 guards the bytes). Point them elsewhere with
   `VEYRON_IMAGE_STORE_PUBLIC_URL` (add `VEYRON_IMAGE_STORE_INSECURE_TLS=1` for a self-signed
   certificate), and move the store with `VEYRON_IMAGE_STORE_DIR`.
+- **Writable PV directories for `root_volume`.** kairon-node seeds a PVC root disk by writing
+  `disk.img` into the PV's hostPath/local directory, and FluxVM must be allowed to open it. With the
+  stock `ProtectSystem=strict` unit, add the PV root to kairon-node's `ReadWritePaths` and to
+  FluxVM's `allowed_image_dirs`, or seeding fails with a read-only filesystem error.
 - **Kairon with `MachineImage` and install-media support** (Kairon PR 32 and FluxVM PR 142) for the
   image catalog, ISO installs and PVC root disks.
 

@@ -462,7 +462,12 @@ fn catalog_json(m: &CatalogImage) -> Value {
         "source": m.spec.source.http_url.clone().or_else(|| m.spec.source.oci.clone()),
         "format": m.spec.source.format,
         "digest": m.spec.digest,
-        "defaults": m.spec.defaults,
+        "defaults": m.spec.defaults.as_ref().map(|d| json!({
+            "cpu": d.cpu,
+            "memory": d.memory,
+            "disk_size": d.disk_size,
+        })),
+        "insecure_skip_tls_verify": m.spec.source.insecure_skip_tls_verify,
         "deprecated": m.spec.deprecated,
         "created": m.metadata.creation_timestamp.as_ref().map(|t| t.0.to_rfc3339()),
     })
@@ -774,6 +779,10 @@ mod tests {
             Some(format!("https://10.0.0.5:30151{BLOB_PREFIX}{}", "a".repeat(64)).as_str())
         );
         assert!(img.spec.source.insecure_skip_tls_verify);
+        // Kairon's CRD field; serde's camelCase would give insecureSkipTlsVerify,
+        // which the API server prunes.
+        let v = serde_json::to_value(&img).unwrap();
+        assert_eq!(v["spec"]["source"]["insecureSkipTLSVerify"], json!(true));
 
         let loc = StoreLocation {
             public_url: Some("https://images.example/".into()),
