@@ -14,6 +14,7 @@
 #   VEYRON_E2E_NAMESPACE    Target namespace (default: default)
 #   VEYRON_E2E_RESTORE      Set to 1 to run destructive snapshot restore
 #   VEYRON_E2E_SKIP_TIER_B  Set to 1 to run Tier A only (no VM create)
+#   VEYRON_E2E_BACKEND      kubevirt|kairon (default: GET /enterprise/capabilities)
 # ============================================================================
 
 set -euo pipefail
@@ -100,7 +101,7 @@ vm_status_from_body() {
     local body="$1"
     if echo "${body}" | grep -qE '"status"[[:space:]]*:[[:space:]]*"Running"'; then
         echo "Running"
-    elif echo "${body}" | grep -qE '"status"[[:space:]]*:[[:space:]]*"Stopped"'; then
+    elif echo "${body}" | grep -qE '"status"[[:space:]]*:[[:space:]]*"(Stopped|Halted)"'; then
         echo "Stopped"
     elif echo "${body}" | grep -qE '"status"[[:space:]]*:[[:space:]]*"Starting"'; then
         echo "Starting"
@@ -157,7 +158,13 @@ cleanup_vm() {
 
 trap cleanup_vm EXIT
 
-echo -e "${B}Veyron daily-ops E2E${N} → ${BASE} (ns=${NS}, vm=${VM_NAME})"
+BACKEND="${VEYRON_E2E_BACKEND:-}"
+if [[ -z "${BACKEND}" ]]; then
+    curl_api GET "/api/v1/enterprise/capabilities"
+    BACKEND="$(echo "${_CURL_BODY}" | sed -n 's/.*"backend"[[:space:]]*:[[:space:]]*"\([a-z]*\)".*/\1/p' | head -1)"
+    BACKEND="${BACKEND:-kubevirt}"
+fi
+echo -e "${B}Veyron daily-ops E2E${N} → ${BASE} (ns=${NS}, vm=${VM_NAME}, backend=${BACKEND})"
 echo ""
 
 # ═══════════════════════════════════════════════
@@ -193,6 +200,19 @@ elif echo "${body}" | grep -q 'KubeVirt API unavailable'; then
     skip "PUT rdp-expose without node_port (redeploy API; got HTTP ${_CURL_CODE})"
 else
     fail "rdp-expose without node_port" "HTTP ${_CURL_CODE}: $(echo "${body}" | head -c 200)"
+fi
+
+if [[ "${BACKEND}" == "kairon" ]]; then
+    curl_api GET "/api/v1/images/datasources"
+    if [[ "${_CURL_CODE}" == "501" ]] && body_error_code "${_CURL_BODY}" "KUBEVIRT_ONLY"; then
+        pass "KubeVirt-only route → 501 KUBEVIRT_ONLY (kairon)"
+    else
+        fail "KubeVirt-only route on kairon (expected 501 KUBEVIRT_ONLY, got ${_CURL_CODE})" "$(echo "${_CURL_BODY}" | head -c 200)"
+    fi
+    curl_api GET "/api/v1/imports?namespace=all"
+    [[ "${_CURL_CODE}" == "200" ]] && pass "GET imports → 200" || fail "GET imports" "HTTP ${_CURL_CODE}: $(echo "${_CURL_BODY}" | head -c 200)"
+    curl_api POST "/api/v1/imports" '{"name":"bad","image_url":"file:///x","sha256":"00"}'
+    [[ "${_CURL_CODE}" == "400" ]] && pass "POST imports invalid → 400" || fail "POST imports validation" "HTTP ${_CURL_CODE}"
 fi
 
 # ═══════════════════════════════════════════════
@@ -302,6 +322,16 @@ EOF
                     fail "GET guest/status" "$(echo "${body}" | head -c 300)"
                 fi
 
+              if [[ "${BACKEND}" == "kairon" ]]; then
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/guest/exec" '{"command":"uname -r"}'
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"exit_code"[[:space:]]*:[[:space:]]*0'; then
+                    pass "POST guest/exec (kairon relay)"
+                else
+                    fail "POST guest/exec" "$(echo "${body}" | head -c 300)"
+                fi
+                skip "guest evidence/doctor/metrics/migrate-score (GuestKit — KubeVirt backend only)"
+              else
                 curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/evidence"
                 body="${_CURL_BODY}"
                 if body_success "${body}" && echo "${body}" | grep -qE '"boot"|"network"|"hardware"'; then
@@ -333,6 +363,7 @@ EOF
                 else
                     fail "GET guest/migrate-score" "$(echo "${body}" | head -c 300)"
                 fi
+              fi
             fi
         fi
 
@@ -346,6 +377,12 @@ EOF
             else
                 fail "POST VNC ws/ticket" "$(echo "${body}" | head -c 300)"
             fi
+
+            curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/logs?tail=50"
+            [[ "${_CURL_CODE}" == "200" ]] && pass "GET VM logs → 200" || fail "GET VM logs" "HTTP ${_CURL_CODE}: $(echo "${_CURL_BODY}" | head -c 200)"
+
+            curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/migrations"
+            [[ "${_CURL_CODE}" == "200" ]] && pass "GET migrations → 200" || skip "GET migrations (HTTP ${_CURL_CODE})"
 
             curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/stop" '{}'
             body="${_CURL_BODY}"
@@ -378,18 +415,27 @@ EOF
             expose_put='{"enabled":true,"service_type":"NodePort","ports":[{"name":"ssh","port":22,"target_port":22,"protocol":"TCP"}]}'
             curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/expose" "${expose_put}"
             body="${_CURL_BODY}"
+            SSH_EXPOSED=0
             if body_success "${body}" && echo "${body}" | grep -qE '"enabled"[[:space:]]*:[[:space:]]*true'; then
                 pass "PUT SSH expose enabled"
+                SSH_EXPOSED=1
+            elif [[ "${BACKEND}" == "kairon" && "${_CURL_CODE}" == "409" ]]; then
+                # User-mode NAT guests have no routable IP; forwards are create-time only.
+                pass "PUT SSH expose → 409 (kairon: no forward/routable guest IP — ${body:0:120})"
             else
                 fail "PUT SSH expose" "$(echo "${body}" | head -c 300)"
             fi
 
-            curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/expose"
-            body="${_CURL_BODY}"
-            if body_success "${body}" && echo "${body}" | grep -qE '"enabled"[[:space:]]*:[[:space:]]*true'; then
-                pass "GET SSH expose status"
+            if [[ "${SSH_EXPOSED}" -eq 1 ]]; then
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/expose"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"enabled"[[:space:]]*:[[:space:]]*true'; then
+                    pass "GET SSH expose status"
+                else
+                    fail "GET SSH expose" "$(echo "${body}" | head -c 300)"
+                fi
             else
-                fail "GET SSH expose" "$(echo "${body}" | head -c 300)"
+                skip "GET SSH expose status (PUT did not enable)"
             fi
 
             curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/expose" '{"enabled":false}'
@@ -412,6 +458,8 @@ EOF
                 RDP_PUT_OK=1
             elif echo "${body}" | grep -q 'NodePort.*already used'; then
                 skip "PUT RDP expose (node_port ${np} in use — ${body:0:120})"
+            elif [[ "${BACKEND}" == "kairon" && "${_CURL_CODE}" == "409" ]]; then
+                pass "PUT RDP expose → 409 (kairon: no forward/routable guest IP)"
             elif echo "${body}" | grep -qE 'PUBLIC_RDP_FORBIDDEN|VEYRON_ALLOW_PUBLIC_RDP'; then
                 # Secure-by-default: a bare NodePort/LoadBalancer RDP is refused unless
                 # VEYRON_ALLOW_PUBLIC_RDP=1. This is the correct hardened behavior.

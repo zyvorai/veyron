@@ -124,8 +124,8 @@ async fn hotplug_vm(
             .into_response();
     }
     let kube = { state.read().await.kube_client.clone() };
-    match kube
-        .hotplug_vm_resources(&ns, &name, req.sockets, req.memory.as_deref())
+    match crate::api::vm_backend::VmBackend::for_client(&kube)
+        .hotplug(&ns, &name, req.sockets, req.memory.as_deref())
         .await
     {
         Ok(_) => (
@@ -133,7 +133,7 @@ async fn hotplug_vm(
             Json(serde_json::json!({
                 "ok": true, "vm": name, "namespace": ns,
                 "sockets": req.sockets, "memory": req.memory,
-                "note": "applied live when the cluster runs KubeVirt with the LiveUpdate rollout strategy; otherwise on next restart"
+                "note": "KubeVirt applies it live with the LiveUpdate rollout strategy, otherwise on next restart; Kairon hotplugs live, grow-only, up to the Machine's maxCpu/maxMemory"
             })),
         )
             .into_response(),
@@ -158,7 +158,10 @@ async fn set_run_strategy(
             .into_response();
     }
     let kube = { state.read().await.kube_client.clone() };
-    match kube.set_run_strategy(&ns, &name, &req.strategy).await {
+    match crate::api::vm_backend::VmBackend::for_client(&kube)
+        .set_run_strategy(&ns, &name, &req.strategy)
+        .await
+    {
         Ok(_) => (
             StatusCode::OK,
             Json(serde_json::json!({ "ok": true, "vm": name, "runStrategy": req.strategy })),
@@ -226,11 +229,17 @@ async fn bulk_one(
     name: &str,
     action: &str,
 ) -> BulkResult {
+    use crate::api::vm_backend::{BackendKind, MigrateRequest, VmBackend, selected};
+    let backend = VmBackend::for_client(kube);
     let r = match action {
-        "start" => kube.start_vm(ns, name).await.map(|_| ()),
-        "stop" => kube.stop_vm(ns, name).await.map(|_| ()),
-        "restart" => kube.restart_vm(ns, name).await.map(|_| ()),
-        "delete" => kube.delete_vm(ns, name).await,
+        "start" => backend.start(ns, name).await,
+        "stop" => backend.stop(ns, name).await,
+        "restart" => backend.restart(ns, name).await,
+        "delete" => backend.delete(ns, name).await,
+        "migrate" if selected() != BackendKind::KubeVirt => backend
+            .migrate(ns, name, &MigrateRequest::default())
+            .await
+            .map(|_| ()),
         "migrate" => {
             // Per-VM eligibility: a passthrough-GPU VM in the batch fails
             // with the blocker text instead of silently "succeeding" into

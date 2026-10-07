@@ -123,6 +123,17 @@ pub(super) async fn list_snapshots_handler(
         s.kube_client.client()
     };
 
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        let kube = { state.read().await.kube_client.clone() };
+        return match crate::api::kairon_ops::list_snapshots(&kube, &namespace, None).await {
+            Ok(items) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/snapshots");
+                ok_json(&ApiResponse::success(&items, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        };
+    }
     match crate::snapshots::SnapshotManager::list_snapshots_in_scope(client, &namespace).await {
         Ok(snapshots) => {
             let items: Vec<SnapshotItem> = snapshots
@@ -148,11 +159,24 @@ pub(super) async fn list_snapshots_handler(
 }
 
 pub(super) async fn list_vm_snapshots_handler(
+    State(state): State<SharedState>,
     Path((ns, vm)): Path<(String, String)>,
 ) -> impl IntoResponse {
     if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("vm", &vm)]) {
         return resp;
     }
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        let kube = { state.read().await.kube_client.clone() };
+        return match crate::api::kairon_ops::list_snapshots(&kube, &ns, Some(&vm)).await {
+            Ok(items) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/snapshots/:ns/:vm");
+                ok_json(&ApiResponse::success(&items, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        };
+    }
+    let _ = &state;
 
     match crate::snapshots::SnapshotManager::new(&ns).await {
         Ok(manager) => match manager.list_snapshots_for_vm(&vm).await {
@@ -182,11 +206,30 @@ pub(super) async fn list_vm_snapshots_handler(
 }
 
 pub(super) async fn delete_snapshot_handler(
+    State(state): State<SharedState>,
     Path((ns, name)): Path<(String, String)>,
 ) -> impl IntoResponse {
     if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
         return resp;
     }
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        let kube = { state.read().await.kube_client.clone() };
+        return match crate::api::kairon_ops::delete_snapshot(&kube, &ns, &name).await {
+            Ok(note) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/snapshots/:ns/:name/delete");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": format!("Snapshot '{}' deleted", name), "note": note}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "DELETE_FAILED", &msg)
+            }
+        };
+    }
+    let _ = &state;
 
     match crate::snapshots::SnapshotManager::new(&ns).await {
         Ok(manager) => match manager.delete_snapshot(&name).await {
@@ -337,6 +380,7 @@ pub(super) struct CreateSnapshotRequest {
 }
 
 pub(super) async fn create_snapshot_handler(
+    State(state): State<SharedState>,
     Path((ns, vm)): Path<(String, String)>,
     Json(req): Json<CreateSnapshotRequest>,
 ) -> impl IntoResponse {
@@ -348,6 +392,30 @@ pub(super) async fn create_snapshot_handler(
         let ts = chrono::Utc::now().format("%Y%m%d-%H%M%S");
         format!("{}-snap-{}", vm, ts)
     });
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        let kube = { state.read().await.kube_client.clone() };
+        return match crate::api::kairon_ops::create_snapshot(&kube, &ns, &vm, &snap_name).await {
+            Ok(rec) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/snapshots/:ns/:vm/create");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({
+                        "message": format!("Snapshot '{}' created", snap_name),
+                        "name": rec.name,
+                        "vm_name": rec.vm_name,
+                        "kind": rec.kind,
+                    }),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => {
+                log::error!("Create snapshot '{}/{}' failed: {}", ns, vm, e);
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "CREATE_FAILED", &msg)
+            }
+        };
+    }
+    let _ = &state;
 
     match crate::snapshots::SnapshotManager::new(&ns).await {
         Ok(manager) => {
@@ -381,11 +449,27 @@ pub(super) async fn create_snapshot_handler(
 }
 
 pub(super) async fn restore_snapshot_handler(
+    State(state): State<SharedState>,
     Path((ns, name)): Path<(String, String)>,
 ) -> impl IntoResponse {
     if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
         return resp;
     }
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        let kube = { state.read().await.kube_client.clone() };
+        return match crate::api::kairon_ops::restore_snapshot(&kube, &ns, &name).await {
+            Ok(body) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/snapshots/:ns/:name/restore");
+                ok_json(&ApiResponse::success(&body, &ctx.request_id))
+            }
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                err_json(status_for_sanitized_error(&msg), "RESTORE_FAILED", &msg)
+            }
+        };
+    }
+    let _ = &state;
 
     match crate::snapshots::restore::RestoreManager::new(&ns).await {
         Ok(manager) => {

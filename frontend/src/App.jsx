@@ -609,7 +609,7 @@ export default function App() {
     }
   };
 
-  const create = async ({ name, template, cls, size, url, cidr, cpus, memory }) => {
+  const create = async ({ name, template, cls, size, url, sha256, format, cidr, cpus, memory }) => {
     try {
       const kind = (res || data.vms).kind;
       if (kind === 'VirtualMachine') {
@@ -639,20 +639,17 @@ export default function App() {
         await load();
         showToast(`Created PVC ${name}`);
       } else if (kind === 'Image') {
-        if (!url) {
-          showToast('Image URL required', true);
-          return;
-        }
-        await api.importImage({
-          name,
-          namespace: 'vm-images',
-          url,
-          size: String(size || '20Gi').replace(/\s+/g, ''),
-          storage_class: cls || undefined,
+        await api.importVm({
+          name: name.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+          namespace: 'default',
+          image_url: url.trim(),
+          sha256: sha256.trim(),
+          format,
+          source: { tool: 'console' },
         });
         setSheet(null);
         await load();
-        showToast(`Importing image ${name}`);
+        showToast(`Importing ${name}: the node downloads the disk, then boots it`);
       } else if (kind === 'Network') {
         await api.createNad({
           name,

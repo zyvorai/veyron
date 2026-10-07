@@ -71,6 +71,7 @@ NS="${VEYRON_NAMESPACE:-veyron-system}"
 source "${SCRIPT_DIR}/cluster/versions.env"
 CDI_VERSION="${VEYRON_CDI_VERSION:-${CDI_VERSION}}"
 SKIP_CDI="${VEYRON_SKIP_CDI:-0}"
+[[ "${VEYRON_INSTALL_CDI:-0}" == "1" ]] || SKIP_CDI=1
 RUN_STARTED_AT="$(date +%s)"
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
@@ -235,7 +236,7 @@ info "Container image built and imported"
 # KubeVirt disk pipelines and examples often need CDI; installing it here avoids a separate manual step on fresh clusters.
 step "Step 4/7: Ensuring CDI (containerized-data-importer)"
 if [[ "${SKIP_CDI}" == "1" ]]; then
-  info "Skipped CDI install (VEYRON_SKIP_CDI=1)"
+  info "Skipped CDI install (Kairon needs none; VEYRON_INSTALL_CDI=1 for legacy KubeVirt)"
 else
   "${SCRIPT_DIR}/ensure-cdi-remote.sh" "${USER}@${HOST}" "${CDI_VERSION}" ||
     error "CDI install or wait failed (set VEYRON_SKIP_CDI=1 to skip, or fix cluster network / storage)"
@@ -417,6 +418,9 @@ rules:
     verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
   - apiGroups: ['kairon.zyvor.dev']
     resources: ['*']
+    verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
+  - apiGroups: ['discovery.k8s.io']
+    resources: ['endpointslices']
     verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
   - apiGroups: ['rbac.authorization.k8s.io']
     resources: ['clusterroles', 'clusterrolebindings', 'roles', 'rolebindings']

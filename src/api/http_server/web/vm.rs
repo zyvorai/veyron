@@ -367,6 +367,10 @@ pub(super) async fn put_vm_expose_handler(
             }
         }
     } else {
+        #[cfg(feature = "kairon")]
+        if crate::api::vm_backend::is_kairon() {
+            return kairon_put_ssh_expose(&client, &ns, &name, req).await;
+        }
         match client.get_vm(&ns, &name).await {
             Ok(_) => {}
             Err(e) => {
@@ -632,6 +636,151 @@ pub(super) async fn rdp_context_for_vm(
     .map_err(|e| sanitize_error(&e))
 }
 
+#[cfg(feature = "kairon")]
+async fn kairon_put_ssh_expose(
+    client: &crate::kube::KubeClient,
+    ns: &str,
+    name: &str,
+    req: CreateVmExposeReq,
+) -> (StatusCode, Json<serde_json::Value>) {
+    use crate::api::kairon_ops::{self, ExposeTarget};
+    let Some(cfg) = vm_expose_from_api_req(req) else {
+        return err_json(
+            400,
+            "INVALID_REQUEST",
+            "enabled=true requires a valid expose configuration",
+        );
+    };
+    let guest_port = cfg
+        .ports
+        .first()
+        .and_then(|p| u16::try_from(p.target_port).ok())
+        .unwrap_or(22);
+    let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/expose");
+    match kairon_ops::machine_expose_target(client, ns, name, guest_port).await {
+        Ok(ExposeTarget::Forward { node, host_port }) => ok_json(&ApiResponse::success(
+            &kairon_ops::forward_json(name, guest_port, &node, host_port),
+            &ctx.request_id,
+        )),
+        Ok(ExposeTarget::GuestIp(ip)) => {
+            let svc = crate::kube::vm_expose_service_name(name);
+            let bound = async {
+                client.upsert_vm_expose_service(ns, name, &cfg).await?;
+                kairon_ops::bind_service_to_guest(client, ns, &svc, &ip).await
+            };
+            match bound.await {
+                Ok(()) => match client.get_vm_expose_service(ns, name).await {
+                    Ok(svc) => ok_json(&ApiResponse::success(
+                        &vm_expose_status_json(svc.as_ref(), name),
+                        &ctx.request_id,
+                    )),
+                    Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+                },
+                Err(e) => {
+                    let msg = sanitize_error(&e);
+                    err_json(
+                        status_for_sanitized_error(&msg),
+                        "EXPOSE_UPSERT_FAILED",
+                        &msg,
+                    )
+                }
+            }
+        }
+        Err(e) => kairon_expose_error(&e),
+    }
+}
+
+#[cfg(feature = "kairon")]
+fn kairon_expose_error(e: &anyhow::Error) -> (StatusCode, Json<serde_json::Value>) {
+    let raw = format!("{e:#}");
+    if raw.ends_with("(conflict)") {
+        err_json(
+            409,
+            "EXPOSE_UNAVAILABLE",
+            raw.trim_end_matches(" (conflict)"),
+        )
+    } else {
+        let msg = sanitize_error(e);
+        err_json(status_for_sanitized_error(&msg), "EXPOSE_FAILED", &msg)
+    }
+}
+
+#[cfg(feature = "kairon")]
+async fn kairon_rdp_status(
+    kube: &crate::kube::KubeClient,
+    ns: &str,
+    name: &str,
+) -> serde_json::Value {
+    use crate::api::kairon_ops::{self, ExposeTarget};
+    let svc_name = crate::kube::windows_rdp::veyron_rdp_service_name(name);
+    let svc = kube::Api::<k8s_openapi::api::core::v1::Service>::namespaced(kube.client(), ns)
+        .get_opt(&svc_name)
+        .await
+        .ok()
+        .flatten();
+    match kairon_ops::machine_expose_target(kube, ns, name, 3389).await {
+        Ok(ExposeTarget::Forward { node, host_port }) => {
+            kairon_ops::forward_json(name, 3389, &node, host_port)
+        }
+        target => serde_json::json!({
+            "enabled": svc.is_some(),
+            "service_name": svc.as_ref().and_then(|s| s.metadata.name.clone()),
+            "service_type": svc.as_ref().and_then(|s| s.spec.as_ref()?.type_.clone()),
+            "guest_ip": match &target { Ok(ExposeTarget::GuestIp(ip)) => Some(ip.clone()), _ => None },
+            "reason": target.err().map(|e| format!("{e:#}").trim_end_matches(" (conflict)").to_string()),
+        }),
+    }
+}
+
+#[cfg(feature = "kairon")]
+async fn kairon_put_rdp_expose(
+    kube: &crate::kube::KubeClient,
+    ns: &str,
+    name: &str,
+    svc_type: &str,
+    node_port: i32,
+) -> (StatusCode, Json<serde_json::Value>) {
+    use crate::api::kairon_ops::{self, ExposeTarget};
+    let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/rdp-expose");
+    match kairon_ops::machine_expose_target(kube, ns, name, 3389).await {
+        Ok(ExposeTarget::Forward { node, host_port }) => ok_json(&ApiResponse::success(
+            &kairon_ops::forward_json(name, 3389, &node, host_port),
+            &ctx.request_id,
+        )),
+        Ok(ExposeTarget::GuestIp(ip)) => {
+            if let Err(e) =
+                vm_rdp::upsert_rdp_expose_service(kube.client(), ns, name, svc_type, node_port)
+                    .await
+            {
+                let raw = e.to_string();
+                if raw.contains("VEYRON_ALLOW_PUBLIC_RDP") {
+                    return err_json(403, "PUBLIC_RDP_FORBIDDEN", &raw);
+                }
+                let msg = sanitize_error(&e);
+                return err_json(
+                    status_for_sanitized_error(&msg),
+                    "RDP_EXPOSE_UPSERT_FAILED",
+                    &msg,
+                );
+            }
+            let svc = crate::kube::windows_rdp::veyron_rdp_service_name(name);
+            if let Err(e) = kairon_ops::bind_service_to_guest(kube, ns, &svc, &ip).await {
+                let msg = sanitize_error(&e);
+                return err_json(
+                    status_for_sanitized_error(&msg),
+                    "RDP_EXPOSE_UPSERT_FAILED",
+                    &msg,
+                );
+            }
+            ok_json(&ApiResponse::success(
+                &kairon_rdp_status(kube, ns, name).await,
+                &ctx.request_id,
+            ))
+        }
+        Err(e) => kairon_expose_error(&e),
+    }
+}
+
 pub(super) async fn get_vm_rdp_expose_handler(
     State(state): State<SharedState>,
     Path((ns, name)): Path<(String, String)>,
@@ -643,6 +792,12 @@ pub(super) async fn get_vm_rdp_expose_handler(
         let s = state.read().await;
         s.kube_client.clone()
     };
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        let body = kairon_rdp_status(&kube, &ns, &name).await;
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/rdp-expose");
+        return ok_json(&ApiResponse::success(&body, &ctx.request_id));
+    }
     match rdp_context_for_vm(&kube, &ns, &name).await {
         Ok(body) => {
             let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/rdp-expose");
@@ -667,6 +822,12 @@ pub(super) async fn put_vm_rdp_expose_handler(
 
     if !req.enabled {
         match vm_rdp::delete_rdp_expose_service(kube.client(), &ns, &name).await {
+            #[cfg(feature = "kairon")]
+            Ok(()) if crate::api::vm_backend::is_kairon() => {
+                let body = kairon_rdp_status(&kube, &ns, &name).await;
+                let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/rdp-expose");
+                ok_json(&ApiResponse::success(&body, &ctx.request_id))
+            }
             Ok(()) => match rdp_context_for_vm(&kube, &ns, &name).await {
                 Ok(body) => {
                     let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/rdp-expose");
@@ -716,6 +877,10 @@ pub(super) async fn put_vm_rdp_expose_handler(
             // ClusterIP ignores node_port; upsert won't set one on the service.
             req.node_port.unwrap_or(0)
         };
+        #[cfg(feature = "kairon")]
+        if crate::api::vm_backend::is_kairon() {
+            return kairon_put_rdp_expose(&kube, &ns, &name, svc_type, node_port).await;
+        }
         if let Err(e) = kube.get_vm(&ns, &name).await {
             let msg = sanitize_error(&e);
             if msg.contains("NotFound") || msg.contains("not found") || msg.eq("Resource not found")
@@ -781,7 +946,15 @@ pub(super) async fn guest_agent_enable_rdp_handler(
         let s = state.read().await;
         s.kube_client.clone()
     };
-    match kube.enable_rdp_via_guest_agent(&ns, &name).await {
+    #[cfg(feature = "kairon")]
+    let result = if crate::api::vm_backend::is_kairon() {
+        crate::api::kairon_ops::set_windows_rdp(&kube, &ns, &name, true).await
+    } else {
+        kube.enable_rdp_via_guest_agent(&ns, &name).await
+    };
+    #[cfg(not(feature = "kairon"))]
+    let result = kube.enable_rdp_via_guest_agent(&ns, &name).await;
+    match result {
         Ok(resp) => {
             let ctx = req_ctx(
                 HttpMethod::POST,
@@ -804,7 +977,15 @@ pub(super) async fn guest_agent_disable_rdp_handler(
         let s = state.read().await;
         s.kube_client.clone()
     };
-    match kube.disable_rdp_via_guest_agent(&ns, &name).await {
+    #[cfg(feature = "kairon")]
+    let result = if crate::api::vm_backend::is_kairon() {
+        crate::api::kairon_ops::set_windows_rdp(&kube, &ns, &name, false).await
+    } else {
+        kube.disable_rdp_via_guest_agent(&ns, &name).await
+    };
+    #[cfg(not(feature = "kairon"))]
+    let result = kube.disable_rdp_via_guest_agent(&ns, &name).await;
+    match result {
         Ok(resp) => {
             let ctx = req_ctx(
                 HttpMethod::POST,
@@ -856,6 +1037,16 @@ pub(super) async fn guest_runtime_status_handler(
         let s = state.read().await;
         s.kube_client.clone()
     };
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        return match crate::api::kairon_ops::guest_status(&kube, &ns, &name).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest/status");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_STATUS_FAILED", &sanitize_error(&e)),
+        };
+    }
     match kube.guest_runtime_status(&ns, &name).await {
         Ok(resp) => {
             let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest/status");
@@ -982,6 +1173,16 @@ pub(super) async fn guest_exec_handler(
         let s = state.read().await;
         s.kube_client.clone()
     };
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        return match crate::api::kairon_ops::guest_exec(&kube, &ns, &name, &body).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest/exec");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_EXEC_FAILED", &sanitize_error(&e)),
+        };
+    }
     match kube.guest_exec_via_guestkit(&ns, &name, body).await {
         Ok(resp) => {
             let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest/exec");
@@ -1313,7 +1514,10 @@ pub(super) async fn clone_vm_handler(
         return resp;
     }
     let client = { state.read().await.kube_client.clone() };
-    match client.clone_vm(&ns, &name, &req.new_name).await {
+    match VmBackend::for_client(&client)
+        .clone_vm(&ns, &name, &req.new_name)
+        .await
+    {
         Ok(_) => {
             let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/clone");
             ok_json(&ApiResponse::success(
@@ -1337,7 +1541,7 @@ pub(super) async fn pause_vm_handler(
         return resp;
     }
     let client = { state.read().await.kube_client.clone() };
-    match client.pause_vm(&ns, &name).await {
+    match VmBackend::for_client(&client).pause(&ns, &name).await {
         Ok(_) => {
             let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/pause");
             ok_json(&ApiResponse::success(
@@ -1368,7 +1572,7 @@ pub(super) async fn unpause_vm_handler(
         return resp;
     }
     let client = { state.read().await.kube_client.clone() };
-    match client.unpause_vm(&ns, &name).await {
+    match VmBackend::for_client(&client).unpause(&ns, &name).await {
         Ok(_) => {
             let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/unpause");
             ok_json(&ApiResponse::success(
@@ -1402,6 +1606,9 @@ pub(super) struct MigrateVmRequestBody {
     /// Bypass the eligibility gate (KubeVirt will still enforce its own rules).
     #[serde(default)]
     force: bool,
+    /// Kairon backend: `auto` (default) | `live` | `cold`.
+    #[serde(default)]
+    strategy: Option<String>,
 }
 
 /// 409 with the structured blocker list — migration is prevented by VM
@@ -1458,6 +1665,36 @@ pub(super) async fn migrate_vm_handler(
     } else {
         serde_json::from_slice(&body).unwrap_or_default()
     };
+    if crate::api::vm_backend::selected() != crate::api::vm_backend::BackendKind::KubeVirt {
+        let client = { state.read().await.kube_client.clone() };
+        let mreq = crate::api::vm_backend::MigrateRequest {
+            target_node: req.target_hostname,
+            strategy: req.strategy,
+            force: req.force,
+        };
+        return match VmBackend::for_client(&client)
+            .migrate(&ns, &name, &mreq)
+            .await
+        {
+            Ok(migration) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/migrate");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({
+                        "message": format!("Migration initiated for VM '{}'", name),
+                        "migration": migration,
+                    }),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => match e.downcast_ref::<crate::api::vm_backend::MigrationBlocked>() {
+                Some(b) => err_json(409, "MIGRATION_BLOCKED", &b.0),
+                None => {
+                    let msg = sanitize_error(&e);
+                    err_json(status_for_sanitized_error(&msg), "MIGRATE_FAILED", &msg)
+                }
+            },
+        };
+    }
     let mut opts = MigrateVmOptions {
         added_node_selector: req.added_node_selector,
         priority: req.priority,
@@ -1513,7 +1750,10 @@ pub(super) async fn list_vm_migrations_handler(
         return resp;
     }
     let client = { state.read().await.kube_client.clone() };
-    match client.list_migrations_for_vmi(&ns, &name).await {
+    match VmBackend::for_client(&client)
+        .list_migrations(&ns, &name)
+        .await
+    {
         Ok(list) => {
             let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/migrations");
             ok_json(&ApiResponse::success(&list, &ctx.request_id))
@@ -1532,7 +1772,10 @@ pub(super) async fn delete_vm_migration_handler(
         return resp;
     }
     let client = { state.read().await.kube_client.clone() };
-    match client.delete_migration(&ns, &migname).await {
+    match VmBackend::for_client(&client)
+        .cancel_migration(&ns, &migname)
+        .await
+    {
         Ok(()) => {
             let ctx = req_ctx(
                 HttpMethod::DELETE,

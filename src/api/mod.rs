@@ -15,6 +15,10 @@ pub mod handlers;
 pub mod http_server;
 #[cfg(feature = "web")]
 pub mod integrations;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod kairon_guard;
+#[cfg(feature = "kairon")]
+pub mod kairon_ops;
 pub mod kryton;
 #[cfg(feature = "web")]
 pub mod loki;

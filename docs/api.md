@@ -66,7 +66,9 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 | Guests | `GET /vms/:ns/:name/guest/{status,evidence,doctor,fix-plan}`, `/guest-filesystem`, `POST /vms/:ns/:name/guest/patch` |
 | VM disks | `GET /vms/:ns/:name/volumes/status`, `POST …/volumes/{hotplug,hotremove}`, `POST …/storage/data-disk` (+ `/defaults`), `GET …/migrations` |
 | Data | `/snapshots`, `/snapshot-schedules`, `/backups`, `/clones`, `/storage/{usage,pools,orphans}`, `/velero/*`, `/atlas/*` |
-| Images | `/images`, `/images/upload`, `/images/publish` |
+| Images | `/images`, `/images/catalog` (CDI `/images/upload`, `/images/publish` are KubeVirt-only) |
+| Imports | `GET/POST /imports`, `GET /imports/:ns/:name` — boot a migrated disk (h2kvm) on Kairon from a URL + SHA-256 |
+| Guest logs | `GET /vms/:ns/:name/logs?tail=` |
 | Fleet | `/nodes`, `/gpus`, `/pods`, `/workloads`, `/capacity/headroom`, `/platform/capabilities` |
 | Operations | `/alerts`, `/events`, `/incidents/timeline`, `/logs`, `/metrics`, `/costs`, `/costs/budgets`, `/recommendations`, `/slo/*`, `/self-healing/*` |
 | Security | `/soc/*`, `/security/{findings,posture}`, `/compliance/*`, `/audit/{trail,stats}`, `/rbac/*`, `/vms/:ns/:name/security` |
@@ -90,7 +92,8 @@ expressions are accepted unchanged.
 Errors come back as JSON with an HTTP status that means something: `400` bad input, `401` no or bad
 credentials, `403` role too low, `404` missing, `409` conflict (for example migrating a GPU
 passthrough VM), `422` failed preflight. Features the current VM engine can't provide return
-`501 Not Implemented` with a reason, never a fake success.
+`501 Not Implemented` with a reason, never a fake success; KubeVirt/CDI-only routes use the
+code `KUBEVIRT_ONLY`.
 
 ## Example
 

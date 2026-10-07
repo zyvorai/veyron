@@ -82,7 +82,7 @@ tower = { version = "0.5", features = ["util"], optional = true }
 jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"], optional = true }
 
 [features]
-default = ["web"]
+default = ["web", "kairon"]
 web = [
     "axum",
     "axum-server",
@@ -99,8 +99,9 @@ web = [
 # --trial). Never enabled for in-cluster Helm/deploy-remote.sh builds. See src/trial.rs
 # and src/bin/trial-tool.rs (keygen/issue — requires this feature to build/run).
 trial = ["web", "dep:ring"]
-# Kairon VM platform (kairon.zyvor.dev Machines on FluxVM) as an alternative VM backend,
-# selected at runtime with VEYRON_VM_BACKEND=kairon. See src/kairon/ and src/vm_backend.rs.
+# Kairon VM platform (kairon.zyvor.dev Machines on FluxVM) as a VM backend, selected at
+# runtime by VEYRON_VM_BACKEND (unset/auto: Kairon when only its CRDs are installed).
+# See src/kairon/, src/api/vm_backend.rs and src/api/kairon_ops.rs.
 kairon = ["web"]
 
 [dev-dependencies]

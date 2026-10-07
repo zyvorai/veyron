@@ -86,7 +86,7 @@ fn relay_template() -> String {
         .unwrap_or_else(|| DEFAULT_RELAY_URL.to_string())
 }
 
-fn tls_insecure() -> bool {
+pub fn tls_insecure() -> bool {
     matches!(
         std::env::var("VEYRON_KAIRON_NODE_TLS_INSECURE").as_deref(),
         Ok("1") | Ok("true") | Ok("yes")
@@ -233,6 +233,25 @@ impl RelayTarget {
         let body = serde_json::json!({"name": name});
         self.post_json("qga-firewall/close", &body, Duration::from_secs(90))
             .await
+    }
+
+    /// Hypervisor-level checkpoint (RAM + CPU + device state) tagged `tag`; the
+    /// Machine keeps running.
+    pub async fn vm_snapshot(&self, tag: &str) -> Result<()> {
+        let body = serde_json::json!({ "tag": tag });
+        let _: serde_json::Value = self
+            .post_json("vm-snapshot", &body, Duration::from_secs(330))
+            .await?;
+        Ok(())
+    }
+
+    /// Stops the Machine and starts it back from checkpoint `tag`.
+    pub async fn vm_restore_snapshot(&self, tag: &str) -> Result<()> {
+        let body = serde_json::json!({ "tag": tag });
+        let _: serde_json::Value = self
+            .post_json("vm-restore-snapshot", &body, Duration::from_secs(330))
+            .await?;
+        Ok(())
     }
 
     pub async fn fsfreeze_status(&self) -> Result<String> {

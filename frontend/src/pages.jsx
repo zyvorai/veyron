@@ -648,6 +648,8 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
   const [cls, setCls] = useState(storageClasses?.[0]?.name || '');
   const [size, setSize] = useState(res.kind === 'Image' ? '20Gi' : '10Gi');
   const [url, setUrl] = useState('');
+  const [sha256, setSha256] = useState('');
+  const [format, setFormat] = useState('qcow2');
   const [cidr, setCidr] = useState('10.244.100.0/24');
   const preset = SIZES.find((s) => s.id === sizeId);
   const o = osInfo(template);
@@ -655,7 +657,11 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
   const suggested = `${o.family}-${suffix}`;
   const finalName = name || (isVm ? suggested : '');
 
-  const canCreate = !!finalName && (res.kind !== 'Image' || !!url.trim()) && (!isVm || !!template);
+  const isImport = res.kind === 'Image';
+  const canCreate =
+    !!finalName &&
+    (!isImport || (/^https?:\/\//.test(url.trim()) && /^(sha256:)?[0-9a-fA-F]{64}$/.test(sha256.trim()))) &&
+    (!isVm || !!template);
   const sheetRef = useRef(null);
   useFocusTrap(sheetRef);
   const submit = () =>
@@ -665,6 +671,8 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
       cls,
       size,
       url,
+      sha256,
+      format,
       cidr,
       ...(isVm ? { cpus: preset.cpus, memory: preset.memory } : {}),
     });
@@ -676,13 +684,13 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
         className={`sheet${isVm ? ' sheet--wide' : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label={isVm ? 'Create a machine' : `New ${res.kind}`}
+        aria-label={isVm ? 'Create a machine' : isImport ? 'Import a migrated VM' : `New ${res.kind}`}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sheet-h">
           <Plus size={15} />
-          {isVm ? 'Create a machine' : `New ${res.kind}`}
+          {isVm ? 'Create a machine' : isImport ? 'Import a migrated VM' : `New ${res.kind}`}
           <button className="tb x" onClick={onClose} aria-label="Close">
             <X size={15} />
           </button>
@@ -777,7 +785,7 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
                 <label>Name</label>
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder={`e.g. ${res.rows[0]?.name || 'name'}`} />
               </div>
-              {(res.kind === 'PersistentVolumeClaim' || res.kind === 'Image') && (
+              {res.kind === 'PersistentVolumeClaim' && (
                 <>
                   <div className="field">
                     <label>Class</label>
@@ -796,11 +804,31 @@ export function NewSheet({ res, templates, storageClasses, initialTemplate, onCl
                   </div>
                 </>
               )}
-              {res.kind === 'Image' && (
-                <div className="field">
-                  <label>URL</label>
-                  <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…/image.qcow2" />
-                </div>
+              {isImport && (
+                <>
+                  <p className="ops-hint">
+                    Boots a disk converted by h2kvm (or any qcow2/raw/OVA/VMDK/VHD) as a Kairon machine. The node
+                    downloads it from the URL and checks it against the SHA-256.
+                  </p>
+                  <div className="field">
+                    <label>Disk URL</label>
+                    <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…/web01.qcow2" />
+                  </div>
+                  <div className="field">
+                    <label>SHA-256</label>
+                    <input value={sha256} onChange={(e) => setSha256(e.target.value)} placeholder="sha256sum of the file" />
+                  </div>
+                  <div className="field">
+                    <label>Format</label>
+                    <select value={format} onChange={(e) => setFormat(e.target.value)}>
+                      {['qcow2', 'raw', 'ova', 'vmdk', 'vhd', 'vhdx'].map((f) => (
+                        <option key={f} value={f}>
+                          {f}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
               )}
               {res.kind === 'Network' && (
                 <div className="field">

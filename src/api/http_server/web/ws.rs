@@ -81,6 +81,19 @@ pub(super) async fn vnc_websocket_handler(
     State(state): State<SharedState>,
     Path((ns, name)): Path<(String, String)>,
 ) -> impl IntoResponse {
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        let client = { state.read().await.kube_client.clone() };
+        return match kairon_relay_upstream(&client, &ns, &name, "console").await {
+            Ok(upstream) => ws
+                .protocols(["binary"])
+                .on_upgrade(move |socket| {
+                    kubevirt_subresource_ws_proxy(socket, ns, name, upstream, "VNC")
+                })
+                .into_response(),
+            Err(resp) => resp.into_response(),
+        };
+    }
     let running = {
         let s = state.read().await;
         s.kube_client.is_running(&ns, &name).await
@@ -120,7 +133,9 @@ pub(super) async fn vnc_websocket_handler(
         vmi_name
     );
     ws.protocols(["binary"])
-        .on_upgrade(move |socket| kubevirt_subresource_ws_proxy(socket, ns, vmi_name, "vnc", "VNC"))
+        .on_upgrade(move |socket| {
+            kubevirt_subresource_ws_proxy(socket, ns, vmi_name, Upstream::KubeVirt("vnc"), "VNC")
+        })
         .into_response()
 }
 
@@ -129,6 +144,19 @@ pub(super) async fn serial_websocket_handler(
     State(state): State<SharedState>,
     Path((ns, name)): Path<(String, String)>,
 ) -> impl IntoResponse {
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        let client = { state.read().await.kube_client.clone() };
+        return match kairon_relay_upstream(&client, &ns, &name, "text-console").await {
+            Ok(upstream) => ws
+                .protocols(["binary"])
+                .on_upgrade(move |socket| {
+                    kubevirt_subresource_ws_proxy(socket, ns, name, upstream, "serial console")
+                })
+                .into_response(),
+            Err(resp) => resp.into_response(),
+        };
+    }
     let running = {
         let s = state.read().await;
         s.kube_client.is_running(&ns, &name).await
@@ -173,17 +201,58 @@ pub(super) async fn serial_websocket_handler(
     );
     ws.protocols(["binary"])
         .on_upgrade(move |socket| {
-            kubevirt_subresource_ws_proxy(socket, ns, vmi_name, "console", "serial console")
+            kubevirt_subresource_ws_proxy(
+                socket,
+                ns,
+                vmi_name,
+                Upstream::KubeVirt("console"),
+                "serial console",
+            )
         })
         .into_response()
 }
 
-/// Proxy browser WebSocket to KubeVirt VMI subresources (`vnc`, `console`, etc.).
+/// Where a console WebSocket is proxied to.
+pub(super) enum Upstream {
+    /// KubeVirt VMI subresource (`vnc`, `console`) through the Kubernetes API.
+    KubeVirt(&'static str),
+    /// kairon-node relay: full `ws(s)://` URL and its bearer token.
+    #[cfg_attr(not(feature = "kairon"), allow(dead_code))]
+    Relay { url: String, token: String },
+}
+
+/// Resolve a running Machine's console on its kairon-node relay
+/// (`console` = VNC, `text-console` = serial).
+#[cfg(feature = "kairon")]
+pub(super) async fn kairon_relay_upstream(
+    client: &crate::kube::KubeClient,
+    ns: &str,
+    name: &str,
+    kind: &str,
+) -> Result<Upstream, (StatusCode, String)> {
+    let m = kube::Api::<crate::kairon::Machine>::namespaced(client.client(), ns)
+        .get(name)
+        .await
+        .map_err(|e| (StatusCode::NOT_FOUND, format!("VM {name}: {e}")))?;
+    if !m.is_running() {
+        return Err((StatusCode::BAD_REQUEST, "VM is not running".into()));
+    }
+    let target = crate::kairon::relay::RelayTarget::for_machine(&client.client(), &m)
+        .await
+        .map_err(|e| (StatusCode::SERVICE_UNAVAILABLE, format!("{e:#}")))?;
+    Ok(Upstream::Relay {
+        url: target.websocket_url(kind),
+        token: target.token.clone(),
+    })
+}
+
+/// Proxy a browser WebSocket to a VM console: a KubeVirt VMI subresource or a
+/// kairon-node relay.
 pub(super) async fn kubevirt_subresource_ws_proxy(
     mut client_ws: WebSocket,
     ns: String,
     vmi_name: String,
-    subpath: &'static str,
+    upstream: Upstream,
     label: &'static str,
 ) {
     use futures_util::{SinkExt, StreamExt};
@@ -221,37 +290,55 @@ pub(super) async fn kubevirt_subresource_ws_proxy(
         })
     }
 
-    let config = match kube::Config::infer().await {
-        Ok(c) => c,
-        Err(e) => {
-            log::error!("Failed to infer kube config: {}", e);
-            let _ = client_ws
-                .send(Message::Close(Some(axum::extract::ws::CloseFrame {
-                    code: 1011,
-                    reason: "Failed to get cluster config".into(),
-                })))
-                .await;
-            return;
+    let (ws_url, bearer, verify_tls) = match upstream {
+        Upstream::Relay { url, token } => {
+            log::info!(
+                "{} proxy connecting to kairon-node relay for {}/{}",
+                label,
+                ns,
+                vmi_name
+            );
+            (url, Some(token), !crate::kairon::relay::tls_insecure())
+        }
+        Upstream::KubeVirt(subpath) => {
+            let config = match kube::Config::infer().await {
+                Ok(c) => c,
+                Err(e) => {
+                    log::error!("Failed to infer kube config: {}", e);
+                    let _ = client_ws
+                        .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                            code: 1011,
+                            reason: "Failed to get cluster config".into(),
+                        })))
+                        .await;
+                    return;
+                }
+            };
+            let api_url = config
+                .cluster_url
+                .to_string()
+                .trim_end_matches('/')
+                .to_string();
+            let path = format!(
+                "/apis/subresources.kubevirt.io/v1/namespaces/{}/virtualmachineinstances/{}/{}",
+                ns, vmi_name, subpath
+            );
+            log::info!("{} proxy connecting to K8s API: {}", label, path);
+            let url = api_url
+                .replace("https://", "wss://")
+                .replace("http://", "ws://")
+                + &path;
+            let token =
+                std::fs::read_to_string("/var/run/secrets/kubernetes.io/serviceaccount/token")
+                    .ok()
+                    .map(|t| t.trim().to_string());
+            (url, token, false)
         }
     };
 
-    let api_url = config
-        .cluster_url
-        .to_string()
-        .trim_end_matches('/')
-        .to_string();
-    let path = format!(
-        "/apis/subresources.kubevirt.io/v1/namespaces/{}/virtualmachineinstances/{}/{}",
-        ns, vmi_name, subpath
-    );
-    let ws_url = api_url
-        .replace("https://", "wss://")
-        .replace("http://", "ws://")
-        + &path;
-
-    log::info!("{} proxy connecting to K8s API: {}", label, path);
-
-    let tls_connector = {
+    let tls_connector = if verify_tls {
+        None
+    } else {
         let tls_config = rustls::ClientConfig::builder()
             .dangerous()
             .with_custom_certificate_verifier(std::sync::Arc::new(AcceptAllVerifier))
@@ -277,9 +364,8 @@ pub(super) async fn kubevirt_subresource_ws_proxy(
                 })
         });
 
-    let sa_token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token";
-    if let Ok(token) = std::fs::read_to_string(sa_token_path) {
-        if let Ok(header_val) = format!("Bearer {}", token.trim()).parse() {
+    if let Some(token) = bearer {
+        if let Ok(header_val) = format!("Bearer {token}").parse() {
             request.headers_mut().insert("Authorization", header_val);
         }
     }

@@ -62,6 +62,31 @@ orphan reclaim are hidden or disabled for other roles.
 Features with no Kairon equivalent return `501 Not Implemented` with a JSON reason, rather than
 pretending to work.
 
+### Choosing the backend
+
+Kairon serves the VM API. Veyron never falls back to KubeVirt on its own: only an explicit
+`VEYRON_VM_BACKEND=kubevirt` brings the legacy path back. On Kairon, routes that only make sense
+for KubeVirt, CDI or the old operator (CDI image upload, `/vmis`, DR export, drift and so on)
+answer `501` with the code `KUBEVIRT_ONLY`.
+
+Migrated VMs come in through `POST /api/v1/imports`: h2kvm (`--deploy-kairon`) or the console's
+import form hands Veyron a disk URL and its SHA-256, and Veyron creates a Machine that boots it. The relay URL
+and token go in an optional `veyron-kairon` Secret (`VEYRON_VM_BACKEND`,
+`VEYRON_KAIRON_NODE_URL`, `KAIRON_NODE_CONSOLE_TOKEN`), which the deployment loads if present.
+
+A few things behave differently on Kairon:
+
+- **Stop** powers the VM off (`Halted`) and keeps its disk; start boots the same disk again.
+- **Restoring a disk snapshot** creates a new VM (`<vm>-restored-<stamp>`) instead of rewinding
+  the original. VMs without volumes get VM-state checkpoints, which restore in place.
+- **SSH/RDP expose** uses a port forward declared when the VM was created, or a routable guest IP.
+  Guests on user-mode NAT can't be exposed afterwards, and the API says so with a 409.
+- **Backup restore** needs the VM stopped first.
+
+Kairon nodes need an image cache (`KAIRON_IMAGE_CACHE_DIR`, writable by kairon-node) before
+any VM that boots from an image (templates or imports) can start; Veyron pins template image
+tags to a digest when it creates the Machine.
+
 ## Day-2 operations
 
 All of these are API routes, and most are console actions too:

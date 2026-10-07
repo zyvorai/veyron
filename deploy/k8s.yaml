@@ -180,9 +180,13 @@ rules:
   - apiGroups: ["cilium.io"]
     resources: ["*"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # Kairon Machines (VEYRON_VM_BACKEND=kairon)
+  # Kairon Machines (VEYRON_VM_BACKEND unset/auto/kairon)
   - apiGroups: ["kairon.zyvor.dev"]
     resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Kairon VM expose: selector-less Services backed by an EndpointSlice on the guest IP
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # RBAC (read-only visualization)
   - apiGroups: ["rbac.authorization.k8s.io"]
@@ -373,6 +377,12 @@ spec:
             # deploy-all-remote.sh). See contrib/veyron-oidc-keycloak.env.example.
             - secretRef:
                 name: veyron-oidc
+                optional: true
+            # Kairon backend: VEYRON_VM_BACKEND, KAIRON_NODE_CONSOLE_TOKEN (kairon-node relay
+            # bearer) and VEYRON_KAIRON_NODE_URL (e.g. http://{node_ip}:8092). Absent unless
+            # the veyron-kairon Secret exists.
+            - secretRef:
+                name: veyron-kairon
                 optional: true
             # Multi-key RBAC (VEYRON_API_KEYS="name:key:role,..."), so the readiness gate's P3
             # RBAC matrix can prove role enforcement instead of skipping it. Deliberately

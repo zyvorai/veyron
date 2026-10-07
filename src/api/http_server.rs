@@ -1054,6 +1054,9 @@ pub mod web {
                     StatusCode::REQUEST_TIMEOUT,
                     std::time::Duration::from_secs(request_timeout_secs),
                 ));
+        #[cfg(feature = "kairon")]
+        let timed_rest =
+            timed_rest.layer(middleware::from_fn(crate::api::kairon_guard::middleware));
 
         Router::new()
             .merge(long_lived_ws)
@@ -1103,6 +1106,7 @@ pub mod web {
         ));
         {
             let kube = { state.read().await.kube_client.clone() };
+            crate::api::vm_backend::resolve(&kube.client()).await;
             crate::kube::user_store::bootstrap_dashboard_admin(&kube, &namespace).await;
         }
         {

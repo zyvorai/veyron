@@ -39,6 +39,8 @@ pub mod heatmap;
 pub mod helm;
 pub mod hpa;
 pub mod images;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod imports;
 pub mod incidents;
 pub mod ingress;
 pub mod integrations;
@@ -120,7 +122,7 @@ pub fn kube_list_error<E: std::fmt::Display>(
 pub fn all_routes(
     state: std::sync::Arc<tokio::sync::RwLock<crate::api::http_server::web::WebState>>,
 ) -> axum::Router {
-    axum::Router::new()
+    let router = axum::Router::new()
         .merge(auth::router(state.clone()))
         // Real K8s data handlers (wired to KubeClient via SharedState)
         // NOTE: pods, nodes, events, namespaces, snapshots, templates are served from
@@ -196,5 +198,8 @@ pub fn all_routes(
         .merge(integrations::router(state.clone()))
         .merge(netra::router(state.clone()))
         .merge(paqtra::router(state.clone()))
-        .merge(gryvia::router(state.clone()))
+        .merge(gryvia::router(state.clone()));
+    #[cfg(feature = "kairon")]
+    let router = router.merge(imports::router(state.clone()));
+    router
 }

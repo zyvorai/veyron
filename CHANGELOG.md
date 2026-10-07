@@ -23,6 +23,20 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Kairon only.** Veyron runs VMs on Kairon by default and never falls back to KubeVirt
+  (`VEYRON_VM_BACKEND=kubevirt` is an explicit legacy opt-in). KubeVirt/CDI/operator-only
+  routes answer `501 KUBEVIRT_ONLY`, readiness reports the Kairon engine, and the deploy
+  scripts no longer install CDI unless `VEYRON_INSTALL_CDI=1`.
+- **Import migrated VMs.** `POST /api/v1/imports` boots a disk converted by
+  [h2kvm](https://github.com/zyvorai/h2kvm) (qcow2, raw, OVA, VMDK, VHD/X) as a Kairon Machine
+  from an HTTP(S) URL pinned by SHA-256; h2kvm's new `--deploy-kairon` calls it, and the
+  console's Images page now opens an import form.
+- **Full Kairon backend.** The whole VM API runs on Kairon Machines: pause, clone, run strategy, CPU/memory hotplug, live/cold migration with cancel,
+  snapshots and backups, guest exec/patch/disk reclaim, VM logs (`GET /vms/:ns/:name/logs`),
+  VNC and serial consoles through the kairon-node relay, and SSH/RDP expose. Stopping a Kairon
+  VM now powers it off (`Halted`) instead of tearing it down, so image-booted disks survive.
+  Relay settings come from an optional `veyron-kairon` Secret. The `kairon` cargo feature is on
+  by default.
 - **Gryvia integration.** Veyron auto-detects [Gryvia](https://github.com/zyvorai/gryvia) in
   `gryvia-system`, reads its API key from `gryvia-api-key`, and shows its health, container GPU
   capacity, GPU nodes, tenants and GPU-hour usage on a new **Gryvia** console page

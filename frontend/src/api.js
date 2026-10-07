@@ -502,6 +502,8 @@ export const api = {
   deleteImage: (ns, name) =>
     request(`/api/v1/images/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`, { method: 'DELETE' }),
   importImage: (body) => request('/api/v1/images/import', { method: 'POST', body: JSON.stringify(body) }),
+  importVm: (body) => request('/api/v1/imports', { method: 'POST', body: JSON.stringify(body) }),
+  listImports: (namespace = 'all') => request(`/api/v1/imports?namespace=${encodeURIComponent(namespace)}`),
   createNad: (body) => request('/api/v1/network/nads', { method: 'POST', body: JSON.stringify(body) }),
   deleteNad: (ns, name) =>
     request(`/api/v1/network/nads/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`, { method: 'DELETE' }),

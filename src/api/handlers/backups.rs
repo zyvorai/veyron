@@ -63,6 +63,25 @@ async fn list_backups(
     use kube::api::{Api, ListParams};
 
     let s = state.read().await;
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        let scope = query
+            .namespace
+            .clone()
+            .unwrap_or_else(|| s.namespace.clone());
+        let items = crate::api::kairon_ops::list_backups(s.client(), &scope)
+            .await
+            .map_err(|e| {
+                log::error!("failed to list backups: {e}");
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
+        return Ok(Json(
+            items
+                .into_iter()
+                .filter_map(|v| serde_json::from_value(v).ok())
+                .collect(),
+        ));
+    }
     let client = s.client().client();
     let api: Api<VirtualMachineSnapshot> = match query.namespace.as_deref() {
         Some("all") => Api::all(client),
@@ -103,6 +122,25 @@ async fn create_backup(
         )
     });
 
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        return match crate::api::kairon_ops::create_backup(
+            s.client(),
+            &s.namespace,
+            &req.vm_name,
+            &snapshot_name,
+        )
+        .await
+        {
+            Ok(v) => serde_json::from_value(v)
+                .map(Json)
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR),
+            Err(e) => {
+                log::error!("Failed to create backup: {e:#}");
+                Err(backup_error_status(&e))
+            }
+        };
+    }
     let config = SnapshotConfig::new(&req.vm_name, &snapshot_name);
 
     match manager.create_snapshot(&config).await {
@@ -132,6 +170,16 @@ async fn restore_backup(State(state): State<SharedState>, Path(id): Path<String>
     use crate::snapshots::restore::RestoreManager;
 
     let s = state.read().await;
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        return match crate::api::kairon_ops::restore_backup(s.client(), &s.namespace, &id).await {
+            Ok(_) => StatusCode::OK,
+            Err(e) => {
+                log::error!("Failed to restore backup '{id}': {e:#}");
+                backup_error_status(&e)
+            }
+        };
+    }
     let snap_mgr = SnapshotManager::from_client(s.client().client(), &s.namespace);
     let restore_mgr = RestoreManager::from_client(s.client().client(), &s.namespace);
 
@@ -156,6 +204,17 @@ async fn delete_backup(
 
     let s = state.read().await;
     let ns = s.namespace.clone();
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        return match crate::api::kairon_ops::delete_backup(s.client(), &ns, &id).await {
+            Ok(()) => Ok(Json(serde_json::json!({
+                "status": "deleted",
+                "id": id,
+                "namespace": ns,
+            }))),
+            Err(e) => Err(backup_error_status(&e)),
+        };
+    }
     let manager = SnapshotManager::from_client(s.client().client(), &ns);
     match manager.delete_snapshot(&id).await {
         Ok(_) => Ok(Json(serde_json::json!({
@@ -175,6 +234,18 @@ async fn delete_backup(
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
+    }
+}
+
+#[cfg(feature = "kairon")]
+fn backup_error_status(e: &anyhow::Error) -> StatusCode {
+    let msg = format!("{e:#}").to_ascii_lowercase();
+    if msg.contains("notfound") || msg.contains("not found") {
+        StatusCode::NOT_FOUND
+    } else if msg.contains("(conflict)") || msg.contains("already exists") {
+        StatusCode::CONFLICT
+    } else {
+        StatusCode::INTERNAL_SERVER_ERROR
     }
 }
 

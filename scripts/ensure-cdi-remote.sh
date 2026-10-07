@@ -9,6 +9,8 @@
 #   ./scripts/ensure-cdi-remote.sh <user@host> [cdi-version]
 #
 # Environment:
+#   VEYRON_INSTALL_CDI=1    — required: Veyron runs VMs on Kairon, which needs no CDI,
+#                             so this is a no-op unless a legacy KubeVirt setup opts in
 #   VEYRON_SKIP_CDI=1       — exit 0 without doing anything
 #   VEYRON_CDI_VERSION=v1.66.0 — release tag (must match your KubeVirt line)
 # ============================================================================
@@ -24,8 +26,8 @@ REMOTE="${1:?Usage: $0 <user@host> [cdi-version]}"
 source "${SCRIPT_DIR}/cluster/versions.env"
 CDI_VERSION="${2:-${VEYRON_CDI_VERSION:-${CDI_VERSION}}}"
 
-if [[ "${VEYRON_SKIP_CDI:-0}" == "1" ]]; then
-  echo "  [skip] CDI (VEYRON_SKIP_CDI=1)"
+if [[ "${VEYRON_INSTALL_CDI:-0}" != "1" || "${VEYRON_SKIP_CDI:-0}" == "1" ]]; then
+  echo "  [skip] CDI (Kairon needs none; VEYRON_INSTALL_CDI=1 for legacy KubeVirt)"
   exit 0
 fi
 

@@ -91,40 +91,29 @@ pub async fn readiness_check(
         },
     };
 
-    // Check KubeVirt API availability (cluster-scoped list when `namespace=all`)
-    let kubevirt_check = if namespace_scope::is_all_namespaces(&scope) {
-        match s.client().list_all_vms().await {
-            Ok(_) => HealthCheck {
-                name: "kubevirt".into(),
-                status: "healthy".into(),
-                message: None,
-            },
-            Err(_) => HealthCheck {
-                name: "kubevirt".into(),
-                status: "unhealthy".into(),
-                message: Some("KubeVirt API unavailable".into()),
-            },
-        }
-    } else {
-        match s.client().list_vms(&scope).await {
-            Ok(_) => HealthCheck {
-                name: "kubevirt".into(),
-                status: "healthy".into(),
-                message: None,
-            },
-            Err(_) => HealthCheck {
-                name: "kubevirt".into(),
-                status: "unhealthy".into(),
-                message: Some("KubeVirt API unavailable".into()),
-            },
-        }
+    // VM engine availability (Kairon Machines, or KubeVirt on a legacy opt-in)
+    let backend = crate::api::vm_backend::selected().as_str();
+    let vm_check = match crate::api::vm_backend::VmBackend::for_client(s.client())
+        .list(&scope)
+        .await
+    {
+        Ok(_) => HealthCheck {
+            name: backend.into(),
+            status: "healthy".into(),
+            message: None,
+        },
+        Err(_) => HealthCheck {
+            name: backend.into(),
+            status: "unhealthy".into(),
+            message: Some(format!("{backend} API unavailable")),
+        },
     };
 
-    let all_healthy = k8s_check.status == "healthy" && kubevirt_check.status == "healthy";
+    let all_healthy = k8s_check.status == "healthy" && vm_check.status == "healthy";
 
     Json(ProbeResponse {
         ready: all_healthy,
-        checks: vec![k8s_check, kubevirt_check],
+        checks: vec![k8s_check, vm_check],
     })
 }
 
