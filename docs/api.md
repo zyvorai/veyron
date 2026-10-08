@@ -127,8 +127,10 @@ media first.
 `spec.cdroms`. The node agent then ejects the disc from the running guest; a stopped VM just comes
 back without it. The drive is not re-inserted on the next start. The patch is pinned to the
 Machine's `resourceVersion`, so a concurrent edit answers `409 CONFLICT`; retry. A name that isn't
-in the spec answers `404 CDROM_NOT_FOUND`, and a Kairon release that predates eject rejects the
-change with `422 EJECT_REJECTED`. The answer is `202` with the drives still attached:
+in the spec answers `404 CDROM_NOT_FOUND`. When Kairon's Machine admission webhook is enabled, a
+Kairon release that predates eject rejects the change with `422 EJECT_REJECTED`; without the
+webhook an older kairon-node accepts the edit but leaves the disc in until the VM is recreated.
+The answer is `202` with the drives still attached:
 
 ```bash
 curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" \
