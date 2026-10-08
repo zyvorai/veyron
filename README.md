@@ -78,6 +78,15 @@ To be fair about it: **per-VM memory is the same** (both run the same QEMU), and
 
 ---
 
+## Network at kernel speed
+
+[![Network at kernel speed: every VM behind a kernel-verified eBPF program on its own interface](docs/assets/readme-ebpf.jpg)](docs/ebpf.md)
+
+Every VM sits behind a kernel-verified eBPF program on its own interface: FluxVM's VM edge, declared on
+the Kairon `Machine`. Policy changes are map writes (about 100-120 ms p50, never an allow-all window).
+Drops come with a reason, and connections survive live migration.
+[Network at kernel speed →](docs/ebpf.md)
+
 ## See it
 
 | Mission Control | Virtual machines |

@@ -34,3 +34,4 @@ render architecture.html readme-architecture.jpg 1600 700
 render stack.html readme-stack.jpg 1600 900
 render path.html readme-path.jpg 1600 900
 render benchmark.html readme-benchmark.jpg 1600 900
+render ebpf.html readme-ebpf.jpg 1600 820

@@ -23,6 +23,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Docs: network at kernel speed.** New [docs/ebpf.md](docs/ebpf.md) and README card `docs/assets/readme-ebpf.jpg`
+  (rendered from `docs/social/ebpf.html`) on the FluxVM eBPF VM edge that Veyron VMs on Kairon
+  run behind: what it does, evidence-linked numbers, and which controls live in Kairon today.
 - **Capture a VM as a golden image (Kairon).** `POST /api/v1/vms/:ns/:name/capture` backs up the
   VM's root disk, stores it in Veyron's image store and publishes it as a `MachineImage`; track it
   with `GET /api/v1/image-captures` or the console's "Capture image" VM action.

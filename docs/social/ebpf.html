@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Veyron: network at kernel speed</title>
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+     1600x820 README card. Rendered by ./build.sh to docs/assets/readme-ebpf.jpg.
+     Background art: ../assets/ebpf-hero-art.jpg (generated, no text). Figures: FluxVM docs/ebpf.md. -->
+<link rel="stylesheet" href="dark.css">
+<style>
+  body { height:820px; }
+  .art { position:absolute; inset:0 0 0 620px; background:url(../assets/ebpf-hero-art.jpg) right center / cover no-repeat; }
+  .art::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,#060608 0%,rgba(6,6,8,.75) 28%,rgba(6,6,8,.2) 65%,rgba(6,6,8,.55) 100%); }
+  h1 em { background:linear-gradient(90deg,#e9dcff,var(--violet) 55%,var(--sky)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .stack { margin-top:30px; width:700px; display:flex; flex-direction:column; gap:10px; }
+  .layer { display:flex; align-items:center; gap:16px; padding:14px 18px; border-radius:14px; background:rgba(12,12,16,.82); box-shadow:inset 0 0 0 1px var(--edge); }
+  .layer .n { width:120px; font-family:var(--mono); font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--c); }
+  .layer b { font-size:21px; } .layer span { font-size:16px; color:var(--soft); margin-left:auto; text-align:right; }
+  .layer.hot { box-shadow:inset 0 0 0 1.5px var(--violet), 0 0 40px rgba(191,90,242,.25); }
+  .stats { position:absolute; right:72px; bottom:110px; display:flex; gap:14px; }
+  .stat { width:250px; padding:16px 18px; border-radius:14px; background:rgba(10,10,14,.78); backdrop-filter:blur(6px); box-shadow:inset 0 0 0 1px var(--edge); }
+  .stat b { display:block; font-size:32px; font-weight:800; letter-spacing:-.03em; color:var(--c); }
+  .stat span { font-size:15px; line-height:1.35; color:var(--soft); }
+</style></head>
+<body>
+<div class="art"></div><div class="grid"></div>
+<div class="wrap">
+  <div class="brand"><img src="zyvor-mark.svg" alt=""><span>Zyvor &middot; <b>Veyron</b></span><span class="r">eBPF on every VM</span></div>
+  <h1>Network at <em>kernel speed.</em></h1>
+  <p class="lede">Every VM Veyron runs on Kairon sits behind a kernel-verified eBPF program on its own interface. Packets are decided at the edge, and policy changes are map writes.</p>
+  <div class="stack">
+    <div class="layer" style="--c:var(--sky)"><div class="n">You</div><b>Veyron console &amp; API</b><span>create, migrate, observe</span></div>
+    <div class="layer" style="--c:var(--green)"><div class="n">Declare</div><b>Kairon Machine</b><span>MachineNetworkPolicy</span></div>
+    <div class="layer hot" style="--c:var(--violet)"><div class="n">Enforce</div><b>FluxVM eBPF edge</b><span>L3/L4 &middot; rate limits &middot; drop reasons</span></div>
+    <div class="layer" style="--c:var(--amber)"><div class="n">Wire</div><b>Your network</b><span>coexists with Cilium</span></div>
+  </div>
+  <div class="foot"><span><b>Measured in FluxVM:</b> host-forwarding and control-plane benchmarks, evidence-linked</span><span class="r">docs/ebpf.md</span></div>
+</div>
+<div class="stats">
+  <div class="stat" style="--c:var(--green)"><b>&minus;31% / +60%</b><span>latency / small-packet rate, direct datapath vs bridge chain</span></div>
+  <div class="stat" style="--c:var(--violet)"><b>~100&ndash;120 ms</b><span>live policy change, p50, same for VM #1 and #100</span></div>
+  <div class="stat" style="--c:var(--sky)"><b>0</b><span>allow-all windows during a policy change</span></div>
+</div>
+</body></html>

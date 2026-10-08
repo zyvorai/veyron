@@ -17,6 +17,7 @@ Kubernetes API.
 | GPU virtual machines | [gpu.md](gpu.md) |
 | Windows guests and golden images | [windows.md](windows.md) |
 | Image catalog, uploads, ISO installs (no CDI) | [api.md § Images on Kairon](api.md#images-on-kairon-no-cdi) |
+| eBPF on every VM: network policy, drops, live-migration conntrack | [ebpf.md](ebpf.md) |
 | Two racks or two sites | [multi-site.md](multi-site.md) |
 | Security operations (detections, SIEM export) | [soc.md](soc.md) |
 | AI assistant, MCP, proposals, sandboxes, in-cluster models | [ai.md](ai.md) |
