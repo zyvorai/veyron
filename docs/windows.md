@@ -90,8 +90,17 @@ curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/j
 The VM starts with a blank 80 GiB disk, the Windows ISO and (because the template is Windows and a
 `virtio-win` image exists) the driver CD. Open the console, load `viostor` from the driver CD when
 Setup shows no disk, and finish the install. OVMF boots the installed disk afterwards, so the ISO
-can stay attached, but a VM with install media can't live-migrate. To make the result a golden
-image, run `sysprep /generalize /oobe /shutdown`, then capture it:
+can stay attached, but a VM with install media can't live-migrate. Eject both discs once Setup is
+done (or use **Eject media** in the console):
+
+```bash
+for cd in install drivers; do
+  curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" \
+    "https://$HOST:30151/api/v1/vms/default/win01/cdroms/$cd/eject"
+done
+```
+
+To make the result a golden image, run `sysprep /generalize /oobe /shutdown`, then capture it:
 
 ```bash
 curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \

@@ -32,7 +32,7 @@ export const RES_META = {
       ['Namespace', 'ns'],
     ],
     spark: true,
-    acts: ['start', 'stop', 'restart', 'pause', 'unpause', 'migrate', 'console', 'snapshot', 'clone', 'capture', 'delete'],
+    acts: ['start', 'stop', 'restart', 'pause', 'unpause', 'migrate', 'console', 'snapshot', 'clone', 'capture', 'eject', 'delete'],
     canCreate: true,
   },
   hosts: {

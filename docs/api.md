@@ -118,7 +118,27 @@ answer `501 KAIRON_REQUIRED`; `iso`, `driver_iso` and `root_volume` on `POST /vm
 
 `image` on Kairon resolves a `MachineImage`, not a CDI DataSource. Without `disk_size` the root disk
 takes the image's size (or the `MachineImage`'s `defaults.diskSize`); a size smaller than the image
-fails rather than truncating it. VMs with install media attached can't live-migrate.
+fails rather than truncating it. VMs with install media attached can't live-migrate; eject the
+media first.
+
+#### Eject install media
+
+`POST /api/v1/vms/:ns/:name/cdroms/:cdrom/eject` (Write) removes that drive from the Machine's
+`spec.cdroms`. The node agent then ejects the disc from the running guest; a stopped VM just comes
+back without it. The drive is not re-inserted on the next start. The patch is pinned to the
+Machine's `resourceVersion`, so a concurrent edit answers `409 CONFLICT`; retry. A name that isn't
+in the spec answers `404 CDROM_NOT_FOUND`, and a Kairon release that predates eject rejects the
+change with `422 EJECT_REJECTED`. The answer is `202` with the drives still attached:
+
+```bash
+curl -sk -X POST -H "X-API-Key: $VEYRON_API_KEY" \
+  "https://$HOST:30151/api/v1/vms/default/win01/cdroms/install/eject"
+# {"namespace":"default","vm":"win01","ejected":"install","cdroms":["drivers"],…}
+```
+
+`GET /api/v1/vms` lists the remaining drive names as `cdroms` for Kairon VMs, and the console shows
+an **Eject media** action on VMs that still have one. Removal only: attaching new media to an
+existing VM is not supported. On KubeVirt the route answers `501 KAIRON_REQUIRED`.
 
 #### Capture a VM as a golden image
 

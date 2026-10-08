@@ -85,6 +85,8 @@ pub mod tenants;
 pub mod topology;
 pub mod traces;
 pub mod velero;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod vm_media;
 pub mod vmis;
 pub mod webhooks;
 pub mod windows;
@@ -207,6 +209,7 @@ pub fn all_routes(
     let router = router
         .merge(imports::router(state.clone()))
         .merge(machine_images::router(state.clone()))
-        .merge(image_capture::router(state.clone()));
+        .merge(image_capture::router(state.clone()))
+        .merge(vm_media::router(state.clone()));
     router
 }

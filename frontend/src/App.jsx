@@ -461,6 +461,15 @@ export default function App() {
               showToast(`Capturing ${t.name} as ${image.trim()} — progress under Images → Uploads`);
               return;
             }
+            else if (a === 'eject') {
+              const drives = t.cdroms || [];
+              if (!drives.length) continue;
+              const cdrom = drives.length === 1
+                ? (window.confirm(`Eject install media "${drives[0]}" from ${ns}/${t.name}?\n\nA running guest loses the disc now; the VM can live-migrate once no media is left.`) ? drives[0] : null)
+                : window.prompt(`Eject which drive from ${ns}/${t.name}? (${drives.join(', ')})`, drives[0]);
+              if (!cdrom) return;
+              await api.ejectCdrom(ns, t.name, cdrom.trim());
+            }
             else if (['start', 'stop', 'restart', 'migrate', 'pause', 'unpause'].includes(a)) {
               await api.vmAction(ns, t.name, a);
             } else {

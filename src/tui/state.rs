@@ -106,6 +106,9 @@ pub struct VmInfo {
     /// Template or OS hint from labels, else the container disk image name.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub os: Option<String>,
+    /// Install-media drive names still listed on a Kairon Machine (`spec.cdroms`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub cdroms: Vec<String>,
 }
 
 const OS_LABELS: &[&str] = &[
@@ -301,6 +304,7 @@ impl VmInfo {
             guest_agent_connected: None,
             gpu_count,
             os: vm_os_hint(vm),
+            cdroms: Vec::new(),
         }
     }
 

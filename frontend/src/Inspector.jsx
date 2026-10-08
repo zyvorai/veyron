@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Play, Square, Pause, ArrowLeftRight, Terminal, Camera, Trash2, RefreshCw,
-  Activity, Copy, HardDrive, Ban, CheckCircle, Network, Monitor, Zap, Unlink, Sparkles,
+  Activity, Copy, HardDrive, Ban, CheckCircle, Network, Monitor, Zap, Unlink, Sparkles, Disc,
 } from 'lucide-react';
 import { Status, Spark } from './status.jsx';
 import { api } from './api.js';
@@ -27,6 +27,7 @@ export const ACT = {
   unpause: ['Unpause', Play],
   publish: ['Publish', HardDrive],
   capture: ['Capture image', Camera],
+  eject: ['Eject media', Disc],
   resolve: ['Resolve', CheckCircle],
   ack: ['Acknowledge', CheckCircle],
   reclaim: ['Reclaim…', Unlink],
@@ -36,6 +37,7 @@ const RUN_STRATEGIES = ['Always', 'Manual', 'Halted', 'RerunOnFailure'];
 
 function resolveActs(res, row) {
   let acts = (res.acts || []).slice();
+  if (!row.cdroms?.length) acts = acts.filter((a) => a !== 'eject');
   const prefer = ['console', 'logs', 'start', 'stop', 'pause', 'unpause', 'cordon', 'uncordon'];
   acts.sort((a, b) => {
     const ia = prefer.indexOf(a);

@@ -336,6 +336,7 @@ export function mapVm(raw, i) {
     ip: present(raw.ip || raw.ips?.[0] || raw.interfaces?.[0]?.ipAddress),
     age: ageOf(raw),
     os: raw.os || raw.guest_os || raw.template || '—',
+    cdroms: Array.isArray(raw.cdroms) ? raw.cdroms : [],
   };
 }
 
@@ -595,6 +596,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  ejectCdrom: (ns, vm, cdrom) =>
+    request(
+      `/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(vm)}/cdroms/${encodeURIComponent(cdrom)}/eject`,
+      { method: 'POST' },
+    ),
   listImageCaptures: () => request('/api/v1/image-captures').then(asArray),
   deleteImageCapture: (image) => request(`/api/v1/image-captures/${encodeURIComponent(image)}`, { method: 'DELETE' }),
   uploadImage,

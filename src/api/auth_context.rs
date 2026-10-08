@@ -212,6 +212,13 @@ mod tests {
             min_role_for_route(&Method::GET, "/api/v1/image-captures"),
             ApiRole::ReadOnly
         );
+        assert_eq!(
+            min_role_for_route(
+                &Method::POST,
+                "/api/v1/vms/default/web/cdroms/install/eject"
+            ),
+            ApiRole::Write
+        );
     }
 
     #[test]

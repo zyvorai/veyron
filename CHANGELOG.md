@@ -23,6 +23,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- **Eject install media (Kairon).** `POST /api/v1/vms/:ns/:name/cdroms/:cdrom/eject` (Write) drops
+  the drive from the Machine's `spec.cdroms` (guarded by `resourceVersion`); the Kairon agent ejects
+  it from the running guest, after which the VM can live-migrate. `GET /vms` reports remaining
+  drives as `cdroms`, and the console gains an **Eject media** VM action. Needs Kairon with
+  cdrom eject (Kairon PR #37) and FluxVM with `POST /v1/vms/{id}/cdroms/{name}/eject`.
 - **Docs: network at kernel speed.** New [docs/ebpf.md](docs/ebpf.md) and README card `docs/assets/readme-ebpf.jpg`
   (rendered from `docs/social/ebpf.html`) on the FluxVM eBPF VM edge that Veyron VMs on Kairon
   run behind: what it does, evidence-linked numbers, and which controls live in Kairon today.

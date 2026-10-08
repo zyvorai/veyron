@@ -368,6 +368,7 @@ mod kairon {
                 .has_device_claims()
                 .then_some(m.spec.device_claims.len() as u32),
             os: m.image_ref(),
+            cdroms: m.spec.cdroms.iter().map(|c| c.name.clone()).collect(),
         }
     }
 
