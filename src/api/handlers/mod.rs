@@ -1,6 +1,8 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod agent_sessions;
 pub mod alerts;
 #[cfg(feature = "web")]
 pub mod atlas;
@@ -85,7 +87,6 @@ pub mod tenants;
 pub mod topology;
 pub mod traces;
 pub mod velero;
-#[cfg(all(feature = "web", feature = "kairon"))]
 pub mod vm_fork;
 pub mod vm_media;
 pub mod vmis;
@@ -212,6 +213,7 @@ pub fn all_routes(
         .merge(machine_images::router(state.clone()))
         .merge(image_capture::router(state.clone()))
         .merge(vm_media::router(state.clone()))
-        .merge(vm_fork::router(state.clone()));
+        .merge(vm_fork::router(state.clone()))
+        .merge(agent_sessions::router(state.clone()));
     router
 }

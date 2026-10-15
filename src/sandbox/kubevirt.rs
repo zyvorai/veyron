@@ -267,6 +267,7 @@ fn to_sandbox(o: &DynamicObject, vmis: &BTreeMap<String, VmiInfo>) -> Sandbox {
         expires_at: ann(o, ANN_EXPIRES),
         vm: name,
         isolated: ann(o, ANN_ISOLATED) == "true",
+        ..Default::default()
     }
 }
 

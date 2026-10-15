@@ -93,7 +93,7 @@ fn fork_blocker(parent: &Machine) -> Option<String> {
 
 /// Child Machine for `parent`: copy of the spec pinned to the parent's node, with
 /// the fork annotation/label. The parent's own labels are deliberately not copied.
-fn child_machine(parent: &Machine, child: &str) -> Machine {
+pub(crate) fn child_machine(parent: &Machine, child: &str) -> Machine {
     let mut spec = parent.spec.clone();
     spec.node_name = parent.node().map(str::to_string);
     spec.power_state = Some(POWER_RUNNING.to_string());

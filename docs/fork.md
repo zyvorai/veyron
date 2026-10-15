@@ -43,3 +43,21 @@ run the migration on each").
 `scripts/test-vm-daily-ops-remote.sh` checks validation (`count=0` → 422) and,
 when the test VM is forkable, fork → list → delete; otherwise it records the
 `409 FORK_BLOCKED` contract as a skip.
+
+## Agent Lab (sandboxes)
+
+The same primitive powers agent sandboxes on the Kairon backend (`docs/ai.md`):
+
+| Route | Purpose |
+|---|---|
+| `POST /api/v1/sandboxes/:id/fork` `{count}` | Branch a ready sandbox into N live copies (`VEYRON_SANDBOX_MAX_FORKS`, default 5; total cap `VEYRON_SANDBOX_MAX_BRANCH_TOTAL`, default 10). |
+| `POST /api/v1/sandboxes/:id/pick` `{keep}` | Keep one member of the branch group; the parent and other copies are deleted. |
+| `GET …/checkpoints`, `POST …/undo` `{name?}`, `POST …/pin` `{name}` | Every exec is preceded by a VM-state checkpoint (`VEYRON_SANDBOX_AUTO_CHECKPOINT`, ring of `VEYRON_SANDBOX_CKPT_KEEP`=5, pinned ones kept). Undo restores in place. |
+| `GET …/ledger` | Per-sandbox run history (actor, command, exit, duration, checkpoint) + summary. Commands are truncated to 500 chars; output is never stored. `VEYRON_SANDBOX_LEDGER_KEEP`=200. |
+| `GET/PUT/DELETE …/egress` | Default-deny allowlist (`allow_cidrs/ports/fqdns/dns/sni/icmp`) via a kairon `MachineNetworkPolicy`; `enforced` is true only once kairon reports the Machine applied. |
+| `GET/POST/DELETE /api/v1/agent-sessions…` | Kairon `AgentSession` CRUD; 501 `AGENT_SESSION_UNAVAILABLE` without the CRD. Needs a FluxVM agent-session node (Mac today); verbs (rewind/branch/bisect) are not proxied. |
+
+Idle suspend: set `VEYRON_SANDBOX_IDLE_SECS` (and `VEYRON_SANDBOX_IDLE_ACTION`, default `Pause`) to write
+`spec.lifecycle` on new sandboxes; the next exec wakes a `paused` sandbox. Warm pool: set
+`VEYRON_SANDBOX_KAIRON_POOL=<MachinePool>` to claim via `MachineClaim` instead of creating a Machine.
+AI tools: `sandbox_fork`, `sandbox_pick`, `sandbox_undo`.

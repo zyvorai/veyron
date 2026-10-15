@@ -999,6 +999,40 @@ export const api = {
   createSandbox: async (body) =>
     unwrap(await request('/api/v1/sandboxes', { method: 'POST', body: JSON.stringify(body), timeout: 300_000 })),
   deleteSandbox: (id) => request(`/api/v1/sandboxes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  sandboxFork: async (id, count = 2) =>
+    unwrap(
+      await request(`/api/v1/sandboxes/${encodeURIComponent(id)}/fork`, {
+        method: 'POST',
+        body: JSON.stringify({ count }),
+        timeout: 120_000,
+      }),
+    ),
+  sandboxPick: async (id, keep) =>
+    unwrap(
+      await request(`/api/v1/sandboxes/${encodeURIComponent(id)}/pick`, {
+        method: 'POST',
+        body: JSON.stringify({ keep }),
+      }),
+    ),
+  sandboxCheckpoints: async (id) =>
+    asArray(unwrap(await request(`/api/v1/sandboxes/${encodeURIComponent(id)}/checkpoints`))),
+  sandboxUndo: async (id, name) =>
+    unwrap(
+      await request(`/api/v1/sandboxes/${encodeURIComponent(id)}/undo`, {
+        method: 'POST',
+        body: JSON.stringify(name ? { name } : {}),
+        timeout: 120_000,
+      }),
+    ),
+  sandboxPin: async (id, name) =>
+    unwrap(
+      await request(`/api/v1/sandboxes/${encodeURIComponent(id)}/pin`, {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      }),
+    ),
+  sandboxLedger: async (id) =>
+    unwrap(await request(`/api/v1/sandboxes/${encodeURIComponent(id)}/ledger`)) || {},
   sandboxExec: async (id, command, timeoutSecs = 60) =>
     unwrap(
       await request(`/api/v1/sandboxes/${encodeURIComponent(id)}/exec`, {

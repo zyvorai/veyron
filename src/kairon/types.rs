@@ -66,8 +66,31 @@ pub struct MachineSpec {
     pub device_claims: Vec<DeviceClaimReference>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub guest_agent: Option<GuestAgentSpec>,
+    /// Idle suspend / wake / deadline for sandbox-style Machines (experimental).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lifecycle: Option<LifecycleSpec>,
     #[serde(flatten)]
     pub extra: Extra,
+}
+
+/// `spec.lifecycle`: kairon-controller suspends an idle Machine, deletes it at a
+/// deadline, and kairon-ui wakes it on connect.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct LifecycleSpec {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub idle_timeout_seconds: Option<u64>,
+    /// `Pause` | `Hibernate` | `Halt` | `Stop` | `Delete`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub idle_action: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub idle_cpu_millicores: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_lifetime_seconds: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wake_on_connect: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wake_timeout_seconds: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
