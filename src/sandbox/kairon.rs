@@ -58,7 +58,7 @@ fn to_sandbox(m: &Machine) -> Sandbox {
         backend: if fork_parent().is_some() {
             "kairon-fork".into()
         } else {
-            "kairon-firecracker".into()
+            format!("kairon-{}", runtime_backend())
         },
         internet: ann(ANN_INTERNET) == "true",
         created_at: ann(ANN_CREATED),
@@ -110,6 +110,20 @@ pub(super) fn lifecycle_spec(ttl_minutes: u64) -> Option<crate::kairon::Lifecycl
         wake_on_connect: Some(true),
         wake_timeout_seconds: Some(60),
     })
+}
+
+/// FluxVM backend for sandbox Machines (`VEYRON_SANDBOX_KAIRON_BACKEND`, default
+/// `firecracker`; `flux-vm` or `qemu` where Firecracker isn't available).
+fn runtime_backend() -> String {
+    std::env::var("VEYRON_SANDBOX_KAIRON_BACKEND")
+        .ok()
+        .filter(|b| {
+            matches!(
+                b.as_str(),
+                "firecracker" | "flux-vm" | "qemu" | "cloud-hypervisor"
+            )
+        })
+        .unwrap_or_else(|| "firecracker".into())
 }
 
 /// Annotation recording the `MachineClaim` a pool-backed sandbox came from.
@@ -233,8 +247,14 @@ pub async fn claim(
             .with_context(|| format!("pinning sandbox image {oci} to a digest"))?;
         m.spec.image.digest = Some(digest);
     }
+    let backend = runtime_backend();
+    // qemu-style guest-agent channels (virtio-serial) don't exist on firecracker;
+    // FluxVM rejects `qga.enabled` there with a 400.
+    if backend == "firecracker" {
+        m.spec.guest_agent = None;
+    }
     m.spec.runtime = Some(RuntimeSpec {
-        backend: Some("firecracker".into()),
+        backend: Some(backend),
         kernel: None,
     });
     m.spec.lifecycle = lifecycle_spec(ttl_minutes);
