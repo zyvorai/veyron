@@ -49,8 +49,11 @@ On an existing cluster, `scripts/cluster/adapt-existing-cluster.sh` reports what
 Veyron runs VMs on Kairon. It needs no KubeVirt and no CDI, but it does need:
 
 - **The kairon-node relay** for consoles, guest exec, logs and VM-state snapshots. Put
-  `VEYRON_KAIRON_NODE_URL` (for example `http://<node-ip>:8090`) and `KAIRON_NODE_CONSOLE_TOKEN` in
-  the optional `veyron-kairon` Secret; `deploy/k8s.yaml` loads it when present. Add
+  `VEYRON_KAIRON_NODE_URL` (for example `http://{node_ip}:8090`) and `KAIRON_NODE_CONSOLE_TOKEN` in
+  the optional `veyron-kairon` Secret; `deploy/k8s.yaml` loads it when present. Write `{node_ip}`
+  (or `{node}`) literally: Veyron fills it in with the address of the node a VM runs on. A fixed
+  address sends every VM's logs, snapshots, exec and consoles to that one node, so VMs scheduled
+  on any other node answer "VM not found" (Veyron logs a warning at the first such call). Add
   `VEYRON_KAIRON_NODE_TLS_INSECURE=1` if the relay uses a self-signed certificate.
 - **An image cache on every Kairon node** (`KAIRON_IMAGE_CACHE_DIR`, writable by kairon-node). VMs
   booted from templates or imports download their disk into it.

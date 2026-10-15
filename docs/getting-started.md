@@ -40,11 +40,13 @@ The remote script syncs the source to a node, builds the images there and applie
 Or use the Helm chart in [`charts/veyron`](../charts/veyron) (see [deploy.md](deploy.md)).
 
 For the browser console, guest commands and VM-state snapshots, Veyron talks to each node's
-kairon-node relay. Give it the address and token in an optional Secret:
+kairon-node relay. Give it the address template and token in an optional Secret. Keep `{node_ip}`
+literal: Veyron replaces it per VM with that VM's node address, which matters as soon as you have
+more than one node:
 
 ```bash
 kubectl -n veyron-system create secret generic veyron-kairon \
-  --from-literal=VEYRON_KAIRON_NODE_URL=http://<node-ip>:8090 \
+  --from-literal=VEYRON_KAIRON_NODE_URL='http://{node_ip}:8090' \
   --from-literal=KAIRON_NODE_CONSOLE_TOKEN=<kairon-node console token>
 kubectl -n veyron-system rollout restart deploy/veyron-api
 ```
