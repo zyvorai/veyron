@@ -20,6 +20,7 @@ export const ACT = {
   reboot: ['Reboot', RefreshCw],
   logs: ['Logs', Activity],
   clone: ['Clone', Copy],
+  fork: ['Fork live', Copy],
   resize: ['Resize', HardDrive],
   restore: ['Restore', RefreshCw],
   run: ['Run now', Play],

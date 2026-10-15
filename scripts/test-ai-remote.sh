@@ -117,6 +117,30 @@ if [[ "${VEYRON_E2E_SKIP_SANDBOX:-0}" != "1" ]]; then
         wr=$(api PUT "/api/v1/sandboxes/${sid}/files" '{"path":"/tmp/e2e.txt","content":"hello veyron"}')
         rd=$(api GET "/api/v1/sandboxes/${sid}/files?path=/tmp/e2e.txt")
         if echo "${rd}" | grep -q 'hello veyron\|aGVsbG8gdmV5cm9u'; then ok "write + read file"; else bad "write + read file" "${wr} ${rd}"; fi
+        # Agent Lab (Kairon backend): ledger, checkpoints, undo, fork, pick. 501 = KubeVirt backend.
+        led=$(api GET "/api/v1/sandboxes/${sid}/ledger")
+        if echo "${led}" | grep -q 'KAIRON_REQUIRED'; then
+            echo "  (agent lab skipped: Kairon backend required)"
+        else
+            echo "${led}" | grep -q '"action":"exec"' && ok "ledger records exec" || bad "ledger records exec" "${led}"
+            ck=$(api GET "/api/v1/sandboxes/${sid}/checkpoints")
+            if echo "${ck}" | grep -q "${sid}-ckpt-"; then
+                ok "pre-exec checkpoint listed"
+                un=$(api POST "/api/v1/sandboxes/${sid}/undo" '{}' 180)
+                echo "${un}" | grep -q '"restored"' && ok "undo restores last checkpoint" || bad "undo" "${un}"
+            else
+                echo "  (checkpoints unavailable on this runtime: ${ck:0:160})"
+            fi
+            fk=$(api POST "/api/v1/sandboxes/${sid}/fork" '{"count":1}' 180)
+            if echo "${fk}" | grep -q '"forks"'; then
+                kid=$(echo "${fk}" | jget 'd["data"]["forks"][0]["id"]')
+                ok "fork sandbox -> ${kid}"
+                pk=$(api POST "/api/v1/sandboxes/${sid}/pick" "{\"keep\":\"${sid}\"}")
+                echo "${pk}" | grep -q "${kid}" && ok "pick keeps parent, deletes ${kid}" || bad "pick" "${pk}"
+            else
+                echo "  (fork unavailable for this sandbox: ${fk:0:160})"
+            fi
+        fi
         del=$(api DELETE "/api/v1/sandboxes/${sid}")
         echo "${del}" | grep -q '"success":true' && ok "destroy sandbox" || bad "destroy sandbox" "${del}"
     else

@@ -13,6 +13,8 @@
 //! see all); the leader tick deletes expired ones and keeps the pool topped up.
 
 #[cfg(feature = "kairon")]
+pub mod agent;
+#[cfg(feature = "kairon")]
 mod kairon;
 mod kubevirt;
 
@@ -100,6 +102,12 @@ pub struct Sandbox {
     /// Egress has been blocked (only meaningful when `internet` is false).
     #[serde(default)]
     pub isolated: bool,
+    /// Sandbox this one was forked from (agent branching).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub parent: String,
+    /// Suspended by `spec.lifecycle` idle handling; the next exec wakes it.
+    #[serde(default)]
+    pub idle_suspended: bool,
 }
 
 impl Sandbox {
@@ -347,14 +355,271 @@ pub async fn op_exec(
     if command.trim().is_empty() {
         return Err(OpError(400, "command is required".into()));
     }
-    let sb = find(client, role, subject, id).await?;
+    let mut sb = find(client, role, subject, id).await?;
+    #[cfg(feature = "kairon")]
+    if is_kairon_backend() && sb.status == "paused" {
+        agent::wake(client, &sb)
+            .await
+            .map_err(|e| OpError(504, e.to_string()))?;
+        sb.status = "ready".into();
+    }
     if sb.status != "ready" {
         return Err(OpError(
             409,
             format!("Sandbox {id} is {}; try again shortly", sb.status),
         ));
     }
-    Ok(exec(client, &sb, command, timeout_secs.clamp(1, 900)).await?)
+    #[cfg(feature = "kairon")]
+    let checkpoint = if is_kairon_backend() {
+        agent::checkpoint_before_exec(client, &sb).await
+    } else {
+        None
+    };
+    let result = exec(client, &sb, command, timeout_secs.clamp(1, 900)).await;
+    #[cfg(feature = "kairon")]
+    if is_kairon_backend() {
+        let (exit_code, duration_ms) = match &result {
+            Ok(r) => (Some(r.exit_code), r.duration_ms as u64),
+            Err(_) => (None, 0),
+        };
+        agent::record(
+            client,
+            agent::LedgerEntry {
+                sandbox: sb.id.clone(),
+                actor: owner_key(subject),
+                action: "exec".into(),
+                detail: command.to_string(),
+                exit_code,
+                duration_ms,
+                checkpoint,
+                ..Default::default()
+            },
+        )
+        .await;
+    }
+    Ok(result?)
+}
+
+#[cfg(feature = "kairon")]
+fn is_kairon_backend() -> bool {
+    matches!(backend(), Backend::Kairon)
+}
+
+/// Agent Lab operations need the Kairon backend (fork, VM-state checkpoints).
+#[cfg(feature = "kairon")]
+fn require_kairon_backend() -> Result<(), OpError> {
+    if is_kairon_backend() {
+        Ok(())
+    } else {
+        Err(OpError(
+            501,
+            "KAIRON_REQUIRED: branching, undo and the run ledger need the Kairon backend".into(),
+        ))
+    }
+}
+
+#[cfg(not(feature = "kairon"))]
+fn require_kairon_backend() -> Result<(), OpError> {
+    Err(OpError(
+        501,
+        "KAIRON_REQUIRED: this build has no Kairon backend".into(),
+    ))
+}
+
+fn max_forks() -> u32 {
+    env_u64("VEYRON_SANDBOX_MAX_FORKS", 5).clamp(1, 32) as u32
+}
+
+fn writer(role: &ApiRole) -> Result<(), OpError> {
+    if *role == ApiRole::ReadOnly {
+        Err(OpError(403, "This needs the write role".into()))
+    } else {
+        Ok(())
+    }
+}
+
+pub async fn op_fork(
+    client: &kube::Client,
+    role: &ApiRole,
+    subject: &str,
+    id: &str,
+    count: u32,
+) -> Result<Vec<Sandbox>, OpError> {
+    require_kairon_backend()?;
+    writer(role)?;
+    if count == 0 || count > max_forks() {
+        return Err(OpError(
+            422,
+            format!("count must be between 1 and {}", max_forks()),
+        ));
+    }
+    let sb = find(client, role, subject, id).await?;
+    let mine = visible(client, &ApiRole::Write, &owner_key(subject)).await?;
+    let cap = env_u64("VEYRON_SANDBOX_MAX_BRANCH_TOTAL", 10) as usize;
+    if mine.len() + count as usize > cap {
+        return Err(OpError(
+            429,
+            format!(
+                "You have {} sandboxes; forking {count} more would pass the branch limit of {cap}",
+                mine.len()
+            ),
+        ));
+    }
+    #[cfg(feature = "kairon")]
+    {
+        let made = agent::fork(client, &sb, count)
+            .await
+            .map_err(|e| OpError(409, e.to_string()))?;
+        agent::record(
+            client,
+            agent::LedgerEntry {
+                sandbox: sb.id.clone(),
+                actor: owner_key(subject),
+                action: "fork".into(),
+                detail: format!(
+                    "{count} cop{}: {}",
+                    if count == 1 { "y" } else { "ies" },
+                    made.iter()
+                        .map(|m| m.id.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+                ..Default::default()
+            },
+        )
+        .await;
+        note_use();
+        Ok(made)
+    }
+    #[cfg(not(feature = "kairon"))]
+    {
+        let _ = sb;
+        unreachable!("require_kairon_backend returned an error")
+    }
+}
+
+pub async fn op_pick(
+    client: &kube::Client,
+    role: &ApiRole,
+    subject: &str,
+    id: &str,
+    keep: &str,
+) -> Result<Vec<String>, OpError> {
+    require_kairon_backend()?;
+    writer(role)?;
+    let sb = find(client, role, subject, id).await?;
+    // The survivor must be reachable by this caller too.
+    find(client, role, subject, keep).await?;
+    #[cfg(feature = "kairon")]
+    {
+        let deleted = agent::pick(client, &sb, keep)
+            .await
+            .map_err(|e| OpError(409, e.to_string()))?;
+        agent::record(
+            client,
+            agent::LedgerEntry {
+                sandbox: keep.to_string(),
+                actor: owner_key(subject),
+                action: "pick".into(),
+                detail: format!("kept {keep}, deleted {}", deleted.join(", ")),
+                ..Default::default()
+            },
+        )
+        .await;
+        Ok(deleted)
+    }
+    #[cfg(not(feature = "kairon"))]
+    {
+        let _ = (sb, keep);
+        unreachable!("require_kairon_backend returned an error")
+    }
+}
+
+#[cfg(feature = "kairon")]
+pub async fn op_checkpoints(
+    client: &kube::Client,
+    role: &ApiRole,
+    subject: &str,
+    id: &str,
+) -> Result<Vec<agent::Checkpoint>, OpError> {
+    require_kairon_backend()?;
+    let sb = find(client, role, subject, id).await?;
+    agent::checkpoints(client, &sb)
+        .await
+        .map_err(|e| OpError(502, e.to_string()))
+}
+
+#[cfg(feature = "kairon")]
+pub async fn op_undo(
+    client: &kube::Client,
+    role: &ApiRole,
+    subject: &str,
+    id: &str,
+    name: Option<&str>,
+) -> Result<String, OpError> {
+    require_kairon_backend()?;
+    writer(role)?;
+    let sb = find(client, role, subject, id).await?;
+    let restored = agent::undo(client, &sb, name)
+        .await
+        .map_err(|e| OpError(409, e.to_string()))?;
+    agent::record(
+        client,
+        agent::LedgerEntry {
+            sandbox: sb.id.clone(),
+            actor: owner_key(subject),
+            action: "undo".into(),
+            detail: format!("restored {restored}"),
+            checkpoint: Some(restored.clone()),
+            ..Default::default()
+        },
+    )
+    .await;
+    Ok(restored)
+}
+
+#[cfg(feature = "kairon")]
+pub async fn op_pin(
+    client: &kube::Client,
+    role: &ApiRole,
+    subject: &str,
+    id: &str,
+    name: &str,
+) -> Result<(), OpError> {
+    require_kairon_backend()?;
+    writer(role)?;
+    let sb = find(client, role, subject, id).await?;
+    agent::pin(client, &sb, name)
+        .await
+        .map_err(|e| OpError(409, e.to_string()))?;
+    agent::record(
+        client,
+        agent::LedgerEntry {
+            sandbox: sb.id.clone(),
+            actor: owner_key(subject),
+            action: "pin".into(),
+            detail: name.to_string(),
+            checkpoint: Some(name.to_string()),
+            ..Default::default()
+        },
+    )
+    .await;
+    Ok(())
+}
+
+#[cfg(feature = "kairon")]
+pub async fn op_ledger(
+    client: &kube::Client,
+    role: &ApiRole,
+    subject: &str,
+    id: &str,
+) -> Result<Value, OpError> {
+    require_kairon_backend()?;
+    let sb = find(client, role, subject, id).await?;
+    let entries = agent::ledger(client, &sb.id)
+        .await
+        .map_err(|e| OpError(502, e.to_string()))?;
+    Ok(json!({"summary": agent::summarize(&entries), "entries": entries}))
 }
 
 // ── HTTP ────────────────────────────────────────────────────────────
@@ -369,6 +634,21 @@ pub fn router(state: SharedState) -> Router {
             get(get_handler).delete(delete_handler),
         )
         .route("/api/v1/sandboxes/:id/exec", post(exec_handler))
+        .route("/api/v1/sandboxes/:id/fork", post(fork_handler))
+        .route("/api/v1/sandboxes/:id/pick", post(pick_handler))
+        .route(
+            "/api/v1/sandboxes/:id/checkpoints",
+            get(checkpoints_handler),
+        )
+        .route("/api/v1/sandboxes/:id/undo", post(undo_handler))
+        .route("/api/v1/sandboxes/:id/pin", post(pin_handler))
+        .route("/api/v1/sandboxes/:id/ledger", get(ledger_handler))
+        .route(
+            "/api/v1/sandboxes/:id/egress",
+            get(egress_get_handler)
+                .put(egress_put_handler)
+                .delete(egress_delete_handler),
+        )
         .route(
             "/api/v1/sandboxes/:id/files",
             get(read_handler).put(write_handler),
@@ -585,6 +865,209 @@ fn sandbox_tool(name: &str, description: &str, params: Value) -> ToolSpec {
     }
 }
 
+#[derive(Deserialize, Default)]
+struct ForkReq {
+    #[serde(default)]
+    count: Option<u32>,
+}
+
+async fn fork_handler(
+    State(state): State<SharedState>,
+    Extension(auth): Extension<AuthContext>,
+    Path(id): Path<String>,
+    body: Option<Json<ForkReq>>,
+) -> Response {
+    let client = client_of(&state).await;
+    let count = body.and_then(|b| b.0.count).unwrap_or(1);
+    match op_fork(&client, &auth.role, &auth.subject, &id, count).await {
+        Ok(made) => (
+            StatusCode::ACCEPTED,
+            Json(json!({"success": true, "data": {"parent": id, "forks": made}})),
+        )
+            .into_response(),
+        Err(e) => err(e),
+    }
+}
+
+#[derive(Deserialize)]
+struct PickReq {
+    keep: String,
+}
+
+async fn pick_handler(
+    State(state): State<SharedState>,
+    Extension(auth): Extension<AuthContext>,
+    Path(id): Path<String>,
+    Json(req): Json<PickReq>,
+) -> Response {
+    let client = client_of(&state).await;
+    match op_pick(&client, &auth.role, &auth.subject, &id, &req.keep).await {
+        Ok(deleted) => ok(json!({"kept": req.keep, "deleted": deleted})),
+        Err(e) => err(e),
+    }
+}
+
+#[derive(Deserialize, Default)]
+struct NameReq {
+    #[serde(default)]
+    name: Option<String>,
+}
+
+#[cfg(feature = "kairon")]
+async fn checkpoints_handler(
+    State(state): State<SharedState>,
+    Extension(auth): Extension<AuthContext>,
+    Path(id): Path<String>,
+) -> Response {
+    let client = client_of(&state).await;
+    match op_checkpoints(&client, &auth.role, &auth.subject, &id).await {
+        Ok(v) => ok(v),
+        Err(e) => err(e),
+    }
+}
+
+#[cfg(feature = "kairon")]
+async fn undo_handler(
+    State(state): State<SharedState>,
+    Extension(auth): Extension<AuthContext>,
+    Path(id): Path<String>,
+    body: Option<Json<NameReq>>,
+) -> Response {
+    let client = client_of(&state).await;
+    let name = body.and_then(|b| b.0.name);
+    match op_undo(&client, &auth.role, &auth.subject, &id, name.as_deref()).await {
+        Ok(restored) => ok(json!({"restored": restored})),
+        Err(e) => err(e),
+    }
+}
+
+#[cfg(feature = "kairon")]
+async fn pin_handler(
+    State(state): State<SharedState>,
+    Extension(auth): Extension<AuthContext>,
+    Path(id): Path<String>,
+    Json(req): Json<NameReq>,
+) -> Response {
+    let client = client_of(&state).await;
+    let Some(name) = req.name.filter(|n| !n.is_empty()) else {
+        return err(OpError(422, "name is required".into()));
+    };
+    match op_pin(&client, &auth.role, &auth.subject, &id, &name).await {
+        Ok(()) => ok(json!({"pinned": name})),
+        Err(e) => err(e),
+    }
+}
+
+#[cfg(feature = "kairon")]
+async fn ledger_handler(
+    State(state): State<SharedState>,
+    Extension(auth): Extension<AuthContext>,
+    Path(id): Path<String>,
+) -> Response {
+    let client = client_of(&state).await;
+    match op_ledger(&client, &auth.role, &auth.subject, &id).await {
+        Ok(v) => ok(v),
+        Err(e) => err(e),
+    }
+}
+
+#[cfg(not(feature = "kairon"))]
+async fn checkpoints_handler() -> Response {
+    err(OpError(501, "KAIRON_REQUIRED".into()))
+}
+#[cfg(not(feature = "kairon"))]
+async fn undo_handler() -> Response {
+    err(OpError(501, "KAIRON_REQUIRED".into()))
+}
+#[cfg(not(feature = "kairon"))]
+async fn pin_handler() -> Response {
+    err(OpError(501, "KAIRON_REQUIRED".into()))
+}
+#[cfg(not(feature = "kairon"))]
+async fn ledger_handler() -> Response {
+    err(OpError(501, "KAIRON_REQUIRED".into()))
+}
+
+#[cfg(feature = "kairon")]
+async fn egress_target(
+    state: &SharedState,
+    auth: &AuthContext,
+    id: &str,
+    write: bool,
+) -> Result<(kube::Client, Sandbox), OpError> {
+    require_kairon_backend()?;
+    if write {
+        writer(&auth.role)?;
+    }
+    let client = client_of(state).await;
+    let sb = find(&client, &auth.role, &auth.subject, id).await?;
+    Ok((client, sb))
+}
+
+#[cfg(feature = "kairon")]
+async fn egress_get_handler(
+    State(state): State<SharedState>,
+    Extension(auth): Extension<AuthContext>,
+    Path(id): Path<String>,
+) -> Response {
+    let (client, sb) = match egress_target(&state, &auth, &id, false).await {
+        Ok(v) => v,
+        Err(e) => return err(e),
+    };
+    match agent::get_egress(&client, &sb).await {
+        Ok(Some(v)) => ok(v),
+        Ok(None) => ok(json!({"sandbox": sb.id, "policy": null, "enforced": false,
+                              "message": "no egress allowlist; the default sandbox network applies"})),
+        Err(e) => err(OpError(502, e.to_string())),
+    }
+}
+
+#[cfg(feature = "kairon")]
+async fn egress_put_handler(
+    State(state): State<SharedState>,
+    Extension(auth): Extension<AuthContext>,
+    Path(id): Path<String>,
+    Json(req): Json<agent::EgressPolicy>,
+) -> Response {
+    let (client, sb) = match egress_target(&state, &auth, &id, true).await {
+        Ok(v) => v,
+        Err(e) => return err(e),
+    };
+    match agent::set_egress(&client, &sb, &req).await {
+        Ok(v) => ok(v),
+        Err(e) => err(OpError(502, e.to_string())),
+    }
+}
+
+#[cfg(feature = "kairon")]
+async fn egress_delete_handler(
+    State(state): State<SharedState>,
+    Extension(auth): Extension<AuthContext>,
+    Path(id): Path<String>,
+) -> Response {
+    let (client, sb) = match egress_target(&state, &auth, &id, true).await {
+        Ok(v) => v,
+        Err(e) => return err(e),
+    };
+    match agent::clear_egress(&client, &sb).await {
+        Ok(removed) => ok(json!({"sandbox": sb.id, "removed": removed})),
+        Err(e) => err(OpError(502, e.to_string())),
+    }
+}
+
+#[cfg(not(feature = "kairon"))]
+async fn egress_get_handler() -> Response {
+    err(OpError(501, "KAIRON_REQUIRED".into()))
+}
+#[cfg(not(feature = "kairon"))]
+async fn egress_put_handler() -> Response {
+    err(OpError(501, "KAIRON_REQUIRED".into()))
+}
+#[cfg(not(feature = "kairon"))]
+async fn egress_delete_handler() -> Response {
+    err(OpError(501, "KAIRON_REQUIRED".into()))
+}
+
 pub fn tool_specs() -> Vec<ToolSpec> {
     let id = json!({"type": "string", "description": "Sandbox id from sandbox_create"});
     vec![
@@ -627,6 +1110,30 @@ pub fn tool_specs() -> Vec<ToolSpec> {
             "sandbox_destroy",
             "Delete your sandbox now.",
             json!({"type": "object", "properties": {"sandbox_id": id}, "required": ["sandbox_id"]}),
+        ),
+        sandbox_tool(
+            "sandbox_fork",
+            "Branch your sandbox into N live copies that keep its running processes (Kairon backend). Try different actions in each copy, then call sandbox_pick to keep the best one.",
+            json!({"type": "object", "properties": {
+                "sandbox_id": id,
+                "count": {"type": "integer", "minimum": 1, "maximum": 5, "default": 2}
+            }, "required": ["sandbox_id"]}),
+        ),
+        sandbox_tool(
+            "sandbox_pick",
+            "Keep one sandbox of a branch group and delete the parent and all other copies.",
+            json!({"type": "object", "properties": {
+                "sandbox_id": id,
+                "keep": {"type": "string", "description": "Sandbox id to keep"}
+            }, "required": ["sandbox_id", "keep"]}),
+        ),
+        sandbox_tool(
+            "sandbox_undo",
+            "Undo: restore the sandbox to its state before the last command (or a named checkpoint).",
+            json!({"type": "object", "properties": {
+                "sandbox_id": id,
+                "checkpoint": {"type": "string"}
+            }, "required": ["sandbox_id"]}),
         ),
         sandbox_tool(
             "sandbox_list",
@@ -676,6 +1183,40 @@ pub async fn invoke_tool(ctx: &ToolCtx, name: &str, args: &Value) -> ToolOutput 
                     }),
                 ),
                 Err(e) => fail(e),
+            }
+        }
+        "sandbox_fork" => {
+            let count = args.get("count").and_then(Value::as_u64).unwrap_or(2) as u32;
+            match op_fork(&client, &ctx.role, &ctx.subject, id, count).await {
+                Ok(made) => out(
+                    true,
+                    json!({
+                        "forks": made.iter().map(|m| &m.id).collect::<Vec<_>>(),
+                        "hint": "Copies are starting; run sandbox_exec in each, then sandbox_pick the winner.",
+                    }),
+                ),
+                Err(e) => fail(e),
+            }
+        }
+        "sandbox_pick" => {
+            let keep = s_arg(args, "keep").unwrap_or("").trim();
+            match op_pick(&client, &ctx.role, &ctx.subject, id, keep).await {
+                Ok(deleted) => out(true, json!({"kept": keep, "deleted": deleted})),
+                Err(e) => fail(e),
+            }
+        }
+        "sandbox_undo" => {
+            #[cfg(feature = "kairon")]
+            {
+                let ck = s_arg(args, "checkpoint").filter(|c| !c.is_empty());
+                match op_undo(&client, &ctx.role, &ctx.subject, id, ck).await {
+                    Ok(restored) => out(true, json!({"restored": restored})),
+                    Err(e) => fail(e),
+                }
+            }
+            #[cfg(not(feature = "kairon"))]
+            {
+                fail(OpError(501, "KAIRON_REQUIRED".into()))
             }
         }
         "sandbox_exec" => {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { McpServersBox } from './McpServersBox.jsx';
-import { Copy, Plus, Trash2, Play, Sparkles, Shield, TerminalSquare, Cpu, Search } from 'lucide-react';
+import { Copy, Plus, Trash2, Play, Sparkles, Shield, TerminalSquare, Cpu, Search, GitBranch, Undo2 } from 'lucide-react';
 import { api, relTime } from './api.js';
 import { Shell, Specs, Band, Note, DataTable, useSources, run, titleCase } from './insights.jsx';
 import { ProposalCard } from './ProposalCard.jsx';
@@ -527,6 +527,21 @@ export function SandboxesPage({ user, showToast }) {
   const [out, setOut] = useState(null);
   const [running, setRunning] = useState(false);
   const selected = items.find((x) => x.id === sel);
+  const [lab, setLab] = useState({ checkpoints: [], ledger: null, error: '' });
+  const loadLab = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const [checkpoints, ledger] = await Promise.all([api.sandboxCheckpoints(id), api.sandboxLedger(id)]);
+      setLab({ checkpoints, ledger, error: '' });
+    } catch (e) {
+      // 501 on KubeVirt: the agent lab needs the Kairon backend.
+      setLab({ checkpoints: [], ledger: null, error: e.message || String(e) });
+    }
+  }, []);
+  useEffect(() => {
+    setLab({ checkpoints: [], ledger: null, error: '' });
+    loadLab(sel);
+  }, [sel, loadLab]);
 
   const create = async () => {
     setCreating(true);
@@ -547,6 +562,7 @@ export function SandboxesPage({ user, showToast }) {
     setRunning(true);
     try {
       setOut(await api.sandboxExec(sel, cmd, 60));
+      loadLab(sel);
     } catch (err) {
       setOut({ exit_code: -1, stdout: '', stderr: err.message || String(err) });
     } finally {
@@ -644,6 +660,64 @@ export function SandboxesPage({ user, showToast }) {
               <Play size={13} /> {running ? 'Running…' : 'Run'}
             </button>
           </form>
+          {canWrite(user) && !lab.error && (
+            <div className="vt-acts" style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className="btn sm secondary"
+                onClick={async () => {
+                  if (await run(showToast, () => api.sandboxFork(sel, 2), `Forked ${sel} into 2 live copies`)) {
+                    s.reload();
+                  }
+                }}
+              >
+                <GitBranch size={12} /> Fork ×2
+              </button>
+              <button
+                type="button"
+                className="btn sm secondary"
+                disabled={!lab.checkpoints.length}
+                onClick={async () => {
+                  if (await run(showToast, () => api.sandboxUndo(sel), 'Restored the state before the last command')) {
+                    loadLab(sel);
+                  }
+                }}
+              >
+                <Undo2 size={12} /> Undo last command
+              </button>
+              {selected.parent && (
+                <button
+                  type="button"
+                  className="btn sm primary"
+                  onClick={async () => {
+                    if (await run(showToast, () => api.sandboxPick(sel, sel), `Kept ${sel}; the other copies were deleted`)) {
+                      s.reload();
+                    }
+                  }}
+                >
+                  Keep this one
+                </button>
+              )}
+            </div>
+          )}
+          {lab.error && <Note>Agent lab unavailable: {lab.error}</Note>}
+          {lab.checkpoints.length > 0 && (
+            <Note>
+              Checkpoints:{' '}
+              {lab.checkpoints.map((c) => (
+                <button
+                  key={c.name}
+                  type="button"
+                  className="btn sm secondary"
+                  title={c.pinned ? 'Pinned' : 'Pin this state'}
+                  onClick={() => !c.pinned && run(showToast, () => api.sandboxPin(sel, c.name), `Pinned ${c.name}`).then(() => loadLab(sel))}
+                >
+                  {c.pinned ? '📌 ' : ''}
+                  {c.name.split('-ckpt-')[1] || c.name}
+                </button>
+              ))}
+            </Note>
+          )}
           {out && (
             <div className="ai-exec-out">
               <small>
@@ -654,6 +728,32 @@ export function SandboxesPage({ user, showToast }) {
               {out.stderr && <pre className="err">{out.stderr}</pre>}
             </div>
           )}
+        </Band>
+      )}
+      {selected && lab.ledger && (lab.ledger.entries || []).length > 0 && (
+        <Band kicker="Run ledger" title={`${lab.ledger.summary?.runs ?? 0} runs · ${lab.ledger.summary?.failures ?? 0} failed · ${lab.ledger.summary?.exec_seconds ?? 0}s`} wide>
+          <DataTable
+            cols={[
+              ['at', 'When'],
+              ['action', 'Action', 'st'],
+              ['detail', 'Detail', 'm'],
+              ['exit', 'Exit'],
+            ]}
+            rows={(lab.ledger.entries || [])
+              .slice()
+              .reverse()
+              .slice(0, 50)
+              .map((e, i) => ({
+                id: `${e.at}-${i}`,
+                at: relTime(e.at),
+                action: e.action,
+                detail: e.detail,
+                exit: e.exit_code ?? '—',
+              }))}
+            loading={false}
+            error={null}
+            empty="No runs yet."
+          />
         </Band>
       )}
     </Shell>
