@@ -219,6 +219,20 @@ pub async fn claim(
     cfg.memory.size = std::env::var("VEYRON_SANDBOX_MEMORY").unwrap_or_else(|_| "1Gi".into());
     cfg.cloud_init = None;
     let mut m = crate::kairon::machine_from_config(&cfg)?;
+    // Kairon requires spec.image.digest when an OCI source is set (it is the cache key).
+    let unpinned_oci = m
+        .spec
+        .image
+        .source
+        .as_ref()
+        .and_then(|s| s.oci.clone())
+        .filter(|_| m.spec.image.digest.is_none());
+    if let Some(oci) = unpinned_oci {
+        let digest = crate::kairon::oci::resolve_digest(&oci)
+            .await
+            .with_context(|| format!("pinning sandbox image {oci} to a digest"))?;
+        m.spec.image.digest = Some(digest);
+    }
     m.spec.runtime = Some(RuntimeSpec {
         backend: Some("firecracker".into()),
         kernel: None,
