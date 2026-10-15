@@ -93,6 +93,23 @@ pub fn tls_insecure() -> bool {
     )
 }
 
+/// A template with neither `{node}` nor `{node_ip}` sends every Machine's relay
+/// call to one fixed node, so VMs scheduled anywhere else answer "VM not found".
+pub fn template_is_per_node(template: &str) -> bool {
+    template.contains("{node_ip}") || template.contains("{node}")
+}
+
+fn warn_if_fixed_template(template: &str) {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    if !template_is_per_node(template) {
+        ONCE.call_once(|| {
+            log::warn!(
+                "VEYRON_KAIRON_NODE_URL={template} has no {{node_ip}}/{{node}} placeholder: relay calls (logs, snapshots, exec, consoles) all go to that one node and fail for Machines scheduled elsewhere"
+            );
+        });
+    }
+}
+
 /// Expand the relay URL template for a node.
 pub fn expand_template(template: &str, node: &str, node_ip: &str) -> String {
     template
@@ -151,6 +168,7 @@ impl RelayTarget {
             })?
             .to_string();
         let template = relay_template();
+        warn_if_fixed_template(&template);
         let node_ip = if template.contains("{node_ip}") {
             node_internal_ip(client, &node).await?
         } else {
@@ -170,6 +188,7 @@ impl RelayTarget {
             anyhow!("kairon-node relay is not configured: set KAIRON_NODE_CONSOLE_TOKEN from the kairon-console-token Secret")
         })?;
         let template = relay_template();
+        warn_if_fixed_template(&template);
         let node_ip = if template.contains("{node_ip}") {
             node_internal_ip(client, node).await?
         } else {
@@ -363,6 +382,18 @@ mod tests {
         assert_eq!(
             expand_template("https://{node}.relay.local:9443/", "worker-2", ""),
             "https://worker-2.relay.local:9443"
+        );
+    }
+
+    #[test]
+    fn fixed_template_is_not_per_node() {
+        assert!(template_is_per_node(DEFAULT_RELAY_URL));
+        assert!(template_is_per_node("https://{node}.relay.local:9443"));
+        assert!(!template_is_per_node("https://80.79.5.173:8092"));
+        // A fixed URL expands to the same target for every node.
+        assert_eq!(
+            expand_template("https://80.79.5.173:8092", "n1", "10.0.0.1"),
+            expand_template("https://80.79.5.173:8092", "n2", "10.0.0.2"),
         );
     }
 
