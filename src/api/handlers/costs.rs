@@ -294,12 +294,10 @@ async fn list_budgets(
         .await
         .map_err(crate::api::handlers::kube_list_error("budgets"))?;
 
-    // Get current costs for comparison
-    let vms = s
-        .client()
-        .list_all_vms()
-        .await
-        .map_err(crate::api::handlers::kube_list_error("VMs"))?;
+    // Current spend is derived from KubeVirt VirtualMachines. `list_vms_for_scope` degrades to an
+    // empty list when that CRD is absent (Kairon backend), like the sibling cost endpoints, instead
+    // of failing the whole budgets listing with a 500.
+    let vms = s.client().list_vms_for_scope("all").await;
 
     // Build namespace -> total cost mapping
     let mut namespace_costs: std::collections::HashMap<String, f64> =
