@@ -532,6 +532,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ new_name: newName }),
     }),
+  forkVm: (ns, name, count) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/fork`, {
+      method: 'POST',
+      body: JSON.stringify({ count }),
+    }),
+  listForks: (ns, name) =>
+    request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/forks`),
   deleteVm: (ns, name) =>
     request(`/api/v1/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}`, { method: 'DELETE' }),
   createVm: (body) => request('/api/v1/vms', { method: 'POST', body: JSON.stringify(body) }),

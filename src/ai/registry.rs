@@ -297,6 +297,19 @@ pub fn builtin_tools() -> Vec<ToolSpec> {
         vm_obj(),
     ));
     t.push(change(
+        "fork_vm",
+        "Fork a running VM into N live copies that keep its memory and processes (Kairon only).",
+        ApiRole::Write,
+        obj(
+            json!({
+                "namespace": {"type": "string"},
+                "vm_name": {"type": "string"},
+                "count": {"type": "integer", "minimum": 1, "maximum": 10}
+            }),
+            &["vm_name"],
+        ),
+    ));
+    t.push(change(
         "snapshot_vm",
         "Take a snapshot of a VM.",
         ApiRole::Write,
@@ -914,6 +927,36 @@ pub async fn draft_change(ctx: &ToolCtx, name: &str, args: &Value) -> anyhow::Re
                     &w,
                 ));
             }
+        }
+        "fork_vm" => {
+            let (ns, vm) = ns_vm(args).map_err(err)?;
+            let count = args
+                .get("count")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(1)
+                .clamp(1, 10);
+            p.title = format!(
+                "Fork {ns}/{vm} into {count} live cop{}",
+                if count == 1 { "y" } else { "ies" }
+            );
+            p.blast_radius.vms = vec![format!("{ns}/{vm}")];
+            p.blast_radius.reversible = true;
+            p.diff.push(DiffLine {
+                target: format!("{ns}/{vm}"),
+                field: "forks".into(),
+                before: "—".into(),
+                after: format!(
+                    "+ {count} running cop{}",
+                    if count == 1 { "y" } else { "ies" }
+                ),
+            });
+            p.steps.push(step(
+                "POST",
+                format!("/api/v1/vms/{ns}/{vm}/fork"),
+                Some(json!({"count": count})),
+                format!("Fork {ns}/{vm} x{count}"),
+                &w,
+            ));
         }
         "snapshot_vm" => {
             let (ns, vm) = ns_vm(args).map_err(err)?;

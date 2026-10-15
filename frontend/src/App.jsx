@@ -451,6 +451,21 @@ export default function App() {
             if (a === 'delete') await api.deleteVm(ns, t.name);
             else if (a === 'snapshot') await api.createSnapshot(ns, t.name);
             else if (a === 'clone') await api.cloneVm(ns, t.name, `${t.name}-clone`);
+            else if (a === 'fork') {
+              const raw = window.prompt(
+                `Fork ${ns}/${t.name} into how many live copies? (1-10)\n\nEach copy keeps the running processes and memory of the parent (Kairon + FluxVM only).`,
+                '2',
+              );
+              if (!raw) return;
+              const count = Number.parseInt(raw, 10);
+              if (!Number.isInteger(count) || count < 1) {
+                showToast('Enter a whole number of copies', true);
+                return;
+              }
+              await api.forkVm(ns, t.name, count);
+              showToast(`Forking ${t.name} into ${count} live cop${count === 1 ? 'y' : 'ies'}`);
+              return;
+            }
             else if (a === 'capture') {
               const image = window.prompt(
                 `Capture ${ns}/${t.name} as a golden image named:\n\nThe guest keeps running; filesystems are frozen briefly when its agent answers.`,

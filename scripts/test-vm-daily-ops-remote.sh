@@ -412,6 +412,29 @@ EOF
             body="${_CURL_BODY}"
             body_success "${body}" && pass "POST unpause" || fail "POST unpause" "$(echo "${body}" | head -c 300)"
 
+            # Fork Lab (Kairon only): validation always; a real fork when the VM is forkable
+            # (flux-vm backend, boot disk only), otherwise a 409 FORK_BLOCKED is the contract.
+            curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork" '{"count":0}'
+            case "${_CURL_CODE}" in
+                422) pass "POST fork count=0 rejected (422)" ;;
+                501) skip "fork is Kairon-only (501 on this backend)" ;;
+                *) fail "POST fork count=0 expected 422" "code=${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)" ;;
+            esac
+            if [[ "${_CURL_CODE}" != "501" ]]; then
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork" '{"count":1,"name_prefix":"e2efork"}'
+                case "${_CURL_CODE}" in
+                    202)
+                        pass "POST fork accepted"
+                        curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/forks"
+                        echo "${_CURL_BODY}" | grep -q "e2efork-1" && pass "GET forks lists e2efork-1" || fail "GET forks missing e2efork-1" "$(echo "${_CURL_BODY}" | head -c 300)"
+                        curl_api DELETE "/api/v1/vms/${NS}/e2efork-1"
+                        body_success "${_CURL_BODY}" && pass "DELETE fork child" || fail "DELETE fork child" "$(echo "${_CURL_BODY}" | head -c 300)"
+                        ;;
+                    409) skip "POST fork blocked (VM not forkable: $(echo "${_CURL_BODY}" | grep -o 'FORK_[A-Z]*' | head -1))" ;;
+                    *) fail "POST fork" "code=${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 300)" ;;
+                esac
+            fi
+
             expose_put='{"enabled":true,"service_type":"NodePort","ports":[{"name":"ssh","port":22,"target_port":22,"protocol":"TCP"}]}'
             curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/expose" "${expose_put}"
             body="${_CURL_BODY}"

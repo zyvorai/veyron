@@ -113,6 +113,11 @@ takes seconds.
 - On Kairon (the default engine), sandboxes are Firecracker machines, forked from
   `VEYRON_SANDBOX_KAIRON_PARENT` when set.
 
+## Forking a VM
+
+`fork_vm` (Change tool, Write) drafts a proposal that forks a running Kairon VM
+into 1-10 live copies. See [fork.md](fork.md).
+
 ## Running a model in the cluster
 
 **AI → Models → Deploy model** creates an Ubuntu VM that serves an OpenAI-compatible endpoint on
