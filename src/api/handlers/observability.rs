@@ -108,11 +108,9 @@ async fn get_observability_overview(
     } else {
         s.client().list_events(&namespace).await.unwrap_or_default()
     };
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
-    } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
-    };
+    let vms = crate::api::vm_backend::list_vm_objects(s.client(), &namespace)
+        .await
+        .unwrap_or_default();
 
     // Estimate data ingestion rate from event frequency
     let ingestion_rate = if !events.is_empty() {

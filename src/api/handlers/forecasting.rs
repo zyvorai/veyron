@@ -53,12 +53,9 @@ async fn list_predictions(
 ) -> Result<Json<ForecastPredictionsResponse>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await
-    } else {
-        s.client().list_vms(&namespace).await
-    }
-    .map_err(crate::api::handlers::kube_list_error("VMs"))?;
+    let vms = crate::api::vm_backend::list_vm_objects(s.client(), &namespace)
+        .await
+        .map_err(crate::api::handlers::kube_list_error("VMs"))?;
     let nodes = s
         .client()
         .list_nodes()

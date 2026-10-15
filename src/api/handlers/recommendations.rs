@@ -87,11 +87,9 @@ async fn list_recommendations(
         .namespace
         .clone()
         .unwrap_or_else(|| s.namespace.clone());
-    let vms = if scope == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
-    } else {
-        s.client().list_vms(&scope).await.unwrap_or_default()
-    };
+    let vms = crate::api::vm_backend::list_vm_objects(s.client(), &scope)
+        .await
+        .unwrap_or_default();
     let mut recs = Vec::new();
     let mut id_counter = 0u32;
 

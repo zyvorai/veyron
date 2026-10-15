@@ -47,7 +47,7 @@ async fn get_dependency_graph(State(state): State<SharedState>) -> Json<Dependen
     let mut edges = Vec::new();
 
     // List all VMs
-    if let Ok(vms) = s.client().list_all_vms().await {
+    if let Ok(vms) = crate::api::vm_backend::list_vm_objects(s.client(), "all").await {
         for vm in &vms {
             let name = vm.metadata.name.clone().unwrap_or_default();
             let namespace = vm.metadata.namespace.clone().unwrap_or_default();

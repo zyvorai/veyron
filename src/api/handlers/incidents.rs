@@ -186,11 +186,9 @@ async fn get_incident_timeline(
     } // incidents.is_empty() fallback
 
     // Check SLO status and add a synthetic SLO-breach incident if needed
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
-    } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
-    };
+    let vms = crate::api::vm_backend::list_vm_objects(s.client(), &namespace)
+        .await
+        .unwrap_or_default();
     if !vms.is_empty() {
         let total = vms.len() as f64;
         let running = vms

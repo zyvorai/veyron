@@ -89,8 +89,7 @@ async fn get_cluster_metrics(
     let s = state.read().await;
     let client = s.client();
 
-    let vms = client
-        .list_all_vms()
+    let vms = crate::api::vm_backend::list_vm_objects(client, "all")
         .await
         .map_err(crate::api::handlers::kube_list_error("VMs"))?;
     let nodes = client

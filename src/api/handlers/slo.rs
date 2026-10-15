@@ -66,11 +66,9 @@ async fn list_slo_objectives(
 ) -> Json<Vec<SloObjective>> {
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
-    } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
-    };
+    let vms = crate::api::vm_backend::list_vm_objects(s.client(), &namespace)
+        .await
+        .unwrap_or_default();
 
     if vms.is_empty() {
         return Json(vec![]);
@@ -123,11 +121,9 @@ async fn list_slo_burn_rates(
 ) -> Json<Vec<SloErrorBudget>> {
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
-    } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
-    };
+    let vms = crate::api::vm_backend::list_vm_objects(s.client(), &namespace)
+        .await
+        .unwrap_or_default();
 
     if vms.is_empty() {
         return Json(vec![]);

@@ -25,7 +25,9 @@ pub(super) async fn metrics_stream(mut socket: WebSocket, state: SharedState) {
         };
 
         let metrics = {
-            let vms = client.list_all_vms().await.unwrap_or_default();
+            let vms = crate::api::vm_backend::list_vm_objects(&client, "all")
+                .await
+                .unwrap_or_default();
             let nodes = client.list_nodes().await.unwrap_or_default();
 
             let total_vms = vms.len() as u32;

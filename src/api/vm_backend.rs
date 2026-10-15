@@ -94,6 +94,37 @@ pub enum VmBackend {
     Kairon(KubeClient),
 }
 
+/// VMs as KubeVirt `VirtualMachine` objects for handlers that only need
+/// metadata and `status.ready`/`printableStatus` (SLO, forecasting, namespaces…).
+/// Under Kairon they are synthesized from Machines; the spec is a stub.
+pub async fn list_vm_objects(
+    client: &KubeClient,
+    scope_ns: &str,
+) -> Result<Vec<crate::kube::types::VirtualMachine>> {
+    let backend = VmBackend::for_client(client);
+    if backend.kind() == BackendKind::KubeVirt {
+        return if scope_ns == "all" {
+            client.list_all_vms().await
+        } else {
+            client.list_vms(scope_ns).await
+        };
+    }
+    let infos = backend.list(scope_ns).await?;
+    Ok(infos
+        .into_iter()
+        .filter_map(|i| {
+            serde_json::from_value(serde_json::json!({
+                "apiVersion": "kubevirt.io/v1",
+                "kind": "VirtualMachine",
+                "metadata": {"name": i.name, "namespace": i.namespace},
+                "spec": {"template": {"spec": {}}},
+                "status": {"ready": i.ready, "printableStatus": i.status},
+            }))
+            .ok()
+        })
+        .collect())
+}
+
 impl VmBackend {
     pub fn for_client(client: &KubeClient) -> Self {
         match selected() {

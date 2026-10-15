@@ -88,12 +88,9 @@ async fn list_performance_profiles(
 ) -> Result<Json<PerformanceProfilesResponse>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await
-    } else {
-        s.client().list_vms(&namespace).await
-    }
-    .map_err(crate::api::handlers::kube_list_error("VMs"))?;
+    let vms = crate::api::vm_backend::list_vm_objects(s.client(), &namespace)
+        .await
+        .map_err(crate::api::handlers::kube_list_error("VMs"))?;
     let now = chrono::Utc::now().to_rfc3339();
 
     let mut profiles = Vec::new();
@@ -229,11 +226,9 @@ async fn get_flamegraph(
         .namespace
         .clone()
         .unwrap_or_else(|| s.namespace.clone());
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
-    } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
-    };
+    let vms = crate::api::vm_backend::list_vm_objects(s.client(), &namespace)
+        .await
+        .unwrap_or_default();
     let now = chrono::Utc::now().to_rfc3339();
     let mut graphs = Vec::new();
 

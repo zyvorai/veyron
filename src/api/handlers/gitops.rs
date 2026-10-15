@@ -170,11 +170,7 @@ async fn get_gitops_status(
             Default::default()
         };
 
-    let vms_list_result = if namespace == "all" {
-        s.client().list_all_vms().await
-    } else {
-        s.client().list_vms(&namespace).await
-    };
+    let vms_list_result = crate::api::vm_backend::list_vm_objects(s.client(), &namespace).await;
 
     // A failed list call must not be treated as "zero VMs" for drift purposes —
     // that would flip drift_detected on an API hiccup, a false "out_of_sync"
@@ -308,11 +304,9 @@ async fn trigger_sync(
 
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
-    } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
-    };
+    let vms = crate::api::vm_backend::list_vm_objects(s.client(), &namespace)
+        .await
+        .unwrap_or_default();
     let now = chrono::Utc::now().to_rfc3339();
 
     let mut argo_triggered = false;

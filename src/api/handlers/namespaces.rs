@@ -35,7 +35,7 @@ async fn list_namespaces(State(state): State<SharedState>) -> Json<Vec<Namespace
 
     // Count VMs per namespace with a single cluster-wide API call
     let mut vm_counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
-    if let Ok(all_vms) = kube_client.list_all_vms().await {
+    if let Ok(all_vms) = crate::api::vm_backend::list_vm_objects(&kube_client, "all").await {
         for vm in &all_vms {
             let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
             *vm_counts.entry(ns.to_string()).or_insert(0) += 1;
