@@ -248,9 +248,9 @@ pub async fn claim(
         m.spec.image.digest = Some(digest);
     }
     let backend = runtime_backend();
-    // qemu-style guest-agent channels (virtio-serial) don't exist on firecracker;
-    // FluxVM rejects `qga.enabled` there with a 400.
-    if backend == "firecracker" {
+    // FluxVM only offers a guest-agent channel on qemu (virtio-serial) and
+    // cloud-hypervisor (serial socket); firecracker and flux-vm answer 400.
+    if !matches!(backend.as_str(), "qemu" | "cloud-hypervisor") {
         m.spec.guest_agent = None;
     }
     m.spec.runtime = Some(RuntimeSpec {
