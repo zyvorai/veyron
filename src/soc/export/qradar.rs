@@ -15,12 +15,16 @@ pub struct QRadarConfig {
 }
 
 pub fn config() -> Option<QRadarConfig> {
-    let host = std::env::var("VEYRON_QRADAR_SYSLOG_HOST")
-        .ok()
-        .filter(|s| !s.trim().is_empty())?;
-    let port = std::env::var("VEYRON_QRADAR_SYSLOG_PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
+    // `VEYRON_QRADAR_HOST`/`_PORT` are the names documented in docs/soc.md.
+    let env_nonempty = |names: &[&str]| {
+        names
+            .iter()
+            .filter_map(|n| std::env::var(n).ok())
+            .find(|s| !s.trim().is_empty())
+    };
+    let host = env_nonempty(&["VEYRON_QRADAR_SYSLOG_HOST", "VEYRON_QRADAR_HOST"])?;
+    let port = env_nonempty(&["VEYRON_QRADAR_SYSLOG_PORT", "VEYRON_QRADAR_PORT"])
+        .and_then(|p| p.trim().parse().ok())
         .unwrap_or(514);
     let leef_vendor = std::env::var("VEYRON_QRADAR_LEEF_VENDOR").unwrap_or_else(|_| "Zyvor".into());
     let leef_product =
@@ -44,17 +48,28 @@ pub fn status() -> SocExportStatus {
     }
 }
 
+/// Neutralise characters that would split a LEEF record or forge fields:
+/// tab (field delimiter), CR/LF (record boundary) and `|` (header delimiter).
+fn leef_escape(s: &str) -> String {
+    s.chars()
+        .map(|c| match c {
+            '\t' | '\r' | '\n' | '|' => ' ',
+            c => c,
+        })
+        .collect()
+}
+
 fn to_leef(ev: &SecurityEvent, cfg: &QRadarConfig) -> String {
     format!(
         "LEEF:2.0|{}|{}|1.0|{}|devTime={}\tsev={}\tsrc={}\tusrName={}\tmsg={}",
-        cfg.leef_vendor,
-        cfg.leef_product,
-        ev.category,
-        ev.timestamp,
-        ev.severity,
-        ev.source,
-        ev.actor,
-        ev.message.replace('\t', " ")
+        leef_escape(&cfg.leef_vendor),
+        leef_escape(&cfg.leef_product),
+        leef_escape(&ev.category),
+        leef_escape(&ev.timestamp),
+        leef_escape(&ev.severity),
+        leef_escape(&ev.source),
+        leef_escape(&ev.actor),
+        leef_escape(&ev.message)
     )
 }
 
@@ -93,4 +108,32 @@ pub async fn push_events(events: &[SecurityEvent]) -> anyhow::Result<u32> {
 #[cfg(feature = "web")]
 pub async fn probe() -> bool {
     config().is_some()
+}
+
+#[cfg(all(test, feature = "web"))]
+mod tests {
+    use super::*;
+
+    fn ev(actor: &str, message: &str) -> SecurityEvent {
+        serde_json::from_value(serde_json::json!({
+            "id": "1", "timestamp": "t", "severity": "high", "category": "auth",
+            "source": "api", "actor": actor, "target": "", "namespace": "ns",
+            "action": "x", "outcome": "ok", "message": message
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn leef_neutralises_record_and_field_delimiters() {
+        let cfg = QRadarConfig {
+            syslog_host: "h".into(),
+            syslog_port: 514,
+            leef_vendor: "Zyvor".into(),
+            leef_product: "Veyron".into(),
+        };
+        let line = to_leef(&ev("a|b\nc", "m\r\nsev=low\tx"), &cfg);
+        assert!(!line.contains('\n') && !line.contains('\r'));
+        assert_eq!(line.matches('\t').count(), 4);
+        assert_eq!(line.matches('|').count(), 5);
+    }
 }
