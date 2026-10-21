@@ -466,6 +466,14 @@ EOF
                     curl_api GET "/api/v1/kairon/${_k}?namespace=all"
                     [[ "${_CURL_CODE}" == "200" ]] && pass "GET kairon/${_k} → 200" || skip "kairon/${_k} (HTTP ${_CURL_CODE}; CRD may not be installed)"
                 done
+                curl_api GET "/api/v1/kairon/advice/migrations"
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    echo "${_CURL_BODY}" | grep -q '"advice"' && pass "GET migration advice → 200" || fail "migration advice shape" "$(echo "${_CURL_BODY}" | head -c 200)"
+                else
+                    skip "migration advice (HTTP ${_CURL_CODE})"
+                fi
+                curl_api POST "/api/v1/agent-sessions/default/none/ops/tokens" '{}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "agent-session ops refuses a credential verb (422)" || fail "agent-session verb allow-list" "HTTP ${_CURL_CODE}"
                 curl_api GET "/api/v1/kairon/bogus"
                 [[ "${_CURL_CODE}" == "404" ]] && pass "GET kairon/bogus → 404" || fail "kairon/bogus" "HTTP ${_CURL_CODE}"
                 # Phase 3: FluxVM fork plan, event log, host memory, branches (need kairon-node with the flux relay routes).
@@ -488,6 +496,14 @@ EOF
                     [[ "${_CURL_CODE}" == "200" ]] && pass "GET node runtime/memory → 200" || skip "node runtime memory (HTTP ${_CURL_CODE})"
                     curl_api GET "/api/v1/nodes/${_node}/branches"
                     [[ "${_CURL_CODE}" == "200" ]] && pass "GET node branches → 200" || skip "node branches (HTTP ${_CURL_CODE})"
+                    for _r in runtime/topology runtime/pressure egress-nftables sandbox-templates; do
+                        curl_api GET "/api/v1/nodes/${_node}/${_r}"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "GET node ${_r} → 200" || skip "node ${_r} (HTTP ${_CURL_CODE}; needs the newer kairon-node relay)"
+                    done
+                    curl_api DELETE "/api/v1/nodes/${_node}/branches/..%2Fx"
+                    [[ "${_CURL_CODE}" == "400" || "${_CURL_CODE}" == "404" || "${_CURL_CODE}" == "405" ]] && pass "branch delete refuses a path-escaping id" || fail "branch delete id validation" "HTTP ${_CURL_CODE}"
+                    _sse="$(curl -skS --connect-timeout 10 --max-time 4 -H "X-API-Key: ${KEY}" -o /dev/null -w '%{http_code}' "${BASE}/api/v1/vms/${NS}/${VM_NAME}/runtime-events/stream" 2>/dev/null || true)"
+                    [[ "${_sse}" == "200" ]] && pass "GET runtime-events/stream opens (200)" || skip "runtime-events stream (HTTP ${_sse:-none}; needs the newer kairon-node relay)"
                     curl_api GET "/api/v1/nodes/${_node}/branches/..%2Fetc/diff/x"
                     [[ "${_CURL_CODE}" == "400" || "${_CURL_CODE}" == "404" ]] && pass "branch diff refuses a path-escaping id" || fail "branch id validation" "HTTP ${_CURL_CODE}"
                 else

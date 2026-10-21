@@ -101,6 +101,18 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     if path.contains("/restore") {
         return ApiRole::Admin;
     }
+    // Starting a VM from, or deleting, a saved FluxVM branch.
+    if path.contains("/nodes/") && path.contains("/branches/") {
+        return ApiRole::Admin;
+    }
+    // Agent sessions: approving an action or promoting a session widens what the agent may do.
+    if path.contains("/agent-sessions/")
+        && (path.contains("/ops/approvals")
+            || path.contains("/ops/grants")
+            || path.ends_with("/ops/promote"))
+    {
+        return ApiRole::Admin;
+    }
     if path == "/api/v1/gitops/sync" || path == "/api/v1/catalog/sync" {
         return ApiRole::Admin;
     }
@@ -165,6 +177,41 @@ mod tests {
                 ApiRole::Write
             );
         }
+    }
+
+    #[test]
+    fn branch_start_and_delete_need_admin() {
+        let p = "/api/v1/nodes/n1/branches/abc";
+        assert_eq!(min_role_for_route(&Method::DELETE, p), ApiRole::Admin);
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/start")),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/nodes/n1/branches"),
+            ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn agent_session_approvals_and_promote_need_admin() {
+        let p = "/api/v1/agent-sessions/ns/s1/ops";
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/approvals/x/approve")),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/promote")),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/exec")),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, &format!("{p}/trajectory")),
+            ApiRole::ReadOnly
+        );
     }
 
     #[test]

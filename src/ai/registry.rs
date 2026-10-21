@@ -280,6 +280,57 @@ pub fn builtin_tools() -> Vec<ToolSpec> {
             "Atlas off-cluster backups.",
             obj(json!({}), &[]),
         ),
+        read(
+            "vm_runtime_events",
+            "FluxVM lifecycle events for one VM (Kairon only).",
+            vm_obj(),
+        ),
+        read(
+            "vm_pressure",
+            "CPU, memory and IO pressure (PSI) of one VM (Kairon only).",
+            vm_obj(),
+        ),
+        read(
+            "vm_network_drops",
+            "Recent packets dropped for one VM and why: spoofed IP, DNS or SNI deny, rate limit (Kairon only).",
+            vm_obj(),
+        ),
+        read(
+            "vm_lifecycle",
+            "A VM's idle-suspend, lifetime and wake-on-connect settings (Kairon only).",
+            vm_obj(),
+        ),
+        read(
+            "vm_network_policy",
+            "A VM's egress/ingress policy: allowed CIDRs, FQDNs, SNI, DNS, rate limits (Kairon only).",
+            vm_obj(),
+        ),
+        read(
+            "node_runtime_memory",
+            "Host memory and memory pressure for a node as FluxVM sees it (Kairon only).",
+            obj(json!({"node": {"type": "string"}}), &["node"]),
+        ),
+        read(
+            "migration_advice",
+            "Which running VMs to migrate off nodes that are stalling on CPU, memory or IO, and to which node (Kairon only). Advice only; use migrate_vm to act on it.",
+            obj(json!({}), &[]),
+        ),
+        read(
+            "kairon_resources",
+            "List Kairon claims, quotas, disruption budgets, migration policies, backup policies, protection plans, virtual networks, accelerator profiles, balance policies, autoscalers, recovery plans, HA profiles, usage ledgers or node topologies.",
+            obj(
+                json!({
+                    "kind": {"type": "string", "enum": [
+                        "claims", "quotas", "disruption-budgets", "migration-policies",
+                        "backup-policies", "protection-plans", "virtual-networks",
+                        "accelerator-profiles", "balance-policies", "autoscalers",
+                        "recovery-plans", "ha-profiles", "usage-ledgers", "node-topologies"
+                    ]},
+                    "namespace": {"type": "string"}
+                }),
+                &["kind"],
+            ),
+        ),
     ];
 
     for verb in ["start", "stop", "restart", "pause", "unpause", "migrate"] {
@@ -348,6 +399,44 @@ pub fn builtin_tools() -> Vec<ToolSpec> {
             }),
             &["vm_name", "strategy"],
         ),
+    ));
+    t.push(change(
+        "set_vm_lifecycle",
+        "Set a VM's idle action (Pause, Hibernate, Halt, Stop, Delete), idle timeout and maximum lifetime in seconds; omit all to clear (Kairon only).",
+        ApiRole::Write,
+        obj(
+            json!({
+                "namespace": {"type": "string"},
+                "vm_name": {"type": "string"},
+                "idle_action": {"type": "string", "enum": ["Pause", "Hibernate", "Halt", "Stop", "Delete"]},
+                "idle_timeout_seconds": {"type": "integer", "minimum": 60},
+                "max_lifetime_seconds": {"type": "integer", "minimum": 60},
+                "wake_on_connect": {"type": "boolean"}
+            }),
+            &["vm_name"],
+        ),
+    ));
+    t.push(change(
+        "set_vm_network_policy",
+        "Replace a VM's network policy with allowed egress hosts (FQDNs) and CIDRs, or remove it (Kairon only).",
+        ApiRole::Write,
+        obj(
+            json!({
+                "namespace": {"type": "string"},
+                "vm_name": {"type": "string"},
+                "allow_fqdns": {"type": "array", "items": {"type": "string"}},
+                "allow_cidrs": {"type": "array", "items": {"type": "string"}},
+                "default_allow": {"type": "boolean"},
+                "remove": {"type": "boolean"}
+            }),
+            &["vm_name"],
+        ),
+    ));
+    t.push(change(
+        "quiesced_snapshot_vm",
+        "Freeze the guest filesystem, snapshot, then thaw: an application-consistent snapshot (Kairon only).",
+        ApiRole::Write,
+        vm_obj(),
     ));
     t.push(change(
         "enable_vm_internet",
@@ -658,6 +747,26 @@ fn read_path(name: &str, args: &Value) -> Result<Option<String>, String> {
             let (ns, vm) = ns_vm(args)?;
             Some(format!("/api/v1/atlas/vms/{ns}/{vm}/volumes"))
         }
+        "vm_runtime_events" => return vm_path("/runtime-events?limit=100"),
+        "vm_pressure" => return vm_path("/pressure"),
+        "vm_network_drops" => return vm_path("/network/drops?limit=100"),
+        "vm_lifecycle" => return vm_path("/lifecycle"),
+        "vm_network_policy" => return vm_path("/network-policy"),
+        "migration_advice" => Some("/api/v1/kairon/advice/migrations".into()),
+        "node_runtime_memory" => {
+            let node = safe_name(arg(args, "node").ok_or("node is required")?)?;
+            Some(format!("/api/v1/nodes/{node}/runtime/memory"))
+        }
+        "kairon_resources" => {
+            let kind = arg(args, "kind").ok_or("kind is required")?;
+            if !kind.bytes().all(|b| b.is_ascii_lowercase() || b == b'-') {
+                return Err("invalid kind".into());
+            }
+            Some(format!(
+                "/api/v1/kairon/{kind}?namespace={}",
+                ns_or_all(args)?
+            ))
+        }
         "atlas_snapshots" => Some("/api/v1/atlas/snapshots".into()),
         "atlas_backups" => Some("/api/v1/atlas/backups".into()),
         _ => None,
@@ -669,6 +778,8 @@ fn is_untrusted(name: &str) -> bool {
     matches!(
         name,
         "vm_events"
+            | "vm_runtime_events"
+            | "vm_network_drops"
             | "recent_events"
             | "search_logs"
             | "guest_doctor"
@@ -1076,6 +1187,146 @@ pub async fn draft_change(ctx: &ToolCtx, name: &str, args: &Value) -> anyhow::Re
                 &w,
             ));
         }
+        "set_vm_lifecycle" => {
+            let (ns, vm) = ns_vm(args).map_err(err)?;
+            let mut body = serde_json::Map::new();
+            if let Some(a) = arg(args, "idle_action") {
+                if !["Pause", "Hibernate", "Halt", "Stop", "Delete"].contains(&a) {
+                    anyhow::bail!("idle_action must be Pause, Hibernate, Halt, Stop or Delete");
+                }
+                body.insert("idleAction".into(), json!(a));
+            }
+            for (arg_key, field) in [
+                ("idle_timeout_seconds", "idleTimeoutSeconds"),
+                ("max_lifetime_seconds", "maxLifetimeSeconds"),
+            ] {
+                if let Some(n) = args.get(arg_key).and_then(Value::as_u64) {
+                    if n < 60 {
+                        anyhow::bail!("{arg_key} must be at least 60");
+                    }
+                    body.insert(field.into(), json!(n));
+                }
+            }
+            if let Some(w) = args.get("wake_on_connect").and_then(Value::as_bool) {
+                body.insert("wakeOnConnect".into(), json!(w));
+            }
+            let clearing = body.is_empty();
+            let deleting = body.get("idleAction") == Some(&json!("Delete"));
+            p.title = if clearing {
+                format!("Clear lifecycle limits on {ns}/{vm}")
+            } else {
+                format!("Set lifecycle limits on {ns}/{vm}")
+            };
+            p.blast_radius.vms = vec![format!("{ns}/{vm}")];
+            p.blast_radius.reversible = !deleting;
+            p.diff.push(DiffLine {
+                target: format!("{ns}/{vm}"),
+                field: "lifecycle".into(),
+                before: "current".into(),
+                after: if clearing {
+                    "(cleared)".into()
+                } else {
+                    Value::Object(body.clone()).to_string()
+                },
+            });
+            p.steps.push(step(
+                "PUT",
+                format!("/api/v1/vms/{ns}/{vm}/lifecycle"),
+                Some(Value::Object(body)),
+                format!("Set lifecycle on {ns}/{vm}"),
+                &w,
+            ));
+        }
+        "set_vm_network_policy" => {
+            let (ns, vm) = ns_vm(args).map_err(err)?;
+            let path = format!("/api/v1/vms/{ns}/{vm}/network-policy");
+            if args.get("remove").and_then(Value::as_bool) == Some(true) {
+                p.title = format!("Remove network policy from {ns}/{vm}");
+                p.blast_radius.vms = vec![format!("{ns}/{vm}")];
+                p.blast_radius.reversible = true;
+                p.diff.push(DiffLine {
+                    target: format!("{ns}/{vm}"),
+                    field: "networkPolicy".into(),
+                    before: "present".into(),
+                    after: "(removed)".into(),
+                });
+                p.steps.push(step(
+                    "DELETE",
+                    path,
+                    None,
+                    format!("Remove network policy from {ns}/{vm}"),
+                    &w,
+                ));
+            } else {
+                let list = |key: &str| -> Vec<String> {
+                    args.get(key)
+                        .and_then(Value::as_array)
+                        .map(|a| {
+                            a.iter()
+                                .filter_map(Value::as_str)
+                                .map(str::trim)
+                                .filter(|s| !s.is_empty() && s.len() <= 253)
+                                .take(64)
+                                .map(str::to_string)
+                                .collect()
+                        })
+                        .unwrap_or_default()
+                };
+                let (fqdns, cidrs) = (list("allow_fqdns"), list("allow_cidrs"));
+                let default_allow = args
+                    .get("default_allow")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false);
+                if fqdns.is_empty() && cidrs.is_empty() && !default_allow {
+                    anyhow::bail!(
+                        "give allow_fqdns and/or allow_cidrs, or default_allow=true; an empty policy would cut off all egress"
+                    );
+                }
+                p.title = format!("Set network policy on {ns}/{vm}");
+                p.blast_radius.vms = vec![format!("{ns}/{vm}")];
+                p.blast_radius.reversible = true;
+                p.diff.push(DiffLine {
+                    target: format!("{ns}/{vm}"),
+                    field: "networkPolicy".into(),
+                    before: "current".into(),
+                    after: format!(
+                        "defaultAllow={default_allow}, {} FQDN(s), {} CIDR(s)",
+                        fqdns.len(),
+                        cidrs.len()
+                    ),
+                });
+                p.steps.push(step(
+                    "PUT",
+                    path,
+                    Some(json!({
+                        "defaultAllow": default_allow,
+                        "allowFqdns": fqdns,
+                        "allowCidrs": cidrs,
+                    })),
+                    format!("Set network policy on {ns}/{vm}"),
+                    &w,
+                ));
+            }
+        }
+        "quiesced_snapshot_vm" => {
+            let (ns, vm) = ns_vm(args).map_err(err)?;
+            p.title = format!("Application-consistent snapshot of {ns}/{vm}");
+            p.blast_radius.vms = vec![format!("{ns}/{vm}")];
+            p.blast_radius.reversible = true;
+            p.diff.push(DiffLine {
+                target: format!("{ns}/{vm}"),
+                field: "snapshots".into(),
+                before: "—".into(),
+                after: "+ 1 quiesced snapshot (guest briefly frozen)".into(),
+            });
+            p.steps.push(step(
+                "POST",
+                format!("/api/v1/vms/{ns}/{vm}/quiesced-snapshot"),
+                Some(json!({})),
+                format!("Quiesce and snapshot {ns}/{vm}"),
+                &w,
+            ));
+        }
         "enable_vm_internet" | "disable_vm_internet" => {
             let (ns, vm) = ns_vm(args).map_err(err)?;
             let enable = name.starts_with("enable");
@@ -1440,6 +1691,43 @@ mod tests {
                 .iter()
                 .any(|t| t.name == "vm_doctor" && t.kind == ToolKind::Read)
         );
+    }
+
+    #[test]
+    fn kairon_tools_are_registered_with_the_right_kind_and_paths() {
+        let tools = builtin_tools();
+        for (name, kind) in [
+            ("vm_runtime_events", ToolKind::Read),
+            ("vm_pressure", ToolKind::Read),
+            ("vm_network_drops", ToolKind::Read),
+            ("vm_lifecycle", ToolKind::Read),
+            ("vm_network_policy", ToolKind::Read),
+            ("node_runtime_memory", ToolKind::Read),
+            ("migration_advice", ToolKind::Read),
+            ("kairon_resources", ToolKind::Read),
+            ("set_vm_lifecycle", ToolKind::Change),
+            ("set_vm_network_policy", ToolKind::Change),
+            ("quiesced_snapshot_vm", ToolKind::Change),
+        ] {
+            assert!(
+                tools.iter().any(|t| t.name == name && t.kind == kind),
+                "{name}"
+            );
+        }
+        let vm = json!({"namespace": "default", "vm_name": "web"});
+        assert_eq!(
+            read_path("vm_pressure", &vm).unwrap().unwrap(),
+            "/api/v1/vms/default/web/pressure"
+        );
+        assert_eq!(
+            read_path("kairon_resources", &json!({"kind": "quotas"}))
+                .unwrap()
+                .unwrap(),
+            "/api/v1/kairon/quotas?namespace=all"
+        );
+        assert!(read_path("kairon_resources", &json!({"kind": "../x"})).is_err());
+        assert!(read_path("node_runtime_memory", &json!({})).is_err());
+        assert!(is_untrusted("vm_runtime_events") && is_untrusted("vm_network_drops"));
     }
 
     #[test]

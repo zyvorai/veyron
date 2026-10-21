@@ -430,6 +430,10 @@ export function VmRelay({ row }) {
   const [forkCount, setForkCount] = useState(3);
   const [plan, setPlan] = useState(null);
   const [events, setEvents] = useState(null);
+  const [life, setLife] = useState({ action: 'Pause', idleMin: '', maxHours: '' });
+  const [fqdns, setFqdns] = useState('');
+  const [netPolicy, setNetPolicy] = useState(null);
+  const [placement, setPlacement] = useState('');
 
   const run = async (label, fn) => {
     setBusy(label);
@@ -626,6 +630,117 @@ export function VmRelay({ row }) {
           {plan.predicted && <pre className="mono dim">{JSON.stringify(plan.predicted, null, 2).slice(0, 2000)}</pre>}
         </div>
       )}
+
+      <div className="ops-row">
+        <span>
+          Lifecycle<small>suspend when idle, expire after a maximum age</small>
+        </span>
+        <span className="ops-acts">
+          <select className="input" value={life.action} onChange={(e) => setLife({ ...life, action: e.target.value })}>
+            {['Pause', 'Hibernate', 'Halt', 'Stop', 'Delete'].map((a) => (
+              <option key={a}>{a}</option>
+            ))}
+          </select>
+          <input className="input" type="number" min="1" placeholder="idle min" value={life.idleMin} onChange={(e) => setLife({ ...life, idleMin: e.target.value })} />
+          <input className="input" type="number" min="1" placeholder="max hours" value={life.maxHours} onChange={(e) => setLife({ ...life, maxHours: e.target.value })} />
+          <button
+            className="btn sm secondary"
+            disabled={!!busy || (!life.idleMin && !life.maxHours)}
+            onClick={() =>
+              run('life', async () => {
+                const body = { wakeOnConnect: true };
+                if (life.idleMin) {
+                  body.idleTimeoutSeconds = Math.max(60, Number(life.idleMin) * 60);
+                  body.idleAction = life.action;
+                }
+                if (life.maxHours) body.maxLifetimeSeconds = Math.max(60, Number(life.maxHours) * 3600);
+                await api.putLifecycle(ns, name, body);
+                setMsg('Lifecycle saved.');
+              })
+            }
+          >
+            Save
+          </button>
+          <button className="btn sm secondary" disabled={!!busy} onClick={() => run('life-clear', async () => { await api.putLifecycle(ns, name, {}); setMsg('Lifecycle cleared.'); })}>
+            Clear
+          </button>
+        </span>
+      </div>
+
+      <div className="ops-row">
+        <span>
+          Placement<small>node selector, affinity and spread rules (JSON)</small>
+        </span>
+        <span className="ops-acts">
+          <button
+            className="btn sm secondary"
+            disabled={!!busy}
+            onClick={() => run('pl-get', async () => setPlacement(JSON.stringify((await api.getPlacement(ns, name))?.placement || {}, null, 2)))}
+          >
+            Load
+          </button>
+          <button
+            className="btn sm secondary"
+            disabled={!!busy || !placement.trim()}
+            onClick={() =>
+              run('pl-put', async () => {
+                const r = await api.putPlacement(ns, name, JSON.parse(placement));
+                setPlacement(JSON.stringify(r?.placement || {}, null, 2));
+                setMsg('Placement saved. It applies the next time the VM is scheduled or migrated.');
+              })
+            }
+          >
+            Save
+          </button>
+        </span>
+      </div>
+      {placement && <textarea className="input mono" rows={6} value={placement} onChange={(e) => setPlacement(e.target.value)} />}
+
+      <div className="ops-row">
+        <span>
+          Network policy<small>{netPolicy ? 'allowed hosts and CIDRs (default deny)' : 'allow-list of egress hosts, one per line'}</small>
+        </span>
+        <span className="ops-acts">
+          <button className="btn sm secondary" disabled={!!busy} onClick={() => run('np-get', async () => {
+            try {
+              const r = await api.getNetworkPolicy(ns, name);
+              setNetPolicy(r?.policy || {});
+              setFqdns((r?.policy?.allowFqdns || []).join('\n'));
+            } catch (e) {
+              setNetPolicy(null);
+              setMsg('No network policy on this VM.');
+            }
+          })}>
+            Load
+          </button>
+          <button className="btn sm secondary" disabled={!!busy || !netPolicy} onClick={() => run('np-del', async () => { await api.deleteNetworkPolicy(ns, name); setNetPolicy(null); setFqdns(''); setMsg('Network policy removed.'); })}>
+            Remove
+          </button>
+        </span>
+      </div>
+      <textarea
+        className="input mono"
+        rows={3}
+        placeholder="api.example.com&#10;registry.npmjs.org"
+        value={fqdns}
+        onChange={(e) => setFqdns(e.target.value)}
+      />
+      <div className="ops-acts">
+        <button
+          className="btn sm secondary"
+          disabled={!!busy || !fqdns.trim()}
+          onClick={() =>
+            run('np-put', async () => {
+              const allowFqdns = fqdns.split('\n').map((l) => l.trim()).filter(Boolean);
+              const r = await api.putNetworkPolicy(ns, name, { defaultAllow: false, allowFqdns });
+              setNetPolicy(r?.policy || {});
+              setMsg(`Network policy applied (${allowFqdns.length} host${allowFqdns.length === 1 ? '' : 's'}).`);
+            })
+          }
+        >
+          Apply allow-list
+        </button>
+      </div>
 
       <div className="ops-row">
         <span>

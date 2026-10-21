@@ -477,6 +477,20 @@ mod kairon {
                 .with_context(|| format!("pinning {oci} to a digest for Kairon"))?;
             machine.spec.image.digest = Some(digest);
         }
+        if machine.spec.lifecycle.is_none() {
+            // Tenant (namespace annotation) or cluster default; a failed lookup just skips it.
+            let annotations = kube::Api::<k8s_openapi::api::core::v1::Namespace>::all(c.client())
+                .get_opt(&config.namespace)
+                .await
+                .ok()
+                .flatten()
+                .and_then(|n| n.metadata.annotations)
+                .unwrap_or_default();
+            machine.spec.lifecycle =
+                crate::kairon::defaults::lifecycle_defaults(&annotations, &|k| {
+                    std::env::var(k).ok().filter(|v| !v.is_empty())
+                });
+        }
         machine
             .metadata
             .labels

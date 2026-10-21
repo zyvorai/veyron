@@ -966,6 +966,18 @@ export const api = {
     unwrap(await request(`${vmPath(ns, name)}/network/${kind}${limit ? `?limit=${limit}` : ''}`)),
   egressCheck: async (ns, name, host) =>
     unwrap(await request(`${vmPath(ns, name)}/egress-check`, { method: 'POST', body: JSON.stringify({ host }) })),
+  getLifecycle: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/lifecycle`)),
+  putLifecycle: async (ns, name, body) =>
+    unwrap(await request(`${vmPath(ns, name)}/lifecycle`, { method: 'PUT', body: JSON.stringify(body || {}) })),
+  getNetworkPolicy: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/network-policy`)),
+  putNetworkPolicy: async (ns, name, policy) =>
+    unwrap(await request(`${vmPath(ns, name)}/network-policy`, { method: 'PUT', body: JSON.stringify(policy) })),
+  deleteNetworkPolicy: async (ns, name) =>
+    unwrap(await request(`${vmPath(ns, name)}/network-policy`, { method: 'DELETE' })),
+  getPlacement: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/placement`)),
+  putPlacement: async (ns, name, body) =>
+    unwrap(await request(`${vmPath(ns, name)}/placement`, { method: 'PUT', body: JSON.stringify(body || {}) })),
+  migrationAdvice: async () => unwrap(await request('/api/v1/kairon/advice/migrations')),
   forkPlan: async (ns, name, body) =>
     unwrap(await request(`${vmPath(ns, name)}/fork/plan`, { method: 'POST', body: JSON.stringify(body || {}) })),
   vmEvents: async (ns, name, { event = '', limit = 100 } = {}) =>

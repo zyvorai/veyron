@@ -45,6 +45,7 @@ pub fn router(state: SharedState) -> Router {
             "/vms/:ns/:name/network-policy",
             get(get_policy).put(put_policy).delete(delete_policy),
         )
+        .route("/kairon/advice/migrations", get(migration_advice))
         .route("/kairon/:kind", get(list_kind))
         .with_state(state)
 }
@@ -529,6 +530,97 @@ async fn list_kind(
         .into_response(),
         Err(e) => kube_err(e),
     }
+}
+
+// ── Migration advisor ──────────────────────────────────────────────
+
+fn psi(v: &Value, ptr: &str) -> f64 {
+    v.pointer(ptr).and_then(Value::as_f64).unwrap_or(0.0)
+}
+
+async fn sample_node(client: &kube::Client, node: &str) -> crate::kairon::advisor::NodeLoad {
+    use crate::kairon::relay::RelayTarget;
+    let mut load = crate::kairon::advisor::NodeLoad {
+        name: node.to_string(),
+        ..Default::default()
+    };
+    let target = match RelayTarget::for_node(client, node).await {
+        Ok(t) => t,
+        Err(e) => {
+            load.error = Some(format!("{e:#}"));
+            return load;
+        }
+    };
+    match target
+        .call_node(reqwest::Method::GET, "host-pressure", "", None)
+        .await
+    {
+        Ok(p) => {
+            load.cpu_psi = psi(&p, "/cpu_some/avg60");
+            load.mem_psi = psi(&p, "/memory_some/avg60");
+            load.io_psi = psi(&p, "/io_some/avg60");
+        }
+        Err(e) => {
+            load.error = Some(format!("{e:#}"));
+            return load;
+        }
+    }
+    // Memory is a best effort: PSI alone still marks a node hot.
+    if let Ok(m) = target
+        .call_node(reqwest::Method::GET, "host-memory", "", None)
+        .await
+    {
+        load.mem_total_mib = m.get("mem_total_mib").and_then(Value::as_u64);
+        load.mem_available_mib = m.get("mem_available_mib").and_then(Value::as_u64);
+    }
+    load
+}
+
+/// Which running VMs to move off nodes that are stalling, and where. Advice only:
+/// each entry carries the `POST …/migrate` body that would carry it out.
+async fn migration_advice(State(state): State<SharedState>) -> Response {
+    let c = match client(&state).await {
+        Ok(c) => c,
+        Err(r) => return r,
+    };
+    let machines = match Api::<Machine>::all(c.clone())
+        .list(&ListParams::default())
+        .await
+    {
+        Ok(l) => l.items,
+        Err(e) => return kube_err(e),
+    };
+    let mut node_names: Vec<String> = machines
+        .iter()
+        .filter_map(|m| m.status.as_ref().and_then(|s| s.node_name.clone()))
+        .filter(|n| !n.is_empty())
+        .collect();
+    node_names.sort();
+    node_names.dedup();
+    let vms: Vec<crate::kairon::advisor::VmLoad> = machines
+        .iter()
+        .filter_map(|m| {
+            Some(crate::kairon::advisor::VmLoad {
+                namespace: m.namespace().to_string(),
+                name: m.name().to_string(),
+                node: m.status.as_ref()?.node_name.clone()?,
+                memory_mib: m.memory_bytes() / (1024 * 1024),
+                running: m.is_running(),
+                passthrough: m.has_device_claims(),
+            })
+        })
+        .collect();
+    let mut nodes = Vec::new();
+    for n in &node_names {
+        nodes.push(sample_node(&c, n).await);
+    }
+    let advice = crate::kairon::advisor::advise(&nodes, &vms);
+    Json(json!({
+        "advice": advice,
+        "nodes": nodes,
+        "note": "Advice only. Run each entry's request with POST /vms/:ns/:name/migrate.",
+    }))
+    .into_response()
 }
 
 #[cfg(test)]

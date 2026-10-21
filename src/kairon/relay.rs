@@ -357,6 +357,14 @@ impl RelayTarget {
         self.send(method, url, path, query, body, timeout).await
     }
 
+    /// Open a long-lived node-scoped stream (`{base}/{path}`), e.g. the FluxVM event
+    /// stream. No overall timeout: the caller drops the response to end it.
+    pub async fn stream_node(&self, path: &str, query: &str) -> Result<reqwest::Response> {
+        let url = format!("{}/{}", self.base_url, path.trim_matches('/'));
+        self.send(reqwest::Method::GET, url, path, query, None, None)
+            .await
+    }
+
     /// Node-scoped relay call with no runtime id (`{base}/{path}`), e.g. `capabilities`
     /// and `egress-check`.
     pub async fn call_node(

@@ -52,6 +52,22 @@ pub fn router(state: SharedState) -> Router {
         .route("/vms/:ns/:name/fork/plan", post(fork_plan))
         .route("/vms/:ns/:name/runtime-events", get(vm_events))
         .route("/nodes/:name/runtime/memory", get(node_memory))
+        .route(
+            "/nodes/:name/sandbox-templates",
+            get(node_sandbox_templates),
+        )
+        .route("/nodes/:name/runtime/topology", get(node_topology))
+        .route("/nodes/:name/runtime/pressure", get(node_pressure))
+        .route("/nodes/:name/egress-nftables", get(node_nftables))
+        .route(
+            "/vms/:ns/:name/runtime-events/stream",
+            get(vm_events_stream),
+        )
+        .route(
+            "/nodes/:name/branches/:id",
+            axum::routing::delete(node_branch_delete),
+        )
+        .route("/nodes/:name/branches/:id/start", post(node_branch_start))
         .route("/nodes/:name/branches", get(node_branches))
         .route("/nodes/:name/branches/:a/diff/:b", get(node_branch_diff))
         .route(
@@ -470,6 +486,87 @@ async fn node_call(
 /// Host memory and memory PSI as FluxVM sees it (feeds capacity / pressure views).
 async fn node_memory(State(state): State<SharedState>, Path(node): Path<String>) -> Reply {
     node_call(&state, &node, Method::GET, "host-memory", None).await
+}
+
+/// Prebaked sandbox templates the node can start in well under a second.
+async fn node_sandbox_templates(
+    State(state): State<SharedState>,
+    Path(node): Path<String>,
+) -> Reply {
+    node_call(&state, &node, Method::GET, "templates", None).await
+}
+
+async fn node_topology(State(state): State<SharedState>, Path(node): Path<String>) -> Reply {
+    node_call(&state, &node, Method::GET, "host-topology", None).await
+}
+
+async fn node_pressure(State(state): State<SharedState>, Path(node): Path<String>) -> Reply {
+    node_call(&state, &node, Method::GET, "host-pressure", None).await
+}
+
+/// The nftables redirect rules FluxVM expects on the host, as `{"snippet": "..."}`.
+async fn node_nftables(State(state): State<SharedState>, Path(node): Path<String>) -> Reply {
+    node_call(&state, &node, Method::GET, "egress-nftables", None).await
+}
+
+/// Start a VM from a saved branch (Admin). Same body as fork: `count`, `name_prefix`, ...
+async fn node_branch_start(
+    State(state): State<SharedState>,
+    Path((node, id)): Path<(String, String)>,
+    body: Option<Json<Value>>,
+) -> Reply {
+    if !branch_id_ok(&id) {
+        return Err(err(StatusCode::BAD_REQUEST, "invalid branch id"));
+    }
+    let body = fork_plan_body(body.map(|Json(v)| v), 32)
+        .map_err(|m| err(StatusCode::UNPROCESSABLE_ENTITY, m))?;
+    node_call(
+        &state,
+        &node,
+        Method::POST,
+        &format!("branches/{id}/start"),
+        Some(&body),
+    )
+    .await
+}
+
+async fn node_branch_delete(
+    State(state): State<SharedState>,
+    Path((node, id)): Path<(String, String)>,
+) -> Reply {
+    if !branch_id_ok(&id) {
+        return Err(err(StatusCode::BAD_REQUEST, "invalid branch id"));
+    }
+    node_call(
+        &state,
+        &node,
+        Method::DELETE,
+        &format!("branches/{id}"),
+        None,
+    )
+    .await
+}
+
+/// Live FluxVM event feed for one VM as server-sent events.
+async fn vm_events_stream(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Query(q): Query<EventsQuery>,
+) -> Reply {
+    let t = target(&state, &ns, &name).await?;
+    let query = events_query(&t.runtime_id, &q);
+    let resp = t
+        .stream_node("events/stream", &query)
+        .await
+        .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("{e:#}")))?;
+    let mut out = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "text/event-stream")
+        .header(header::CACHE_CONTROL, "no-cache");
+    out = out.header("X-Accel-Buffering", "no");
+    Ok(out
+        .body(Body::from_stream(resp.bytes_stream()))
+        .unwrap_or_else(|_| err(StatusCode::BAD_GATEWAY, "relay stream")))
 }
 
 async fn node_branches(State(state): State<SharedState>, Path(node): Path<String>) -> Reply {
