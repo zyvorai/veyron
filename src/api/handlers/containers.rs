@@ -49,6 +49,9 @@ fn kube_err(e: kube::Error) -> Response {
             let code = match ae.code {
                 404 => StatusCode::NOT_FOUND,
                 409 => StatusCode::CONFLICT,
+                // A 403 is either an admission-webhook denial (the caller's spec was refused)
+                // or Veyron's own RBAC; only the first is the caller's to fix.
+                403 if !ae.message.contains("admission webhook") => StatusCode::FORBIDDEN,
                 400 | 403 | 422 => StatusCode::UNPROCESSABLE_ENTITY,
                 _ => StatusCode::BAD_GATEWAY,
             };

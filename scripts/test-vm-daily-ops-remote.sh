@@ -476,7 +476,9 @@ EOF
                 [[ "${_CURL_CODE}" == "422" ]] && pass "agent-session ops refuses a credential verb (422)" || fail "agent-session verb allow-list" "HTTP ${_CURL_CODE}"
                 for _k in virtual-networks balance-policies autoscalers recovery-plans ha-profiles usage-ledgers backup-groups template-claims node-fence-requests accelerator-profiles; do
                     curl_api GET "/api/v1/kairon/${_k}?namespace=default"
-                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET kairon/${_k} → 200" || skip "kairon/${_k} (HTTP ${_CURL_CODE}; CRD may not be installed)"
+                    if [[ "${_CURL_CODE}" == "200" ]]; then pass "GET kairon/${_k} → 200"
+                    elif [[ "${_CURL_CODE}" == "404" ]]; then skip "kairon/${_k} (CRD not installed)"
+                    else fail "GET kairon/${_k}" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"; fi
                 done
                 curl_api POST "/api/v1/kairon/fleet/usage-ledgers" '{"name":"x","spec":{}}'
                 [[ "${_CURL_CODE}" == "404" ]] && pass "fleet create refuses a read-only kind (404)" || fail "fleet read-only kind" "HTTP ${_CURL_CODE}"

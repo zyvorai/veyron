@@ -66,7 +66,10 @@ fn kube_err(e: kube::Error) -> Response {
             let code = match ae.code {
                 404 => StatusCode::NOT_FOUND,
                 409 => StatusCode::CONFLICT,
-                403 | 400 | 422 => StatusCode::UNPROCESSABLE_ENTITY,
+                // A 403 is either an admission-webhook denial (the caller's spec was refused)
+                // or Veyron's own RBAC; only the first is the caller's to fix.
+                403 if !ae.message.contains("admission webhook") => StatusCode::FORBIDDEN,
+                400 | 403 | 422 => StatusCode::UNPROCESSABLE_ENTITY,
                 _ => StatusCode::BAD_GATEWAY,
             };
             err(code, ae.message.clone())
@@ -959,6 +962,46 @@ mod tests {
             assert!(!kind_info(slug).unwrap().writable, "{slug}");
         }
         assert!(kind_info("ha-profiles").unwrap().writable);
+    }
+
+    fn api_error(code: u16, message: &str) -> kube::Error {
+        kube::Error::Api(kube::core::ErrorResponse {
+            status: "Failure".into(),
+            message: message.into(),
+            reason: String::new(),
+            code,
+        })
+    }
+
+    #[test]
+    fn rbac_denials_are_403_but_webhook_denials_are_422() {
+        // Veyron's own ServiceAccount lacking a permission is not the caller's mistake.
+        let rbac = kube_err(api_error(
+            403,
+            "machinehaprofiles.fleet.kairon.zyvor.dev is forbidden: cannot list resource",
+        ));
+        assert_eq!(rbac.status(), StatusCode::FORBIDDEN);
+        let webhook = kube_err(api_error(
+            403,
+            "admission webhook \"validate.kairon.zyvor.dev\" denied the request: bad spec",
+        ));
+        assert_eq!(webhook.status(), StatusCode::UNPROCESSABLE_ENTITY);
+        assert_eq!(
+            kube_err(api_error(422, "invalid")).status(),
+            StatusCode::UNPROCESSABLE_ENTITY
+        );
+        assert_eq!(
+            kube_err(api_error(404, "nf")).status(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(
+            kube_err(api_error(409, "dup")).status(),
+            StatusCode::CONFLICT
+        );
+        assert_eq!(
+            kube_err(api_error(500, "boom")).status(),
+            StatusCode::BAD_GATEWAY
+        );
     }
 
     #[test]
