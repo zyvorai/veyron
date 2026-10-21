@@ -46,7 +46,10 @@ answer 404, which Veyron reports as 502.
 | `POST /vms/:ns/:name/migrate` | Extra body fields: `mode`, `bandwidth_mbps`, `max_downtime_ms`, `multifd_channels`, `fallback_to_cold`, `migration_network`, `adaptive`. |
 | `POST /vms/:ns/:name/migrations/:mig/recovery` (Admin) | `action`, `acknowledged_diagnosis`, `reason` — resolves a migration stuck at an ambiguous commit point. |
 | `GET /kairon/advice/migrations` | Migration advisor: running VMs to move off nodes whose PSI or free memory is over threshold (CPU 25 %, memory 10 %, IO 30 % stalled, or under 10 % memory free), target chosen by free memory with headroom, at most 3 VMs per node, passthrough VMs excluded. Advice only; each entry carries the `migrate` body. |
-| `GET /kairon/:kind?namespace=` | Read-only: `claims`, `quotas`, `disruption-budgets`, `migration-policies`, `backup-policies`, `protection-plans`, `virtual-networks`, `accelerator-profiles`, `balance-policies`, `autoscalers`, `recovery-plans`, `ha-profiles`, `usage-ledgers`, `node-topologies`. |
+| `POST /kairon/fleet/:kind`, `DELETE /kairon/fleet/:kind/:ns/:name` (Admin) | Create or delete a fleet object (`ha-profiles`, `balance-policies`, `autoscalers`, `recovery-plans`, `backup-groups`, `import-plans`, `template-versions`, `template-claims`, `virtual-networks`, `network-claims`). Body `{name, namespace, spec}`; Kairon's admission webhook validates the spec (422 with its message). Usage ledgers, node-fence requests and action approvals are read-only here: approvals need Kairon's authenticated flow. |
+| `GET /vms/:ns/:name/screenshot[?max_width=]`, `POST /vms/:ns/:name/input` (Admin) | PNG of a running **Mac (`vz`)** VM's display with `x-fluxvm-screen-*` headers, and keyboard/mouse input (`{"action":"click","x":..,"y":..}` or `{"actions":[...]}`, up to 100). Other backends answer 502. FluxVM has no display-resize or USB endpoints, so those are not offered. |
+| `GET /sandbox-templates` | Prebaked sandbox templates per Kairon-capable node (`templates` is the union). `POST /sandboxes` takes `template`; the sandbox then runs on FluxVM's `flux-vm` backend with the vsock agent, and exec/files use it. |
+| `GET /kairon/:kind?namespace=` | Read-only: `claims`, `quotas`, `disruption-budgets`, `migration-policies`, `backup-policies`, `protection-plans`, `accelerator-profiles`, `node-topologies` (core group `kairon.zyvor.dev`; the last two are cluster-scoped) and the fleet group `fleet.kairon.zyvor.dev/v1alpha1`: `virtual-networks`, `network-claims`, `balance-policies`, `autoscalers`, `recovery-plans`, `ha-profiles`, `backup-groups`, `import-plans`, `template-versions`, `template-claims`, `usage-ledgers`, `node-fence-requests`, `action-approvals`. |
 | `POST/GET /containers`, `GET/DELETE /containers/:ns/:name` | OCI container Machines (`spec.sandbox.oci`). FluxVM runs these on **macOS hosts only**; they get a `kubernetes.io/os=darwin` selector unless `node_selector` says otherwise. No exec or files yet. Env names that look like credentials produce a warning: Machine objects are not secret. |
 
 ## Defaults
@@ -71,7 +74,7 @@ summary to `VEYRON_DRILL_WEBHOOK` when set. Run it from cron or CI.
 
 ## Not covered
 
-Display resize, USB listing, `kaironctl mcp` bridging and fleet/central are not wired. FluxVM
+Display resize and USB listing do not exist in FluxVM. `kaironctl mcp serve` is stdio-only and is not bridged: spawning a configured command inside the API pod would let anyone who can edit the MCP server list run code there; run it beside `veyron mcp` in your MCP client instead, or use Veyron's own `POST /mcp` tools. FluxVM
 per-VM disk throttles and balloon are managed through the Machine spec (`appliedDiskThrottles`),
 not relayed.
 

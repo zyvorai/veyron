@@ -51,6 +51,9 @@ pub fn router(state: SharedState) -> Router {
         .route("/vms/:ns/:name/runtime-capabilities", get(capabilities))
         .route("/vms/:ns/:name/fork/plan", post(fork_plan))
         .route("/vms/:ns/:name/runtime-events", get(vm_events))
+        .route("/sandbox-templates", get(all_sandbox_templates))
+        .route("/vms/:ns/:name/screenshot", get(vm_screenshot))
+        .route("/vms/:ns/:name/input", post(vm_input))
         .route("/nodes/:name/runtime/memory", get(node_memory))
         .route(
             "/nodes/:name/sandbox-templates",
@@ -488,6 +491,59 @@ async fn node_memory(State(state): State<SharedState>, Path(node): Path<String>)
     node_call(&state, &node, Method::GET, "host-memory", None).await
 }
 
+/// Template names found in a node's `{"items": [...]}` reply (entries may be strings or objects).
+fn template_names(reply: &Value) -> Vec<String> {
+    reply
+        .get("items")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|i| i.as_str().or_else(|| i.get("name").and_then(Value::as_str)))
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Templates are per node: ask every Kairon-capable node and report which node has which.
+/// `templates` is the union; pick one when creating a sandbox (`template`) and Kairon schedules
+/// it only where it exists.
+async fn all_sandbox_templates(State(state): State<SharedState>) -> Reply {
+    use k8s_openapi::api::core::v1::Node;
+    if !crate::api::vm_backend::is_kairon() {
+        return Err(err(
+            StatusCode::NOT_IMPLEMENTED,
+            "this operation requires the Kairon backend",
+        ));
+    }
+    let kube = { state.read().await.kube_client.clone() };
+    let nodes = kube::Api::<Node>::all(kube.client())
+        .list(&kube::api::ListParams::default().labels("kairon.zyvor.dev/capable=true"))
+        .await
+        .map_err(|e| err(StatusCode::BAD_GATEWAY, e.to_string()))?;
+    let mut per_node = Vec::new();
+    let mut union = std::collections::BTreeSet::new();
+    for n in nodes.items {
+        let Some(name) = n.metadata.name else {
+            continue;
+        };
+        let entry = match RelayTarget::for_node(&kube.client(), &name).await {
+            Ok(t) => match t.call_node(Method::GET, "templates", "", None).await {
+                Ok(v) => {
+                    let names = template_names(&v);
+                    union.extend(names.iter().cloned());
+                    json!({"node": name, "templates": names})
+                }
+                Err(e) => json!({"node": name, "error": format!("{e:#}")}),
+            },
+            Err(e) => json!({"node": name, "error": format!("{e:#}")}),
+        };
+        per_node.push(entry);
+    }
+    Ok(Json(json!({"templates": union, "nodes": per_node})).into_response())
+}
+
 /// Prebaked sandbox templates the node can start in well under a second.
 async fn node_sandbox_templates(
     State(state): State<SharedState>,
@@ -567,6 +623,105 @@ async fn vm_events_stream(
     Ok(out
         .body(Body::from_stream(resp.bytes_stream()))
         .unwrap_or_else(|_| err(StatusCode::BAD_GATEWAY, "relay stream")))
+}
+
+#[derive(Debug, Deserialize)]
+struct ScreenshotQuery {
+    max_width: Option<u32>,
+}
+
+/// PNG of a running `vz` VM's display (Mac FluxVM hosts). Admin: the screen can show anything the
+/// guest does. Width, height and the blank flag ride along as `x-fluxvm-screen-*` headers.
+async fn vm_screenshot(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Query(q): Query<ScreenshotQuery>,
+) -> Reply {
+    let t = target(&state, &ns, &name).await?;
+    let query = q
+        .max_width
+        .map(|w| format!("max_width={}", w.clamp(64, 4096)))
+        .unwrap_or_default();
+    let resp = t
+        .call(
+            Method::GET,
+            "vm-screenshot",
+            &[],
+            &query,
+            None,
+            Some(std::time::Duration::from_secs(30)),
+        )
+        .await
+        .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("{e:#}")))?;
+    let mut out = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CACHE_CONTROL, "no-store");
+    for h in [
+        "content-type",
+        "x-fluxvm-screen-width",
+        "x-fluxvm-screen-height",
+        "x-fluxvm-screen-blank",
+    ] {
+        if let Some(v) = resp.headers().get(h) {
+            out = out.header(h, v.clone());
+        }
+    }
+    Ok(out
+        .body(Body::from_stream(resp.bytes_stream()))
+        .unwrap_or_else(|_| err(StatusCode::BAD_GATEWAY, "relay stream")))
+}
+
+const INPUT_MAX_ACTIONS: usize = 100;
+
+/// Bound a screen-input request without second-guessing FluxVM's action vocabulary: one action
+/// object or `{"actions": [...]}`, every action naming itself in snake_case, typed text bounded.
+fn input_body(body: Value) -> Result<Value, String> {
+    fn action_ok(a: &Value) -> Result<(), String> {
+        let obj = a.as_object().ok_or("each action must be an object")?;
+        let name = obj
+            .get("action")
+            .and_then(Value::as_str)
+            .ok_or("each action needs an \"action\" name")?;
+        if name.is_empty()
+            || name.len() > 32
+            || !name.bytes().all(|b| b.is_ascii_lowercase() || b == b'_')
+        {
+            return Err(format!("invalid action name '{name}'"));
+        }
+        if obj
+            .get("text")
+            .and_then(Value::as_str)
+            .is_some_and(|t| t.len() > 4096)
+        {
+            return Err("typed text is limited to 4096 bytes per action".into());
+        }
+        Ok(())
+    }
+    match body.get("actions") {
+        Some(Value::Array(list)) => {
+            if list.is_empty() || list.len() > INPUT_MAX_ACTIONS {
+                return Err(format!("actions must hold 1-{INPUT_MAX_ACTIONS} entries"));
+            }
+            body.as_object()
+                .filter(|o| o.len() == 1)
+                .ok_or("with \"actions\", no other field is allowed")?;
+            list.iter().try_for_each(action_ok)?;
+        }
+        Some(_) => return Err("actions must be an array".into()),
+        None => action_ok(&body)?,
+    }
+    Ok(body)
+}
+
+/// Keyboard and mouse input for a running `vz` VM's display (Admin).
+async fn vm_input(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Json(body): Json<Value>,
+) -> Reply {
+    let body = input_body(body).map_err(|m| err(StatusCode::UNPROCESSABLE_ENTITY, m))?;
+    let t = target(&state, &ns, &name).await?;
+    json_call(&t, Method::POST, "vm-input", &[], "", Some(&body)).await
 }
 
 async fn node_branches(State(state): State<SharedState>, Path(node): Path<String>) -> Reply {
@@ -669,6 +824,29 @@ mod tests {
             limit: None,
         };
         assert!(events_query("rt-1", &evil).contains("event=a%26vm%3Dother"));
+    }
+
+    #[test]
+    fn input_body_accepts_one_action_or_a_bounded_batch() {
+        assert!(input_body(json!({"action": "click", "x": 1, "y": 2})).is_ok());
+        assert!(input_body(json!({"actions": [{"action": "type", "text": "hi"}, {"action": "double_click", "x": 1, "y": 2}]})).is_ok());
+        assert!(input_body(json!({"actions": []})).is_err());
+        let many: Vec<Value> = (0..101)
+            .map(|_| json!({"action": "move", "x": 0, "y": 0}))
+            .collect();
+        assert!(input_body(json!({ "actions": many })).is_err());
+        assert!(input_body(json!({"actions": [{"action": "click"}], "extra": 1})).is_err());
+        assert!(input_body(json!({"x": 1})).is_err());
+        assert!(input_body(json!({"action": "Click; rm"})).is_err());
+        assert!(input_body(json!({"action": "type", "text": "a".repeat(5000)})).is_err());
+        assert!(input_body(json!([1])).is_err());
+    }
+
+    #[test]
+    fn template_names_reads_strings_and_objects() {
+        let v = json!({"items": ["alpine-agent", {"name": "python"}, {"id": "x"}, 7]});
+        assert_eq!(template_names(&v), ["alpine-agent", "python"]);
+        assert!(template_names(&json!({})).is_empty());
     }
 
     #[test]

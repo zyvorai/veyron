@@ -434,6 +434,8 @@ export function VmRelay({ row }) {
   const [fqdns, setFqdns] = useState('');
   const [netPolicy, setNetPolicy] = useState(null);
   const [placement, setPlacement] = useState('');
+  const [shot, setShot] = useState(null);
+  const [typed, setTyped] = useState('');
 
   const run = async (label, fn) => {
     setBusy(label);
@@ -741,6 +743,55 @@ export function VmRelay({ row }) {
           Apply allow-list
         </button>
       </div>
+
+      <div className="ops-row">
+        <span>
+          Screen<small>display of a Mac (vz) VM; click the image to click in the guest</small>
+        </span>
+        <span className="ops-acts">
+          <button
+            className="btn sm secondary"
+            disabled={!running || !!busy}
+            onClick={() =>
+              run('shot', async () => {
+                const next = await api.vmScreenshot(ns, name);
+                setShot((prev) => {
+                  if (prev?.url) URL.revokeObjectURL(prev.url);
+                  return next;
+                });
+              })
+            }
+          >
+            Capture
+          </button>
+          <input className="input" value={typed} placeholder="text to type" onChange={(e) => setTyped(e.target.value)} />
+          <button
+            className="btn sm secondary"
+            disabled={!running || !!busy || !typed}
+            onClick={() => run('type', async () => { await api.vmInput(ns, name, { action: 'type', text: typed }); setTyped(''); })}
+          >
+            Type
+          </button>
+        </span>
+      </div>
+      {shot && (
+        <div className="dim">
+          {shot.blank && <div>The screen is blank.</div>}
+          <img
+            src={shot.url}
+            alt="Guest display"
+            style={{ maxWidth: '100%', cursor: 'crosshair' }}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const x = Math.round(((e.clientX - r.left) / r.width) * shot.width);
+              const y = Math.round(((e.clientY - r.top) / r.height) * shot.height);
+              run('click', async () => {
+                await api.vmInput(ns, name, { action: 'click', x, y, screen_width: shot.width });
+              });
+            }}
+          />
+        </div>
+      )}
 
       <div className="ops-row">
         <span>

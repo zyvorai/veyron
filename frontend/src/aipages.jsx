@@ -521,6 +521,18 @@ export function SandboxesPage({ user, showToast }) {
   const items = data.items || [];
   const [ttl, setTtl] = useState('30');
   const [internet, setInternet] = useState(false);
+  const [template, setTemplate] = useState('');
+  const [templates, setTemplates] = useState([]);
+  useEffect(() => {
+    let live = true;
+    api
+      .sandboxTemplates()
+      .then((r) => live && setTemplates(r?.templates || []))
+      .catch(() => live && setTemplates([]));
+    return () => {
+      live = false;
+    };
+  }, []);
   const [creating, setCreating] = useState(false);
   const [sel, setSel] = useState(null);
   const [cmd, setCmd] = useState('uname -a && python3 --version');
@@ -546,7 +558,7 @@ export function SandboxesPage({ user, showToast }) {
   const create = async () => {
     setCreating(true);
     try {
-      const sb = await api.createSandbox({ ttl_minutes: Number(ttl) || 30, internet });
+      const sb = await api.createSandbox({ ttl_minutes: Number(ttl) || 30, internet, ...(template ? { template } : {}) });
       showToast(`Sandbox ${sb.id} ready`);
       setSel(sb.id);
       s.reload();
@@ -621,6 +633,19 @@ export function SandboxesPage({ user, showToast }) {
               Lifetime (minutes)
               <input type="number" min="5" max="1440" value={ttl} onChange={(e) => setTtl(e.target.value)} />
             </label>
+            {templates.length > 0 && (
+              <label>
+                Template
+                <select value={template} onChange={(e) => setTemplate(e.target.value)}>
+                  <option value="">Default (Ubuntu)</option>
+                  {templates.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="check">
               <input type="checkbox" checked={internet} onChange={(e) => setInternet(e.target.checked)} />
               Allow internet

@@ -289,6 +289,22 @@ impl RelayTarget {
         self.post_json("exec", req, Duration::from_secs(secs)).await
     }
 
+    /// Command over FluxVM's vsock guest agent (`POST /agent-exec/{id}`): works on firecracker,
+    /// flux-vm and template sandboxes where there is no QEMU guest agent. Needs
+    /// `spec.guestAgent.console`. Runs through `sh -c`.
+    pub async fn agent_exec(&self, command: &str, timeout_seconds: u64) -> Result<ExecResult> {
+        let body = serde_json::json!({
+            "command": command,
+            "timeoutSeconds": timeout_seconds,
+        });
+        self.post_json(
+            "agent-exec",
+            &body,
+            Duration::from_secs(timeout_seconds + 15),
+        )
+        .await
+    }
+
     pub async fn firewall_open(&self, name: &str, port: u16, protocol: &str) -> Result<ExecResult> {
         let body = serde_json::json!({"name": name, "port": port, "protocol": protocol});
         self.post_json("qga-firewall/open", &body, Duration::from_secs(90))

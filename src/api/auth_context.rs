@@ -49,6 +49,10 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
         if path.ends_with("/recovery") && path.contains("/migrations/") {
             return ApiRole::Admin;
         }
+        // The display shows whatever the guest shows; FluxVM itself makes both Admin-only.
+        if path.ends_with("/screenshot") || path.ends_with("/input") {
+            return ApiRole::Admin;
+        }
         if path.ends_with("/tunnel")
             || path.contains("/diagnostics/")
             || path.contains("/network/capture/")
@@ -99,6 +103,10 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
         return ApiRole::Admin;
     }
     if path.contains("/restore") {
+        return ApiRole::Admin;
+    }
+    // Fleet objects (HA, balancing, autoscaling, recovery, templates, networks) steer the whole cluster.
+    if path.starts_with("/api/v1/kairon/fleet/") {
         return ApiRole::Admin;
     }
     // Starting a VM from, or deleting, a saved FluxVM branch.
@@ -177,6 +185,34 @@ mod tests {
                 ApiRole::Write
             );
         }
+    }
+
+    #[test]
+    fn screen_access_is_admin_even_for_get() {
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/vms/ns/vm/screenshot"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/vms/ns/vm/input"),
+            ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn fleet_writes_need_admin_but_reads_do_not() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/kairon/fleet/ha-profiles"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::DELETE, "/api/v1/kairon/fleet/ha-profiles/ns/x"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/kairon/ha-profiles"),
+            ApiRole::ReadOnly
+        );
     }
 
     #[test]

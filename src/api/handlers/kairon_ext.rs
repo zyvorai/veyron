@@ -46,6 +46,11 @@ pub fn router(state: SharedState) -> Router {
             get(get_policy).put(put_policy).delete(delete_policy),
         )
         .route("/kairon/advice/migrations", get(migration_advice))
+        .route("/kairon/fleet/:kind", post(fleet_create))
+        .route(
+            "/kairon/fleet/:kind/:ns/:name",
+            axum::routing::delete(fleet_delete),
+        )
         .route("/kairon/:kind", get(list_kind))
         .with_state(state)
 }
@@ -437,57 +442,191 @@ async fn delete_policy(
 
 // ── Claims, quotas, budgets, migration policies (read-only) ───────
 
-/// URL slug -> (kind, plural) for the read-only views.
-const KINDS: &[(&str, &str, &str)] = &[
-    ("claims", "MachineClaim", "machineclaims"),
-    ("quotas", "MachineQuota", "machinequotas"),
-    (
+/// Where one Kairon kind lives. The core kinds are `kairon.zyvor.dev/v1beta1`; the enterprise
+/// fleet kinds are a separate group (`fleet.kairon.zyvor.dev/v1alpha1`) and two core kinds are
+/// cluster-scoped, so the API group, version and scope must come from the table, not a default.
+#[derive(Debug, Clone, Copy)]
+struct KindInfo {
+    slug: &'static str,
+    kind: &'static str,
+    plural: &'static str,
+    group: &'static str,
+    version: &'static str,
+    namespaced: bool,
+    /// May be created and deleted through `/kairon/fleet/:slug`. Ledgers are written by the
+    /// controller, and action approvals and node-fence requests need Kairon's own authenticated
+    /// approval flow, so those stay read-only here.
+    writable: bool,
+}
+
+const CORE: &str = "kairon.zyvor.dev";
+const FLEET: &str = "fleet.kairon.zyvor.dev";
+
+const fn core(
+    slug: &'static str,
+    kind: &'static str,
+    plural: &'static str,
+    namespaced: bool,
+) -> KindInfo {
+    KindInfo {
+        slug,
+        kind,
+        plural,
+        group: CORE,
+        version: "v1beta1",
+        namespaced,
+        writable: false,
+    }
+}
+
+const fn fleet(
+    slug: &'static str,
+    kind: &'static str,
+    plural: &'static str,
+    writable: bool,
+) -> KindInfo {
+    KindInfo {
+        slug,
+        kind,
+        plural,
+        group: FLEET,
+        version: "v1alpha1",
+        namespaced: true,
+        writable,
+    }
+}
+
+const KINDS: &[KindInfo] = &[
+    core("claims", "MachineClaim", "machineclaims", true),
+    core("quotas", "MachineQuota", "machinequotas", true),
+    core(
         "disruption-budgets",
         "MachineDisruptionBudget",
         "machinedisruptionbudgets",
+        true,
     ),
-    ("migration-policies", "MigrationPolicy", "migrationpolicies"),
-    (
+    core(
+        "migration-policies",
+        "MigrationPolicy",
+        "migrationpolicies",
+        true,
+    ),
+    core(
         "backup-policies",
         "MachineBackupPolicy",
         "machinebackuppolicies",
+        true,
     ),
-    (
+    core(
         "protection-plans",
         "MachineProtectionPlan",
         "machineprotectionplans",
+        true,
     ),
-    (
-        "virtual-networks",
-        "MachineVirtualNetwork",
-        "machinevirtualnetworks",
-    ),
-    (
+    core(
         "accelerator-profiles",
         "MachineAcceleratorProfile",
         "machineacceleratorprofiles",
+        false,
     ),
-    (
+    core("node-topologies", "NodeTopology", "nodetopologies", false),
+    fleet(
+        "virtual-networks",
+        "MachineVirtualNetwork",
+        "machinevirtualnetworks",
+        true,
+    ),
+    fleet(
+        "network-claims",
+        "MachineNetworkClaim",
+        "machinenetworkclaims",
+        true,
+    ),
+    fleet(
         "balance-policies",
         "MachineBalancePolicy",
         "machinebalancepolicies",
+        true,
     ),
-    ("autoscalers", "MachineAutoscaler", "machineautoscalers"),
-    (
+    fleet(
+        "autoscalers",
+        "MachineAutoscaler",
+        "machineautoscalers",
+        true,
+    ),
+    fleet(
         "recovery-plans",
         "MachineRecoveryPlan",
         "machinerecoveryplans",
+        true,
     ),
-    ("ha-profiles", "MachineHAProfile", "machinehaprofiles"),
-    ("usage-ledgers", "MachineUsageLedger", "machineusageledgers"),
-    ("node-topologies", "NodeTopology", "nodetopologies"),
+    fleet("ha-profiles", "MachineHAProfile", "machinehaprofiles", true),
+    fleet(
+        "backup-groups",
+        "MachineBackupGroup",
+        "machinebackupgroups",
+        true,
+    ),
+    fleet(
+        "import-plans",
+        "MachineImportPlan",
+        "machineimportplans",
+        true,
+    ),
+    fleet(
+        "template-versions",
+        "MachineTemplateVersion",
+        "machinetemplateversions",
+        true,
+    ),
+    fleet(
+        "template-claims",
+        "MachineTemplateClaim",
+        "machinetemplateclaims",
+        true,
+    ),
+    fleet(
+        "usage-ledgers",
+        "MachineUsageLedger",
+        "machineusageledgers",
+        false,
+    ),
+    fleet(
+        "node-fence-requests",
+        "NodeFenceRequest",
+        "nodefencerequests",
+        false,
+    ),
+    fleet(
+        "action-approvals",
+        "MachineActionApproval",
+        "machineactionapprovals",
+        false,
+    ),
 ];
 
-fn kind_info(slug: &str) -> Option<(&'static str, &'static str)> {
-    KINDS
-        .iter()
-        .find(|(s, _, _)| *s == slug)
-        .map(|(_, k, p)| (*k, *p))
+fn kind_info(slug: &str) -> Option<KindInfo> {
+    KINDS.iter().copied().find(|k| k.slug == slug)
+}
+
+fn kind_api(c: kube::Client, k: &KindInfo, ns: Option<&str>) -> Api<DynamicObject> {
+    let gvk = GroupVersionKind::gvk(k.group, k.version, k.kind);
+    let ar = ApiResource::from_gvk_with_plural(&gvk, k.plural);
+    match ns {
+        // A cluster-scoped kind ignores any namespace filter.
+        Some(ns) if k.namespaced && !ns.is_empty() && ns != "all" => {
+            Api::namespaced_with(c, ns, &ar)
+        }
+        _ => Api::all_with(c, &ar),
+    }
+}
+
+fn unknown_kind() -> Response {
+    let known: Vec<&str> = KINDS.iter().map(|k| k.slug).collect();
+    err(
+        StatusCode::NOT_FOUND,
+        format!("kind must be one of {}", known.join(", ")),
+    )
 }
 
 #[derive(Deserialize)]
@@ -504,22 +643,14 @@ async fn list_kind(
         Ok(c) => c,
         Err(r) => return r,
     };
-    let Some((k, plural)) = kind_info(&kind) else {
-        let known: Vec<&str> = KINDS.iter().map(|(s, _, _)| *s).collect();
-        return err(
-            StatusCode::NOT_FOUND,
-            format!("kind must be one of {}", known.join(", ")),
-        );
+    let Some(k) = kind_info(&kind) else {
+        return unknown_kind();
     };
-    let gvk = GroupVersionKind::gvk("kairon.zyvor.dev", "v1beta1", k);
-    let ar = ApiResource::from_gvk_with_plural(&gvk, plural);
-    let api: Api<DynamicObject> = match q.namespace.as_deref() {
-        None | Some("all") | Some("") => Api::all_with(c, &ar),
-        Some(ns) => Api::namespaced_with(c, ns, &ar),
-    };
+    let api = kind_api(c, &k, q.namespace.as_deref());
     match api.list(&ListParams::default()).await {
         Ok(l) => Json(json!({
-            "kind": k,
+            "kind": k.kind,
+            "group": k.group,
             "items": l.items.iter().map(|o| json!({
                 "name": o.metadata.name,
                 "namespace": o.metadata.namespace,
@@ -530,6 +661,99 @@ async fn list_kind(
         .into_response(),
         Err(e) => kube_err(e),
     }
+}
+
+#[derive(Deserialize)]
+struct FleetCreate {
+    name: String,
+    #[serde(default)]
+    namespace: Option<String>,
+    spec: Value,
+}
+
+/// Create a fleet object. Kairon's admission webhook validates the spec; a denial comes back
+/// as 422 with its message.
+async fn fleet_create(
+    State(state): State<SharedState>,
+    Path(kind): Path<String>,
+    Json(req): Json<FleetCreate>,
+) -> Response {
+    let c = match client(&state).await {
+        Ok(c) => c,
+        Err(r) => return r,
+    };
+    let Some(k) = kind_info(&kind).filter(|k| k.group == FLEET && k.writable) else {
+        return err(
+            StatusCode::NOT_FOUND,
+            "not a writable fleet kind (usage ledgers, node fence requests and action approvals are read-only here)",
+        );
+    };
+    if !valid_dns_label(&req.name) {
+        return err(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "name must be a lowercase DNS label",
+        );
+    }
+    let ns = req.namespace.unwrap_or_else(|| "default".into());
+    if !valid_dns_label(&ns) {
+        return err(StatusCode::UNPROCESSABLE_ENTITY, "invalid namespace");
+    }
+    if !req.spec.is_object() {
+        return err(StatusCode::UNPROCESSABLE_ENTITY, "spec must be an object");
+    }
+    let obj: DynamicObject = match serde_json::from_value(json!({
+        "apiVersion": format!("{}/{}", k.group, k.version),
+        "kind": k.kind,
+        "metadata": {
+            "name": req.name,
+            "namespace": ns,
+            "labels": {LABEL_MANAGED_BY: "veyron"},
+        },
+        "spec": req.spec,
+    })) {
+        Ok(o) => o,
+        Err(e) => return err(StatusCode::UNPROCESSABLE_ENTITY, e.to_string()),
+    };
+    match kind_api(c, &k, Some(&ns))
+        .create(&PostParams::default(), &obj)
+        .await
+    {
+        Ok(o) => (
+            StatusCode::CREATED,
+            Json(json!({"name": o.metadata.name, "namespace": ns, "kind": k.kind})),
+        )
+            .into_response(),
+        Err(e) => kube_err(e),
+    }
+}
+
+async fn fleet_delete(
+    State(state): State<SharedState>,
+    Path((kind, ns, name)): Path<(String, String, String)>,
+) -> Response {
+    let c = match client(&state).await {
+        Ok(c) => c,
+        Err(r) => return r,
+    };
+    let Some(k) = kind_info(&kind).filter(|k| k.group == FLEET && k.writable) else {
+        return err(StatusCode::NOT_FOUND, "not a writable fleet kind");
+    };
+    match kind_api(c, &k, Some(&ns))
+        .delete(&name, &DeleteParams::default())
+        .await
+    {
+        Ok(_) => Json(json!({"deleted": name, "kind": k.kind})).into_response(),
+        Err(e) => kube_err(e),
+    }
+}
+
+fn valid_dns_label(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 63
+        && s.bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+        && !s.starts_with('-')
+        && !s.ends_with('-')
 }
 
 // ── Migration advisor ──────────────────────────────────────────────
@@ -682,10 +906,67 @@ mod tests {
 
     #[test]
     fn every_listed_kind_is_a_known_plural() {
-        for (_, _, plural) in KINDS {
-            assert!(crate::kairon::ALL_PLURALS.contains(plural), "{plural}");
+        for k in KINDS {
+            assert!(
+                crate::kairon::ALL_PLURALS.contains(&k.plural),
+                "{}",
+                k.plural
+            );
         }
         assert!(kind_info("nope").is_none());
+    }
+
+    #[test]
+    fn fleet_kinds_use_the_fleet_group_and_core_kinds_do_not() {
+        // These were queried under kairon.zyvor.dev/v1beta1 before and would have 404ed.
+        for slug in [
+            "virtual-networks",
+            "balance-policies",
+            "autoscalers",
+            "recovery-plans",
+            "ha-profiles",
+            "usage-ledgers",
+        ] {
+            let k = kind_info(slug).unwrap();
+            assert_eq!((k.group, k.version), (FLEET, "v1alpha1"), "{slug}");
+        }
+        for slug in ["claims", "quotas", "backup-policies", "node-topologies"] {
+            assert_eq!(kind_info(slug).unwrap().group, CORE, "{slug}");
+        }
+    }
+
+    #[test]
+    fn cluster_scoped_kinds_ignore_the_namespace_filter() {
+        let cluster: Vec<&str> = KINDS
+            .iter()
+            .filter(|k| !k.namespaced && k.group == CORE)
+            .map(|k| k.slug)
+            .collect();
+        assert_eq!(cluster, ["accelerator-profiles", "node-topologies"]);
+    }
+
+    #[test]
+    fn only_policy_style_fleet_kinds_are_writable() {
+        for k in KINDS.iter().filter(|k| k.writable) {
+            assert_eq!(k.group, FLEET, "{}", k.slug);
+        }
+        for slug in [
+            "usage-ledgers",
+            "node-fence-requests",
+            "action-approvals",
+            "claims",
+        ] {
+            assert!(!kind_info(slug).unwrap().writable, "{slug}");
+        }
+        assert!(kind_info("ha-profiles").unwrap().writable);
+    }
+
+    #[test]
+    fn dns_label_validation() {
+        assert!(valid_dns_label("ha-1"));
+        assert!(!valid_dns_label("Ha"));
+        assert!(!valid_dns_label("-a"));
+        assert!(!valid_dns_label(""));
     }
 
     #[test]

@@ -978,6 +978,21 @@ export const api = {
   putPlacement: async (ns, name, body) =>
     unwrap(await request(`${vmPath(ns, name)}/placement`, { method: 'PUT', body: JSON.stringify(body || {}) })),
   migrationAdvice: async () => unwrap(await request('/api/v1/kairon/advice/migrations')),
+  vmScreenshot: async (ns, name, maxWidth = 1280) => {
+    const token = getToken();
+    const resp = await fetch(`${vmPath(ns, name)}/screenshot?max_width=${maxWidth}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!resp.ok) throw httpError((await resp.text()).slice(0, 200) || `HTTP ${resp.status}`, resp.status);
+    return {
+      url: URL.createObjectURL(await resp.blob()),
+      width: Number(resp.headers.get('x-fluxvm-screen-width')) || 0,
+      height: Number(resp.headers.get('x-fluxvm-screen-height')) || 0,
+      blank: resp.headers.get('x-fluxvm-screen-blank') === 'true',
+    };
+  },
+  vmInput: async (ns, name, body) =>
+    unwrap(await request(`${vmPath(ns, name)}/input`, { method: 'POST', body: JSON.stringify(body) })),
   forkPlan: async (ns, name, body) =>
     unwrap(await request(`${vmPath(ns, name)}/fork/plan`, { method: 'POST', body: JSON.stringify(body || {}) })),
   vmRuntimeEvents: async (ns, name, { event = '', limit = 100 } = {}) =>
@@ -1052,6 +1067,7 @@ export const api = {
   listMcpServers: async () => asArray(await request('/api/v1/ai/mcp-servers')),
   putMcpServers: async (servers) =>
     unwrap(await request('/api/v1/ai/mcp-servers', { method: 'PUT', body: JSON.stringify({ servers }) })),
+  sandboxTemplates: async () => unwrap(await request('/api/v1/sandbox-templates')) || {},
   listSandboxes: async () => unwrap(await request('/api/v1/sandboxes')) || {},
   createSandbox: async (body) =>
     unwrap(await request('/api/v1/sandboxes', { method: 'POST', body: JSON.stringify(body), timeout: 300_000 })),
