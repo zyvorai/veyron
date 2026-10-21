@@ -882,7 +882,7 @@ export const api = {
     }),
   socAttackSurface: async () => unwrap(await request('/api/v1/soc/attack-surface?namespace=all')) || {},
   socExportStatus: async () => listOf(await request('/api/v1/soc/export/status'), 'exporters'),
-  socEvents: async () => listOf(await request('/api/v1/soc/events?limit=50'), 'events'),
+  socEvents: async () => listOf(await request('/api/v1/soc/runtime-events?limit=50'), 'events'),
 
   // Platform
   listOperators: async () => listOf(await request('/api/v1/operators?namespace=all'), 'operators'),

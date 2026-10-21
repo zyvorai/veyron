@@ -480,7 +480,7 @@ EOF
                 else
                     skip "fork/plan (HTTP ${_CURL_CODE}; needs kairon-node with the flux relay routes)"
                 fi
-                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/events?limit=20"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/runtime-events?limit=20"
                 [[ "${_CURL_CODE}" == "200" ]] && pass "GET vm events → 200" || skip "vm events (HTTP ${_CURL_CODE}; needs kairon-node with the flux relay routes)"
                 _node="$(curl_api GET "/api/v1/vms/${NS}/${VM_NAME}" >/dev/null; echo "${_CURL_BODY}" | sed -n 's/.*"node"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
                 if [[ -n "${_node}" ]]; then

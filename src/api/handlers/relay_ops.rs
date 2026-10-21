@@ -50,7 +50,7 @@ pub fn router(state: SharedState) -> Router {
         .route("/vms/:ns/:name/egress-check", post(egress_check))
         .route("/vms/:ns/:name/runtime-capabilities", get(capabilities))
         .route("/vms/:ns/:name/fork/plan", post(fork_plan))
-        .route("/vms/:ns/:name/events", get(vm_events))
+        .route("/vms/:ns/:name/runtime-events", get(vm_events))
         .route("/nodes/:name/runtime/memory", get(node_memory))
         .route("/nodes/:name/branches", get(node_branches))
         .route("/nodes/:name/branches/:a/diff/:b", get(node_branch_diff))
