@@ -268,7 +268,7 @@ async fn file_put(
             Ok(()) => {
                 Json(serde_json::json!({"path": req.path, "bytes": data.len()})).into_response()
             }
-            Err(e) => (StatusCode::BAD_GATEWAY, format!("put file: {e:#}")).into_response(),
+            Err(e) => (relay_status(&e), format!("put file: {e:#}")).into_response(),
         };
     }
     let _ = (&state, &ns, &name, &req);
@@ -297,7 +297,7 @@ async fn file_get(
                 "content_base64": base64::engine::general_purpose::STANDARD.encode(&data),
             }))
             .into_response(),
-            Err(e) => (StatusCode::BAD_GATEWAY, format!("get file: {e:#}")).into_response(),
+            Err(e) => (relay_status(&e), format!("get file: {e:#}")).into_response(),
         };
     }
     let _ = (&state, &ns, &name, &req);
@@ -306,4 +306,15 @@ async fn file_get(
         "guest file transfer requires the Kairon backend",
     )
         .into_response()
+}
+
+/// A missing Machine is a 404; anything else on the relay path is a bad gateway.
+#[cfg(all(feature = "web", feature = "kairon"))]
+fn relay_status(e: &anyhow::Error) -> StatusCode {
+    let msg = format!("{e:#}");
+    if msg.contains("NotFound") || msg.contains("not found") {
+        StatusCode::NOT_FOUND
+    } else {
+        StatusCode::BAD_GATEWAY
+    }
 }
