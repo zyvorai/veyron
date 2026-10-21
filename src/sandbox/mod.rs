@@ -172,11 +172,14 @@ async fn claim(
     ttl_minutes: u64,
     internet: bool,
     wait: Duration,
+    template: Option<&str>,
 ) -> anyhow::Result<Sandbox> {
     match backend() {
         Backend::KubeVirt => kubevirt::claim(client, owner, ttl_minutes, internet, wait).await,
         #[cfg(feature = "kairon")]
-        Backend::Kairon => kairon::claim(client, owner, ttl_minutes, internet, wait).await,
+        Backend::Kairon => {
+            kairon::claim(client, owner, ttl_minutes, internet, wait, template).await
+        }
     }
 }
 
@@ -270,6 +273,20 @@ pub struct CreateReq {
     /// Wait for the sandbox to be ready (default true, up to 4 minutes).
     #[serde(default)]
     pub wait: Option<bool>,
+    /// Prebaked FluxVM template to start from (Kairon backend; starts in well under a second).
+    /// Templates are per node: see `GET /api/v1/sandbox-templates`.
+    #[serde(default)]
+    pub template: Option<String>,
+}
+
+/// A template name FluxVM could have built: lowercase alphanumerics plus `-_.`, no path tricks.
+pub fn valid_template_name(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 63
+        && s.bytes().all(|b| {
+            b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'-' | b'_' | b'.')
+        })
+        && s.as_bytes()[0].is_ascii_alphanumeric()
 }
 
 #[derive(Debug)]
@@ -334,6 +351,22 @@ pub async fn op_create(
             ),
         ));
     }
+    let template = req
+        .template
+        .as_deref()
+        .map(str::trim)
+        .filter(|t| !t.is_empty());
+    if let Some(t) = template {
+        if !valid_template_name(t) {
+            return Err(OpError(422, format!("invalid template name '{t}'")));
+        }
+        if backend() != Backend::Kairon {
+            return Err(OpError(
+                422,
+                "sandbox templates need the Kairon backend".into(),
+            ));
+        }
+    }
     let ttl = req.ttl_minutes.unwrap_or(30).clamp(5, max_ttl_minutes());
     let wait = if req.wait.unwrap_or(true) {
         Duration::from_secs(env_u64("VEYRON_SANDBOX_WAIT_SECS", 240))
@@ -341,7 +374,7 @@ pub async fn op_create(
         Duration::ZERO
     };
     note_use();
-    Ok(claim(client, &owner, ttl, req.internet, wait).await?)
+    Ok(claim(client, &owner, ttl, req.internet, wait, template).await?)
 }
 
 pub async fn op_exec(
@@ -1076,7 +1109,8 @@ pub fn tool_specs() -> Vec<ToolSpec> {
             "Start an isolated, disposable Linux VM (Ubuntu, Python 3) for running code. No internet unless asked. Deleted automatically after ttl_minutes.",
             json!({"type": "object", "properties": {
                 "ttl_minutes": {"type": "integer", "minimum": 5, "maximum": 1440, "default": 30},
-                "internet": {"type": "boolean", "default": false}
+                "internet": {"type": "boolean", "default": false},
+                "template": {"type": "string", "description": "Prebaked template name for a sub-second start (Kairon only); see GET /api/v1/sandbox-templates"}
             }}),
         ),
         sandbox_tool(
@@ -1172,6 +1206,10 @@ pub async fn invoke_tool(ctx: &ToolCtx, name: &str, args: &Value) -> ToolOutput 
                     .and_then(Value::as_bool)
                     .unwrap_or(false),
                 wait: Some(true),
+                template: args
+                    .get("template")
+                    .and_then(Value::as_str)
+                    .map(str::to_string),
             };
             match op_create(&client, &ctx.role, &ctx.subject, &req).await {
                 Ok(sb) => out(
@@ -1357,6 +1395,15 @@ pub async fn tick(state: &SharedState) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn template_names_are_restricted() {
+        use super::valid_template_name as ok;
+        assert!(ok("alpine-agent") && ok("py3.12_slim"));
+        assert!(
+            !ok("") && !ok("-x") && !ok("A") && !ok("a/b") && !ok("a b") && !ok(&"a".repeat(64))
+        );
+    }
+
     use super::*;
 
     #[test]

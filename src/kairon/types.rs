@@ -913,6 +913,13 @@ pub const ALL_PLURALS: &[&str] = &[
     "machineusageledgers",
     "nodetopologies",
     "agentsessions",
+    "machineactionapprovals",
+    "nodefencerequests",
+    "machinenetworkclaims",
+    "machinetemplateclaims",
+    "machinetemplateversions",
+    "machineimportplans",
+    "machinebackupgroups",
 ];
 
 #[cfg(test)]

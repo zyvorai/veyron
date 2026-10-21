@@ -474,6 +474,20 @@ EOF
                 fi
                 curl_api POST "/api/v1/agent-sessions/default/none/ops/tokens" '{}'
                 [[ "${_CURL_CODE}" == "422" ]] && pass "agent-session ops refuses a credential verb (422)" || fail "agent-session verb allow-list" "HTTP ${_CURL_CODE}"
+                for _k in virtual-networks balance-policies autoscalers recovery-plans ha-profiles usage-ledgers backup-groups template-claims node-fence-requests accelerator-profiles; do
+                    curl_api GET "/api/v1/kairon/${_k}?namespace=default"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET kairon/${_k} → 200" || skip "kairon/${_k} (HTTP ${_CURL_CODE}; CRD may not be installed)"
+                done
+                curl_api POST "/api/v1/kairon/fleet/usage-ledgers" '{"name":"x","spec":{}}'
+                [[ "${_CURL_CODE}" == "404" ]] && pass "fleet create refuses a read-only kind (404)" || fail "fleet read-only kind" "HTTP ${_CURL_CODE}"
+                curl_api POST "/api/v1/kairon/fleet/ha-profiles" '{"name":"Bad_Name","spec":{}}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "fleet create rejects an invalid name (422)" || fail "fleet name validation" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/sandbox-templates"
+                [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"templates"' && pass "GET sandbox-templates → 200" || skip "sandbox-templates (HTTP ${_CURL_CODE})"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/input" '{"action":"Click; rm"}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "screen input rejects a malformed action (422)" || fail "screen input validation" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/screenshot"
+                [[ "${_CURL_CODE}" == "502" || "${_CURL_CODE}" == "200" ]] && pass "screenshot answers (${_CURL_CODE}; 200 only on a Mac vz VM)" || fail "screenshot" "HTTP ${_CURL_CODE}"
                 curl_api GET "/api/v1/kairon/bogus"
                 [[ "${_CURL_CODE}" == "404" ]] && pass "GET kairon/bogus → 404" || fail "kairon/bogus" "HTTP ${_CURL_CODE}"
                 # Phase 3: FluxVM fork plan, event log, host memory, branches (need kairon-node with the flux relay routes).

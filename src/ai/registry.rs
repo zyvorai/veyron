@@ -317,14 +317,16 @@ pub fn builtin_tools() -> Vec<ToolSpec> {
         ),
         read(
             "kairon_resources",
-            "List Kairon claims, quotas, disruption budgets, migration policies, backup policies, protection plans, virtual networks, accelerator profiles, balance policies, autoscalers, recovery plans, HA profiles, usage ledgers or node topologies.",
+            "List Kairon claims, quotas, disruption budgets, migration policies, backup policies, protection plans, virtual networks, accelerator profiles, balance policies, autoscalers, recovery plans, HA profiles, backup groups, import plans, template versions and claims, network claims, usage ledgers, node-fence requests, action approvals or node topologies.",
             obj(
                 json!({
                     "kind": {"type": "string", "enum": [
                         "claims", "quotas", "disruption-budgets", "migration-policies",
                         "backup-policies", "protection-plans", "virtual-networks",
                         "accelerator-profiles", "balance-policies", "autoscalers",
-                        "recovery-plans", "ha-profiles", "usage-ledgers", "node-topologies"
+                        "recovery-plans", "ha-profiles", "usage-ledgers", "node-topologies",
+                        "network-claims", "backup-groups", "import-plans", "template-versions",
+                        "template-claims", "node-fence-requests", "action-approvals"
                     ]},
                     "namespace": {"type": "string"}
                 }),

@@ -109,6 +109,36 @@ pub(super) fn lifecycle_spec(ttl_minutes: u64) -> Option<crate::kairon::Lifecycl
     })
 }
 
+/// Boot from a prebaked FluxVM template. FluxVM then forces its own `flux-vm` runtime with a
+/// vsock guest agent and ignores `spec.image`/`resources` (the template carries its own), so
+/// the vsock agent console is enabled for exec/files and the image digest is not needed.
+pub(super) fn apply_template(m: &mut Machine, template: &str) {
+    m.spec.sandbox = Some(crate::kairon::SandboxSpec {
+        template_name: Some(template.to_string()),
+        ..Default::default()
+    });
+    m.spec.runtime = Some(RuntimeSpec {
+        backend: Some("flux-vm".into()),
+        kernel: None,
+    });
+    m.spec.guest_agent = Some(crate::kairon::GuestAgentSpec {
+        enabled: false,
+        console: true,
+    });
+}
+
+/// Whether commands should go over FluxVM's vsock agent rather than the QEMU guest agent.
+fn uses_vsock_agent(m: &Machine) -> bool {
+    m.spec
+        .sandbox
+        .as_ref()
+        .is_some_and(|s| s.template_name.is_some())
+        || m.spec
+            .guest_agent
+            .as_ref()
+            .is_some_and(|g| g.console && !g.enabled)
+}
+
 /// FluxVM backend for sandbox Machines (`VEYRON_SANDBOX_KAIRON_BACKEND`, default
 /// `firecracker`; `flux-vm` or `qemu` where Firecracker isn't available).
 fn runtime_backend() -> String {
@@ -213,7 +243,13 @@ pub async fn claim(
     ttl_minutes: u64,
     internet: bool,
     wait: Duration,
+    template: Option<&str>,
 ) -> Result<Sandbox> {
+    if template.is_some() && pool_name().is_some() {
+        bail!(
+            "a template cannot be combined with VEYRON_SANDBOX_KAIRON_POOL; the pool decides what it hands out"
+        );
+    }
     if let Some(pool) = pool_name() {
         return claim_from_pool(client, &pool, owner, ttl_minutes, internet, wait).await;
     }
@@ -254,6 +290,9 @@ pub async fn claim(
         backend: Some(backend),
         kernel: None,
     });
+    if let Some(t) = template {
+        apply_template(&mut m, t);
+    }
     m.spec.lifecycle = lifecycle_spec(ttl_minutes);
     let now = chrono::Utc::now();
     let mut annotations = BTreeMap::from([
@@ -333,13 +372,16 @@ pub async fn exec(
     timeout_secs: u64,
 ) -> Result<ExecResult> {
     let started = Instant::now();
-    let r = relay(client, sb)
-        .await?
-        .exec(&ExecRequest::shell(
-            &format!("cd /workspace 2>/dev/null || cd /root; {command}"),
-            timeout_secs,
-        ))
-        .await?;
+    let machine = api(client).get(&sb.vm).await?;
+    let target = RelayTarget::for_machine(client, &machine).await?;
+    let script = format!("cd /workspace 2>/dev/null || cd /root; {command}");
+    let r = if uses_vsock_agent(&machine) {
+        target.agent_exec(&script, timeout_secs).await?
+    } else {
+        target
+            .exec(&ExecRequest::shell(&script, timeout_secs))
+            .await?
+    };
     Ok(ExecResult {
         exit_code: r.exit_code,
         timed_out: r.exit_code == 124,
@@ -356,7 +398,7 @@ pub async fn write_file(
     path: &str,
     data: &[u8],
 ) -> Result<()> {
-    relay(client, sb).await?.exec_put_file(path, data).await
+    relay(client, sb).await?.put_file(path, data, None).await
 }
 
 pub async fn read_file(
@@ -365,5 +407,44 @@ pub async fn read_file(
     path: &str,
     max: usize,
 ) -> Result<Vec<u8>> {
-    relay(client, sb).await?.exec_get_file(path, max).await
+    Ok(relay(client, sb).await?.get_file(path, max).await?.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::kairon::{GuestAgentSpec, MachineSpec};
+
+    #[test]
+    fn template_sandboxes_run_flux_vm_with_the_vsock_agent() {
+        let mut m = Machine::new("sbx", MachineSpec::default());
+        apply_template(&mut m, "alpine-agent");
+        assert_eq!(
+            m.spec.sandbox.as_ref().unwrap().template_name.as_deref(),
+            Some("alpine-agent")
+        );
+        assert_eq!(
+            m.spec.runtime.as_ref().unwrap().backend.as_deref(),
+            Some("flux-vm")
+        );
+        let g = m.spec.guest_agent.as_ref().unwrap();
+        assert!(g.console && !g.enabled);
+        assert!(uses_vsock_agent(&m));
+    }
+
+    #[test]
+    fn plain_machines_keep_the_qemu_guest_agent_path() {
+        let mut m = Machine::new("vm", MachineSpec::default());
+        assert!(!uses_vsock_agent(&m));
+        m.spec.guest_agent = Some(GuestAgentSpec {
+            enabled: true,
+            console: false,
+        });
+        assert!(!uses_vsock_agent(&m));
+        m.spec.guest_agent = Some(GuestAgentSpec {
+            enabled: false,
+            console: true,
+        });
+        assert!(uses_vsock_agent(&m));
+    }
 }
