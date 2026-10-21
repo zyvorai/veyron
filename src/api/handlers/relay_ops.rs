@@ -430,7 +430,11 @@ async fn vm_events(
 ) -> Reply {
     let t = target(&state, &ns, &name).await?;
     let query = events_query(&t.runtime_id, &q);
-    json_call(&t, Method::GET, "events", &[], &query, None).await
+    // Node-level relay route; the event log is filtered to this VM by `vm=<runtime id>`.
+    t.call_node(Method::GET, "events", &query, None)
+        .await
+        .map(|v| Json(v).into_response())
+        .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("{e:#}")))
 }
 
 async fn node_target(state: &SharedState, node: &str) -> Result<RelayTarget, Response> {
