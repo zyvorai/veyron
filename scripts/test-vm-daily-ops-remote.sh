@@ -381,6 +381,57 @@ EOF
             curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/logs?tail=50"
             [[ "${_CURL_CODE}" == "200" ]] && pass "GET VM logs → 200" || fail "GET VM logs" "HTTP ${_CURL_CODE}: $(echo "${_CURL_BODY}" | head -c 200)"
 
+            # kairon-node relay features (FluxVM): files, quiesce, diagnostics, network, egress.
+            if [[ "${BACKEND}" == "kairon" ]]; then
+                _payload="veyron-e2e-$$"
+                _b64="$(printf '%s' "${_payload}" | base64 | tr -d '\n')"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/put" "{\"path\":\"/tmp/veyron-e2e.txt\",\"content_base64\":\"${_b64}\"}"
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST files/put → 200"
+                    curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/get" '{"path":"/tmp/veyron-e2e.txt"}'
+                    echo "${_CURL_BODY}" | grep -q "${_b64}" && pass "files/get round-trips the content" || fail "files/get content" "$(echo "${_CURL_BODY}" | head -c 200)"
+                else
+                    skip "guest files (HTTP ${_CURL_CODE}; needs spec.guestAgent.console)"
+                fi
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/pressure"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET pressure → 200" || skip "pressure (HTTP ${_CURL_CODE})"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/network/stats"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET network/stats → 200" || skip "network stats (HTTP ${_CURL_CODE})"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/runtime-capabilities"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET runtime-capabilities → 200" || skip "runtime-capabilities (HTTP ${_CURL_CODE})"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/egress-check" '{"host":"example.com"}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST egress-check → 200"
+                    echo "${_CURL_BODY}" | grep -qiE 'authorization"[[:space:]]*:[[:space:]]*"[^"]' && fail "egress-check leaked a credential" "response contains an authorization value" || pass "egress-check response carries no credential"
+                else
+                    skip "egress-check (HTTP ${_CURL_CODE})"
+                fi
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/quiesced-snapshot" '{}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST quiesced-snapshot → 200 (freeze/snapshot/thaw)"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/frozen"
+                    echo "${_CURL_BODY}" | grep -q 'true' && fail "guest still frozen after quiesced-snapshot" "$(echo "${_CURL_BODY}" | head -c 200)" || pass "guest thawed after quiesced-snapshot"
+                else
+                    skip "quiesced-snapshot (HTTP ${_CURL_CODE}; needs the QEMU guest agent)"
+                fi
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/diagnostics" '{}'
+                if [[ "${_CURL_CODE}" == "200" || "${_CURL_CODE}" == "202" ]]; then
+                    pass "POST diagnostics → ${_CURL_CODE}"
+                    _tok="$(echo "${_CURL_BODY}" | sed -n 's/.*"\(token\|id\)"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\2/p' | head -1)"
+                    if [[ -n "${_tok}" ]]; then
+                        curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/diagnostics/${_tok}"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "GET diagnostics/:token → 200" || fail "GET diagnostics/:token" "HTTP ${_CURL_CODE}"
+                        curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/diagnostics/${_tok}"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE diagnostics/:token → 200" || skip "DELETE diagnostics (HTTP ${_CURL_CODE})"
+                    fi
+                else
+                    skip "diagnostics (HTTP ${_CURL_CODE})"
+                fi
+            else
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/get" '{"path":"/etc/hostname"}'
+                [[ "${_CURL_CODE}" == "501" ]] && pass "files/get → 501 on KubeVirt" || skip "files/get on KubeVirt (HTTP ${_CURL_CODE})"
+            fi
+
             curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/migrations"
             [[ "${_CURL_CODE}" == "200" ]] && pass "GET migrations → 200" || skip "GET migrations (HTTP ${_CURL_CODE})"
 

@@ -784,6 +784,10 @@ pub mod web {
                 "/api/v1/vms/:ns/:name/serial",
                 get(serial_websocket_handler),
             )
+            .route(
+                "/api/v1/vms/:ns/:name/tunnel",
+                get(tunnel_websocket_handler),
+            )
             .route("/api/v1/ws/metrics", get(metrics_websocket_handler))
             .with_state(state.clone())
             .merge(crate::ai::api::long_lived_router(state.clone()))

@@ -928,6 +928,45 @@ export const api = {
     unwrap(await request(`${vmPath(ns, name)}/guest/fix-plan`, { method: 'POST', body: '{}' })),
   guestMetrics: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/guest/metrics`, { timeout: 45_000 })),
   guestMigrateScore: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/guest/migrate-score`, { timeout: 45_000 })),
+  // Kairon relay (FluxVM) features — 501 on the KubeVirt backend.
+  putGuestFile: async (ns, name, path, bytes, mode) => {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return unwrap(
+      await request(`${vmPath(ns, name)}/files/put`, {
+        method: 'POST',
+        body: JSON.stringify({ path, content_base64: btoa(bin), mode }),
+      }),
+    );
+  },
+  getGuestFile: async (ns, name, path) =>
+    unwrap(await request(`${vmPath(ns, name)}/files/get`, { method: 'POST', body: JSON.stringify({ path }) })),
+  startDiagnostics: async (ns, name, body = {}) =>
+    unwrap(await request(`${vmPath(ns, name)}/diagnostics`, { method: 'POST', body: JSON.stringify(body) })),
+  getDiagnostics: async (ns, name, token) =>
+    unwrap(await request(`${vmPath(ns, name)}/diagnostics/${encodeURIComponent(token)}`)),
+  deleteDiagnostics: async (ns, name, token) =>
+    unwrap(await request(`${vmPath(ns, name)}/diagnostics/${encodeURIComponent(token)}`, { method: 'DELETE' })),
+  /** Authenticated download of a binary route; saves it through a temporary link. */
+  downloadFile: async (path, filename) => {
+    const token = getToken();
+    const resp = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!resp.ok) throw httpError((await resp.text()).slice(0, 200) || `HTTP ${resp.status}`, resp.status);
+    const url = URL.createObjectURL(await resp.blob());
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  },
+  quiescedSnapshot: async (ns, name) =>
+    unwrap(await request(`${vmPath(ns, name)}/quiesced-snapshot`, { method: 'POST', body: JSON.stringify({}) })),
+  vmPressure: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/pressure`)),
+  vmNetwork: async (ns, name, kind, limit = 50) =>
+    unwrap(await request(`${vmPath(ns, name)}/network/${kind}${limit ? `?limit=${limit}` : ''}`)),
+  egressCheck: async (ns, name, host) =>
+    unwrap(await request(`${vmPath(ns, name)}/egress-check`, { method: 'POST', body: JSON.stringify({ host }) })),
+  runtimeCapabilities: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/runtime-capabilities`)),
   guestFilesystem: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/guest-filesystem`)) || {},
   vmSecurity: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/security`)) || {},
   vmMigrations: async (ns, name) => listOf(await request(`${vmPath(ns, name)}/migrations`), 'migrations'),

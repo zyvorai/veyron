@@ -337,6 +337,83 @@ impl RelayTarget {
         Ok((data, mode))
     }
 
+    /// Generic per-runtime relay call: `{base}/{path}/{runtime_id}/{segments..}?{query}`.
+    /// Segments are percent-encoded. Non-2xx answers become errors carrying the
+    /// relay's message; a 2xx response is returned unread so callers can stream it.
+    pub async fn call(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        segments: &[&str],
+        query: &str,
+        body: Option<Vec<u8>>,
+        timeout: Option<Duration>,
+    ) -> Result<reqwest::Response> {
+        let mut url = self.url(path);
+        for seg in segments {
+            url.push('/');
+            url.push_str(&urlencode(seg));
+        }
+        if !query.is_empty() {
+            url.push('?');
+            url.push_str(query);
+        }
+        let mut builder = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(15))
+            .danger_accept_invalid_certs(tls_insecure());
+        if let Some(t) = timeout {
+            builder = builder.timeout(t);
+        }
+        let mut req = builder
+            .build()
+            .context("build relay HTTP client")?
+            .request(method, url)
+            .bearer_auth(&self.token);
+        if let Some(b) = body {
+            req = req.header("content-type", "application/json").body(b);
+        }
+        let resp = req
+            .send()
+            .await
+            .with_context(|| format!("kairon-node relay /{path}"))?;
+        let status = resp.status();
+        if !status.is_success() {
+            let text = resp.text().await.unwrap_or_default();
+            bail!(
+                "kairon-node relay /{path} returned {status}: {}",
+                text.trim()
+            );
+        }
+        Ok(resp)
+    }
+
+    /// [`Self::call`] decoded as JSON (empty body => `null`).
+    pub async fn call_json(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        segments: &[&str],
+        query: &str,
+        body: Option<&serde_json::Value>,
+    ) -> Result<serde_json::Value> {
+        let body = body.map(serde_json::to_vec).transpose()?;
+        let resp = self
+            .call(
+                method,
+                path,
+                segments,
+                query,
+                body,
+                Some(Duration::from_secs(120)),
+            )
+            .await?;
+        let bytes = resp.bytes().await?;
+        if bytes.is_empty() {
+            return Ok(serde_json::Value::Null);
+        }
+        serde_json::from_slice(&bytes).with_context(|| format!("decode relay /{path} response"))
+    }
+
     /// Hypervisor-level checkpoint (RAM + CPU + device state) tagged `tag`; the
     /// Machine keeps running.
     pub async fn vm_snapshot(&self, tag: &str) -> Result<()> {
