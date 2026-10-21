@@ -67,6 +67,26 @@ Read: `vm_runtime_events`, `vm_pressure`, `vm_network_drops`, `vm_lifecycle`,
 `set_vm_lifecycle`, `set_vm_network_policy`, `quiesced_snapshot_vm`. They are also served over
 `POST /mcp` with the same role filtering.
 
+## Securing the relay
+
+The kairon-node console relay (default `:8090`, or whatever `--console-port` pins) serves guest
+exec, files, console and the TCP tunnel behind a single bearer token, and listens on every
+interface. Close it to the outside on every node:
+
+```bash
+sudo scripts/cluster/restrict-kairon-relay.sh --port 22230            # Cilium pods (10.0.0.0/8)
+sudo scripts/cluster/restrict-kairon-relay.sh --port 22230 --allow 10.42.0.0/16   # flannel k3s
+sudo scripts/cluster/restrict-kairon-relay.sh --port 22230 --remove   # undo
+```
+
+It installs an `iptables`/`ip6tables` chain `KAIRON_RELAY` that accepts loopback, the node's own
+address (Veyron's pod reaches the relay at `https://{node_ip}:PORT`) and the `--allow` ranges, drops
+the rest, and a oneshot `kairon-relay-firewall.service` that restores it at boot. Verify from
+outside the cluster (`nc -z NODE PORT` should time out) and through Veyron
+(`GET /api/v1/nodes/NODE/runtime/memory` should still return 200). Applied on the 175 test node on
+2026-10-21; a node whose relay port was found open to the internet should also rotate
+`KAIRON_NODE_CONSOLE_TOKEN`.
+
 ## Drills
 
 `scripts/nightly-kairon-drill.sh HOST` runs the full E2E and exits non-zero on failure, posting a
