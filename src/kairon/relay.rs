@@ -301,6 +301,42 @@ impl RelayTarget {
             .await
     }
 
+    /// Writes `data` to `path` in the guest over FluxVM's vsock agent
+    /// (`POST /agent-file/put/{id}`); needs `spec.guestAgent.console`.
+    pub async fn agent_put_file(&self, path: &str, data: &[u8], mode: Option<u32>) -> Result<()> {
+        use base64::Engine as _;
+        let body = serde_json::json!({
+            "path": path,
+            "contentBase64": base64::engine::general_purpose::STANDARD.encode(data),
+            "mode": mode,
+        });
+        let _: serde_json::Value = self
+            .post_json("agent-file/put", &body, Duration::from_secs(120))
+            .await?;
+        Ok(())
+    }
+
+    /// Reads `path` from the guest (`POST /agent-file/get/{id}`); returns bytes and mode.
+    pub async fn agent_get_file(&self, path: &str) -> Result<(Vec<u8>, u32)> {
+        use base64::Engine as _;
+        let v: serde_json::Value = self
+            .post_json(
+                "agent-file/get",
+                &serde_json::json!({ "path": path }),
+                Duration::from_secs(120),
+            )
+            .await?;
+        let b64 = v
+            .get("contentBase64")
+            .and_then(|x| x.as_str())
+            .unwrap_or_default();
+        let data = base64::engine::general_purpose::STANDARD
+            .decode(b64)
+            .context("decode relay agent-file content")?;
+        let mode = v.get("mode").and_then(|x| x.as_u64()).unwrap_or(0) as u32;
+        Ok((data, mode))
+    }
+
     /// Hypervisor-level checkpoint (RAM + CPU + device state) tagged `tag`; the
     /// Machine keeps running.
     pub async fn vm_snapshot(&self, tag: &str) -> Result<()> {

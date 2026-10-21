@@ -399,6 +399,33 @@ pub async fn guest_exec(
     }))
 }
 
+/// Largest file moved through `put_file`/`get_file` (it travels base64 inside JSON).
+pub const GUEST_FILE_MAX_BYTES: usize = 16 << 20;
+
+pub async fn put_file(
+    c: &KubeClient,
+    ns: &str,
+    name: &str,
+    path: &str,
+    data: &[u8],
+    mode: Option<u32>,
+) -> Result<()> {
+    if data.len() > GUEST_FILE_MAX_BYTES {
+        bail!("file is larger than {} MiB", GUEST_FILE_MAX_BYTES >> 20);
+    }
+    let (_, relay) = relay_for(c, ns, name).await?;
+    relay.agent_put_file(path, data, mode).await
+}
+
+pub async fn get_file(c: &KubeClient, ns: &str, name: &str, path: &str) -> Result<(Vec<u8>, u32)> {
+    let (_, relay) = relay_for(c, ns, name).await?;
+    let (data, mode) = relay.agent_get_file(path).await?;
+    if data.len() > GUEST_FILE_MAX_BYTES {
+        bail!("file is larger than {} MiB", GUEST_FILE_MAX_BYTES >> 20);
+    }
+    Ok((data, mode))
+}
+
 /// Turns Windows Remote Desktop on or off inside a running guest through the relay.
 pub async fn set_windows_rdp(
     c: &KubeClient,
