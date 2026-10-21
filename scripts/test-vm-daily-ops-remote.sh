@@ -427,6 +427,47 @@ EOF
                 else
                     skip "diagnostics (HTTP ${_CURL_CODE})"
                 fi
+                # Phase 2: lifecycle, placement, network policy, migration options, CRD views.
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/lifecycle" '{"idleAction":"Explode"}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "PUT lifecycle rejects an unknown idleAction (422)" || fail "lifecycle validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/lifecycle" '{"idleTimeoutSeconds":86400,"idleAction":"Pause","wakeOnConnect":true}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "PUT lifecycle → 200"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/lifecycle"
+                    echo "${_CURL_BODY}" | grep -q '"idleAction":"Pause"' && pass "GET lifecycle reflects the update" || fail "GET lifecycle" "$(echo "${_CURL_BODY}" | head -c 200)"
+                    curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/lifecycle" '{}'
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "PUT lifecycle {} clears it" || fail "clear lifecycle" "HTTP ${_CURL_CODE}"
+                else
+                    skip "PUT lifecycle (HTTP ${_CURL_CODE})"
+                fi
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/placement" '{"antiAffinity":[{}]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "PUT placement rejects a term without topologyKey (422)" || fail "placement validation" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/placement"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET placement → 200" || fail "GET placement" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/network-policy" '{"allowFqdn":["a.com"]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "PUT network-policy rejects an unknown field (422)" || fail "network-policy validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/network-policy" '{"defaultAllow":true,"allowIcmp":true,"maxIngressMbps":1000}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "PUT network-policy → 200"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/network-policy"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET network-policy → 200" || fail "GET network-policy" "HTTP ${_CURL_CODE}"
+                    curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/network-policy"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE network-policy → 200" || fail "DELETE network-policy" "HTTP ${_CURL_CODE}"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/network-policy"
+                    [[ "${_CURL_CODE}" == "404" ]] && pass "network-policy gone after delete (404)" || fail "network-policy after delete" "HTTP ${_CURL_CODE}"
+                else
+                    skip "PUT network-policy (HTTP ${_CURL_CODE})"
+                fi
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/migrate" '{"mode":"sideways"}'
+                [[ "${_CURL_CODE}" == "409" ]] && pass "migrate rejects an invalid mode (409)" || fail "migrate option validation" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/migrations/none/recovery" '{"action":"ForceAbort","acknowledged_diagnosis":"Unknown","reason":""}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "migration recovery requires a reason (422)" || fail "recovery validation" "HTTP ${_CURL_CODE}"
+                for _k in claims quotas disruption-budgets migration-policies backup-policies node-topologies; do
+                    curl_api GET "/api/v1/kairon/${_k}?namespace=all"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET kairon/${_k} → 200" || skip "kairon/${_k} (HTTP ${_CURL_CODE}; CRD may not be installed)"
+                done
+                curl_api GET "/api/v1/kairon/bogus"
+                [[ "${_CURL_CODE}" == "404" ]] && pass "GET kairon/bogus → 404" || fail "kairon/bogus" "HTTP ${_CURL_CODE}"
             else
                 curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/get" '{"path":"/etc/hostname"}'
                 [[ "${_CURL_CODE}" == "501" ]] && pass "files/get → 501 on KubeVirt" || skip "files/get on KubeVirt (HTTP ${_CURL_CODE})"

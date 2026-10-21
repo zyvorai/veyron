@@ -342,12 +342,13 @@ async fn get_policy(
         .get_opt(&policy_name(&name))
         .await
     {
-        Ok(Some(o)) => Json(json!({
+        // A deleted policy lingers while kairon removes its enforcement; it is already off.
+        Ok(Some(o)) if o.metadata.deletion_timestamp.is_none() => Json(json!({
             "policy": o.data.get("spec").and_then(|s| s.get("policy")),
             "status": o.data.get("status"),
         }))
         .into_response(),
-        Ok(None) => err(StatusCode::NOT_FOUND, "no network policy for this VM"),
+        Ok(_) => err(StatusCode::NOT_FOUND, "no network policy for this VM"),
         Err(e) => kube_err(e),
     }
 }
@@ -374,7 +375,12 @@ async fn put_policy(
     let pname = policy_name(&name);
     let spec = json!({ "machineName": name, "policy": policy });
     let res = match api.get_opt(&pname).await {
-        // Merge patch would keep stale list entries; replace the whole policy.
+        Ok(Some(o)) if o.metadata.deletion_timestamp.is_some() => {
+            return err(
+                StatusCode::CONFLICT,
+                "the previous network policy is still being removed; retry shortly",
+            );
+        }
         Ok(Some(_)) => {
             api.patch(
                 &pname,
