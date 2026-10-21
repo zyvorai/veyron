@@ -48,6 +48,8 @@ pub mod imports;
 pub mod incidents;
 pub mod ingress;
 pub mod integrations;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod kairon_ext;
 pub mod kryton;
 pub mod logs;
 #[cfg(all(feature = "web", feature = "kairon"))]
@@ -215,6 +217,7 @@ pub fn all_routes(
         .merge(machine_images::router(state.clone()))
         .merge(image_capture::router(state.clone()))
         .merge(relay_ops::router(state.clone()))
+        .merge(kairon_ext::router(state.clone()))
         .merge(vm_media::router(state.clone()))
         .merge(vm_fork::router(state.clone()))
         .merge(agent_sessions::router(state.clone()));

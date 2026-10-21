@@ -321,6 +321,51 @@ pub struct MigrateRequest {
     /// Kairon only: `auto` | `live` | `cold`.
     pub strategy: Option<String>,
     pub force: bool,
+    /// Kairon only: tuning copied onto `MachineMigration.spec`.
+    pub options: MigrationOptions,
+}
+
+/// Kairon `MachineMigration` tuning accepted by `POST /vms/:ns/:name/migrate`.
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct MigrationOptions {
+    /// `pre-copy` | `post-copy`.
+    #[serde(default)]
+    pub mode: Option<String>,
+    #[serde(default)]
+    pub bandwidth_mbps: Option<u64>,
+    #[serde(default)]
+    pub max_downtime_ms: Option<u64>,
+    #[serde(default)]
+    pub multifd_channels: Option<u32>,
+    #[serde(default)]
+    pub fallback_to_cold: Option<bool>,
+    #[serde(default)]
+    pub migration_network: Option<String>,
+    /// Passed through to `spec.adaptive`.
+    #[serde(default)]
+    pub adaptive: Option<serde_json::Value>,
+}
+
+impl MigrationOptions {
+    /// Reject values the CRD would refuse, so callers get a 409/422 not a webhook error.
+    pub fn validate(&self) -> std::result::Result<(), String> {
+        if let Some(m) = &self.mode
+            && m != "pre-copy"
+            && m != "post-copy"
+        {
+            return Err(format!("mode must be pre-copy or post-copy, got '{m}'"));
+        }
+        if self.multifd_channels == Some(0) {
+            return Err("multifd_channels must be at least 1".into());
+        }
+        if let Some(a) = &self.adaptive
+            && !a.is_object()
+        {
+            return Err("adaptive must be an object".into());
+        }
+        Ok(())
+    }
 }
 
 /// Returned when a migration is refused because of the VM's own state.
@@ -582,6 +627,7 @@ mod kairon {
                 m.phase()
             )));
         }
+        req.options.validate().map_err(MigrationBlocked)?;
         let strategy = req.strategy.as_deref().unwrap_or("auto");
         if m.has_device_claims() && strategy != "cold" && !req.force {
             return Err(MigrationBlocked(format!(
@@ -596,6 +642,13 @@ mod kairon {
                 machine_name: m.name().to_string(),
                 strategy: Some(strategy.to_string()),
                 target_node: req.target_node.clone(),
+                mode: req.options.mode.clone(),
+                bandwidth_mbps: req.options.bandwidth_mbps,
+                max_downtime_ms: req.options.max_downtime_ms,
+                multifd_channels: req.options.multifd_channels,
+                fallback_to_cold: req.options.fallback_to_cold,
+                migration_network: req.options.migration_network.clone(),
+                adaptive: req.options.adaptive.clone(),
                 ..Default::default()
             },
         );

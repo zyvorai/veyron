@@ -45,6 +45,10 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
         if path.ends_with("/diagnostics/memory-dump") || path.ends_with("/memory-dump") {
             return ApiRole::Admin;
         }
+        // Overrides an ambiguous live-migration commit point; operator decision.
+        if path.ends_with("/recovery") && path.contains("/migrations/") {
+            return ApiRole::Admin;
+        }
         if path.ends_with("/tunnel")
             || path.contains("/diagnostics/")
             || path.contains("/network/capture/")
