@@ -354,6 +354,46 @@ impl RelayTarget {
             url.push('/');
             url.push_str(&urlencode(seg));
         }
+        self.send(method, url, path, query, body, timeout).await
+    }
+
+    /// Node-scoped relay call with no runtime id (`{base}/{path}`), e.g. `capabilities`
+    /// and `egress-check`.
+    pub async fn call_node(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        query: &str,
+        body: Option<&serde_json::Value>,
+    ) -> Result<serde_json::Value> {
+        let url = format!("{}/{}", self.base_url, path.trim_matches('/'));
+        let body = body.map(serde_json::to_vec).transpose()?;
+        let resp = self
+            .send(
+                method,
+                url,
+                path,
+                query,
+                body,
+                Some(Duration::from_secs(60)),
+            )
+            .await?;
+        let bytes = resp.bytes().await?;
+        if bytes.is_empty() {
+            return Ok(serde_json::Value::Null);
+        }
+        serde_json::from_slice(&bytes).with_context(|| format!("decode relay /{path} response"))
+    }
+
+    async fn send(
+        &self,
+        method: reqwest::Method,
+        mut url: String,
+        path: &str,
+        query: &str,
+        body: Option<Vec<u8>>,
+        timeout: Option<Duration>,
+    ) -> Result<reqwest::Response> {
         if !query.is_empty() {
             url.push('?');
             url.push_str(query);
@@ -412,6 +452,74 @@ impl RelayTarget {
             return Ok(serde_json::Value::Null);
         }
         serde_json::from_slice(&bytes).with_context(|| format!("decode relay /{path} response"))
+    }
+
+    /// Writes a guest file: FluxVM's vsock agent when the Machine has
+    /// `spec.guestAgent.console`, otherwise base64 chunks through guest exec.
+    pub async fn put_file(&self, path: &str, data: &[u8], mode: Option<u32>) -> Result<()> {
+        match self.agent_put_file(path, data, mode).await {
+            Err(e) if vsock_agent_missing(&e) => self.exec_put_file(path, data).await,
+            r => r,
+        }
+    }
+
+    /// Reads a guest file, with the same vsock-then-exec fallback as [`Self::put_file`].
+    pub async fn get_file(&self, path: &str, max: usize) -> Result<(Vec<u8>, u32)> {
+        match self.agent_get_file(path).await {
+            Err(e) if vsock_agent_missing(&e) => Ok((self.exec_get_file(path, max).await?, 0)),
+            r => r,
+        }
+    }
+
+    /// File write over guest exec (`base64 -d >> path`), for guests without the vsock agent.
+    pub async fn exec_put_file(&self, path: &str, data: &[u8]) -> Result<()> {
+        use base64::Engine as _;
+        const CHUNK: usize = 48 * 1024;
+        let p = shell_quote(path);
+        let first = self
+            .exec(&ExecRequest::shell(
+                &format!("mkdir -p \"$(dirname {p})\" && : > {p}"),
+                30,
+            ))
+            .await?;
+        if first.exit_code != 0 {
+            bail!("cannot write {path}: {}", first.stderr.trim());
+        }
+        for chunk in data.chunks(CHUNK) {
+            let b64 = base64::engine::general_purpose::STANDARD.encode(chunk);
+            let r = self
+                .exec(&ExecRequest::shell(
+                    &format!("printf %s '{b64}' | base64 -d >> {p}"),
+                    30,
+                ))
+                .await?;
+            if r.exit_code != 0 {
+                bail!("cannot write {path}: {}", r.stderr.trim());
+            }
+        }
+        Ok(())
+    }
+
+    /// File read over guest exec (`base64 -w0`), refusing files larger than `max` bytes.
+    pub async fn exec_get_file(&self, path: &str, max: usize) -> Result<Vec<u8>> {
+        use base64::Engine as _;
+        let p = shell_quote(path);
+        let size = self
+            .exec(&ExecRequest::shell(&format!("stat -c %s {p}"), 30))
+            .await?;
+        if size.exit_code != 0 {
+            bail!("cannot read {path}: {}", size.stderr.trim());
+        }
+        if size.stdout.trim().parse::<usize>().unwrap_or(0) > max {
+            bail!("File is larger than {} MiB", max >> 20);
+        }
+        let r = self
+            .exec(&ExecRequest::shell(&format!("base64 -w0 {p}"), 60))
+            .await?;
+        if r.exit_code != 0 {
+            bail!("cannot read {path}: {}", r.stderr.trim());
+        }
+        Ok(base64::engine::general_purpose::STANDARD.decode(r.stdout.trim())?)
     }
 
     /// Hypervisor-level checkpoint (RAM + CPU + device state) tagged `tag`; the
@@ -482,6 +590,14 @@ fn urlencode(s: &str) -> String {
         .collect()
 }
 
+fn vsock_agent_missing(e: &anyhow::Error) -> bool {
+    format!("{e:#}").contains("guest agent is not enabled")
+}
+
+fn shell_quote(s: &str) -> String {
+    format!("'{}'", s.replace('\'', "'\\''"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -540,5 +656,18 @@ mod tests {
         let v = serde_json::to_value(ExecRequest::powershell("Get-Date", 10)).unwrap();
         assert_eq!(v["powershell"], "Get-Date");
         assert!(v.get("path").is_none());
+    }
+
+    #[test]
+    fn shell_quote_escapes_single_quotes() {
+        assert_eq!(shell_quote("/tmp/a b"), "'/tmp/a b'");
+        assert_eq!(shell_quote("it's"), "'it'\\''s'");
+    }
+
+    #[test]
+    fn detects_missing_vsock_agent() {
+        let e = anyhow!("relay returned 502: guest agent is not enabled for this VM");
+        assert!(vsock_agent_missing(&e));
+        assert!(!vsock_agent_missing(&anyhow!("connection refused")));
     }
 }

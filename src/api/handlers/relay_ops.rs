@@ -327,10 +327,9 @@ async fn egress_check(
     }
     let t = target(&s, &ns, &n).await?;
     let mut v = t
-        .call_json(
+        .call_node(
             Method::POST,
             "egress-check",
-            &[],
             "",
             Some(&json!({ "host": req.host })),
         )
@@ -345,7 +344,10 @@ async fn capabilities(
     Path((ns, n)): Path<(String, String)>,
 ) -> Reply {
     let t = target(&s, &ns, &n).await?;
-    json_call(&t, Method::GET, "capabilities", &[], "", None).await
+    t.call_node(Method::GET, "capabilities", "", None)
+        .await
+        .map(|v| Json(v).into_response())
+        .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("{e:#}")))
 }
 
 #[cfg(test)]

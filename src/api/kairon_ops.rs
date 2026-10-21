@@ -414,12 +414,12 @@ pub async fn put_file(
         bail!("file is larger than {} MiB", GUEST_FILE_MAX_BYTES >> 20);
     }
     let (_, relay) = relay_for(c, ns, name).await?;
-    relay.agent_put_file(path, data, mode).await
+    relay.put_file(path, data, mode).await
 }
 
 pub async fn get_file(c: &KubeClient, ns: &str, name: &str, path: &str) -> Result<(Vec<u8>, u32)> {
     let (_, relay) = relay_for(c, ns, name).await?;
-    let (data, mode) = relay.agent_get_file(path).await?;
+    let (data, mode) = relay.get_file(path, GUEST_FILE_MAX_BYTES).await?;
     if data.len() > GUEST_FILE_MAX_BYTES {
         bail!("file is larger than {} MiB", GUEST_FILE_MAX_BYTES >> 20);
     }
