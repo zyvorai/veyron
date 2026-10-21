@@ -211,8 +211,122 @@ async fn delete_one(
     }
 }
 
+/// FluxVM agent-session verbs reachable through `/agent-sessions/:ns/:name/ops/*rest`, by first
+/// path segment. JSON-only: binary or streaming verbs (screenshot, pty, input, uploads, files,
+/// event stream) and the ones that hand out credentials (tokens, ssh) are left out on purpose,
+/// mirroring kairon-node's own relay allow-list.
+const OPS_VERBS: &[&str] = &[
+    "approvals",
+    "grants",
+    "probe",
+    "exec",
+    "checkpoint",
+    "restore",
+    "rewind",
+    "fork",
+    "promote",
+    "events",
+    "artifacts",
+    "trajectory",
+    "preview",
+    "previews",
+    "jobs",
+    "git",
+];
+
+/// Validate the caller-supplied tail before it is spliced into a relay path.
+fn ops_path(rest: &str) -> Result<String, String> {
+    let rest = rest.trim_matches('/');
+    let verb = rest.split('/').next().unwrap_or("");
+    if !OPS_VERBS.contains(&verb) {
+        return Err(format!("'{verb}' is not an available agent-session verb"));
+    }
+    if rest.len() > 200
+        || rest
+            .split('/')
+            .any(|seg| seg.is_empty() || seg == "." || seg == "..")
+        || !rest
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'/'))
+    {
+        return Err("invalid agent-session path".into());
+    }
+    Ok(rest.to_string())
+}
+
+async fn session_ops(
+    State(state): State<SharedState>,
+    method: axum::http::Method,
+    Path((ns, name, rest)): Path<(String, String, String)>,
+    axum::extract::RawQuery(query): axum::extract::RawQuery,
+    body: Option<Json<Value>>,
+) -> Reply {
+    let tail = ops_path(&rest)
+        .map_err(|m| fail(StatusCode::UNPROCESSABLE_ENTITY, "INVALID_SESSION_PATH", m))?;
+    let api = api_for(&state, Some(&ns)).await?;
+    let o = api.get_opt(&name).await.map_err(|e| {
+        fail(
+            StatusCode::BAD_GATEWAY,
+            "UPSTREAM_QUERY_FAILED",
+            e.to_string(),
+        )
+    })?;
+    let Some(o) = o else {
+        return Err(fail(
+            StatusCode::NOT_FOUND,
+            "NOT_FOUND",
+            format!("AgentSession {ns}/{name} not found"),
+        ));
+    };
+    let st = o.data.get("status");
+    let field = |k: &str| {
+        st.and_then(|s| s.get(k))
+            .and_then(Value::as_str)
+            .filter(|v| !v.is_empty())
+    };
+    let (Some(node), Some(sid)) = (field("nodeName"), field("sessionID")) else {
+        return Err(fail(
+            StatusCode::CONFLICT,
+            "SESSION_NOT_READY",
+            "the session has no node or FluxVM session id yet",
+        ));
+    };
+    if !sid.bytes().all(|b| b.is_ascii_hexdigit() || b == b'-') {
+        return Err(fail(
+            StatusCode::BAD_GATEWAY,
+            "BAD_SESSION_ID",
+            "unexpected session id format",
+        ));
+    }
+    let client = { state.read().await.client().client() };
+    let target = crate::kairon::relay::RelayTarget::for_node(&client, node)
+        .await
+        .map_err(|e| {
+            fail(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "RELAY_UNAVAILABLE",
+                format!("{e:#}"),
+            )
+        })?;
+    let body = body.map(|Json(v)| v);
+    let out = target
+        .call_node(
+            method,
+            &format!("agent-sessions/{sid}/{tail}"),
+            query.as_deref().unwrap_or(""),
+            body.as_ref(),
+        )
+        .await
+        .map_err(|e| fail(StatusCode::BAD_GATEWAY, "RELAY_FAILED", format!("{e:#}")))?;
+    ok(StatusCode::OK, out)
+}
+
 pub fn router(state: SharedState) -> Router {
     Router::new()
+        .route(
+            "/agent-sessions/:ns/:name/ops/*rest",
+            get(session_ops).post(session_ops),
+        )
         .route("/agent-sessions", get(list_all))
         .route("/agent-sessions/:ns", axum::routing::post(create))
         .route("/agent-sessions/:ns/:name", get(get_one).delete(delete_one))
@@ -237,6 +351,22 @@ mod tests {
             spec_from(&req),
             json!({"agent": "claude", "ttlSeconds": 600, "resources": {"cpu": "2"}})
         );
+    }
+
+    #[test]
+    fn ops_path_allows_listed_verbs_only() {
+        assert_eq!(ops_path("exec").unwrap(), "exec");
+        assert_eq!(
+            ops_path("/approvals/abc-1/approve/").unwrap(),
+            "approvals/abc-1/approve"
+        );
+        assert!(ops_path("tokens").is_err());
+        assert!(ops_path("ssh").is_err());
+        assert!(ops_path("pty").is_err());
+        assert!(ops_path("exec/../tokens").is_err());
+        assert!(ops_path("exec//x").is_err());
+        assert!(ops_path("exec/a b").is_err());
+        assert!(ops_path("").is_err());
     }
 
     #[test]

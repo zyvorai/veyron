@@ -381,6 +381,139 @@ EOF
             curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/logs?tail=50"
             [[ "${_CURL_CODE}" == "200" ]] && pass "GET VM logs → 200" || fail "GET VM logs" "HTTP ${_CURL_CODE}: $(echo "${_CURL_BODY}" | head -c 200)"
 
+            # kairon-node relay features (FluxVM): files, quiesce, diagnostics, network, egress.
+            if [[ "${BACKEND}" == "kairon" ]]; then
+                _payload="veyron-e2e-$$"
+                _b64="$(printf '%s' "${_payload}" | base64 | tr -d '\n')"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/put" "{\"path\":\"/tmp/veyron-e2e.txt\",\"content_base64\":\"${_b64}\"}"
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST files/put → 200"
+                    curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/get" '{"path":"/tmp/veyron-e2e.txt"}'
+                    echo "${_CURL_BODY}" | grep -q "${_b64}" && pass "files/get round-trips the content" || fail "files/get content" "$(echo "${_CURL_BODY}" | head -c 200)"
+                else
+                    skip "guest files (HTTP ${_CURL_CODE}; needs spec.guestAgent.console)"
+                fi
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/pressure"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET pressure → 200" || skip "pressure (HTTP ${_CURL_CODE})"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/network/stats"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET network/stats → 200" || skip "network stats (HTTP ${_CURL_CODE})"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/runtime-capabilities"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET runtime-capabilities → 200" || skip "runtime-capabilities (HTTP ${_CURL_CODE})"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/egress-check" '{"host":"example.com"}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST egress-check → 200"
+                    echo "${_CURL_BODY}" | grep -qiE 'authorization"[[:space:]]*:[[:space:]]*"[^"]' && fail "egress-check leaked a credential" "response contains an authorization value" || pass "egress-check response carries no credential"
+                else
+                    skip "egress-check (HTTP ${_CURL_CODE})"
+                fi
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/quiesced-snapshot" '{}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST quiesced-snapshot → 200 (freeze/snapshot/thaw)"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/frozen"
+                    echo "${_CURL_BODY}" | grep -q 'true' && fail "guest still frozen after quiesced-snapshot" "$(echo "${_CURL_BODY}" | head -c 200)" || pass "guest thawed after quiesced-snapshot"
+                else
+                    skip "quiesced-snapshot (HTTP ${_CURL_CODE}; needs the QEMU guest agent)"
+                fi
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/diagnostics" '{}'
+                if [[ "${_CURL_CODE}" == "200" || "${_CURL_CODE}" == "202" ]]; then
+                    pass "POST diagnostics → ${_CURL_CODE}"
+                    _tok="$(echo "${_CURL_BODY}" | sed -n 's/.*"\(token\|id\)"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\2/p' | head -1)"
+                    if [[ -n "${_tok}" ]]; then
+                        curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/diagnostics/${_tok}"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "GET diagnostics/:token → 200" || fail "GET diagnostics/:token" "HTTP ${_CURL_CODE}"
+                        curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/diagnostics/${_tok}"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE diagnostics/:token → 200" || skip "DELETE diagnostics (HTTP ${_CURL_CODE})"
+                    fi
+                else
+                    skip "diagnostics (HTTP ${_CURL_CODE})"
+                fi
+                # Phase 2: lifecycle, placement, network policy, migration options, CRD views.
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/lifecycle" '{"idleAction":"Explode"}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "PUT lifecycle rejects an unknown idleAction (422)" || fail "lifecycle validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/lifecycle" '{"idleTimeoutSeconds":86400,"idleAction":"Pause","wakeOnConnect":true}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "PUT lifecycle → 200"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/lifecycle"
+                    echo "${_CURL_BODY}" | grep -q '"idleAction":"Pause"' && pass "GET lifecycle reflects the update" || fail "GET lifecycle" "$(echo "${_CURL_BODY}" | head -c 200)"
+                    curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/lifecycle" '{}'
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "PUT lifecycle {} clears it" || fail "clear lifecycle" "HTTP ${_CURL_CODE}"
+                else
+                    skip "PUT lifecycle (HTTP ${_CURL_CODE})"
+                fi
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/placement" '{"antiAffinity":[{}]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "PUT placement rejects a term without topologyKey (422)" || fail "placement validation" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/placement"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET placement → 200" || fail "GET placement" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/network-policy" '{"allowFqdn":["a.com"]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "PUT network-policy rejects an unknown field (422)" || fail "network-policy validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/network-policy" '{"defaultAllow":true,"allowIcmp":true,"maxIngressMbps":1000}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "PUT network-policy → 200"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/network-policy"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET network-policy → 200" || fail "GET network-policy" "HTTP ${_CURL_CODE}"
+                    curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/network-policy"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE network-policy → 200" || fail "DELETE network-policy" "HTTP ${_CURL_CODE}"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/network-policy"
+                    [[ "${_CURL_CODE}" == "404" ]] && pass "network-policy gone after delete (404)" || fail "network-policy after delete" "HTTP ${_CURL_CODE}"
+                else
+                    skip "PUT network-policy (HTTP ${_CURL_CODE})"
+                fi
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/migrate" '{"mode":"sideways"}'
+                [[ "${_CURL_CODE}" == "409" ]] && pass "migrate rejects an invalid mode (409)" || fail "migrate option validation" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/migrations/none/recovery" '{"action":"ForceAbort","acknowledged_diagnosis":"Unknown","reason":""}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "migration recovery requires a reason (422)" || fail "recovery validation" "HTTP ${_CURL_CODE}"
+                for _k in claims quotas disruption-budgets migration-policies backup-policies node-topologies; do
+                    curl_api GET "/api/v1/kairon/${_k}?namespace=all"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET kairon/${_k} → 200" || skip "kairon/${_k} (HTTP ${_CURL_CODE}; CRD may not be installed)"
+                done
+                curl_api GET "/api/v1/kairon/advice/migrations"
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    echo "${_CURL_BODY}" | grep -q '"advice"' && pass "GET migration advice → 200" || fail "migration advice shape" "$(echo "${_CURL_BODY}" | head -c 200)"
+                else
+                    skip "migration advice (HTTP ${_CURL_CODE})"
+                fi
+                curl_api POST "/api/v1/agent-sessions/default/none/ops/tokens" '{}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "agent-session ops refuses a credential verb (422)" || fail "agent-session verb allow-list" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/kairon/bogus"
+                [[ "${_CURL_CODE}" == "404" ]] && pass "GET kairon/bogus → 404" || fail "kairon/bogus" "HTTP ${_CURL_CODE}"
+                # Phase 3: FluxVM fork plan, event log, host memory, branches (need kairon-node with the flux relay routes).
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"count":0}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "fork/plan rejects count 0 (422)" || fail "fork/plan validation" "HTTP ${_CURL_CODE}"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"bogus":1}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "fork/plan rejects unknown fields (422)" || fail "fork/plan unknown field" "HTTP ${_CURL_CODE}"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"count":2}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST fork/plan → 200"
+                    echo "${_CURL_BODY}" | grep -q '"refusals"' && pass "fork/plan returns refusals + predicted cost" || fail "fork/plan shape" "$(echo "${_CURL_BODY}" | head -c 200)"
+                else
+                    skip "fork/plan (HTTP ${_CURL_CODE}; needs kairon-node with the flux relay routes)"
+                fi
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/runtime-events?limit=20"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET vm events → 200" || skip "vm events (HTTP ${_CURL_CODE}; needs kairon-node with the flux relay routes)"
+                _node="$(curl_api GET "/api/v1/vms/${NS}/${VM_NAME}" >/dev/null; echo "${_CURL_BODY}" | sed -n 's/.*"node"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+                if [[ -n "${_node}" ]]; then
+                    curl_api GET "/api/v1/nodes/${_node}/runtime/memory"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET node runtime/memory → 200" || skip "node runtime memory (HTTP ${_CURL_CODE})"
+                    curl_api GET "/api/v1/nodes/${_node}/branches"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET node branches → 200" || skip "node branches (HTTP ${_CURL_CODE})"
+                    for _r in runtime/topology runtime/pressure egress-nftables sandbox-templates; do
+                        curl_api GET "/api/v1/nodes/${_node}/${_r}"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "GET node ${_r} → 200" || skip "node ${_r} (HTTP ${_CURL_CODE}; needs the newer kairon-node relay)"
+                    done
+                    curl_api DELETE "/api/v1/nodes/${_node}/branches/..%2Fx"
+                    [[ "${_CURL_CODE}" == "400" || "${_CURL_CODE}" == "404" || "${_CURL_CODE}" == "405" ]] && pass "branch delete refuses a path-escaping id" || fail "branch delete id validation" "HTTP ${_CURL_CODE}"
+                    _sse="$(curl -skS --connect-timeout 10 --max-time 4 -H "X-API-Key: ${KEY}" -o /dev/null -w '%{http_code}' "${BASE}/api/v1/vms/${NS}/${VM_NAME}/runtime-events/stream" 2>/dev/null || true)"
+                    [[ "${_sse}" == "200" ]] && pass "GET runtime-events/stream opens (200)" || skip "runtime-events stream (HTTP ${_sse:-none}; needs the newer kairon-node relay)"
+                    curl_api GET "/api/v1/nodes/${_node}/branches/..%2Fetc/diff/x"
+                    [[ "${_CURL_CODE}" == "400" || "${_CURL_CODE}" == "404" ]] && pass "branch diff refuses a path-escaping id" || fail "branch id validation" "HTTP ${_CURL_CODE}"
+                else
+                    skip "node routes (could not resolve the VM's node)"
+                fi
+            else
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/get" '{"path":"/etc/hostname"}'
+                [[ "${_CURL_CODE}" == "501" ]] && pass "files/get → 501 on KubeVirt" || skip "files/get on KubeVirt (HTTP ${_CURL_CODE})"
+            fi
+
             curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/migrations"
             [[ "${_CURL_CODE}" == "200" ]] && pass "GET migrations → 200" || skip "GET migrations (HTTP ${_CURL_CODE})"
 

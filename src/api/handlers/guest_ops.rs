@@ -33,6 +33,8 @@ pub fn router(state: SharedState) -> Router {
         .route("/vms/:ns/:name/guest/patch", post(guest_patch))
         .route("/vms/:ns/:name/disks/reclaim", post(disk_reclaim))
         .route("/vms/:ns/:name/logs", get(vm_logs))
+        .route("/vms/:ns/:name/files/put", post(file_put))
+        .route("/vms/:ns/:name/files/get", post(file_get))
         .with_state(state)
 }
 
@@ -223,5 +225,96 @@ async fn disk_reclaim(
         )
             .into_response(),
         Err(e) => (StatusCode::BAD_GATEWAY, format!("fstrim failed: {e}")).into_response(),
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct FilePutRequest {
+    pub path: String,
+    /// File content, base64-encoded.
+    pub content_base64: String,
+    #[serde(default)]
+    pub mode: Option<u32>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct FileGetRequest {
+    pub path: String,
+}
+
+/// Guest file transfer over FluxVM's vsock agent. Kairon backend only.
+#[cfg(feature = "web")]
+async fn file_put(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Json(req): Json<FilePutRequest>,
+) -> impl IntoResponse {
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        use base64::Engine as _;
+        if !req.path.starts_with('/') {
+            return (StatusCode::BAD_REQUEST, "path must be absolute").into_response();
+        }
+        let data = match base64::engine::general_purpose::STANDARD.decode(&req.content_base64) {
+            Ok(d) => d,
+            Err(e) => {
+                return (StatusCode::BAD_REQUEST, format!("content_base64: {e}")).into_response();
+            }
+        };
+        let kube = { state.read().await.kube_client.clone() };
+        return match crate::api::kairon_ops::put_file(&kube, &ns, &name, &req.path, &data, req.mode)
+            .await
+        {
+            Ok(()) => {
+                Json(serde_json::json!({"path": req.path, "bytes": data.len()})).into_response()
+            }
+            Err(e) => (relay_status(&e), format!("put file: {e:#}")).into_response(),
+        };
+    }
+    let _ = (&state, &ns, &name, &req);
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        "guest file transfer requires the Kairon backend",
+    )
+        .into_response()
+}
+
+#[cfg(feature = "web")]
+async fn file_get(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Json(req): Json<FileGetRequest>,
+) -> impl IntoResponse {
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        use base64::Engine as _;
+        let kube = { state.read().await.kube_client.clone() };
+        return match crate::api::kairon_ops::get_file(&kube, &ns, &name, &req.path).await {
+            Ok((data, mode)) => Json(serde_json::json!({
+                "path": req.path,
+                "mode": mode,
+                "bytes": data.len(),
+                "content_base64": base64::engine::general_purpose::STANDARD.encode(&data),
+            }))
+            .into_response(),
+            Err(e) => (relay_status(&e), format!("get file: {e:#}")).into_response(),
+        };
+    }
+    let _ = (&state, &ns, &name, &req);
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        "guest file transfer requires the Kairon backend",
+    )
+        .into_response()
+}
+
+/// A missing Machine is a 404; anything else on the relay path is a bad gateway.
+#[cfg(all(feature = "web", feature = "kairon"))]
+fn relay_status(e: &anyhow::Error) -> StatusCode {
+    let msg = format!("{e:#}");
+    if msg.contains("NotFound") || msg.contains("not found") {
+        StatusCode::NOT_FOUND
+    } else {
+        StatusCode::BAD_GATEWAY
     }
 }

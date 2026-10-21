@@ -9,7 +9,6 @@ use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result, bail};
-use base64::Engine;
 use kube::api::{
     Api, ApiResource, DeleteParams, DynamicObject, ListParams, Patch, PatchParams, PostParams,
 };
@@ -21,8 +20,6 @@ use super::{
 };
 use crate::kairon::relay::{ExecRequest, RelayTarget};
 use crate::kairon::{ANNOTATION_FORK_FROM, LABEL_MANAGED_BY, Machine, RuntimeSpec};
-
-const CHUNK: usize = 48 * 1024;
 
 pub fn fork_parent() -> Option<String> {
     std::env::var("VEYRON_SANDBOX_KAIRON_PARENT")
@@ -353,40 +350,13 @@ pub async fn exec(
     })
 }
 
-fn quote(s: &str) -> String {
-    format!("'{}'", s.replace('\'', "'\\''"))
-}
-
 pub async fn write_file(
     client: &kube::Client,
     sb: &Sandbox,
     path: &str,
     data: &[u8],
 ) -> Result<()> {
-    let target = relay(client, sb).await?;
-    let p = quote(path);
-    let first = target
-        .exec(&ExecRequest::shell(
-            &format!("mkdir -p \"$(dirname {p})\" && : > {p}"),
-            30,
-        ))
-        .await?;
-    if first.exit_code != 0 {
-        bail!("cannot write {path}: {}", first.stderr.trim());
-    }
-    for chunk in data.chunks(CHUNK) {
-        let b64 = base64::engine::general_purpose::STANDARD.encode(chunk);
-        let r = target
-            .exec(&ExecRequest::shell(
-                &format!("printf %s '{b64}' | base64 -d >> {p}"),
-                30,
-            ))
-            .await?;
-        if r.exit_code != 0 {
-            bail!("cannot write {path}: {}", r.stderr.trim());
-        }
-    }
-    Ok(())
+    relay(client, sb).await?.exec_put_file(path, data).await
 }
 
 pub async fn read_file(
@@ -395,22 +365,5 @@ pub async fn read_file(
     path: &str,
     max: usize,
 ) -> Result<Vec<u8>> {
-    let target = relay(client, sb).await?;
-    let p = quote(path);
-    let size = target
-        .exec(&ExecRequest::shell(&format!("stat -c %s {p}"), 30))
-        .await?;
-    if size.exit_code != 0 {
-        bail!("cannot read {path}: {}", size.stderr.trim());
-    }
-    if size.stdout.trim().parse::<usize>().unwrap_or(0) > max {
-        bail!("File is larger than {} MiB", max >> 20);
-    }
-    let r = target
-        .exec(&ExecRequest::shell(&format!("base64 -w0 {p}"), 60))
-        .await?;
-    if r.exit_code != 0 {
-        bail!("cannot read {path}: {}", r.stderr.trim());
-    }
-    Ok(base64::engine::general_purpose::STANDARD.decode(r.stdout.trim())?)
+    relay(client, sb).await?.exec_get_file(path, max).await
 }

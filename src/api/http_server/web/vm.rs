@@ -1609,6 +1609,10 @@ pub(super) struct MigrateVmRequestBody {
     /// Kairon backend: `auto` (default) | `live` | `cold`.
     #[serde(default)]
     strategy: Option<String>,
+    /// Kairon backend: mode, bandwidth_mbps, max_downtime_ms, multifd_channels,
+    /// fallback_to_cold, migration_network, adaptive.
+    #[serde(default, flatten)]
+    options: crate::api::vm_backend::MigrationOptions,
 }
 
 /// 409 with the structured blocker list — migration is prevented by VM
@@ -1671,6 +1675,7 @@ pub(super) async fn migrate_vm_handler(
             target_node: req.target_hostname,
             strategy: req.strategy,
             force: req.force,
+            options: req.options,
         };
         return match VmBackend::for_client(&client)
             .migrate(&ns, &name, &mreq)

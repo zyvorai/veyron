@@ -39,6 +39,23 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     if path.starts_with("/api/v1/auth/users") || path.starts_with("/api/v1/veyron/auth/users") {
         return ApiRole::Admin;
     }
+    // GET routes that hand out guest access or sensitive artifacts are not read-only:
+    // the TCP tunnel, diagnostics bundles (memory dumps need Admin) and packet captures.
+    if path.contains("/vms/") {
+        if path.ends_with("/diagnostics/memory-dump") || path.ends_with("/memory-dump") {
+            return ApiRole::Admin;
+        }
+        // Overrides an ambiguous live-migration commit point; operator decision.
+        if path.ends_with("/recovery") && path.contains("/migrations/") {
+            return ApiRole::Admin;
+        }
+        if path.ends_with("/tunnel")
+            || path.contains("/diagnostics/")
+            || path.contains("/network/capture/")
+        {
+            return ApiRole::Write;
+        }
+    }
     if matches!(method, &Method::GET | &Method::HEAD | &Method::OPTIONS) {
         return ApiRole::ReadOnly;
     }
@@ -84,6 +101,18 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     if path.contains("/restore") {
         return ApiRole::Admin;
     }
+    // Starting a VM from, or deleting, a saved FluxVM branch.
+    if path.contains("/nodes/") && path.contains("/branches/") {
+        return ApiRole::Admin;
+    }
+    // Agent sessions: approving an action or promoting a session widens what the agent may do.
+    if path.contains("/agent-sessions/")
+        && (path.contains("/ops/approvals")
+            || path.contains("/ops/grants")
+            || path.ends_with("/ops/promote"))
+    {
+        return ApiRole::Admin;
+    }
     if path == "/api/v1/gitops/sync" || path == "/api/v1/catalog/sync" {
         return ApiRole::Admin;
     }
@@ -127,7 +156,7 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
 }
 
 pub fn is_ws_console_path(path: &str) -> bool {
-    path.ends_with("/vnc") || path.ends_with("/serial")
+    path.ends_with("/vnc") || path.ends_with("/serial") || path.ends_with("/tunnel")
 }
 
 #[cfg(test)]
@@ -148,6 +177,60 @@ mod tests {
                 ApiRole::Write
             );
         }
+    }
+
+    #[test]
+    fn branch_start_and_delete_need_admin() {
+        let p = "/api/v1/nodes/n1/branches/abc";
+        assert_eq!(min_role_for_route(&Method::DELETE, p), ApiRole::Admin);
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/start")),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/nodes/n1/branches"),
+            ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn agent_session_approvals_and_promote_need_admin() {
+        let p = "/api/v1/agent-sessions/ns/s1/ops";
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/approvals/x/approve")),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/promote")),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/exec")),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, &format!("{p}/trajectory")),
+            ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn tunnel_and_artifacts_are_not_readonly() {
+        let get = |p: &str| min_role_for_route(&Method::GET, p);
+        assert_eq!(get("/api/v1/vms/ns/vm/tunnel"), ApiRole::Write);
+        assert_eq!(
+            get("/api/v1/vms/ns/vm/diagnostics/tok/bundle"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            get("/api/v1/vms/ns/vm/diagnostics/tok/memory-dump"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            get("/api/v1/veyron/vms/ns/vm/network/capture/t"),
+            ApiRole::Write
+        );
+        assert_eq!(get("/api/v1/vms/ns/vm/network/flows"), ApiRole::ReadOnly);
     }
 
     #[test]

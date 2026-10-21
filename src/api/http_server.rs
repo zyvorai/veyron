@@ -220,6 +220,23 @@ pub mod web {
             })
         }
 
+        /// A state backed by an unreachable API server, for tests that only build routers.
+        #[cfg(test)]
+        pub(crate) fn for_router_test() -> Self {
+            let cfg = kube::Config::new("http://127.0.0.1:1".parse().expect("static uri"));
+            let client = kube::Client::try_from(cfg).expect("offline kube client");
+            Self {
+                namespace: "default".into(),
+                kube_client: KubeClient::from_client(client),
+                active_kube_context: None,
+                api_key: None,
+                api_keys: Vec::new(),
+                rate_limiter: RateLimiterState::new(60, 60),
+                ai_rate_limiter: RateLimiterState::new(60, 60),
+                login_rate_limiter: RateLimiterState::new(30, 300),
+            }
+        }
+
         /// Switch kube API client to another kubeconfig context (multi-cluster file).
         pub async fn apply_kube_context(&mut self, context: Option<String>) -> anyhow::Result<()> {
             crate::kube::set_active_kube_context(context.clone());
@@ -783,6 +800,10 @@ pub mod web {
             .route(
                 "/api/v1/vms/:ns/:name/serial",
                 get(serial_websocket_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/tunnel",
+                get(tunnel_websocket_handler),
             )
             .route("/api/v1/ws/metrics", get(metrics_websocket_handler))
             .with_state(state.clone())
@@ -1631,6 +1652,14 @@ pub mod web {
     mod tests {
         use super::*;
         use axum::http::Method;
+
+        /// axum panics while registering overlapping routes, which only otherwise shows
+        /// up as a CrashLoopBackOff after deploy.
+        #[tokio::test]
+        async fn full_router_builds_without_overlapping_routes() {
+            let state = std::sync::Arc::new(tokio::sync::RwLock::new(WebState::for_router_test()));
+            let _ = build_router(state);
+        }
 
         #[test]
         fn cors_allows_every_verb_the_routes_use() {

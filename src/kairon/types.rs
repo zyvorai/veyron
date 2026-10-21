@@ -69,8 +69,83 @@ pub struct MachineSpec {
     /// Idle suspend / wake / deadline for sandbox-style Machines (experimental).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lifecycle: Option<LifecycleSpec>,
+    /// Container sandbox (`oci`) or prebaked template (`templateName`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sandbox: Option<SandboxSpec>,
     #[serde(flatten)]
     pub extra: Extra,
+}
+
+/// `spec.sandbox`: run an OCI image as the Machine's workload.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct SandboxSpec {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub template_name: Option<String>,
+    /// Guest ports published through the kairon-ui preview proxy.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub http_proxy_ports: Vec<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub oci: Option<OciSpec>,
+    #[serde(flatten)]
+    pub extra: Extra,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OciSpec {
+    pub image: String,
+    /// `linux/arm64` | `linux/amd64`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub platform: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub command: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub entrypoint: Vec<String>,
+    /// `KEY=value` strings.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub env: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workdir: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub writable_root: Option<bool>,
+    /// `keep` | `poweroff`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exit_policy: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ports: Vec<String>,
+    /// `no` | `on-failure` | `always`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub restart: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_restarts: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub health_check: Option<OciHealthCheck>,
+    /// No network at all.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offline: Option<bool>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub allow_hosts: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub profile: Option<String>,
+    #[serde(flatten)]
+    pub extra: Extra,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OciHealthCheck {
+    pub command: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interval_seconds: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timeout_seconds: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retries: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start_period_seconds: Option<u32>,
 }
 
 /// `spec.lifecycle`: kairon-controller suspends an idle Machine, deletes it at a
@@ -309,8 +384,29 @@ pub struct PlacementSpec {
     pub tolerations: Vec<JsonValue>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub topology_spread_constraints: Vec<JsonValue>,
+    /// Co-locate with Machines matching `labelSelector` per `topologyKey`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub affinity: Vec<AffinityTerm>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub anti_affinity: Vec<AffinityTerm>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub preferred_affinity: Vec<AffinityTerm>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub preferred_anti_affinity: Vec<AffinityTerm>,
     #[serde(flatten)]
     pub extra: Extra,
+}
+
+/// One (anti-)affinity term; `weight` only applies to the `preferred*` lists.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AffinityTerm {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weight: Option<u32>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub label_selector: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub topology_key: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -398,8 +494,24 @@ pub struct MachineStatus {
     pub network: Option<JsonValue>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub observed_generation: Option<i64>,
+    /// OCI sandbox workload state (`spec.sandbox.oci`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub container: Option<ContainerStatus>,
     #[serde(flatten)]
     pub extra: Extra,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ContainerStatus {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exit_code: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub restarts: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub health: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub init_error: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
@@ -459,8 +571,32 @@ pub struct MachineMigrationSpec {
     pub max_downtime_ms: Option<u64>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub cancel: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub multifd_channels: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fallback_to_cold: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub migration_network: Option<String>,
+    /// Adaptive tuning (`policy`, `autoConverge`, `postCopy`, `compression`,
+    /// `bandwidth`, timeouts); passed through as-is.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adaptive: Option<JsonValue>,
+    /// Operator decision for a migration stuck at an ambiguous commit point.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovery: Option<MigrationRecovery>,
     #[serde(flatten)]
     pub extra: Extra,
+}
+
+/// `spec.recovery`: all three fields are required by the CRD.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct MigrationRecovery {
+    /// `ConfirmDestinationCommitted` | `ConfirmDestinationNotCommitted` | `ForceAbort`.
+    pub action: String,
+    /// `DestinationCommitted` | `DestinationNotCommitted` | `Unknown`.
+    pub acknowledged_diagnosis: String,
+    pub reason: String,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
@@ -766,6 +902,17 @@ pub const ALL_PLURALS: &[&str] = &[
     "migrationpolicies",
     "machinenetworkpolicies",
     "networksecuritygroups",
+    "machinebackuppolicies",
+    "machineprotectionplans",
+    "machinevirtualnetworks",
+    "machineacceleratorprofiles",
+    "machinebalancepolicies",
+    "machineautoscalers",
+    "machinerecoveryplans",
+    "machinehaprofiles",
+    "machineusageledgers",
+    "nodetopologies",
+    "agentsessions",
 ];
 
 #[cfg(test)]
@@ -812,5 +959,61 @@ mod tests {
             "https://img/x.qcow2"
         );
         assert_eq!(back["status"]["runtimeID"], "rt-1");
+    }
+
+    #[test]
+    fn sandbox_oci_and_container_status_round_trip() {
+        let json = serde_json::json!({
+            "apiVersion": "kairon.zyvor.dev/v1beta1",
+            "kind": "Machine",
+            "metadata": {"name": "c1", "namespace": "default"},
+            "spec": {
+                "image": {},
+                "resources": {},
+                "sandbox": {
+                    "httpProxyPorts": [8080],
+                    "oci": {
+                        "image": "docker.io/library/nginx:1",
+                        "restart": "on-failure",
+                        "maxRestarts": 3,
+                        "allowHosts": ["pypi.org"],
+                        "healthCheck": {"command": ["true"], "retries": 2},
+                        "newField": 1
+                    }
+                }
+            },
+            "status": {"container": {"exitCode": 137, "restarts": 2, "health": "unhealthy", "initError": "x"}}
+        });
+        let m: Machine = serde_json::from_value(json).unwrap();
+        let oci = m.spec.sandbox.as_ref().unwrap().oci.as_ref().unwrap();
+        assert_eq!(oci.max_restarts, Some(3));
+        assert_eq!(oci.allow_hosts, vec!["pypi.org"]);
+        assert_eq!(oci.health_check.as_ref().unwrap().retries, Some(2));
+        let c = m.status.as_ref().unwrap().container.as_ref().unwrap();
+        assert_eq!(c.exit_code, Some(137));
+        let back = serde_json::to_value(&m).unwrap();
+        assert_eq!(back["spec"]["sandbox"]["httpProxyPorts"][0], 8080);
+        assert_eq!(back["spec"]["sandbox"]["oci"]["newField"], 1);
+    }
+
+    #[test]
+    fn migration_options_serialize_with_crd_names() {
+        let spec = MachineMigrationSpec {
+            machine_name: "vm".into(),
+            multifd_channels: Some(4),
+            fallback_to_cold: Some(true),
+            migration_network: Some("mig0".into()),
+            recovery: Some(MigrationRecovery {
+                action: "ForceAbort".into(),
+                acknowledged_diagnosis: "Unknown".into(),
+                reason: "r".into(),
+            }),
+            ..Default::default()
+        };
+        let v = serde_json::to_value(&spec).unwrap();
+        assert_eq!(v["multifdChannels"], 4);
+        assert_eq!(v["fallbackToCold"], true);
+        assert_eq!(v["migrationNetwork"], "mig0");
+        assert_eq!(v["recovery"]["acknowledgedDiagnosis"], "Unknown");
     }
 }

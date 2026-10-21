@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Status, Spark } from './status.jsx';
 import { api } from './api.js';
-import { VmGuest, VmDisks } from './VmExtras.jsx';
+import { VmGuest, VmDisks, VmRelay } from './VmExtras.jsx';
 
 export const ACT = {
   start: ['Start', Play],
@@ -349,6 +349,7 @@ function VmOps({ row, onDone }) {
       </div>
 
       <VmDisks row={row} onDone={onDone} />
+      <VmRelay row={row} />
     </div>
   );
 }

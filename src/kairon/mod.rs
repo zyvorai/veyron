@@ -15,6 +15,8 @@ pub mod oci;
 pub mod relay;
 pub mod types;
 
+pub mod advisor;
+pub mod defaults;
 pub use converter::{machine_from_config, parse_cloud_config, resolve_container_disk_image};
 pub use types::*;
 

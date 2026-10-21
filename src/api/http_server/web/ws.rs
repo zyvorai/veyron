@@ -214,6 +214,59 @@ pub(super) async fn serial_websocket_handler(
         .into_response()
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub(super) struct TunnelQuery {
+    port: u16,
+    ip: Option<String>,
+}
+
+/// TCP tunnel to a guest port (SSH, RDP, anything) over a binary WebSocket, relayed
+/// through kairon-node's `/portforward`. Kairon backend only; needs a Write-role ticket.
+pub(super) async fn tunnel_websocket_handler(
+    ws: WebSocketUpgrade,
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Query(q): Query<TunnelQuery>,
+) -> impl IntoResponse {
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        if q.port == 0 {
+            return (StatusCode::BAD_REQUEST, "port must be 1-65535").into_response();
+        }
+        let client = { state.read().await.kube_client.clone() };
+        return match kairon_relay_upstream(&client, &ns, &name, "portforward").await {
+            Ok(Upstream::Relay { url, token }) => {
+                let mut url = format!("{url}?port={}", q.port);
+                if let Some(ip) =
+                    q.ip.as_deref()
+                        .filter(|ip| ip.parse::<std::net::IpAddr>().is_ok())
+                {
+                    url.push_str(&format!("&ip={ip}"));
+                }
+                ws.protocols(["binary"])
+                    .on_upgrade(move |socket| {
+                        kubevirt_subresource_ws_proxy(
+                            socket,
+                            ns,
+                            name,
+                            Upstream::Relay { url, token },
+                            "TCP tunnel",
+                        )
+                    })
+                    .into_response()
+            }
+            Ok(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            Err(resp) => resp.into_response(),
+        };
+    }
+    let _ = (&state, &ns, &name, &q);
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        "TCP tunnel requires the Kairon backend",
+    )
+        .into_response()
+}
+
 /// Where a console WebSocket is proxied to.
 pub(super) enum Upstream {
     /// KubeVirt VMI subresource (`vnc`, `console`) through the Kubernetes API.
