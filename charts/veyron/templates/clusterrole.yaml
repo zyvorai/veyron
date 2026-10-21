@@ -139,6 +139,10 @@ rules:
   - apiGroups: ["kairon.zyvor.dev"]
     resources: ["*"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Kairon enterprise fleet kinds (HA profiles, balance policies, autoscalers, ...): read all, create/delete the policy kinds
+  - apiGroups: ["fleet.kairon.zyvor.dev"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "delete"]
   # Kairon VM expose: selector-less Services backed by an EndpointSlice on the guest IP
   - apiGroups: ["discovery.k8s.io"]
     resources: ["endpointslices"]
