@@ -706,7 +706,7 @@ export function VmRelay({ row }) {
               const r = await api.getNetworkPolicy(ns, name);
               setNetPolicy(r?.policy || {});
               setFqdns((r?.policy?.allowFqdns || []).join('\n'));
-            } catch (e) {
+            } catch {
               setNetPolicy(null);
               setMsg('No network policy on this VM.');
             }
@@ -746,7 +746,7 @@ export function VmRelay({ row }) {
         <span>
           Runtime events<small>FluxVM lifecycle log for this VM</small>
         </span>
-        <button className="btn sm secondary" disabled={!!busy} onClick={() => run('events', async () => setEvents(await api.vmEvents(ns, name)))}>
+        <button className="btn sm secondary" disabled={!!busy} onClick={() => run('events', async () => setEvents(await api.vmRuntimeEvents(ns, name)))}>
           Load
         </button>
       </div>

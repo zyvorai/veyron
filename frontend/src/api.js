@@ -980,7 +980,7 @@ export const api = {
   migrationAdvice: async () => unwrap(await request('/api/v1/kairon/advice/migrations')),
   forkPlan: async (ns, name, body) =>
     unwrap(await request(`${vmPath(ns, name)}/fork/plan`, { method: 'POST', body: JSON.stringify(body || {}) })),
-  vmEvents: async (ns, name, { event = '', limit = 100 } = {}) =>
+  vmRuntimeEvents: async (ns, name, { event = '', limit = 100 } = {}) =>
     unwrap(await request(`${vmPath(ns, name)}/events?limit=${limit}${event ? `&event=${encodeURIComponent(event)}` : ''}`)),
   nodeMemory: async (node) => unwrap(await request(`/api/v1/nodes/${encodeURIComponent(node)}/runtime/memory`)),
   nodeBranches: async (node) => unwrap(await request(`/api/v1/nodes/${encodeURIComponent(node)}/branches`)),
