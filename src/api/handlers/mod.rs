@@ -18,6 +18,8 @@ pub mod clones;
 pub mod clusters;
 pub mod compliance;
 pub mod compute;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod containers;
 pub mod copilot;
 pub mod costs;
 pub mod custom_dashboards;
@@ -218,6 +220,7 @@ pub fn all_routes(
         .merge(image_capture::router(state.clone()))
         .merge(relay_ops::router(state.clone()))
         .merge(kairon_ext::router(state.clone()))
+        .merge(containers::router(state.clone()))
         .merge(vm_media::router(state.clone()))
         .merge(vm_fork::router(state.clone()))
         .merge(agent_sessions::router(state.clone()));
