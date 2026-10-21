@@ -468,6 +468,31 @@ EOF
                 done
                 curl_api GET "/api/v1/kairon/bogus"
                 [[ "${_CURL_CODE}" == "404" ]] && pass "GET kairon/bogus → 404" || fail "kairon/bogus" "HTTP ${_CURL_CODE}"
+                # Phase 3: FluxVM fork plan, event log, host memory, branches (need kairon-node with the flux relay routes).
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"count":0}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "fork/plan rejects count 0 (422)" || fail "fork/plan validation" "HTTP ${_CURL_CODE}"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"bogus":1}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "fork/plan rejects unknown fields (422)" || fail "fork/plan unknown field" "HTTP ${_CURL_CODE}"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"count":2}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST fork/plan → 200"
+                    echo "${_CURL_BODY}" | grep -q '"refusals"' && pass "fork/plan returns refusals + predicted cost" || fail "fork/plan shape" "$(echo "${_CURL_BODY}" | head -c 200)"
+                else
+                    skip "fork/plan (HTTP ${_CURL_CODE}; needs kairon-node with the flux relay routes)"
+                fi
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/events?limit=20"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET vm events → 200" || skip "vm events (HTTP ${_CURL_CODE}; needs kairon-node with the flux relay routes)"
+                _node="$(curl_api GET "/api/v1/vms/${NS}/${VM_NAME}" >/dev/null; echo "${_CURL_BODY}" | sed -n 's/.*"node"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+                if [[ -n "${_node}" ]]; then
+                    curl_api GET "/api/v1/nodes/${_node}/runtime/memory"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET node runtime/memory → 200" || skip "node runtime memory (HTTP ${_CURL_CODE})"
+                    curl_api GET "/api/v1/nodes/${_node}/branches"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET node branches → 200" || skip "node branches (HTTP ${_CURL_CODE})"
+                    curl_api GET "/api/v1/nodes/${_node}/branches/..%2Fetc/diff/x"
+                    [[ "${_CURL_CODE}" == "400" || "${_CURL_CODE}" == "404" ]] && pass "branch diff refuses a path-escaping id" || fail "branch id validation" "HTTP ${_CURL_CODE}"
+                else
+                    skip "node routes (could not resolve the VM's node)"
+                fi
             else
                 curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/get" '{"path":"/etc/hostname"}'
                 [[ "${_CURL_CODE}" == "501" ]] && pass "files/get → 501 on KubeVirt" || skip "files/get on KubeVirt (HTTP ${_CURL_CODE})"

@@ -49,6 +49,15 @@ pub fn router(state: SharedState) -> Router {
         .route("/vms/:ns/:name/network/capture/:token", get(capture_file))
         .route("/vms/:ns/:name/egress-check", post(egress_check))
         .route("/vms/:ns/:name/runtime-capabilities", get(capabilities))
+        .route("/vms/:ns/:name/fork/plan", post(fork_plan))
+        .route("/vms/:ns/:name/events", get(vm_events))
+        .route("/nodes/:name/runtime/memory", get(node_memory))
+        .route("/nodes/:name/branches", get(node_branches))
+        .route("/nodes/:name/branches/:a/diff/:b", get(node_branch_diff))
+        .route(
+            "/nodes/:name/branches/:id/start-plan",
+            post(node_branch_start_plan),
+        )
         .with_state(state)
 }
 
@@ -350,6 +359,161 @@ async fn capabilities(
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("{e:#}")))
 }
 
+// --- fork planning, events, host memory, branches ---------------------------
+
+/// Body fields FluxVM's `ForkSpec` accepts (it rejects unknown ones).
+const FORK_SPEC_KEYS: &[&str] = &[
+    "count",
+    "name_prefix",
+    "namePrefix",
+    "identity",
+    "network",
+    "parallelism",
+    "commands",
+];
+
+/// Validate a fork/branch-start plan body before it reaches FluxVM.
+fn fork_plan_body(body: Option<Value>, max: u32) -> Result<Value, String> {
+    let mut v = body.unwrap_or_else(|| json!({}));
+    let obj = v.as_object_mut().ok_or("body must be a JSON object")?;
+    if let Some(k) = obj.keys().find(|k| !FORK_SPEC_KEYS.contains(&k.as_str())) {
+        return Err(format!("unknown field '{k}'"));
+    }
+    let count = obj.get("count").and_then(Value::as_u64).unwrap_or(1);
+    if count == 0 || count > max as u64 {
+        return Err(format!("count must be 1-{max}"));
+    }
+    Ok(v)
+}
+
+/// Dry run of `POST /vms/:ns/:name/fork`: what FluxVM would refuse and what a fork costs.
+async fn fork_plan(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    body: Option<Json<Value>>,
+) -> Reply {
+    let body = fork_plan_body(body.map(|Json(v)| v), 32)
+        .map_err(|m| err(StatusCode::UNPROCESSABLE_ENTITY, m))?;
+    let t = target(&state, &ns, &name).await?;
+    json_call(&t, Method::POST, "fork-plan", &[], "", Some(&body)).await
+}
+
+#[derive(Debug, Deserialize)]
+struct EventsQuery {
+    since: Option<String>,
+    event: Option<String>,
+    limit: Option<u32>,
+}
+
+/// Query for FluxVM's event log, always scoped to one runtime id.
+fn events_query(runtime_id: &str, q: &EventsQuery) -> String {
+    let mut scratch = reqwest::Url::parse("http://relay/").expect("static url");
+    {
+        let mut ser = scratch.query_pairs_mut();
+        ser.append_pair("vm", runtime_id);
+        if let Some(v) = q.since.as_deref().filter(|v| !v.is_empty()) {
+            ser.append_pair("since", v);
+        }
+        if let Some(v) = q.event.as_deref().filter(|v| !v.is_empty()) {
+            ser.append_pair("event", v);
+        }
+        ser.append_pair("limit", &q.limit.unwrap_or(200).clamp(1, 2000).to_string());
+    }
+    scratch.query().unwrap_or_default().to_string()
+}
+
+/// FluxVM's event log for this VM, scoped by runtime id server-side.
+async fn vm_events(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Query(q): Query<EventsQuery>,
+) -> Reply {
+    let t = target(&state, &ns, &name).await?;
+    let query = events_query(&t.runtime_id, &q);
+    json_call(&t, Method::GET, "events", &[], &query, None).await
+}
+
+async fn node_target(state: &SharedState, node: &str) -> Result<RelayTarget, Response> {
+    if !crate::api::vm_backend::is_kairon() {
+        return Err(err(
+            StatusCode::NOT_IMPLEMENTED,
+            "this operation requires the Kairon backend",
+        ));
+    }
+    if node.is_empty() || node.len() > 253 {
+        return Err(err(StatusCode::BAD_REQUEST, "invalid node name"));
+    }
+    let kube = { state.read().await.kube_client.clone() };
+    RelayTarget::for_node(&kube.client(), node)
+        .await
+        .map_err(|e| err(StatusCode::SERVICE_UNAVAILABLE, format!("{e:#}")))
+}
+
+async fn node_call(
+    state: &SharedState,
+    node: &str,
+    method: Method,
+    path: &str,
+    body: Option<&Value>,
+) -> Reply {
+    let t = node_target(state, node).await?;
+    t.call_node(method, path, "", body)
+        .await
+        .map(|v| Json(v).into_response())
+        .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("{e:#}")))
+}
+
+/// Host memory and memory PSI as FluxVM sees it (feeds capacity / pressure views).
+async fn node_memory(State(state): State<SharedState>, Path(node): Path<String>) -> Reply {
+    node_call(&state, &node, Method::GET, "host-memory", None).await
+}
+
+async fn node_branches(State(state): State<SharedState>, Path(node): Path<String>) -> Reply {
+    node_call(&state, &node, Method::GET, "branches", None).await
+}
+
+/// Branch ids are FluxVM UUIDs; anything else never reaches the relay path.
+fn branch_id_ok(id: &str) -> bool {
+    !id.is_empty() && id.len() <= 64 && id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-')
+}
+
+async fn node_branch_diff(
+    State(state): State<SharedState>,
+    Path((node, a, b)): Path<(String, String, String)>,
+) -> Reply {
+    if !branch_id_ok(&a) || !branch_id_ok(&b) {
+        return Err(err(StatusCode::BAD_REQUEST, "invalid branch id"));
+    }
+    node_call(
+        &state,
+        &node,
+        Method::GET,
+        &format!("branches/{a}/diff/{b}"),
+        None,
+    )
+    .await
+}
+
+async fn node_branch_start_plan(
+    State(state): State<SharedState>,
+    Path((node, id)): Path<(String, String)>,
+    body: Option<Json<Value>>,
+) -> Reply {
+    if !branch_id_ok(&id) {
+        return Err(err(StatusCode::BAD_REQUEST, "invalid branch id"));
+    }
+    let body = fork_plan_body(body.map(|Json(v)| v), 32)
+        .map_err(|m| err(StatusCode::UNPROCESSABLE_ENTITY, m))?;
+    node_call(
+        &state,
+        &node,
+        Method::POST,
+        &format!("branches/{id}/start-plan"),
+        Some(&body),
+    )
+    .await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -375,5 +539,42 @@ mod tests {
     fn limit_is_capped() {
         assert_eq!(LimitQuery { limit: Some(99999) }.query(), "limit=5000");
         assert_eq!(LimitQuery { limit: None }.query(), "");
+    }
+
+    #[test]
+    fn fork_plan_body_whitelists_fields_and_bounds_count() {
+        assert!(fork_plan_body(None, 32).is_ok());
+        assert!(fork_plan_body(Some(json!({"count": 3, "identity": "x"})), 32).is_ok());
+        assert!(fork_plan_body(Some(json!({"count": 0})), 32).is_err());
+        assert!(fork_plan_body(Some(json!({"count": 33})), 32).is_err());
+        assert!(fork_plan_body(Some(json!({"bogus": 1})), 32).is_err());
+        assert!(fork_plan_body(Some(json!([1])), 32).is_err());
+    }
+
+    #[test]
+    fn events_query_is_always_scoped_and_encoded() {
+        let q = EventsQuery {
+            since: Some("2026-01-01T00:00:00Z".into()),
+            event: Some("vm.".into()),
+            limit: Some(99_999),
+        };
+        let s = events_query("rt-1", &q);
+        assert!(s.starts_with("vm=rt-1&"));
+        assert!(s.contains("limit=2000"));
+        assert!(s.contains("since=2026-01-01T00%3A00%3A00Z"));
+        let evil = EventsQuery {
+            since: None,
+            event: Some("a&vm=other".into()),
+            limit: None,
+        };
+        assert!(events_query("rt-1", &evil).contains("event=a%26vm%3Dother"));
+    }
+
+    #[test]
+    fn branch_ids_cannot_escape_the_relay_path() {
+        assert!(branch_id_ok("3f2a-91bc"));
+        assert!(!branch_id_ok("../etc"));
+        assert!(!branch_id_ok("a/b"));
+        assert!(!branch_id_ok(""));
     }
 }

@@ -966,6 +966,12 @@ export const api = {
     unwrap(await request(`${vmPath(ns, name)}/network/${kind}${limit ? `?limit=${limit}` : ''}`)),
   egressCheck: async (ns, name, host) =>
     unwrap(await request(`${vmPath(ns, name)}/egress-check`, { method: 'POST', body: JSON.stringify({ host }) })),
+  forkPlan: async (ns, name, body) =>
+    unwrap(await request(`${vmPath(ns, name)}/fork/plan`, { method: 'POST', body: JSON.stringify(body || {}) })),
+  vmEvents: async (ns, name, { event = '', limit = 100 } = {}) =>
+    unwrap(await request(`${vmPath(ns, name)}/events?limit=${limit}${event ? `&event=${encodeURIComponent(event)}` : ''}`)),
+  nodeMemory: async (node) => unwrap(await request(`/api/v1/nodes/${encodeURIComponent(node)}/runtime/memory`)),
+  nodeBranches: async (node) => unwrap(await request(`/api/v1/nodes/${encodeURIComponent(node)}/branches`)),
   runtimeCapabilities: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/runtime-capabilities`)),
   guestFilesystem: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/guest-filesystem`)) || {},
   vmSecurity: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/security`)) || {},

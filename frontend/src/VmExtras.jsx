@@ -427,6 +427,9 @@ export function VmRelay({ row }) {
   const [net, setNet] = useState(null);
   const [egress, setEgress] = useState(null);
   const [diag, setDiag] = useState(null);
+  const [forkCount, setForkCount] = useState(3);
+  const [plan, setPlan] = useState(null);
+  const [events, setEvents] = useState(null);
 
   const run = async (label, fn) => {
     setBusy(label);
@@ -591,6 +594,52 @@ export function VmRelay({ row }) {
         </span>
       </div>
       {net && <pre className="mono dim">{JSON.stringify(net.v, null, 2).slice(0, 4000)}</pre>}
+
+      <div className="ops-row">
+        <span>
+          Fork plan<small>what a live fork would cost or be refused for</small>
+        </span>
+        <span className="ops-acts">
+          <input
+            className="input"
+            type="number"
+            min="1"
+            max="32"
+            value={forkCount}
+            onChange={(e) => setForkCount(Math.max(1, Math.min(32, Number(e.target.value) || 1)))}
+          />
+          <button
+            className="btn sm secondary"
+            disabled={!running || !!busy}
+            onClick={() => run('plan', async () => setPlan(await api.forkPlan(ns, name, { count: forkCount })))}
+          >
+            Plan
+          </button>
+        </span>
+      </div>
+      {plan && (
+        <div className="dim">
+          {plan.ok ? 'A fork of this size would be accepted.' : 'A fork would be refused:'}
+          {(plan.refusals || []).map((r, i) => (
+            <div key={i}>• {typeof r === 'string' ? r : r.message || JSON.stringify(r)}</div>
+          ))}
+          {plan.predicted && <pre className="mono dim">{JSON.stringify(plan.predicted, null, 2).slice(0, 2000)}</pre>}
+        </div>
+      )}
+
+      <div className="ops-row">
+        <span>
+          Runtime events<small>FluxVM lifecycle log for this VM</small>
+        </span>
+        <button className="btn sm secondary" disabled={!!busy} onClick={() => run('events', async () => setEvents(await api.vmEvents(ns, name)))}>
+          Load
+        </button>
+      </div>
+      {events && (
+        <pre className="mono dim">
+          {(events.items || []).slice(-30).map((e) => `${e.ts || ''}  ${e.event || e.name || ''}`).join('\n') || 'No events.'}
+        </pre>
+      )}
     </div>
   );
 }
