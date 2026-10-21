@@ -105,7 +105,7 @@ pub fn advise(nodes: &[NodeLoad], vms: &[VmLoad]) -> Vec<Advice> {
             .iter()
             .filter(|v| v.node == node.name && v.running && !v.passthrough)
             .collect();
-        movable.sort_by(|a, b| b.memory_mib.cmp(&a.memory_mib));
+        movable.sort_by_key(|v| std::cmp::Reverse(v.memory_mib));
         for vm in movable.into_iter().take(MAX_PER_NODE) {
             let need = vm.memory_mib as f64 / TARGET_HEADROOM;
             let Some(slot) = free
