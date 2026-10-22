@@ -106,7 +106,14 @@ const LOADERS = {
     );
     return { rows, extra: await extraP };
   },
-  migrations: async () => ({ rows: ((await api.listMigrations()) || []).map(mapMigration) }),
+  // Cluster-wide migrations are KubeVirt-only (501 on Kairon, where migrations are listed per VM).
+  migrations: async () => {
+    const raw = await api.listMigrations().catch((e) => {
+      if (e?.status === 501) return [];
+      throw e;
+    });
+    return { rows: (raw || []).map(mapMigration) };
+  },
   alerts: async () => ({ rows: ((await api.listAlerts()) || []).map(mapAlert) }),
   soc: async () => ({ rows: ((await api.listSocDetections()) || []).map(mapSoc) }),
   atlas: async () => {
