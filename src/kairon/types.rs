@@ -324,6 +324,9 @@ pub struct NetworkSpec {
     pub cilium_attach: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub anti_spoof: bool,
+    /// Outbound policy for user-mode guests (enforced on the node by FluxVM's QEMU egress hook).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub egress: Option<crate::kairon::egress::EgressPolicy>,
     #[serde(flatten)]
     pub extra: Extra,
 }
