@@ -306,6 +306,30 @@ pub fn builtin_tools() -> Vec<ToolSpec> {
             vm_obj(),
         ),
         read(
+            "vm_egress",
+            "A VM's network access: mode (isolated, allow-list, learn, open), rules, what the node enforces, destinations it refused, and problems with a one-click fix such as a blocked guest agent (Kairon only).",
+            vm_obj(),
+        ),
+        read(
+            "egress_explain",
+            "Would this VM's network access let it reach host:port? Returns the rule that allows it, or the single rule that would (Kairon only).",
+            obj(
+                json!({
+                    "namespace": {"type": "string"},
+                    "vm_name": {"type": "string"},
+                    "host": {"type": "string"},
+                    "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+                    "proto": {"type": "string", "enum": ["tcp", "udp"]}
+                }),
+                &["vm_name", "host", "port"],
+            ),
+        ),
+        read(
+            "egress_overview",
+            "Fleet view of network access: how many VMs are isolated, allow-listed, learning or open, plus those with refused destinations or no guest agent (Kairon only).",
+            obj(json!({"namespace": {"type": "string"}}), &[]),
+        ),
+        read(
             "node_runtime_memory",
             "Host memory and memory pressure for a node as FluxVM sees it (Kairon only).",
             obj(json!({"node": {"type": "string"}}), &["node"]),
@@ -430,6 +454,34 @@ pub fn builtin_tools() -> Vec<ToolSpec> {
                 "allow_cidrs": {"type": "array", "items": {"type": "string"}},
                 "default_allow": {"type": "boolean"},
                 "remove": {"type": "boolean"}
+            }),
+            &["vm_name"],
+        ),
+    ));
+    t.push(change(
+        "set_vm_egress",
+        "Change what a VM's network access allows: pick a preset (isolated, platform, platform-packages, web, private, learn, open) and/or add rules {cidr, proto tcp|udp, port}; expires_in (30m, 2h, 1d) reverts it automatically. Opening a VM is an admin decision (Kairon only).",
+        ApiRole::Admin,
+        obj(
+            json!({
+                "namespace": {"type": "string"},
+                "vm_name": {"type": "string"},
+                "preset": {"type": "string", "enum": ["isolated", "platform", "platform-packages", "web", "private", "learn", "open"]},
+                "mode": {"type": "string", "enum": ["loopback", "allowlist", "audit", "open"]},
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "cidr": {"type": "string"},
+                            "proto": {"type": "string", "enum": ["any", "tcp", "udp"]},
+                            "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+                            "note": {"type": "string"}
+                        },
+                        "required": ["cidr"]
+                    }
+                },
+                "expires_in": {"type": "string"}
             }),
             &["vm_name"],
         ),
@@ -754,6 +806,35 @@ fn read_path(name: &str, args: &Value) -> Result<Option<String>, String> {
         "vm_network_drops" => return vm_path("/network/drops?limit=100"),
         "vm_lifecycle" => return vm_path("/lifecycle"),
         "vm_network_policy" => return vm_path("/network-policy"),
+        "vm_egress" => return vm_path("/egress"),
+        "egress_explain" => {
+            let (ns, vm) = ns_vm(args)?;
+            let host = arg(args, "host").ok_or("host is required")?;
+            if host.is_empty()
+                || host.len() > 253
+                || !host
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
+            {
+                return Err("host must be a DNS name or IPv4 address".into());
+            }
+            let port = args
+                .get("port")
+                .and_then(Value::as_u64)
+                .filter(|p| (1..=65535).contains(p))
+                .ok_or("port must be 1-65535")?;
+            let proto = arg(args, "proto").unwrap_or("tcp");
+            if !matches!(proto, "tcp" | "udp") {
+                return Err("proto must be tcp or udp".into());
+            }
+            Some(format!(
+                "/api/v1/vms/{ns}/{vm}/egress/explain?host={host}&port={port}&proto={proto}"
+            ))
+        }
+        "egress_overview" => Some(format!(
+            "/api/v1/egress/overview?namespace={}",
+            ns_or_all(args)?
+        )),
         "migration_advice" => Some("/api/v1/kairon/advice/migrations".into()),
         "node_runtime_memory" => {
             let node = safe_name(arg(args, "node").ok_or("node is required")?)?;
@@ -782,6 +863,7 @@ fn is_untrusted(name: &str) -> bool {
         "vm_events"
             | "vm_runtime_events"
             | "vm_network_drops"
+            | "vm_egress"
             | "recent_events"
             | "search_logs"
             | "guest_doctor"
@@ -1310,6 +1392,70 @@ pub async fn draft_change(ctx: &ToolCtx, name: &str, args: &Value) -> anyhow::Re
                 ));
             }
         }
+        "set_vm_egress" => {
+            let (ns, vm) = ns_vm(args).map_err(err)?;
+            let mut body = serde_json::Map::new();
+            for key in ["preset", "mode", "expires_in"] {
+                if let Some(v) = arg(args, key) {
+                    body.insert(key.into(), json!(v));
+                }
+            }
+            if let Some(rules) = args.get("rules").and_then(Value::as_array) {
+                if rules.len() > 64 {
+                    anyhow::bail!("at most 64 rules per proposal");
+                }
+                body.insert("rules".into(), Value::Array(rules.clone()));
+            }
+            if !body.contains_key("preset")
+                && !body.contains_key("rules")
+                && !body.contains_key("mode")
+            {
+                anyhow::bail!("give a preset, a mode or rules");
+            }
+            // Validate exactly as the API will, so a proposal that could never apply is refused now.
+            #[cfg(feature = "kairon")]
+            {
+                use crate::kairon::egress as eg;
+                let mut policy_fields = body.clone();
+                policy_fields.remove("expires_in");
+                let req: eg::NetworkAccessRequest =
+                    serde_json::from_value(Value::Object(policy_fields))?;
+                req.resolve(
+                    &eg::PlatformEndpoints::from_env(&|k| std::env::var(k).ok()),
+                    None,
+                )
+                .map_err(|e| anyhow::anyhow!(e))?;
+                if let Some(d) = arg(args, "expires_in") {
+                    eg::parse_duration(d).map_err(|e| anyhow::anyhow!(e))?;
+                }
+            }
+            let opens = arg(args, "preset") == Some("open") || arg(args, "mode") == Some("open");
+            p.title = format!(
+                "Change network access of {ns}/{vm}{}",
+                arg(args, "preset")
+                    .map(|s| format!(" to \"{s}\""))
+                    .unwrap_or_default()
+            );
+            p.blast_radius.vms = vec![format!("{ns}/{vm}")];
+            p.blast_radius.reversible = true;
+            p.diff.push(DiffLine {
+                target: format!("{ns}/{vm}"),
+                field: "networkAccess".into(),
+                before: "current".into(),
+                after: if opens {
+                    "OPEN: the VM can reach anything".into()
+                } else {
+                    Value::Object(body.clone()).to_string()
+                },
+            });
+            p.steps.push(step(
+                "PUT",
+                format!("/api/v1/vms/{ns}/{vm}/egress"),
+                Some(Value::Object(body)),
+                format!("Set network access on {ns}/{vm}"),
+                &w,
+            ));
+        }
         "quiesced_snapshot_vm" => {
             let (ns, vm) = ns_vm(args).map_err(err)?;
             p.title = format!("Application-consistent snapshot of {ns}/{vm}");
@@ -1709,6 +1855,10 @@ mod tests {
             ("kairon_resources", ToolKind::Read),
             ("set_vm_lifecycle", ToolKind::Change),
             ("set_vm_network_policy", ToolKind::Change),
+            ("vm_egress", ToolKind::Read),
+            ("egress_explain", ToolKind::Read),
+            ("egress_overview", ToolKind::Read),
+            ("set_vm_egress", ToolKind::Change),
             ("quiesced_snapshot_vm", ToolKind::Change),
         ] {
             assert!(
@@ -1729,6 +1879,31 @@ mod tests {
         );
         assert!(read_path("kairon_resources", &json!({"kind": "../x"})).is_err());
         assert!(read_path("node_runtime_memory", &json!({})).is_err());
+        assert_eq!(
+            read_path("vm_egress", &vm).unwrap().unwrap(),
+            "/api/v1/vms/default/web/egress"
+        );
+        assert_eq!(
+            read_path(
+                "egress_explain",
+                &json!({"vm_name": "web", "host": "archive.ubuntu.com", "port": 443})
+            )
+            .unwrap()
+            .unwrap(),
+            "/api/v1/vms/default/web/egress/explain?host=archive.ubuntu.com&port=443&proto=tcp"
+        );
+        for bad in [
+            json!({"vm_name": "web", "host": "a b", "port": 443}),
+            json!({"vm_name": "web", "host": "x.com", "port": 0}),
+            json!({"vm_name": "web", "host": "x.com", "port": 443, "proto": "icmp"}),
+            json!({"vm_name": "web", "host": "x.com&evil=1", "port": 443}),
+        ] {
+            assert!(read_path("egress_explain", &bad).is_err(), "{bad}");
+        }
+        assert_eq!(
+            read_path("egress_overview", &json!({})).unwrap().unwrap(),
+            "/api/v1/egress/overview?namespace=all"
+        );
         assert!(is_untrusted("vm_runtime_events") && is_untrusted("vm_network_drops"));
     }
 

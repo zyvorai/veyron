@@ -110,6 +110,10 @@ spec:
               value: "30151"
             - name: VEYRON_CLUSTER_DNS
               value: "10.43.0.10"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             {{- with .Values.integrations.prometheusUrl }}
             - name: VEYRON_PROMETHEUS_URL
               value: {{ . | quote }}

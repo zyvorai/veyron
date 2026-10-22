@@ -323,8 +323,8 @@ pub fn explain(policy: &EgressPolicy, ip: Ipv4Addr, proto: EgressProto, port: u1
         }
         EgressMode::Audit => {
             v.allowed = true;
-            v.reason = "learn mode allows everything and records what an allow-list would refuse"
-                .into();
+            v.reason =
+                "learn mode allows everything and records what an allow-list would refuse".into();
             return v;
         }
         EgressMode::Loopback | EgressMode::Allowlist => {}
@@ -375,7 +375,12 @@ pub fn explain(policy: &EgressPolicy, ip: Ipv4Addr, proto: EgressProto, port: u1
     } else {
         proto
     };
-    let mut fix = EgressRule::new(&format!("{ip}/32"), fix_proto, Some(port), "added from explain");
+    let mut fix = EgressRule::new(
+        &format!("{ip}/32"),
+        fix_proto,
+        Some(port),
+        "added from explain",
+    );
     // The fix must itself be valid once folded into the policy.
     let mut trial = policy.clone();
     trial.mode = EgressMode::Allowlist;
@@ -421,7 +426,11 @@ pub struct PlatformEndpoints {
 
 impl PlatformEndpoints {
     pub fn from_env(env: &dyn Fn(&str) -> Option<String>) -> Self {
-        let get = |k: &str| env(k).map(|v| v.trim().to_string()).filter(|v| !v.is_empty());
+        let get = |k: &str| {
+            env(k)
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty())
+        };
         let (pod_cidr, source) = match (get("VEYRON_POD_CIDR"), get("POD_IP")) {
             (Some(c), _) if parse_cidr(&c).is_ok() => (c, "VEYRON_POD_CIDR"),
             (_, Some(ip)) if ip.parse::<Ipv4Addr>().is_ok() => {
@@ -437,8 +446,12 @@ impl PlatformEndpoints {
             node_port: get("VEYRON_API_NODE_PORT")
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(30151),
-            cluster_ip: valid_ip(get("VEYRON_API_CLUSTER_IP").or_else(|| get("VEYRON_API_SERVICE_HOST"))),
-            api_port: get("VEYRON_API_PORT").and_then(|p| p.parse().ok()).unwrap_or(5151),
+            cluster_ip: valid_ip(
+                get("VEYRON_API_CLUSTER_IP").or_else(|| get("VEYRON_API_SERVICE_HOST")),
+            ),
+            api_port: get("VEYRON_API_PORT")
+                .and_then(|p| p.parse().ok())
+                .unwrap_or(5151),
             cluster_dns: valid_ip(get("VEYRON_CLUSTER_DNS").or_else(|| Some("10.43.0.10".into()))),
             pod_cidr_source: source,
         }
@@ -646,17 +659,16 @@ pub fn presets(ep: &PlatformEndpoints, template: Option<&str>) -> Vec<Preset> {
     ]
 }
 
-pub fn preset(
-    id: &str,
-    ep: &PlatformEndpoints,
-    template: Option<&str>,
-) -> Result<Preset, String> {
+pub fn preset(id: &str, ep: &PlatformEndpoints, template: Option<&str>) -> Result<Preset, String> {
     presets(ep, template)
         .into_iter()
         .find(|p| p.id == id)
         .ok_or_else(|| {
             let ids: Vec<_> = presets(ep, template).iter().map(|p| p.id).collect();
-            format!("unknown egress preset {id:?}; use one of {}", ids.join(", "))
+            format!(
+                "unknown egress preset {id:?}; use one of {}",
+                ids.join(", ")
+            )
         })
 }
 
@@ -680,7 +692,7 @@ pub fn default_preset_id(
 }
 
 /// What `POST /vms` accepts: a preset, explicit rules, or both (rules are added to the preset).
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct NetworkAccessRequest {
     pub preset: Option<String>,
@@ -712,6 +724,93 @@ impl NetworkAccessRequest {
         validate(&policy)?;
         Ok(policy)
     }
+}
+
+// ---- policy for a new VM ---------------------------------------------------------------
+
+/// Annotation carrying `network_access` from `POST /vms` to the backend (removed on create).
+pub const ANN_NETWORK_ACCESS: &str = "veyron.io/network-access";
+/// Annotation recording the template a VM came from (package presets depend on the OS).
+pub const ANN_TEMPLATE: &str = "veyron.io/template";
+
+/// The policy a new VM starts with. An explicit request always wins. Otherwise only a Linux
+/// VM on user-mode networking gets the default preset: that is the case where the guest would
+/// otherwise reach nothing, not even Veyron, so the agent could never connect. Bridged guests
+/// (`tap`, `macvtap`), Windows, ISO installs and VMs of unknown origin are left to the node.
+pub fn initial_policy(
+    user_mode: bool,
+    template: Option<&str>,
+    explicit: Option<&NetworkAccessRequest>,
+    ns_annotations: &BTreeMap<String, String>,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Option<EgressPolicy>, String> {
+    let ep = PlatformEndpoints::from_env(env);
+    if let Some(req) = explicit {
+        return req.resolve(&ep, template).map(Some);
+    }
+    let Some(t) = template else { return Ok(None) };
+    if !user_mode || t.to_ascii_lowercase().starts_with("windows") {
+        return Ok(None);
+    }
+    let Some(id) = default_preset_id(ns_annotations, env) else {
+        return Ok(None);
+    };
+    // A misspelt default must not block VM creation: fall back to the built-in.
+    let p = preset(&id, &ep, Some(t)).or_else(|_| preset(BUILTIN_DEFAULT_PRESET, &ep, Some(t)))?;
+    Ok(Some(p.policy()))
+}
+
+/// Set `spec.network.egress` on a Machine about to be created (see [`initial_policy`]), and
+/// strip the transient annotation. A policy already on the spec is kept.
+pub fn apply_to_machine(
+    machine: &mut crate::kairon::Machine,
+    ns_annotations: &BTreeMap<String, String>,
+) -> anyhow::Result<()> {
+    let explicit_raw = machine
+        .metadata
+        .annotations
+        .as_mut()
+        .and_then(|a| a.remove(ANN_NETWORK_ACCESS));
+    if machine
+        .spec
+        .network
+        .as_ref()
+        .is_some_and(|n| n.egress.is_some())
+    {
+        return Ok(());
+    }
+    let explicit: Option<NetworkAccessRequest> = explicit_raw
+        .as_deref()
+        .map(serde_json::from_str)
+        .transpose()?;
+    let template = machine
+        .metadata
+        .annotations
+        .as_ref()
+        .and_then(|a| a.get(ANN_TEMPLATE))
+        .cloned();
+    let user_mode = machine
+        .spec
+        .network
+        .as_ref()
+        .and_then(|n| n.mode.as_deref())
+        .is_none_or(|m| m == "user");
+    let policy = initial_policy(
+        user_mode,
+        template.as_deref(),
+        explicit.as_ref(),
+        ns_annotations,
+        &|k| std::env::var(k).ok().filter(|v| !v.is_empty()),
+    )
+    .map_err(|e| anyhow::anyhow!(e))?;
+    if let Some(p) = policy {
+        machine
+            .spec
+            .network
+            .get_or_insert_with(Default::default)
+            .egress = Some(p);
+    }
+    Ok(())
 }
 
 // ---- fleet selectors and timers --------------------------------------------------------
@@ -757,7 +856,11 @@ pub fn parse_duration(s: &str) -> Result<u64, String> {
         "m" => n * 60,
         "h" => n * 3600,
         "d" => n * 86_400,
-        _ => return Err(format!("{s:?} is not a duration; use 30m, 2h, 1d or seconds")),
+        _ => {
+            return Err(format!(
+                "{s:?} is not a duration; use 30m, 2h, 1d or seconds"
+            ));
+        }
     };
     if !(60..=30 * 86_400).contains(&secs) {
         return Err("a timed rule must last between 1 minute and 30 days".into());
@@ -829,15 +932,16 @@ pub fn detect_problems(
         && matches!(i.desired.mode, EgressMode::Loopback | EgressMode::Allowlist)
         && !reaches_platform
     {
-        let fix = preset(BUILTIN_DEFAULT_PRESET, ep, template).ok().map(|p| {
-            json!({"preset": p.id, "mode": p.mode, "rules": p.rules})
-        });
+        let fix = preset(BUILTIN_DEFAULT_PRESET, ep, template)
+            .ok()
+            .map(|p| json!({"preset": p.id, "mode": p.mode, "rules": p.rules}));
         out.push(Problem {
             code: "agent_blocked",
             severity: "error",
-            message: "The guest agent cannot connect: this VM's network access does not allow Veyron. \
+            message:
+                "The guest agent cannot connect: this VM's network access does not allow Veyron. \
                       Exec, files and metrics need it."
-                .into(),
+                    .into(),
             fix,
         });
     }
@@ -846,9 +950,10 @@ pub fn detect_problems(
             None => out.push(Problem {
                 code: "not_enforced",
                 severity: "warn",
-                message: "The node is not enforcing a policy for this VM (it started before policy \
+                message:
+                    "The node is not enforcing a policy for this VM (it started before policy \
                           support). Restart the VM to apply it."
-                    .into(),
+                        .into(),
                 fix: None,
             }),
             Some(p) if !same_policy(p, i.desired) => out.push(Problem {
@@ -876,8 +981,9 @@ pub fn detect_problems(
         out.push(Problem {
             code: "open",
             severity: "warn",
-            message: "This VM can reach anything. Prefer an allow-list, or open it for a limited time."
-                .into(),
+            message:
+                "This VM can reach anything. Prefer an allow-list, or open it for a limited time."
+                    .into(),
             fix: None,
         });
     }
@@ -941,10 +1047,29 @@ mod tests {
                 covers((l, a), (32, ip))
             })
         };
-        for public in ["8.8.8.8", "91.189.91.82", "172.32.0.1", "172.15.255.255", "175.110.122.71", "100.63.255.255", "100.128.0.1", "223.255.255.255"] {
+        for public in [
+            "8.8.8.8",
+            "91.189.91.82",
+            "172.32.0.1",
+            "172.15.255.255",
+            "175.110.122.71",
+            "100.63.255.255",
+            "100.128.0.1",
+            "223.255.255.255",
+        ] {
             assert!(covered(public), "{public} should be public");
         }
-        for private in ["10.1.1.1", "172.16.0.1", "172.31.255.255", "192.168.1.1", "127.0.0.1", "169.254.169.254", "100.64.0.1", "224.0.0.1", "0.1.2.3"] {
+        for private in [
+            "10.1.1.1",
+            "172.16.0.1",
+            "172.31.255.255",
+            "192.168.1.1",
+            "127.0.0.1",
+            "169.254.169.254",
+            "100.64.0.1",
+            "224.0.0.1",
+            "0.1.2.3",
+        ] {
             assert!(!covered(private), "{private} should be excluded");
         }
     }
@@ -960,7 +1085,11 @@ mod tests {
             mode: EgressMode::Allowlist,
             rules: vec![rule("10.0.0.0/8", EgressProto::Any, Some(443))],
         };
-        assert!(validate(&no_proto).unwrap_err().contains("needs a protocol"));
+        assert!(
+            validate(&no_proto)
+                .unwrap_err()
+                .contains("needs a protocol")
+        );
         let zero = EgressPolicy {
             mode: EgressMode::Allowlist,
             rules: vec![rule("10.0.0.0/8", EgressProto::Tcp, Some(0))],
@@ -1019,7 +1148,11 @@ mod tests {
         assert_eq!(no.fix.unwrap().cidr, "93.184.216.34/32");
         let wrong_port = explain(&p, "10.0.128.254".parse().unwrap(), EgressProto::Tcp, 22);
         assert!(!wrong_port.allowed);
-        assert!(wrong_port.reason.contains("not on tcp port 22"), "{}", wrong_port.reason);
+        assert!(
+            wrong_port.reason.contains("not on tcp port 22"),
+            "{}",
+            wrong_port.reason
+        );
     }
 
     #[test]
@@ -1078,19 +1211,40 @@ mod tests {
                 explain(&p, "10.0.128.254".parse().unwrap(), EgressProto::Tcp, 5151).allowed,
                 "{id}"
             );
-            assert!(explain(&p, "175.110.122.71".parse().unwrap(), EgressProto::Tcp, 30151).allowed, "{id}");
+            assert!(
+                explain(
+                    &p,
+                    "175.110.122.71".parse().unwrap(),
+                    EgressProto::Tcp,
+                    30151
+                )
+                .allowed,
+                "{id}"
+            );
         }
         let iso = preset("isolated", &ep, None).unwrap().policy();
-        assert!(!explain(&iso, "10.0.128.254".parse().unwrap(), EgressProto::Tcp, 5151).allowed);
+        assert!(
+            !explain(
+                &iso,
+                "10.0.128.254".parse().unwrap(),
+                EgressProto::Tcp,
+                5151
+            )
+            .allowed
+        );
     }
 
     #[test]
     fn package_presets_are_template_aware() {
         let ep = ep();
-        let ub = preset("platform-packages", &ep, Some("ubuntu-24.04")).unwrap().policy();
+        let ub = preset("platform-packages", &ep, Some("ubuntu-24.04"))
+            .unwrap()
+            .policy();
         assert!(explain(&ub, "91.189.91.82".parse().unwrap(), EgressProto::Tcp, 80).allowed);
         assert!(!explain(&ub, "8.8.8.8".parse().unwrap(), EgressProto::Tcp, 443).allowed);
-        let deb = preset("platform-packages", &ep, Some("debian-13")).unwrap().policy();
+        let deb = preset("platform-packages", &ep, Some("debian-13"))
+            .unwrap()
+            .policy();
         assert!(explain(&deb, "151.101.0.1".parse().unwrap(), EgressProto::Tcp, 443).allowed);
         assert!(!explain(&deb, "10.5.5.5".parse().unwrap(), EgressProto::Tcp, 443).allowed);
         assert!(!explain(&deb, "151.101.0.1".parse().unwrap(), EgressProto::Tcp, 22).allowed);
@@ -1104,14 +1258,25 @@ mod tests {
         assert!(explain(&web, "8.8.8.8".parse().unwrap(), EgressProto::Tcp, 443).allowed);
         assert!(explain(&web, "9.9.9.9".parse().unwrap(), EgressProto::Udp, 53).allowed);
         let private = preset("private", &ep, None).unwrap().policy();
-        assert!(explain(&private, "192.168.1.1".parse().unwrap(), EgressProto::Tcp, 22).allowed);
+        assert!(
+            explain(
+                &private,
+                "192.168.1.1".parse().unwrap(),
+                EgressProto::Tcp,
+                22
+            )
+            .allowed
+        );
         assert!(!explain(&private, "8.8.8.8".parse().unwrap(), EgressProto::Tcp, 443).allowed);
     }
 
     #[test]
     fn unknown_preset_lists_the_valid_ones() {
         let e = preset("nope", &ep(), None).unwrap_err();
-        assert!(e.contains("platform-packages") && e.contains("isolated"), "{e}");
+        assert!(
+            e.contains("platform-packages") && e.contains("isolated"),
+            "{e}"
+        );
     }
 
     #[test]
@@ -1122,7 +1287,10 @@ mod tests {
         assert!(none.node_ip.is_none());
         let explicit = PlatformEndpoints::from_env(&env_of(&[("VEYRON_POD_CIDR", "10.42.0.0/16")]));
         assert_eq!(explicit.pod_cidr, "10.42.0.0/16");
-        let bad = PlatformEndpoints::from_env(&env_of(&[("VEYRON_POD_CIDR", "junk"), ("POD_IP", "10.9.8.7")]));
+        let bad = PlatformEndpoints::from_env(&env_of(&[
+            ("VEYRON_POD_CIDR", "junk"),
+            ("POD_IP", "10.9.8.7"),
+        ]));
         assert_eq!(bad.pod_cidr, "10.9.0.0/16");
     }
 
@@ -1136,7 +1304,10 @@ mod tests {
         let ann = BTreeMap::from([(ANN_DEFAULT_PRESET.to_string(), "web".to_string())]);
         let env = |k: &str| (k == "VEYRON_VM_DEFAULT_EGRESS_PRESET").then(|| "open".to_string());
         assert_eq!(default_preset_id(&ann, &env).as_deref(), Some("web"));
-        assert_eq!(default_preset_id(&BTreeMap::new(), &env).as_deref(), Some("open"));
+        assert_eq!(
+            default_preset_id(&BTreeMap::new(), &env).as_deref(),
+            Some("open")
+        );
         let off = |k: &str| (k == "VEYRON_VM_DEFAULT_EGRESS_PRESET").then(|| "none".to_string());
         assert_eq!(default_preset_id(&BTreeMap::new(), &off), None);
     }
@@ -1162,21 +1333,128 @@ mod tests {
             mode: None,
             rules: vec![rule("10.0.0.0/8", EgressProto::Tcp, Some(1))],
         };
-        assert_eq!(rules_only.resolve(&ep, None).unwrap().mode, EgressMode::Allowlist);
-        let json: NetworkAccessRequest =
-            serde_json::from_value(json!({"preset": "web"})).unwrap();
+        assert_eq!(
+            rules_only.resolve(&ep, None).unwrap().mode,
+            EgressMode::Allowlist
+        );
+        let json: NetworkAccessRequest = serde_json::from_value(json!({"preset": "web"})).unwrap();
         assert!(json.resolve(&ep, None).is_ok());
         assert!(serde_json::from_value::<NetworkAccessRequest>(json!({"presets": "web"})).is_err());
+    }
+
+    #[test]
+    fn new_vms_get_the_default_only_when_it_is_the_case_that_needs_it() {
+        let no_env = |_: &str| None;
+        let none = BTreeMap::new();
+        // Linux on user-mode networking: the default preset.
+        let p = initial_policy(true, Some("ubuntu-24.04"), None, &none, &no_env)
+            .unwrap()
+            .unwrap();
+        assert_eq!(p.mode, EgressMode::Allowlist);
+        // Bridged, Windows, and unknown-origin VMs are left to the node.
+        assert!(
+            initial_policy(false, Some("ubuntu-24.04"), None, &none, &no_env)
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            initial_policy(true, Some("windows-11"), None, &none, &no_env)
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            initial_policy(true, None, None, &none, &no_env)
+                .unwrap()
+                .is_none()
+        );
+        // An explicit request wins, even for bridged VMs.
+        let req = NetworkAccessRequest {
+            preset: Some("isolated".into()),
+            ..Default::default()
+        };
+        let p = initial_policy(false, None, Some(&req), &none, &no_env)
+            .unwrap()
+            .unwrap();
+        assert_eq!(p.mode, EgressMode::Loopback);
+        // "none" turns the default off; a misspelt default falls back instead of failing creation.
+        let off = BTreeMap::from([(ANN_DEFAULT_PRESET.to_string(), "none".to_string())]);
+        assert!(
+            initial_policy(true, Some("ubuntu-24.04"), None, &off, &no_env)
+                .unwrap()
+                .is_none()
+        );
+        let typo = BTreeMap::from([(ANN_DEFAULT_PRESET.to_string(), "wbe".to_string())]);
+        assert!(
+            initial_policy(true, Some("ubuntu-24.04"), None, &typo, &no_env)
+                .unwrap()
+                .is_some()
+        );
+        // A bad explicit request is an error, not a silent default.
+        let bad = NetworkAccessRequest {
+            preset: Some("wbe".into()),
+            ..Default::default()
+        };
+        assert!(initial_policy(true, None, Some(&bad), &none, &no_env).is_err());
+    }
+
+    #[test]
+    fn apply_to_machine_sets_the_spec_and_strips_the_transient_annotation() {
+        use crate::kairon::{Machine, MachineSpec};
+        let mut m = Machine::new("vm", MachineSpec::default());
+        m.metadata.annotations = Some(BTreeMap::from([
+            (ANN_TEMPLATE.to_string(), "ubuntu-24.04".to_string()),
+            (
+                ANN_NETWORK_ACCESS.to_string(),
+                r#"{"preset":"learn"}"#.to_string(),
+            ),
+        ]));
+        apply_to_machine(&mut m, &BTreeMap::new()).unwrap();
+        let egress = m.spec.network.as_ref().unwrap().egress.as_ref().unwrap();
+        assert_eq!(egress.mode, EgressMode::Audit);
+        assert!(
+            !m.metadata
+                .annotations
+                .as_ref()
+                .unwrap()
+                .contains_key(ANN_NETWORK_ACCESS)
+        );
+        assert!(
+            m.metadata
+                .annotations
+                .as_ref()
+                .unwrap()
+                .contains_key(ANN_TEMPLATE)
+        );
+        // A spec that already has a policy is kept.
+        let before = m.spec.network.clone();
+        apply_to_machine(&mut m, &BTreeMap::new()).unwrap();
+        assert_eq!(m.spec.network, before);
+        // Garbage in the annotation is an error rather than a silently open VM.
+        let mut bad = Machine::new("vm2", MachineSpec::default());
+        bad.metadata.annotations = Some(BTreeMap::from([(
+            ANN_NETWORK_ACCESS.to_string(),
+            "not json".to_string(),
+        )]));
+        assert!(apply_to_machine(&mut bad, &BTreeMap::new()).is_err());
     }
 
     #[test]
     fn selectors() {
         let labels = BTreeMap::from([("team".to_string(), "a".to_string())]);
         let none = Selector::default();
-        assert!(!none.matches("ns", "vm", &labels), "empty selector matches nothing");
-        let all = Selector { all: true, ..Default::default() };
+        assert!(
+            !none.matches("ns", "vm", &labels),
+            "empty selector matches nothing"
+        );
+        let all = Selector {
+            all: true,
+            ..Default::default()
+        };
         assert!(all.matches("ns", "vm", &labels));
-        let ns = Selector { namespaces: vec!["ns".into()], ..Default::default() };
+        let ns = Selector {
+            namespaces: vec!["ns".into()],
+            ..Default::default()
+        };
         assert!(ns.matches("ns", "vm", &labels) && !ns.matches("other", "vm", &labels));
         let both = Selector {
             namespaces: vec!["ns".into()],
@@ -1185,7 +1463,10 @@ mod tests {
         };
         assert!(both.matches("ns", "vm", &labels));
         assert!(!both.matches("ns", "vm", &BTreeMap::new()));
-        let name = Selector { names: vec!["x".into()], ..Default::default() };
+        let name = Selector {
+            names: vec!["x".into()],
+            ..Default::default()
+        };
         assert!(!name.matches("ns", "vm", &labels));
     }
 

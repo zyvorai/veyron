@@ -294,6 +294,48 @@ pub async fn claim(
         apply_template(&mut m, t);
     }
     m.spec.lifecycle = lifecycle_spec(ttl_minutes);
+    // User-mode guests reach nothing unless the node is told what they may: without this the
+    // agent never connects and exec/files fail. Sandboxes that asked for internet also get
+    // package mirrors; the rest get Veyron only.
+    {
+        let preset = std::env::var("VEYRON_SANDBOX_EGRESS_PRESET")
+            .ok()
+            .filter(|v| !v.is_empty())
+            .unwrap_or_else(|| {
+                if internet {
+                    "platform-packages"
+                } else {
+                    "platform"
+                }
+                .to_string()
+            });
+        if preset != "none" {
+            let request = crate::kairon::egress::NetworkAccessRequest {
+                preset: Some(preset),
+                ..Default::default()
+            };
+            let user_mode = m
+                .spec
+                .network
+                .as_ref()
+                .and_then(|n| n.mode.as_deref())
+                .is_none_or(|mode| mode == "user");
+            if user_mode {
+                match crate::kairon::egress::initial_policy(
+                    true,
+                    Some(&tpl),
+                    Some(&request),
+                    &BTreeMap::new(),
+                    &|k| std::env::var(k).ok().filter(|v| !v.is_empty()),
+                ) {
+                    Ok(policy) => {
+                        m.spec.network.get_or_insert_with(Default::default).egress = policy;
+                    }
+                    Err(e) => log::warn!("sandbox {name}: network access preset skipped: {e}"),
+                }
+            }
+        }
+    }
     let now = chrono::Utc::now();
     let mut annotations = BTreeMap::from([
         (ANN_OWNER.to_string(), owner.to_string()),

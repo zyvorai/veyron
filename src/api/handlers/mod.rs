@@ -66,6 +66,8 @@ pub mod namespaces;
 #[cfg(feature = "web")]
 pub mod netra;
 pub mod network;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod network_access;
 pub mod network_policies;
 pub mod nodes;
 pub mod notifications;
@@ -218,6 +220,7 @@ pub fn all_routes(
         .merge(imports::router(state.clone()))
         .merge(machine_images::router(state.clone()))
         .merge(image_capture::router(state.clone()))
+        .merge(network_access::router(state.clone()))
         .merge(relay_ops::router(state.clone()))
         .merge(kairon_ext::router(state.clone()))
         .merge(containers::router(state.clone()))

@@ -109,6 +109,11 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     if path.starts_with("/api/v1/kairon/fleet/") {
         return ApiRole::Admin;
     }
+    // Network access decides what a VM may reach: changing it (or a node's default, or many VMs
+    // at once) is an Admin decision. Suggesting and explaining only read, so they stay Write.
+    if is_egress_policy_write(path) {
+        return ApiRole::Admin;
+    }
     // Starting a VM from, or deleting, a saved FluxVM branch.
     if path.contains("/nodes/") && path.contains("/branches/") {
         return ApiRole::Admin;
@@ -163,6 +168,20 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     ApiRole::Write
 }
 
+/// Mutating network-access routes: a VM's policy (and its timed-change grant), a node's default
+/// policy, and the fleet apply. `…/egress/suggest`, `…/egress/explain` and `…/egress-check` only
+/// read, so they are not matched.
+fn is_egress_policy_write(path: &str) -> bool {
+    if path == "/api/v1/egress/apply" {
+        return true;
+    }
+    if path.starts_with("/api/v1/nodes/") && path.ends_with("/egress-defaults") {
+        return true;
+    }
+    path.starts_with("/api/v1/vms/")
+        && (path.ends_with("/egress") || path.ends_with("/egress/grant"))
+}
+
 pub fn is_ws_console_path(path: &str) -> bool {
     path.ends_with("/vnc") || path.ends_with("/serial") || path.ends_with("/tunnel")
 }
@@ -185,6 +204,52 @@ mod tests {
                 ApiRole::Write
             );
         }
+    }
+
+    #[test]
+    fn network_access_changes_are_admin_but_reads_and_suggestions_are_not() {
+        let r = |m: Method, p: &str| min_role_for_route(&m, p);
+        assert_eq!(r(Method::PUT, "/api/v1/vms/ns/vm/egress"), ApiRole::Admin);
+        assert_eq!(
+            r(Method::DELETE, "/api/v1/vms/ns/vm/egress"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            r(Method::DELETE, "/api/v1/vms/ns/vm/egress/grant"),
+            ApiRole::Admin
+        );
+        assert_eq!(r(Method::POST, "/api/v1/egress/apply"), ApiRole::Admin);
+        assert_eq!(
+            r(Method::PUT, "/api/v1/nodes/n1/egress-defaults"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            r(Method::PUT, "/api/v1/veyron/vms/ns/vm/egress"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            r(Method::GET, "/api/v1/vms/ns/vm/egress"),
+            ApiRole::ReadOnly
+        );
+        assert_eq!(r(Method::GET, "/api/v1/egress/presets"), ApiRole::ReadOnly);
+        assert_eq!(r(Method::GET, "/api/v1/egress/overview"), ApiRole::ReadOnly);
+        assert_eq!(
+            r(Method::GET, "/api/v1/nodes/n1/egress-defaults"),
+            ApiRole::ReadOnly
+        );
+        assert_eq!(
+            r(Method::POST, "/api/v1/vms/ns/vm/egress/suggest"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            r(Method::POST, "/api/v1/vms/ns/vm/egress/explain"),
+            ApiRole::Write
+        );
+        // The pre-existing node egress check keeps its role.
+        assert_eq!(
+            r(Method::POST, "/api/v1/vms/ns/vm/egress-check"),
+            ApiRole::Write
+        );
     }
 
     #[test]
