@@ -477,20 +477,22 @@ mod kairon {
                 .with_context(|| format!("pinning {oci} to a digest for Kairon"))?;
             machine.spec.image.digest = Some(digest);
         }
+        // Tenant (namespace annotation) defaults; a failed lookup just skips them.
+        let ns_annotations = kube::Api::<k8s_openapi::api::core::v1::Namespace>::all(c.client())
+            .get_opt(&config.namespace)
+            .await
+            .ok()
+            .flatten()
+            .and_then(|n| n.metadata.annotations)
+            .unwrap_or_default();
         if machine.spec.lifecycle.is_none() {
-            // Tenant (namespace annotation) or cluster default; a failed lookup just skips it.
-            let annotations = kube::Api::<k8s_openapi::api::core::v1::Namespace>::all(c.client())
-                .get_opt(&config.namespace)
-                .await
-                .ok()
-                .flatten()
-                .and_then(|n| n.metadata.annotations)
-                .unwrap_or_default();
             machine.spec.lifecycle =
-                crate::kairon::defaults::lifecycle_defaults(&annotations, &|k| {
+                crate::kairon::defaults::lifecycle_defaults(&ns_annotations, &|k| {
                     std::env::var(k).ok().filter(|v| !v.is_empty())
                 });
         }
+        crate::kairon::egress::apply_to_machine(&mut machine, &ns_annotations)
+            .context("resolving the VM's network access")?;
         machine
             .metadata
             .labels

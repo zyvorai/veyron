@@ -583,6 +583,10 @@ spec:
               value: '${NODE_PORT}'
             - name: VEYRON_CLUSTER_DNS
               value: '10.43.0.10'
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           # Same optional Secrets as deploy/k8s.yaml (Kairon relay, SSO, Atlas, RBAC keys…).
           envFrom:
             - secretRef:

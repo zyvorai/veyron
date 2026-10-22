@@ -1190,6 +1190,22 @@ pub mod web {
                 {
                     log::warn!("self-healing tick: {}", e);
                 }
+                // End timed network-access changes whose time is up (Kairon backend).
+                #[cfg(feature = "kairon")]
+                {
+                    let (kube_for_egress, api_ns) = {
+                        let s = schedule_state.read().await;
+                        (s.kube_client.clone(), s.namespace.clone())
+                    };
+                    if let Err(e) = crate::api::handlers::network_access::egress_grant_tick(
+                        kube_for_egress,
+                        api_ns,
+                    )
+                    .await
+                    {
+                        log::warn!("network access grant tick: {}", e);
+                    }
+                }
                 ai_ticks = ai_ticks.wrapping_add(1);
                 crate::ai::leader_tick(schedule_state.clone(), ai_ticks);
             }

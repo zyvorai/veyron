@@ -2262,6 +2262,11 @@ pub(super) struct CreateVmRequest {
     /// Skip the "does any node advertise this GPU resource" preflight.
     #[serde(default)]
     force: bool,
+    /// Kairon: what the VM's QEMU process may reach, `{preset, mode, rules}` (see
+    /// `GET /egress/presets`). Without it, Linux VMs on user-mode networking get the default
+    /// preset (`VEYRON_VM_DEFAULT_EGRESS_PRESET`), so the guest agent can reach Veyron.
+    #[serde(default)]
+    network_access: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -2647,6 +2652,37 @@ pub(super) async fn create_vm_handler(
     }
 
     let mut config = builder.build();
+
+    // Kairon: remember the template (package presets depend on the OS) and carry the requested
+    // network access to the backend, validated now so a typo is a 422 and not a half-made VM.
+    #[cfg(feature = "kairon")]
+    if vm_backend::is_kairon() {
+        if let Some(tpl) = &req.template {
+            config
+                .annotations
+                .insert(crate::kairon::egress::ANN_TEMPLATE.to_string(), tpl.clone());
+        }
+        if let Some(raw) = &req.network_access {
+            let parsed: Result<crate::kairon::egress::NetworkAccessRequest, _> =
+                serde_json::from_value(raw.clone());
+            let checked = parsed.map_err(|e| e.to_string()).and_then(|na| {
+                na.resolve(
+                    &crate::api::handlers::network_access::platform_endpoints(),
+                    req.template.as_deref(),
+                )
+                .map(|_| na)
+            });
+            match checked {
+                Ok(na) => {
+                    config.annotations.insert(
+                        crate::kairon::egress::ANN_NETWORK_ACCESS.to_string(),
+                        serde_json::to_string(&na).unwrap_or_default(),
+                    );
+                }
+                Err(e) => return err_json(422, "INVALID_NETWORK_ACCESS", &e),
+            }
+        }
+    }
 
     // Override disk size if specified
     let mut disk_size_explicit = false;

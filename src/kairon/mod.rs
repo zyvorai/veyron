@@ -17,6 +17,7 @@ pub mod types;
 
 pub mod advisor;
 pub mod defaults;
+pub mod egress;
 pub use converter::{machine_from_config, parse_cloud_config, resolve_container_disk_image};
 pub use types::*;
 

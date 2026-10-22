@@ -492,6 +492,56 @@ EOF
                 [[ "${_CURL_CODE}" == "502" || "${_CURL_CODE}" == "200" ]] && pass "screenshot answers (${_CURL_CODE}; 200 only on a Mac vz VM)" || fail "screenshot" "HTTP ${_CURL_CODE}"
                 curl_api GET "/api/v1/kairon/bogus"
                 [[ "${_CURL_CODE}" == "404" ]] && pass "GET kairon/bogus → 404" || fail "kairon/bogus" "HTTP ${_CURL_CODE}"
+                # Phase 5: network access (per-VM egress policy). Reads and the Machine-spec writes work on any
+                # Kairon; live state, observed flows and node defaults need kairon-node + FluxVM with the feature
+                # (404/502/503 there => skip, never fail).
+                curl_api GET "/api/v1/egress/presets"
+                if [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"platform-packages"'; then pass "GET egress/presets → 200 (platform-packages present)"; else fail "egress presets" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"; fi
+                curl_api GET "/api/v1/egress/overview"
+                [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"by_mode"' && pass "GET egress/overview → 200" || fail "egress overview" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/egress"
+                if [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"policy"'; then pass "GET vm egress → 200"; else fail "GET vm egress" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"; fi
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"preset":"wbe"}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "egress rejects an unknown preset (422)" || fail "egress preset validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"mode":"allowlist","rules":[{"cidr":"10.0.0.0/8","port":443}]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "egress rejects a port without a protocol (422)" || fail "egress port validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"mode":"allowlist","rules":[{"cidr":"10.0.0.0/8","proto":"tcp","port":1},{"cidr":"10.0.0.0/8","proto":"tcp","port":2},{"cidr":"10.0.0.0/8","proto":"tcp","port":3},{"cidr":"10.0.0.0/8","proto":"tcp","port":4},{"cidr":"10.0.0.0/8","proto":"tcp","port":5}]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "egress rejects more than 4 ports per network (422)" || fail "egress port-limit validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"preset":"learn"}'
+                if [[ "${_CURL_CODE}" == "202" ]]; then
+                    pass "PUT vm egress (learn) → 202"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/egress"
+                    echo "${_CURL_BODY}" | grep -q '"configured":true' && echo "${_CURL_BODY}" | grep -q '"mode":"audit"' && pass "egress policy saved on the Machine (audit)" || fail "egress policy readback" "$(echo "${_CURL_BODY}" | head -c 300)"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/egress/explain?host=10.1.2.3&port=443"
+                    [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"verdicts"' && pass "GET egress/explain → 200" || fail "egress explain" "HTTP ${_CURL_CODE}"
+                    curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"preset":"platform","expires_in":"2m"}'
+                    if [[ "${_CURL_CODE}" == "202" ]] && echo "${_CURL_BODY}" | grep -q '"expires_at"'; then
+                        pass "timed egress change records a grant"
+                        curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/egress/grant"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE egress/grant restores the previous policy" || fail "end timed egress change" "HTTP ${_CURL_CODE}"
+                    else
+                        fail "timed egress change" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"
+                    fi
+                    curl_api POST "/api/v1/egress/apply" '{"selector":{}}'
+                    [[ "${_CURL_CODE}" == "422" ]] && pass "egress/apply refuses an empty selector (422)" || fail "egress apply empty selector" "HTTP ${_CURL_CODE}"
+                    curl_api POST "/api/v1/egress/apply" "{\"selector\":{\"namespaces\":[\"${NS}\"],\"names\":[\"${VM_NAME}\"]},\"preset\":\"web\"}"
+                    [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"dry_run":true' && pass "egress/apply defaults to a dry run" || fail "egress apply dry run" "HTTP ${_CURL_CODE}"
+                    curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/egress"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE vm egress → 200" || fail "DELETE vm egress" "HTTP ${_CURL_CODE}"
+                    # Leave the VM the way create left it, so later checks still have its agent.
+                    curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"preset":"platform-packages"}' >/dev/null
+                else
+                    fail "PUT vm egress (learn)" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"
+                fi
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/egress/observed"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET vm egress/observed → 200" || skip "vm egress/observed (HTTP ${_CURL_CODE}; needs kairon-node + FluxVM with network access policy)"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/egress/suggest"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "POST egress/suggest → 200" || skip "egress suggest (HTTP ${_CURL_CODE}; needs kairon-node + FluxVM with network access policy)"
+                _en="$(curl_api GET "/api/v1/vms/${NS}/${VM_NAME}" >/dev/null; echo "${_CURL_BODY}" | sed -n 's/.*"node"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+                if [[ -n "${_en}" ]]; then
+                    curl_api GET "/api/v1/nodes/${_en}/egress-defaults"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET node egress-defaults → 200" || skip "node egress-defaults (HTTP ${_CURL_CODE}; needs kairon-node + FluxVM with network access policy)"
+                fi
                 # Phase 3: FluxVM fork plan, event log, host memory, branches (need kairon-node with the flux relay routes).
                 curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"count":0}'
                 [[ "${_CURL_CODE}" == "422" ]] && pass "fork/plan rejects count 0 (422)" || fail "fork/plan validation" "HTTP ${_CURL_CODE}"

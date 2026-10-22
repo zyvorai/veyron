@@ -369,6 +369,11 @@ spec:
               value: "30151"
             - name: VEYRON_CLUSTER_DNS
               value: "10.43.0.10"
+            # Network access presets cover the pod network the egress filter sees (see docs/kairon-ops.md).
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           envFrom:
             - secretRef:
                 name: veyron-integrations

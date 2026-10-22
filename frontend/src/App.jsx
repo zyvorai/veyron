@@ -18,6 +18,7 @@ const DrPage = chapter('DrPage');
 const NetraPage = chapter('NetraPage');
 const GryviaPage = chapter('GryviaPage');
 const PaqtraPage = chapter('PaqtraPage');
+const NetworkAccessPage = lazy(() => import('./NetworkAccess.jsx').then((m) => ({ default: m.NetworkAccessPage })));
 const insight = (name) => lazy(() => import('./insights.jsx').then((m) => ({ default: m[name] })));
 const INSIGHTS = {
   costs: insight('CostsPage'),
@@ -917,6 +918,8 @@ export default function App() {
           <NetraPage />
         ) : page === 'paqtra' ? (
           <PaqtraPage />
+        ) : page === 'netaccess' ? (
+          <NetworkAccessPage />
         ) : page === 'gryvia' ? (
           <GryviaPage />
         ) : AI_PAGE_COMPONENTS[page] ? (
