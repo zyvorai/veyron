@@ -997,6 +997,19 @@ export const api = {
     unwrap(await request(`${vmPath(ns, name)}/fork/plan`, { method: 'POST', body: JSON.stringify(body || {}) })),
   vmRuntimeEvents: async (ns, name, { event = '', limit = 100 } = {}) =>
     unwrap(await request(`${vmPath(ns, name)}/events?limit=${limit}${event ? `&event=${encodeURIComponent(event)}` : ''}`)),
+  // Network access (per-VM egress policy), Kairon backend.
+  egressPresets: async (template = '') =>
+    unwrap(await request(`/api/v1/egress/presets${template ? `?template=${encodeURIComponent(template)}` : ''}`)),
+  egressOverview: async ({ live = false } = {}) => unwrap(await request(`/api/v1/egress/overview?live=${live ? 'true' : 'false'}`, { timeout: live ? 60000 : undefined })),
+  egressApply: async (body) => unwrap(await request('/api/v1/egress/apply', { method: 'POST', body: JSON.stringify(body) })),
+  vmEgress: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/egress`, { timeout: 30000 })),
+  setVmEgress: async (ns, name, body) => unwrap(await request(`${vmPath(ns, name)}/egress`, { method: 'PUT', body: JSON.stringify(body) })),
+  clearVmEgress: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/egress`, { method: 'DELETE' })),
+  endVmEgressGrant: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/egress/grant`, { method: 'DELETE' })),
+  vmEgressObserved: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/egress/observed`)),
+  vmEgressSuggest: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/egress/suggest`, { method: 'POST', body: '{}' })),
+  vmEgressExplain: async (ns, name, { host, port, proto }) =>
+    unwrap(await request(`${vmPath(ns, name)}/egress/explain`, { method: 'POST', body: JSON.stringify({ host, port, proto }) })),
   nodeMemory: async (node) => unwrap(await request(`/api/v1/nodes/${encodeURIComponent(node)}/runtime/memory`)),
   nodeBranches: async (node) => unwrap(await request(`/api/v1/nodes/${encodeURIComponent(node)}/branches`)),
   runtimeCapabilities: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/runtime-capabilities`)),

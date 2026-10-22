@@ -4,6 +4,7 @@ import {
   Lightbulb, ListTree, Siren, ShieldAlert, ScrollText, Boxes, Ship, Gauge, Puzzle, Layers,
   Unlink, CalendarClock, Route, Wallet, Target, FileText, ClipboardCheck, Crosshair, Users,
   GitBranch, Globe, HeartPulse, Shuffle, Sparkles, ClipboardList, SearchCheck, Container, BrainCircuit,
+  ShieldCheck,
 } from 'lucide-react';
 
 /** Schema only — rows come from the API. */
@@ -708,6 +709,7 @@ export const NAV = [
       ['netpols', null, 'NetworkPolicies and Ingress routes.'],
       ['netra', 'Netra', 'eBPF flows, drops and VM network view.'],
       ['paqtra', 'Paqtra', 'Cilium flow history, drops and policy posture.'],
+      ['netaccess', 'Network access', 'What each VM may reach: presets, learn mode, timed changes.'],
     ],
   },
   {
@@ -798,11 +800,11 @@ export const INSIGHT_PAGES = [
 /** Veyron AI pages, served by aipages.jsx. */
 export const AI_PAGES = ['ai', 'proposals', 'investigations', 'sandboxes', 'models'];
 
-export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra', 'paqtra', 'gryvia', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES]);
+export const CHAPTER_PAGES = new Set(['monitoring', 'topology', 'dr', 'netra', 'paqtra', 'netaccess', 'gryvia', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES]);
 
 /** Story pages that render full-bleed, without the local toolbar. */
 export const FULL_BLEED_PAGES = new Set([
-  'mission', 'console', 'monitoring', 'topology', 'dr', 'netra', 'paqtra', 'gryvia', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES,
+  'mission', 'console', 'monitoring', 'topology', 'dr', 'netra', 'paqtra', 'netaccess', 'gryvia', 'enterprise', ...INSIGHT_PAGES, ...AI_PAGES,
 ]);
 
 export const CHAPTER_ICONS = {
@@ -812,6 +814,7 @@ export const CHAPTER_ICONS = {
   dr: Cloud,
   netra: Radar,
   paqtra: Waypoints,
+  netaccess: ShieldCheck,
   gryvia: Cpu,
   costs: Wallet,
   slo: Target,

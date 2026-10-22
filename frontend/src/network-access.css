@@ -1,0 +1,367 @@
+/* Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+   SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+   Network access: per-VM egress policy. Glass surfaces, soft glow, spring easing, pill buttons.
+   Colours come from the console tokens (styles.css) so the light theme works; the dark theme
+   gets the aurora/glow treatment. Every animation is off under prefers-reduced-motion. */
+
+.na, .na-page, .na-sheet {
+  --na-rose: #ff5c7a;
+  --na-sky: var(--apple-blue);
+  --na-amber: var(--accent-amber);
+  --na-danger: var(--danger);
+  --na-gray: var(--text-tertiary);
+  --na-green: var(--accent-green);
+  --na-tone: var(--na-gray);
+  --na-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --na-glass: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+  --na-edge: var(--hairline-1);
+}
+.tone-rose { --na-tone: var(--na-rose); }
+.tone-sky { --na-tone: var(--na-sky); }
+.tone-amber { --na-tone: var(--na-amber); }
+.tone-danger { --na-tone: var(--na-danger); }
+.tone-gray { --na-tone: var(--na-gray); }
+
+.na { display: grid; gap: 14px; font-size: 14px; color: var(--text-primary); min-width: 0; }
+.na.compact { gap: 12px; padding-bottom: 8px; }
+.na *, .na-page *, .na-sheet * { box-sizing: border-box; }
+.na .mono, .na-page .mono, .na-sheet .mono { font-family: var(--font-mono); font-size: 12.5px; }
+.na-hint { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.45; }
+.na-err { margin: 0; padding: 10px 14px; border-radius: var(--radius-md); background: var(--danger-bg); color: var(--danger); font-size: 13px; }
+.na-err.sm { padding: 6px 12px; }
+.na-ok { margin: 0; display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-pill); background: var(--success-bg); color: var(--success-text); font-size: 13px; animation: naRise 0.35s var(--na-spring); }
+.na-h { margin: 6px 0 -4px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); display: flex; align-items: baseline; gap: 8px; }
+.na-h small { font-size: 11px; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--fill-tertiary); letter-spacing: 0; }
+.na-row { display: flex; gap: 10px; align-items: center; }
+.na-row.wrap { flex-wrap: wrap; }
+
+/* —— header + pills —— */
+.na-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.na-head > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.na-head small { color: var(--text-secondary); font-size: 12.5px; }
+.na-pill {
+  display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 14px 0 11px; border-radius: var(--radius-pill);
+  font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--na-tone);
+  background: color-mix(in srgb, var(--na-tone) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--na-tone) 30%, transparent);
+}
+.na-pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--na-tone); box-shadow: 0 0 10px var(--na-tone); }
+.na-pill.sm { height: 22px; padding: 0 9px 0 8px; font-size: 11px; gap: 5px; }
+.na-pill.sm i { width: 6px; height: 6px; }
+
+/* —— buttons (apple.com pills) —— */
+.na-btn, .na-chipbtn, .na-icon, .na-link, .na-preset, .na-tile, .na-seg button, .na-stat {
+  font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.na-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 0 18px;
+  border: 1px solid var(--na-edge); border-radius: var(--radius-pill); background: var(--fill-tertiary); color: var(--text-primary);
+  font-size: 13.5px; font-weight: 500; letter-spacing: -0.01em;
+  transition: transform 0.35s var(--na-spring), background 0.2s var(--ease-apple), box-shadow 0.25s var(--ease-apple), border-color 0.2s;
+}
+.na-btn.sm { min-height: 28px; padding: 0 13px; font-size: 12.5px; }
+.na-btn:hover:not(:disabled) { background: var(--hover-fill-strong); transform: translateY(-1px); }
+.na-btn:active:not(:disabled) { transform: scale(0.96); }
+.na-btn:focus-visible, .na-chipbtn:focus-visible, .na-icon:focus-visible, .na-preset:focus-visible, .na-tile:focus-visible,
+.na-seg button:focus-visible, .na-link:focus-visible, .na-stat:focus-visible { outline: 2px solid var(--apple-blue); outline-offset: 2px; }
+.na-btn:disabled, .na-chipbtn:disabled, .na-preset:disabled, .na-seg button:disabled { opacity: 0.5; cursor: default; }
+.na-btn.primary { background: var(--apple-blue); border-color: transparent; color: #fff; }
+.na-btn.primary:hover:not(:disabled) { background: var(--apple-blue-hover); box-shadow: 0 10px 28px -8px rgba(0, 113, 227, 0.65); }
+.na-btn.danger { background: var(--danger); border-color: transparent; color: #fff; }
+.na-btn.danger:hover:not(:disabled) { box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--danger) 70%, transparent); }
+.na-btn.shimmer { position: relative; overflow: hidden; }
+.na-btn.shimmer::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-120%);
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+}
+.na-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--fill-tertiary); color: var(--text-secondary); transition: background 0.2s, transform 0.3s var(--na-spring); }
+.na-icon:hover { background: var(--hover-fill-strong); color: var(--text-primary); transform: rotate(18deg); }
+.na-link { border: 0; background: none; color: var(--apple-link); font-size: 13px; padding: 4px 6px; border-radius: 8px; }
+.na-link:hover:not(:disabled) { text-decoration: underline; }
+
+/* —— segmented control with sliding thumb —— */
+.na-seg {
+  position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr); padding: 4px; border-radius: var(--radius-pill);
+  background: var(--fill-tertiary); box-shadow: inset 0 0 0 1px var(--na-edge);
+}
+.na-seg-thumb {
+  position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--n)); border-radius: var(--radius-pill);
+  transform: translateX(calc(var(--i) * 100%));
+  background: var(--bg-elevated); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18), 0 0 0 1px color-mix(in srgb, var(--na-tone) 40%, transparent), 0 0 22px -4px color-mix(in srgb, var(--na-tone) 55%, transparent);
+  transition: transform 0.45s var(--na-spring), box-shadow 0.3s;
+}
+.na-seg button {
+  position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 0 6px;
+  border: 0; background: none; border-radius: var(--radius-pill); color: var(--text-secondary); font-size: 13px; font-weight: 500;
+  transition: color 0.2s;
+}
+.na-seg button.on { color: var(--text-primary); }
+
+/* —— problem banner —— */
+.na-problem {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--na-amber) 13%, transparent); color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--na-amber) 35%, transparent); animation: naRise 0.4s var(--na-spring);
+}
+.na-problem.error { background: var(--danger-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 40%, transparent); }
+.na-problem.error > svg { color: var(--danger); }
+.na-problem > svg { color: var(--na-amber); flex: none; }
+.na-problem p { margin: 0; flex: 1 1 200px; font-size: 13.5px; line-height: 1.4; }
+
+/* —— flow diagram —— */
+.na-flow {
+  --na-tone: var(--na-sky); margin: 0; border-radius: var(--radius-2xl); overflow: hidden; position: relative;
+  border: 1px solid var(--na-edge);
+  background:
+    radial-gradient(60% 90% at 50% 50%, color-mix(in srgb, var(--na-tone) 14%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--na-glass), var(--bg-elevated-2));
+}
+[data-theme="dark"] .na-flow {
+  background:
+    radial-gradient(55% 80% at 50% 50%, color-mix(in srgb, var(--na-tone) 26%, transparent), transparent 72%),
+    radial-gradient(40% 60% at 90% 0%, rgba(191, 90, 242, 0.14), transparent 70%),
+    radial-gradient(40% 60% at 5% 100%, rgba(41, 151, 255, 0.14), transparent 70%),
+    #0b0b0e;
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.na-flow svg { display: block; width: 100%; height: auto; }
+.na-flow figcaption { position: absolute; left: 16px; bottom: 10px; font-size: 12px; color: var(--text-secondary); }
+.na-wire { fill: none; stroke: color-mix(in srgb, var(--text-primary) 18%, transparent); stroke-width: 1.5; stroke-dasharray: 4 6; }
+.na-wire.allowed { stroke: color-mix(in srgb, var(--na-green) 60%, transparent); }
+.na-wire.blocked { stroke: color-mix(in srgb, var(--na-danger) 55%, transparent); stroke-dasharray: 2 7; }
+.na-wire.learning { stroke: color-mix(in srgb, var(--na-amber) 65%, transparent); }
+.na-gate { fill: color-mix(in srgb, var(--na-tone) 22%, var(--bg-elevated)); stroke: var(--na-tone); stroke-width: 2; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--na-tone) 70%, transparent)); }
+.na-gate-label { fill: var(--text-primary); font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+.na-gate-glyph { fill: none; stroke: var(--text-primary); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+.na-vm { fill: var(--bg-elevated); stroke: color-mix(in srgb, var(--text-primary) 35%, transparent); stroke-width: 1.5; }
+.na-vm.off { opacity: 0.5; }
+.na-vm-screen { fill: color-mix(in srgb, var(--apple-blue) 30%, transparent); }
+.na-vm-led { fill: var(--na-green); }
+.na-vm.off ~ .na-vm-led { fill: var(--text-faint); }
+.na-cap { fill: var(--text-secondary); font-size: 11px; }
+.na-dest rect { fill: var(--bg-elevated); stroke: var(--na-edge); stroke-width: 1; }
+.na-dest.allowed rect { stroke: color-mix(in srgb, var(--na-green) 55%, transparent); }
+.na-dest.blocked rect { stroke: color-mix(in srgb, var(--na-danger) 60%, transparent); stroke-dasharray: 4 3; fill: color-mix(in srgb, var(--na-danger) 8%, var(--bg-elevated)); }
+.na-dest.learning rect { stroke: color-mix(in srgb, var(--na-amber) 60%, transparent); }
+.na-dest-dot { fill: var(--na-green); }
+.na-dest.blocked .na-dest-dot { fill: var(--na-danger); }
+.na-dest.learning .na-dest-dot { fill: var(--na-amber); }
+.na-dest-label { fill: var(--text-primary); font-size: 10.5px; font-weight: 600; }
+.na-dest-sub { fill: var(--text-secondary); font-size: 8.5px; }
+.na-packet { filter: drop-shadow(0 0 5px currentColor); }
+.na-packet.allowed { fill: var(--na-green); color: var(--na-green); }
+.na-packet.learning { fill: var(--na-amber); color: var(--na-amber); }
+.na-packet.blocked { fill: var(--na-danger); color: var(--na-danger); }
+.na-burst { fill: none; stroke: var(--na-danger); stroke-width: 2; opacity: 0; }
+
+/* —— presets —— */
+.na-presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 10px; }
+.na-preset {
+  --na-tone: var(--na-sky); position: relative; display: grid; gap: 6px; align-content: start; text-align: left; padding: 14px 16px;
+  border-radius: var(--radius-xl); border: 1px solid var(--na-edge); background: var(--na-glass); color: var(--text-primary);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  transition: transform 0.4s var(--na-spring), box-shadow 0.3s var(--ease-apple), border-color 0.2s;
+}
+.na-preset.risk-none { --na-tone: var(--na-green); }
+.na-preset.risk-low { --na-tone: var(--na-sky); }
+.na-preset.risk-medium { --na-tone: var(--na-amber); }
+.na-preset.risk-high { --na-tone: var(--na-danger); }
+.na-preset:hover:not(:disabled) { transform: translateY(-4px); border-color: color-mix(in srgb, var(--na-tone) 55%, transparent); box-shadow: 0 18px 38px -18px color-mix(in srgb, var(--na-tone) 75%, transparent); }
+.na-preset:active:not(:disabled) { transform: scale(0.98); }
+.na-preset.on { border-color: var(--na-tone); box-shadow: 0 0 0 1px var(--na-tone), 0 14px 36px -16px color-mix(in srgb, var(--na-tone) 80%, transparent); }
+.na-preset.on::after {
+  content: "✓"; position: absolute; top: 10px; right: 12px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--na-tone); color: #fff; font-size: 12px; font-weight: 700; animation: naPop 0.4s var(--na-spring);
+}
+.na-preset-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-right: 24px; }
+.na-preset-top b { font-size: 14.5px; letter-spacing: -0.01em; }
+.na-preset-top em { font-style: normal; font-size: 11px; font-weight: 600; color: var(--na-tone); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+.na-preset-desc { font-size: 12.5px; line-height: 1.4; color: var(--text-secondary); }
+.na-needs { display: flex; flex-wrap: wrap; gap: 5px; }
+.na-needs i { font-style: normal; font-size: 11px; padding: 2px 9px; border-radius: var(--radius-pill); background: var(--fill-tertiary); color: var(--text-secondary); }
+
+/* —— rule chips + add —— */
+.na-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.na-chips li {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 5px 6px 5px 13px; border-radius: var(--radius-pill);
+  background: var(--na-glass); box-shadow: inset 0 0 0 1px var(--na-edge); animation: naChipIn 0.4s var(--na-spring);
+  transition: transform 0.18s, opacity 0.18s;
+}
+.na-chips li.out { transform: scale(0.8); opacity: 0; }
+.na-chip-main { font-family: var(--font-mono); font-size: 12.5px; overflow-wrap: anywhere; }
+.na-chips small { color: var(--text-secondary); font-size: 11.5px; }
+.na-chips li button { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%; background: var(--fill-tertiary); color: var(--text-secondary); cursor: pointer; flex: none; transition: background 0.2s, color 0.2s, transform 0.25s var(--na-spring); }
+.na-chips li button:hover { background: var(--danger); color: #fff; transform: rotate(90deg); }
+.na-add { display: flex; gap: 8px; flex-wrap: wrap; }
+.na-add input, .na-add select, .na-search input, .na-field select, .na-confirm select {
+  height: 36px; padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--na-edge); background: var(--fill-tertiary);
+  color: var(--text-primary); font: inherit; font-size: 13.5px; min-width: 0; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.na-add input:first-child { flex: 1 1 160px; }
+.na-add .port { width: 86px; }
+.na-add input:focus, .na-add select:focus, .na-search input:focus, .na-field select:focus { outline: none; border-color: var(--apple-blue); box-shadow: 0 0 0 3px var(--tone-sky-glow); }
+
+/* —— explain —— */
+.na-explain { display: grid; gap: 10px; }
+.na-search { display: flex; align-items: center; gap: 8px; padding-left: 14px; border-radius: var(--radius-pill); border: 1px solid var(--na-edge); background: var(--fill-tertiary); color: var(--text-tertiary); min-width: 0; flex: 1 1 200px; }
+.na-search input { flex: 1; border: 0; background: none; height: 36px; padding: 0 12px 0 0; box-shadow: none; }
+.na-search:focus-within { border-color: var(--apple-blue); box-shadow: 0 0 0 3px var(--tone-sky-glow); }
+.na-verdict { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: var(--radius-lg); animation: naRise 0.35s var(--na-spring); }
+.na-verdict > div { flex: 1; min-width: 0; }
+.na-verdict p { margin: 4px 0 0; font-size: 13px; color: var(--text-secondary); }
+.na-verdict small { color: var(--text-tertiary); }
+.na-verdict.yes { background: var(--success-bg); box-shadow: inset 0 0 0 1px var(--success-border); }
+.na-verdict.no { background: var(--danger-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent); }
+.na-verdict-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: #fff; flex: none; animation: naPop 0.4s var(--na-spring); }
+.na-verdict.yes .na-verdict-icon { background: var(--na-green); }
+.na-verdict.no .na-verdict-icon { background: var(--danger); }
+.na-refused { padding: 12px 14px; border-radius: var(--radius-lg); background: var(--danger-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 25%, transparent); }
+.na-refused b { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--danger); }
+.na-refused ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.na-refused li { display: flex; align-items: center; gap: 10px; }
+.na-refused li .mono { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.na-refused small { color: var(--text-secondary); }
+
+/* —— timed change ring —— */
+.na-grant { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: var(--radius-xl); background: var(--na-glass); box-shadow: inset 0 0 0 1px var(--na-edge); }
+.na-grant > div { flex: 1; display: grid; }
+.na-grant b { font-size: 18px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.na-grant small { color: var(--text-secondary); font-size: 12px; }
+.na-grant .track { fill: none; stroke: var(--fill-tertiary); stroke-width: 4; }
+.na-grant .arc { fill: none; stroke: var(--na-amber); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 5px var(--na-amber)); }
+.na-grant svg { color: var(--na-amber); flex: none; }
+.na-confirm { padding: 14px 16px; border-radius: var(--radius-xl); background: var(--danger-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent); animation: naRise 0.35s var(--na-spring); }
+.na-confirm p { margin: 0 0 10px; font-size: 13.5px; line-height: 1.45; }
+
+/* —— wizard —— */
+.na-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.na-wizard { padding: 16px; border-radius: var(--radius-2xl); background: var(--na-glass); box-shadow: inset 0 0 0 1px var(--na-edge); display: grid; gap: 14px; animation: naRise 0.4s var(--na-spring); }
+.na-steps { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
+.na-steps-bar { position: absolute; top: 13px; left: 16.6%; right: 16.6%; height: 3px; border-radius: 3px; background: var(--fill-tertiary); overflow: hidden; }
+.na-steps-bar i { display: block; height: 100%; width: calc(var(--p) * 100%); background: linear-gradient(90deg, var(--apple-blue), var(--na-green)); transition: width 0.6s var(--na-spring); }
+.na-steps li { position: relative; z-index: 1; display: grid; justify-items: center; gap: 6px; font-size: 12px; color: var(--text-tertiary); }
+.na-steps li b { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--bg-elevated); box-shadow: inset 0 0 0 1px var(--na-edge); font-size: 12px; transition: all 0.4s var(--na-spring); }
+.na-steps li.now { color: var(--text-primary); }
+.na-steps li.now b { background: var(--apple-blue); color: #fff; box-shadow: 0 0 0 5px var(--tone-sky-glow); }
+.na-steps li.done b { background: var(--na-green); color: #fff; }
+.na-step { display: grid; gap: 12px; animation: naSlide 0.4s var(--ease-apple); }
+.na-step p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.na-live { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--na-amber); }
+.na-live i { width: 8px; height: 8px; border-radius: 50%; background: var(--na-amber); animation: naPulse 1.6s ease-out infinite; }
+.na-seen, .na-pick { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.na-seen li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 12px; border-radius: var(--radius-md); background: var(--fill-tertiary); animation: naRise 0.3s var(--na-spring); }
+.na-seen small, .na-pick small { color: var(--text-secondary); }
+.na-pick label { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--fill-tertiary); cursor: pointer; transition: background 0.2s; }
+.na-pick label:hover { background: var(--hover-fill-strong); }
+.na-pick input { width: 17px; height: 17px; accent-color: var(--apple-blue); }
+.na-done { justify-items: center; text-align: center; }
+.na-done .ring { fill: none; stroke: var(--na-green); stroke-width: 3; stroke-dasharray: 151; stroke-dashoffset: 151; animation: naDraw 0.7s var(--ease-apple) forwards; }
+.na-done .tick { fill: none; stroke: var(--na-green); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; animation: naDraw 0.5s 0.5s var(--ease-apple) forwards; }
+
+/* —— loading skeleton —— */
+.na-skel { height: 56px; border-radius: var(--radius-xl); background: linear-gradient(100deg, var(--fill-tertiary) 30%, var(--hover-fill-strong) 50%, var(--fill-tertiary) 70%); background-size: 200% 100%; animation: naShimmer 1.4s linear infinite; }
+.na-skel.tall { height: 180px; }
+.na-loading { gap: 12px; }
+
+/* —— fleet page —— */
+.na-page { padding-bottom: 48px; }
+.na-inner { width: 100%; max-width: var(--page-max); margin: 0 auto; padding: 8px var(--page-gutter) 28px; display: grid; gap: 18px; min-width: 0; }
+.na-detail { background: var(--pane); border-top: 1px solid var(--na-edge); }
+.na-detail .na { max-width: 980px; }
+.na-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
+.na-stat {
+  display: grid; gap: 2px; text-align: left; padding: 14px 16px; border-radius: var(--radius-xl); border: 1px solid var(--na-edge); background: var(--na-glass); color: var(--text-primary);
+  transition: transform 0.4s var(--na-spring), box-shadow 0.3s, border-color 0.2s;
+}
+button.na-stat:hover { transform: translateY(-3px); box-shadow: 0 16px 30px -18px color-mix(in srgb, var(--na-tone) 80%, transparent); }
+.na-stat.on { border-color: var(--na-tone); box-shadow: 0 0 0 1px var(--na-tone), 0 12px 30px -14px color-mix(in srgb, var(--na-tone) 85%, transparent); }
+.na-stat b { font-size: 30px; font-weight: 650; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--na-tone); line-height: 1.1; }
+.na-stat.tone-gray b { color: var(--text-primary); }
+.na-stat span { font-size: 12.5px; color: var(--text-secondary); }
+.na-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.na-chipbtn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--na-edge); background: var(--fill-tertiary); color: var(--text-secondary); font-size: 13px; transition: all 0.25s var(--na-spring); }
+.na-chipbtn:hover { color: var(--text-primary); transform: translateY(-1px); }
+.na-chipbtn.on { background: var(--apple-blue); border-color: transparent; color: #fff; }
+.na-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; margin-left: auto; }
+.na-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.na-toggle span { position: relative; width: 38px; height: 22px; border-radius: 11px; background: var(--fill-tertiary); box-shadow: inset 0 0 0 1px var(--na-edge); transition: background 0.25s; }
+.na-toggle span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); transition: transform 0.35s var(--na-spring); }
+.na-toggle input:checked + span { background: var(--na-green); }
+.na-toggle input:checked + span::after { transform: translateX(16px); }
+.na-toggle input:focus-visible + span { outline: 2px solid var(--apple-blue); outline-offset: 2px; }
+.na-empty { text-align: center; padding: 32px 0; }
+.na-heat { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr)); gap: 10px; }
+.na-tile {
+  position: relative; display: grid; gap: 2px; text-align: left; padding: 13px 14px 12px; border-radius: var(--radius-xl); border: 1px solid color-mix(in srgb, var(--na-tone) 30%, var(--na-edge));
+  color: var(--text-primary); overflow: hidden;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--na-tone) 16%, var(--bg-elevated)), var(--bg-elevated));
+  transition: transform 0.4s var(--na-spring), box-shadow 0.3s;
+  animation: naRise 0.5s var(--na-spring) backwards;
+}
+.na-tile b { font-size: 14px; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.na-tile small { color: var(--text-secondary); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.na-tile.off { opacity: 0.6; }
+.na-tile:hover { transform: translateY(-4px) scale(1.015); box-shadow: 0 18px 34px -18px color-mix(in srgb, var(--na-tone) 85%, transparent); }
+.na-tile.on { box-shadow: 0 0 0 2px var(--apple-blue), 0 18px 34px -18px rgba(0, 113, 227, 0.7); }
+.na-tile-foot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.na-tile-foot em { font-style: normal; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--danger); color: #fff; }
+.na-tile-foot svg { color: var(--na-amber); }
+.na-tile.heat-1::before, .na-tile.heat-2::before, .na-tile.heat-3::before {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; border: 2px solid var(--na-danger); opacity: 0;
+  animation: naHeat 2.4s ease-out infinite;
+}
+.na-tile.heat-2::before { animation-duration: 1.6s; }
+.na-tile.heat-3::before { animation-duration: 1s; border-width: 3px; }
+.na-detail { display: grid; gap: 12px; }
+.na-detail-head { display: flex; align-items: center; justify-content: space-between; }
+.na-detail-head h3 { margin: 0; font-size: 17px; letter-spacing: -0.02em; }
+
+/* —— bulk sheet —— */
+.na-sheet-back { position: fixed; inset: 0; z-index: 90; background: rgba(0, 0, 0, 0.45); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: flex; justify-content: flex-end; animation: naFade 0.25s var(--ease-apple); }
+.na-sheet { width: min(440px, 100%); height: 100%; overflow: auto; padding: 24px; display: grid; gap: 14px; align-content: start; background: var(--bg-elevated); border-left: 1px solid var(--na-edge); box-shadow: -30px 0 60px -30px rgba(0, 0, 0, 0.6); animation: naSheet 0.45s var(--na-spring); }
+.na-sheet header { display: flex; align-items: center; justify-content: space-between; }
+.na-sheet h3 { margin: 0; font-size: 19px; letter-spacing: -0.02em; }
+.na-field { display: grid; gap: 6px; font-size: 12.5px; color: var(--text-secondary); }
+.na-field select { width: 100%; }
+.na-plan { padding: 12px 14px; border-radius: var(--radius-lg); background: var(--fill-tertiary); }
+.na-plan ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; max-height: 260px; overflow: auto; }
+.na-plan li { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; }
+.na-plan li.same small { color: var(--text-faint); }
+.na-plan li.bad small { color: var(--danger); }
+
+.na .spin, .na-page .spin, .na-sheet .spin { animation: naSpin 1s linear infinite; }
+
+@keyframes naRise { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes naSlide { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@keyframes naChipIn { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: none; } }
+@keyframes naPop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes naFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes naSheet { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes naShimmer { to { background-position: -200% 0; } }
+@keyframes naPulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--na-amber) 60%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
+@keyframes naHeat { 0% { opacity: 0.85; transform: scale(1); } 100% { opacity: 0; transform: scale(1.06); } }
+@keyframes naDraw { to { stroke-dashoffset: 0; } }
+@keyframes naSpin { to { transform: rotate(360deg); } }
+@keyframes naBreathe { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.12); opacity: 1; } }
+@keyframes naSweep { to { transform: translateX(120%); } }
+
+.na-breathe { transform-origin: center; animation: naBreathe 3.4s ease-in-out infinite; }
+.na-dest { animation: naRise 0.5s var(--na-spring) backwards; }
+.na-btn.shimmer::after { animation: naSweep 2.2s ease-in-out infinite; }
+
+@media (max-width: 560px) {
+  .na-seg button { font-size: 12px; gap: 4px; padding: 0 2px; }
+  .na-seg button svg { display: none; }
+  .na-stat b { font-size: 24px; }
+  .na-toggle { margin-left: 0; }
+  .na-sheet { padding: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .na *, .na-page *, .na-sheet *, .na-sheet-back, .na-breathe, .na-dest, .na-tile, .na-tile::before {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+  .na-done .ring, .na-done .tick { stroke-dashoffset: 0; }
+}

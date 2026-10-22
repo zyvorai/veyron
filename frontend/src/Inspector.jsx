@@ -6,6 +6,7 @@ import {
 import { Status, Spark } from './status.jsx';
 import { api } from './api.js';
 import { VmGuest, VmDisks, VmRelay } from './VmExtras.jsx';
+import { VmNetworkAccess } from './NetworkAccess.jsx';
 
 export const ACT = {
   start: ['Start', Play],
@@ -419,7 +420,7 @@ export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi }) {
       : [['Events', loadingExtra ? 'Loading…' : 'No recent events']];
 
   const isVm = res.kind === 'VirtualMachine';
-  const tabNames = isVm ? ['Info', 'Events', 'Guest', 'Ops'] : ['Info', 'Events'];
+  const tabNames = isVm ? ['Info', 'Events', 'Guest', 'Network', 'Ops'] : ['Info', 'Events'];
   const acts = resolveActs(res, row);
   const primary = acts.slice(0, 4);
   const more = acts.slice(4);
@@ -484,6 +485,8 @@ export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi }) {
         <VmOps row={row} onDone={(l) => onOpsDone?.(l)} />
       ) : tab === 'Guest' && isVm ? (
         <VmGuest row={row} />
+      ) : tab === 'Network' && isVm ? (
+        <VmNetworkAccess row={row} />
       ) : (
         <div className="form">
           {(tab === 'Events' ? eventRows : infoRows).map(([l, v], i) => (
