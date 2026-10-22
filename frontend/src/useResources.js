@@ -23,6 +23,8 @@ export const CORE_KEYS = ['vms', 'hosts', 'pvcs', 'alerts', 'templates'];
 const LAZY_KEYS = new Set([
   'pods', 'recommendations', 'events', 'incidents', 'findings', 'audit',
   'operators', 'helm', 'quotas', 'crds', 'workloads', 'orphans', 'schedules', 'netpols',
+  // KubeVirt-only route (501 on Kairon): never request it at boot, only when its page is open.
+  'migrations',
 ]);
 
 const VEYRON_CR_KINDS = ['veyronvms', 'blueprints', 'policies', 'insights', 'actions'];
