@@ -996,7 +996,7 @@ export const api = {
   forkPlan: async (ns, name, body) =>
     unwrap(await request(`${vmPath(ns, name)}/fork/plan`, { method: 'POST', body: JSON.stringify(body || {}) })),
   vmRuntimeEvents: async (ns, name, { event = '', limit = 100 } = {}) =>
-    unwrap(await request(`${vmPath(ns, name)}/events?limit=${limit}${event ? `&event=${encodeURIComponent(event)}` : ''}`)),
+    unwrap(await request(`${vmPath(ns, name)}/runtime-events?limit=${limit}${event ? `&event=${encodeURIComponent(event)}` : ''}`)),
   // Network access (per-VM egress policy), Kairon backend.
   egressPresets: async (template = '') =>
     unwrap(await request(`/api/v1/egress/presets${template ? `?template=${encodeURIComponent(template)}` : ''}`)),
