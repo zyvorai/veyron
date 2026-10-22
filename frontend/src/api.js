@@ -978,6 +978,7 @@ export const api = {
   putPlacement: async (ns, name, body) =>
     unwrap(await request(`${vmPath(ns, name)}/placement`, { method: 'PUT', body: JSON.stringify(body || {}) })),
   migrationAdvice: async () => unwrap(await request('/api/v1/kairon/advice/migrations')),
+  vmStudioLink: async (ns, name) => unwrap(await request(`${vmPath(ns, name)}/studio`)),
   vmScreenshot: async (ns, name, maxWidth = 1280) => {
     const token = getToken();
     const resp = await fetch(`${vmPath(ns, name)}/screenshot?max_width=${maxWidth}`, {

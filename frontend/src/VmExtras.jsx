@@ -435,6 +435,7 @@ export function VmRelay({ row }) {
   const [netPolicy, setNetPolicy] = useState(null);
   const [placement, setPlacement] = useState('');
   const [shot, setShot] = useState(null);
+  const [studio, setStudio] = useState('');
   const [typed, setTyped] = useState('');
 
   const run = async (label, fn) => {
@@ -742,6 +743,23 @@ export function VmRelay({ row }) {
         >
           Apply allow-list
         </button>
+      </div>
+
+      <div className="ops-row">
+        <span>
+          FluxVM Studio<small>the node's own web UI, through the node relay (sign in with the relay token; reach it over a VPN or SSH tunnel)</small>
+        </span>
+        <span className="ops-acts">
+          {studio ? (
+            <a className="btn sm secondary" href={studio} target="_blank" rel="noopener noreferrer">
+              Open
+            </a>
+          ) : (
+            <button className="btn sm secondary" disabled={!!busy} onClick={() => run('studio', async () => setStudio((await api.vmStudioLink(ns, name))?.url || ''))}>
+              Get link
+            </button>
+          )}
+        </span>
       </div>
 
       <div className="ops-row">

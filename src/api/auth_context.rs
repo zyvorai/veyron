@@ -50,7 +50,7 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
             return ApiRole::Admin;
         }
         // The display shows whatever the guest shows; FluxVM itself makes both Admin-only.
-        if path.ends_with("/screenshot") || path.ends_with("/input") {
+        if path.ends_with("/screenshot") || path.ends_with("/input") || path.ends_with("/studio") {
             return ApiRole::Admin;
         }
         if path.ends_with("/tunnel")
@@ -249,6 +249,14 @@ mod tests {
         assert_eq!(
             r(Method::POST, "/api/v1/vms/ns/vm/egress-check"),
             ApiRole::Write
+        );
+    }
+
+    #[test]
+    fn the_studio_link_is_admin_only() {
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/vms/ns/vm/studio"),
+            ApiRole::Admin
         );
     }
 
