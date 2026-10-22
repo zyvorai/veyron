@@ -382,10 +382,7 @@ async fn capabilities(
 /// Where FluxVM Studio (the node daemon's web UI) is reachable for the node this Machine runs on: the kairon-node
 /// relay's `/studio/console/`. Admin only, because signing in there takes the relay token, and the relay port is
 /// firewalled to the node and pod range, so the link works from a VPN or an SSH tunnel, not from the internet.
-async fn studio_link(
-    State(s): State<SharedState>,
-    Path((ns, n)): Path<(String, String)>,
-) -> Reply {
+async fn studio_link(State(s): State<SharedState>, Path((ns, n)): Path<(String, String)>) -> Reply {
     let t = target(&s, &ns, &n).await?;
     Ok(Json(json!({ "url": studio_url(&t.base_url) })).into_response())
 }
@@ -790,8 +787,14 @@ async fn node_branch_start_plan(
 mod tests {
     #[test]
     fn the_studio_url_is_the_relays_studio_console() {
-        assert_eq!(super::studio_url("http://10.0.0.5:8092"), "http://10.0.0.5:8092/studio/console/");
-        assert_eq!(super::studio_url("https://n:8092/"), "https://n:8092/studio/console/");
+        assert_eq!(
+            super::studio_url("http://10.0.0.5:8092"),
+            "http://10.0.0.5:8092/studio/console/"
+        );
+        assert_eq!(
+            super::studio_url("https://n:8092/"),
+            "https://n:8092/studio/console/"
+        );
     }
 
     use super::*;
