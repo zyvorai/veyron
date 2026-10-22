@@ -52,6 +52,50 @@ answer 404, which Veyron reports as 502.
 | `GET /kairon/:kind?namespace=` | Read-only: `claims`, `quotas`, `disruption-budgets`, `migration-policies`, `backup-policies`, `protection-plans`, `accelerator-profiles`, `node-topologies` (core group `kairon.zyvor.dev`; the last two are cluster-scoped) and the fleet group `fleet.kairon.zyvor.dev/v1alpha1`: `virtual-networks`, `network-claims`, `balance-policies`, `autoscalers`, `recovery-plans`, `ha-profiles`, `backup-groups`, `import-plans`, `template-versions`, `template-claims`, `usage-ledgers`, `node-fence-requests`, `action-approvals`. |
 | `POST/GET /containers`, `GET/DELETE /containers/:ns/:name` | OCI container Machines (`spec.sandbox.oci`). FluxVM runs these on **macOS hosts only**; they get a `kubernetes.io/os=darwin` selector unless `node_selector` says otherwise. No exec or files yet. Env names that look like credentials produce a warning: Machine objects are not secret. |
 
+## Network access (per-VM egress)
+
+A guest on QEMU user-mode (slirp) networking has no host-visible interface: its traffic is
+re-originated by the VM's QEMU process, which FluxVM governs with an eBPF hook on the VM's
+cgroup. That hook used to allow loopback only, so such a guest reached nothing at all — not the
+package mirror, not Veyron (no guest agent, no exec/files). It is now policy-driven:
+`spec.network.egress` on the Machine = `{mode, rules[]}`, `mode` one of `loopback` (default),
+`allowlist`, `audit` (allow everything, record what an allow-list would refuse) or `open`; a rule is
+`{cidr, proto: any|tcp|udp, port, note}`. IPv4 only. Because the kernel returns only the longest
+matching prefix, a narrow rule inherits the ports of covering rules, and one network may carry at
+most **4 distinct (proto, port)** after that; Veyron validates exactly like the node and answers 422
+with the offending network.
+
+**The Machine spec is the source of truth.** kairon-node reconciles it over FluxVM, so Veyron writes
+by patching `spec.network.egress` (pinned to the `resourceVersion` it read; 409 on a concurrent edit)
+and uses the relay only to read live state, observed flows and suggestions, and for node defaults.
+
+**Cilium rewrites before the filter.** Socket LB turns a ClusterIP/NodePort destination into the
+backend pod address first, so the filter sees `<pod ip>:5151`, not the node IP. Platform rules
+therefore cover the pod network (`VEYRON_POD_CIDR`, else the pod's `POD_IP` /16, else `10.0.0.0/8`)
+on the API port, plus the service IP (`VEYRON_API_CLUSTER_IP` / `VEYRON_API_SERVICE_HOST`), the node
+NodePort and cluster DNS. `GET /egress/presets` returns them resolved for this cluster. `hostPort`
+traffic to the node IP is not rewritten; guests use the NodePort.
+
+| Route | |
+|---|---|
+| `GET /egress/presets[?template=]` | Isolated · Platform only · Platform + package mirrors (Ubuntu: Canonical archive ranges; others: public web ports, since their mirrors sit on CDNs) · Web access (public addresses on 80/443 + DNS, private ranges stay closed) · Private networks · Learn mode (audit) · Open. Each has `risk`, `mode`, resolved `rules`, `needs`. |
+| `GET /vms/:ns/:name/egress` | Policy, what the node enforces (`programmed`), observed refused flows, `problems[]` with ready-made `fix` (blocked guest agent, drift, not enforced, open), pending timed `grant`. |
+| `PUT /vms/:ns/:name/egress` (Admin) | `{preset?, mode?, rules?, expires_in?}`. A preset plus `rules` adds to it; `rules` alone replaces. `expires_in` (`30m`, `2h`, `1d`) records a ConfigMap `veyron.io/type=egress-grant` and the scheduler tick restores the previous policy. |
+| `DELETE /vms/:ns/:name/egress` (Admin), `DELETE …/egress/grant` (Admin) | Follow the node default again; end a timed change now. |
+| `GET …/egress/observed`, `POST …/egress/suggest` (Write) | Destinations refused (or, in audit mode, that would be); the rules that would allow them, with a validated preview of the merged policy. Applying is a `PUT` with the rules you accept. |
+| `GET/POST …/egress/explain` | `{host, port, proto}` → per-address verdict, the allowing rule, or the single rule that would fix it. |
+| `GET /egress/overview[?live=true]`, `POST /egress/apply` (Admin) | Fleet counts by mode; apply a preset/rules to a `selector` (`namespaces`, `names`, `labels`, or `all`). **Dry run by default**, at most 500 VMs. |
+| `GET/PUT /nodes/:name/egress-defaults[?apply_running=true]` (Admin) | The node default for VMs without a policy of their own. |
+
+`POST /vms` takes `network_access: {preset, mode, rules}`. Without it, a **Linux** VM on **user-mode**
+networking gets the default preset (`platform-packages`, so the agent connects out of the box):
+namespace annotation `veyron.io/default-egress-preset`, else `VEYRON_VM_DEFAULT_EGRESS_PRESET`
+(`none` = inherit the node default). Bridged guests, Windows, ISO installs and VMs of unknown origin
+are left to the node. Sandboxes get `platform-packages` (with internet) or `platform`
+(`VEYRON_SANDBOX_EGRESS_PRESET` overrides). Every change goes through the mutating-request audit
+trail. Needs FluxVM `bbd5fc38`+ and a kairon-node that reconciles the field; older nodes answer 404/502
+on the live reads, which Veyron reports as "update FluxVM" instead of failing.
+
 ## Defaults
 
 New VMs get a `spec.lifecycle` from the namespace annotations `veyron.io/default-idle-seconds`,
@@ -63,8 +107,9 @@ reversible). A lifecycle set on the VM itself always wins.
 ## AI tools
 
 Read: `vm_runtime_events`, `vm_pressure`, `vm_network_drops`, `vm_lifecycle`,
-`vm_network_policy`, `node_runtime_memory`, `migration_advice`, `kairon_resources`. Proposal-only changes:
-`set_vm_lifecycle`, `set_vm_network_policy`, `quiesced_snapshot_vm`. They are also served over
+`vm_network_policy`, `vm_egress`, `egress_explain`, `egress_overview`, `node_runtime_memory`,
+`migration_advice`, `kairon_resources`. Proposal-only changes: `set_vm_lifecycle`,
+`set_vm_network_policy`, `set_vm_egress` (Admin), `quiesced_snapshot_vm`. They are also served over
 `POST /mcp` with the same role filtering.
 
 ## Securing the relay
