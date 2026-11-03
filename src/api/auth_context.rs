@@ -126,6 +126,19 @@ mod tests {
     }
 
     #[test]
+    fn write_required_for_snapshot_create() {
+        // The documented `POST /snapshots` create route: Write, not open to readonly.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/snapshots"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/snapshots/default/my-vm/create"),
+            ApiRole::Write
+        );
+    }
+
+    #[test]
     fn admin_required_for_snapshot_restore() {
         assert_eq!(
             min_role_for_route(&Method::POST, "/api/v1/snapshots/default/my-snap/restore"),
