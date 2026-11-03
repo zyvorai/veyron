@@ -180,6 +180,20 @@ impl VmInfo {
             .and_then(|s| s.printable_status.clone())
             .unwrap_or_else(|| "Unknown".to_string());
 
+        // A freshly created VM reports no status (or "Stopped") until KubeVirt's
+        // controller reconciles it. If it is meant to run, show "Starting"
+        // instead of flashing "Stopped"/"Unknown".
+        let wants_running = vm.spec.running == Some(true)
+            || matches!(
+                vm.spec.run_strategy.as_deref(),
+                Some("Always") | Some("RerunOnFailure")
+            );
+        let status = if wants_running && matches!(status.as_str(), "Stopped" | "Unknown") {
+            "Starting".to_string()
+        } else {
+            status
+        };
+
         let ready = vm.status.as_ref().and_then(|s| s.ready).unwrap_or(false);
 
         // Extract CPU and memory from spec
