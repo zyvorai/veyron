@@ -171,6 +171,11 @@ records are ConfigMaps labeled `veyron.io/type=image-capture` in the API namespa
 Query `?namespace=all` for cluster-wide lists. `GET /vms` leaves agent sandbox VMs out unless
 you pass `include_sandboxes=true` or ask for their namespace.
 
+Creating a snapshot (`POST /snapshots`, or `POST /snapshots/:ns/:vm/create`) takes the VM as
+`vm_name` and an optional `name` (`snapshot_name` also works); a VM that doesn't exist returns
+`404` and creates nothing. A VM that is meant to run reports `status: "Starting"` until the engine
+confirms it, so a just-created VM never reads `Stopped`.
+
 Snapshot schedules take standard five-field cron (`minute hour day month weekday`, UTC), for
 example `0 2 * * *`; Veyron stores it with a leading seconds field (`0 0 2 * * *`). Six-field
 expressions are accepted unchanged.
