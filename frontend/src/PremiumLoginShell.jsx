@@ -20,6 +20,7 @@ export function PremiumLoginShell({
   footer,
   formClassName = '',
   showSignInChapter = true,
+  marketing,
   children,
 }) {
   const tagline =
@@ -54,6 +55,8 @@ export function PremiumLoginShell({
             {chapterNote ? <p className="login-chapter-note">{chapterNote}</p> : null}
           </div>
         </section>
+
+        {marketing}
 
         {showSignInChapter && children ? (
           <section id="login-sign-in" className="login-chapter login-chapter-sign-in" aria-label="Credentials">

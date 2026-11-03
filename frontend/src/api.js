@@ -156,9 +156,11 @@ function parseMemGi(v) {
   if (!m) return Number(s) || 0;
   const n = parseFloat(m[1]);
   const u = (m[2] || 'Gi').toLowerCase();
-  if (u.startsWith('mi') || u === 'm') return Math.round(n / 1024);
-  if (u.startsWith('ki') || u === 'k') return Math.round(n / 1024 / 1024);
-  return Math.round(n);
+  // One decimal so a 512Mi VM reads 0.5 GiB instead of rounding up to 1.
+  const r1 = (x) => Math.round(x * 10) / 10;
+  if (u.startsWith('mi') || u === 'm') return r1(n / 1024);
+  if (u.startsWith('ki') || u === 'k') return r1(n / 1024 / 1024);
+  return r1(n);
 }
 
 function parseDiskGb(v) {

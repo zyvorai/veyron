@@ -681,3 +681,36 @@ a.login-cta-secondary:active {
 @keyframes login-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Marketing chapter (between hero and sign-in) ───────────────────────── */
+.login-chapter-marketing { background: hsl(0 0% 100%); justify-content: flex-start; }
+.lm-wrap { width: 100%; max-width: 78rem; margin-inline: auto; }
+.lm-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent, #0071e3); margin: 0 0 0.5rem; }
+.lm-title { font-family: var(--font-display); font-size: clamp(1.9rem, 4.2vw, 3.25rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.08; margin: 0; max-width: 20ch; text-wrap: balance; }
+.lm-lede { font-size: 1.1rem; line-height: 1.45; color: hsl(240 4% 38%); max-width: 56ch; margin: 0.9rem 0 0; }
+.lm-stats { display: grid; grid-template-columns: repeat(4, 1fr); margin: 2.5rem 0; border-block: 1px solid hsl(240 6% 90%); }
+.lm-stat { padding: 1.5rem 1rem; text-align: center; }
+.lm-stat + .lm-stat { border-left: 1px solid hsl(240 6% 90%); }
+.lm-stat b { display: block; font-family: var(--font-display); font-size: clamp(1.75rem, 3.4vw, 2.6rem); font-weight: 600; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.lm-stat span { display: block; margin-top: 0.25rem; font-size: 0.85rem; color: hsl(240 4% 40%); }
+.lm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.lm-card { padding: 1.5rem; border-radius: 18px; background: hsl(240 5% 97%); border: 1px solid hsl(240 6% 92%); text-align: left; transition: transform .2s ease, box-shadow .2s ease; }
+.lm-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgb(0 0 0 / 0.07); }
+.lm-card svg { color: var(--accent, #0071e3); }
+.lm-card h3 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; letter-spacing: -0.02em; margin: 0.9rem 0 0.35rem; }
+.lm-card p { margin: 0; font-size: 0.95rem; line-height: 1.45; color: hsl(240 4% 38%); }
+.lm-subtitle { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; letter-spacing: -0.03em; margin: 3rem 0 1rem; text-align: left; }
+.lm-steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.lm-step { display: flex; gap: 0.85rem; align-items: flex-start; padding: 1.25rem; border-radius: 16px; border: 1px solid hsl(240 6% 90%); text-align: left; }
+.lm-step svg { color: var(--accent, #0071e3); flex: none; margin-top: 2px; }
+.lm-step b { display: block; font-weight: 600; }
+.lm-step p { margin: 0.25rem 0 0; font-size: 0.92rem; color: hsl(240 4% 38%); line-height: 1.4; }
+.lm-step-n { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent, #0071e3); color: #fff; font-size: 0.8rem; font-weight: 600; display: grid; place-items: center; }
+.lm-foot { margin: 2.5rem 0 0; font-size: 0.85rem; color: hsl(240 4% 45%); text-align: center; }
+@media (max-width: 900px) {
+  .lm-grid, .lm-steps { grid-template-columns: 1fr; }
+  .lm-stats { grid-template-columns: repeat(2, 1fr); }
+  .lm-stat:nth-child(3) { border-left: 0; }
+  .lm-stat:nth-child(n+3) { border-top: 1px solid hsl(240 6% 90%); }
+}
+@media (min-width: 901px) and (max-width: 1180px) { .lm-grid { grid-template-columns: repeat(2, 1fr); } }

@@ -16,6 +16,9 @@ import { Table } from './Table.jsx';
 import { Inspector, ACT } from './Inspector.jsx';
 import { PageHero } from './PageHero.jsx';
 import { Mission, ConsoleHub, SettingsPage, ConsoleSheet, NewSheet, Login } from './pages.jsx';
+import { VmWizard } from './VmWizard.jsx';
+import { CommandPalette } from './CommandPalette.jsx';
+import { canAct, canMutate, normRole } from './roles.js';
 import { MonitoringPage, TopologyPage, DrPage, PacketWolfPage } from './chapters.jsx';
 import { Status } from './status.jsx';
 import { usePageSwipe } from './usePageSwipe.js';
@@ -78,6 +81,8 @@ export default function App() {
   const [healthOk, setHealthOk] = useState(true);
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [palette, setPalette] = useState(false);
+  const role = normRole(user?.role);
   const back = useRef([]);
 
   const showToast = useCallback((msg, err = false) => {
@@ -291,6 +296,10 @@ export default function App() {
   };
 
   const act = async (a, ids = selected) => {
+    if (!canAct(role, a)) {
+      showToast(`Your ${role} role can't ${ACT[a]?.[0]?.toLowerCase() || a}`, true);
+      return;
+    }
     setMenu(null);
     if (a === 'console') {
       if (!focus && !(ids instanceof Set && ids.size)) {
@@ -553,7 +562,11 @@ export default function App() {
         setSheet(null);
         setShowBell(false);
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'n' && res) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPalette((o) => !o);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n' && res && canMutate(role)) {
         e.preventDefault();
         setSheet('new');
       }
@@ -579,7 +592,7 @@ export default function App() {
       window.removeEventListener('keydown', k);
       window.removeEventListener('click', c);
     };
-  }, [rows, res]);
+  }, [rows, res, role]);
 
   if (!authed) {
     return <Login onSubmit={onLogin} error={loginErr} />;
@@ -617,7 +630,21 @@ export default function App() {
         ? focusRow
         : null;
 
-  const canCreate = !!(res?.canCreate || (!res && page === 'mission'));
+  const canCreate = canMutate(role) && !!(res?.canCreate || (!res && page === 'mission'));
+
+  const paletteItems = [
+    ...(canMutate(role)
+      ? [{ id: 'a-new-vm', group: 'Actions', label: 'Create a virtual machine', hint: 'Ctrl/Cmd+N', run: () => { setPage('vms'); setSheet('new'); } }]
+      : []),
+    { id: 'a-refresh', group: 'Actions', label: 'Refresh data', run: () => load() },
+    { id: 'a-theme', group: 'Actions', label: theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme', run: () => setTheme(theme === 'dark' ? 'light' : 'dark') },
+    { id: 'a-out', group: 'Actions', label: 'Sign out', run: onLogout },
+    ...NAV.flatMap((g) => g.items.map(([id, l]) => ({ id: `p-${id}`, group: 'Go to', label: l || data[id]?.l || id, hint: g.g, run: () => go(id) }))),
+    ...data.vms.rows.slice(0, 200).map((v) => ({
+      id: `v-${v.id}`, group: 'Virtual machines', label: v.name, hint: v.status,
+      run: () => { go('vms', v.id); },
+    })),
+  ];
 
   return (
     <div className="vy" data-theme={theme}>
@@ -899,7 +926,7 @@ export default function App() {
                   <div className="bulk">
                     <b>{selected.size} selected</b>
                     {res.acts
-                      .filter((a) => a !== 'console' && a !== 'logs')
+                      .filter((a) => a !== 'console' && a !== 'logs' && canAct(role, a))
                       .map((a) => {
                         const [l, I] = ACT[a] || [a, Activity];
                         return (
@@ -933,6 +960,7 @@ export default function App() {
 
         {res && (
           <Inspector
+            role={role}
             res={res}
             row={focusRow}
             hide={!showInsp}
@@ -946,7 +974,26 @@ export default function App() {
         {sheet === 'console' && sheetTarget && (
           <ConsoleSheet vm={sheetTarget} mode={sheetMode} onClose={() => setSheet(null)} />
         )}
-        {sheet === 'new' && (res || data.vms)?.canCreate && (
+        {sheet === 'new' && canMutate(role) && (res || data.vms)?.kind === 'VirtualMachine' && (
+          <VmWizard
+            templates={data.templates.rows}
+            hosts={data.hosts.rows}
+            vms={data.vms.rows}
+            existingNames={data.vms.rows.filter((v) => (v.ns || 'default') === 'default').map((v) => v.name)}
+            onClose={() => setSheet(null)}
+            onCreate={async (body) => {
+              try {
+                await api.createVm({ ...body, namespace: 'default' });
+                setSheet(null);
+                await load();
+                showToast(`Created ${body.name}`);
+              } catch (e) {
+                showToast(e.message || String(e), true);
+              }
+            }}
+          />
+        )}
+        {sheet === 'new' && canMutate(role) && (res || data.vms)?.canCreate && (res || data.vms)?.kind !== 'VirtualMachine' && (
           <NewSheet
             res={res || data.vms}
             templates={data.templates.rows}
@@ -957,10 +1004,16 @@ export default function App() {
         )}
       </div>
 
+      <CommandPalette
+        open={palette}
+        onClose={() => setPalette(false)}
+        items={paletteItems}
+      />
+
       {menu && res && (
         <div className="menu" style={{ left: menu.x, top: menu.y }} onClick={(e) => e.stopPropagation()}>
           {(res.acts || [])
-            .filter((a) => a !== 'delete')
+            .filter((a) => a !== 'delete' && canAct(role, a))
             .map((a) => {
               const [l, I] = ACT[a] || [a, Activity];
               return (
@@ -979,7 +1032,7 @@ export default function App() {
             <Info size={14} />
             Get info
           </button>
-          {(res.acts || []).includes('delete') && (
+          {(res.acts || []).includes('delete') && canAct(role, 'delete') && (
             <>
               <hr />
               <button className="danger" onClick={() => act('delete')}>

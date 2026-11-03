@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ChevronRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
   Network, Database, Shield, Settings, User, Lock, Eye, EyeOff, ArrowRight, ChevronLeft, Loader2,
@@ -13,6 +13,7 @@ import {
   LoginRemember,
   LoginError,
 } from './PremiumLoginShell.jsx';
+import { LoginMarketing } from './LoginMarketing.jsx';
 import { VncConsole, LogsPanel } from './VncConsole.jsx';
 import { PageHero } from './PageHero.jsx';
 
@@ -24,6 +25,24 @@ export function Mission({ data, go, hostCount, onCreate }) {
     ...(data.pods?.rows || []).filter((p) => p.status === 'Failed').map((p) => ['pods', p]),
     ...(data.pvcs?.rows || []).filter((p) => p.status === 'Pending').map((p) => ['pvcs', p]),
   ];
+  // Health beyond VM/pod/PVC phase: firing alerts and platform-level conditions (shared storage,
+  // node count). Before this, Mission Control said "All clear" with an alert firing.
+  const [caps, setCaps] = useState(null);
+  useEffect(() => {
+    let off = false;
+    api.platformCapabilities().then((c) => { if (!off) setCaps(c); }).catch(() => {});
+    return () => { off = true; };
+  }, []);
+  const firing = (data.alerts?.rows || []).filter((a) => !/resolved/i.test(String(a.status || '')));
+  attn.push(...firing.map((a) => ['alerts', { ...a, status: 'Degraded' }]));
+  const platformNotes = [];
+  const sc = caps?.storage?.storage_classes || [];
+  const def = sc.find((c) => c.default);
+  if (caps && !def) platformNotes.push(['storage', 'No default StorageClass — new disks need an explicit class.']);
+  else if (def?.node_local) platformNotes.push(['storage', `Default StorageClass “${def.name}” is node-local — VMs can't move between hosts.`]);
+  if (caps && Array.isArray(caps.nodes) ? caps.nodes.length === 1 : (caps?.nodes?.count ?? 0) === 1) {
+    platformNotes.push(['hosts', 'Single node — live migration and host failover are unavailable.']);
+  }
   const word = attn.some(([, r]) => ['Degraded', 'Failed'].includes(r.status)) ? 'Attention' : 'Operational';
   const tone = word === 'Attention' ? 'amber' : 'emerald';
   const why = {
@@ -112,6 +131,18 @@ export function Mission({ data, go, hostCount, onCreate }) {
           <div className="kicker">Fleet</div>
           <h2>Needs attention</h2>
           <p>Resources that aren&apos;t in the state you asked for.</p>
+          {platformNotes.length > 0 && (
+            <div className="rows" style={{ marginBottom: 12 }}>
+              {platformNotes.map(([k, msg]) => (
+                <button key={msg} onClick={() => go(k)}>
+                  <Status s="Pending" />
+                  <b>Platform</b>
+                  <span className="why">{msg}</span>
+                  <ChevronRight size={16} />
+                </button>
+              ))}
+            </div>
+          )}
           <div className="rows">
             {attn.length === 0 ? (
               <button type="button" disabled style={{ opacity: 0.65, cursor: 'default' }}>
@@ -608,7 +639,17 @@ export function Login({ onSubmit, error }) {
 
   const scrollToForm = () => {
     document.getElementById('login-sign-in')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Focus without letting the browser jump-scroll; autoFocus on mount used to skip the
+    // hero and marketing chapters entirely, so visitors only ever saw the form.
+    setTimeout(() => document.getElementById(step === 'password' ? 'password' : 'username')?.focus({ preventScroll: true }), 600);
   };
+
+  // After the identify -> password step switch the user is already at the form: focus the new field.
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) { firstStep.current = false; return; }
+    document.getElementById(step === 'password' ? 'password' : 'username')?.focus({ preventScroll: true });
+  }, [step]);
 
   const handleContinue = (e) => {
     e.preventDefault();
@@ -694,6 +735,7 @@ export function Login({ onSubmit, error }) {
           </>
         ) : null
       }
+      marketing={<LoginMarketing />}
       showSignInChapter
     >
       {step === 'identify' ? (
@@ -712,7 +754,6 @@ export function Login({ onSubmit, error }) {
                 className="login-input"
                 placeholder="Username"
                 autoComplete="username"
-                autoFocus
                 required
               />
             </LoginField>
@@ -745,7 +786,6 @@ export function Login({ onSubmit, error }) {
                 className="login-input pr-11"
                 placeholder="Password"
                 autoComplete="current-password"
-                autoFocus
                 required
                 disabled={submitting}
               />

@@ -1,4 +1,5 @@
 :root {
+  --content-max: 1560px; /* content column cap; was 980px which left wide screens mostly empty */
   --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font: var(--font-text);
@@ -450,7 +451,7 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 }
 .apple-band-paper { background: var(--paper); }
 .apple-band-void { background: var(--void); }
-.mwrap { max-width: 980px; margin: 0 auto; padding: 0 32px; }
+.mwrap { max-width: var(--content-max); margin: 0 auto; padding: 0 32px; }
 /* Photographic-style hero card (apple.com/airpods composition): rounded card floating with
    margin off the page edges, tone-driven gradient mesh standing in for product photography
    (Veyron has no literal hero image), content bottom-anchored over a legibility scrim. */
@@ -525,7 +526,7 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .vy .link:hover { text-decoration: underline; }
 .specs {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  max-width: 980px; margin: 0 auto; padding: 36px 32px 40px;
+  max-width: var(--content-max); margin: 0 auto; padding: 36px 32px 40px;
   border-top: 1px solid var(--line);
 }
 .specs div { text-align: center; }
@@ -537,7 +538,7 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .specs span { font-size: 13px; color: var(--ink-2); margin-top: 4px; display: block; }
 
 .apple-chapter {
-  max-width: 980px; margin: 0 auto; padding: 64px 32px 72px;
+  max-width: var(--content-max); margin: 0 auto; padding: 64px 32px 72px;
 }
 /* Hero-lite header for dense/data pages — sits inside .list, which already
    supplies the horizontal gutter, so this only controls vertical rhythm. */
@@ -598,3 +599,42 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
   .apple-shelf { grid-template-columns: 1fr; }
   .apple-tile { border-right: 0; }
 }
+
+/* ── Command palette ─────────────────────────────────────────────────── */
+.cmdk-scrim { align-items: flex-start; padding-top: 12vh; }
+.cmdk { width: min(620px, 92vw); background: var(--win); border-radius: var(--radius-lg, 14px); box-shadow: 0 24px 80px rgb(0 0 0 / .35); overflow: hidden; border: 1px solid var(--line); }
+.cmdk-in { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); color: var(--ink-3); }
+.cmdk-in input { flex: 1; background: transparent; border: 0; outline: 0; font-size: 16px; color: var(--ink); }
+.cmdk-in kbd { font-size: 11px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink-3); }
+.cmdk-list { max-height: 52vh; overflow: auto; padding: 6px; }
+.cmdk-g { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); padding: 10px 10px 4px; }
+.cmdk-i { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 8px; background: transparent; text-align: left; font-size: 14px; color: var(--ink); }
+.cmdk-i small { margin-left: auto; color: var(--ink-3); font-size: 12px; }
+.cmdk-i.on { background: var(--hover); }
+.cmdk-empty { padding: 28px; text-align: center; color: var(--ink-3); }
+
+/* ── VM wizard ───────────────────────────────────────────────────────── */
+.sheet.wiz { width: min(720px, 94vw); }
+.wiz-steps { display: flex; gap: 6px; list-style: none; margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+.wiz-steps li { display: flex; align-items: center; gap: 6px; padding-right: 14px; }
+.wiz-steps li span { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--hover); font-size: 11px; font-weight: 600; }
+.wiz-steps li.on { color: var(--ink); font-weight: 600; }
+.wiz-steps li.on span, .wiz-steps li.done span { background: var(--accent); color: #fff; }
+.wiz-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; max-height: 58vh; overflow: auto; }
+.wiz-search { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink-3); }
+.wiz-search input { flex: 1; border: 0; background: transparent; outline: 0; color: var(--ink); }
+.wiz-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.wiz-chips button { padding: 5px 12px; border-radius: 980px; border: 1px solid var(--line); background: transparent; font-size: 12.5px; color: var(--ink-2); }
+.wiz-chips button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wiz-tpls, .wiz-presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.wiz-tpl, .wiz-presets button { text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: transparent; display: flex; flex-direction: column; gap: 2px; }
+.wiz-tpl small, .wiz-presets small { color: var(--ink-3); font-size: 12px; }
+.wiz-tpl.on, .wiz-presets button.on { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+.wiz-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wiz-sum { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin: 0; }
+.wiz-sum dt { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
+.wiz-sum dd { margin: 2px 0 0; font-weight: 600; }
+.wiz-cap { font-size: 13px; color: var(--ink-2); padding: 10px 12px; border-radius: 10px; background: var(--hover); display: flex; flex-direction: column; gap: 4px; }
+.wiz-err { color: var(--red); font-size: 12.5px; }
+.wiz-empty { color: var(--ink-3); padding: 20px; grid-column: 1 / -1; text-align: center; }
+.wiz-check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
