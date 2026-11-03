@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Status, Spark } from './status.jsx';
 import { api } from './api.js';
+import { canAct, canMutate } from './roles.js';
 import { VmGuest, VmDisks, VmRelay } from './VmExtras.jsx';
 import { VmNetworkAccess } from './NetworkAccess.jsx';
 
@@ -36,6 +37,11 @@ export const ACT = {
 };
 
 const RUN_STRATEGIES = ['Always', 'Manual', 'Halted', 'RerunOnFailure'];
+
+const series = (arr, now) => {
+  const a = arr.length ? arr : [Number(now) || 0];
+  return a.length === 1 ? [a[0], a[0]] : a;
+};
 
 function resolveActs(res, row) {
   let acts = (res.acts || []).slice();
@@ -355,16 +361,18 @@ function VmOps({ row, onDone }) {
   );
 }
 
-export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi }) {
+export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi, role = 'admin' }) {
   const [tab, setTab] = useState('Info');
   const [events, setEvents] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [security, setSecurity] = useState(null);
   const [loadingExtra, setLoadingExtra] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [hist, setHist] = useState({ cpu: [], mem: [] });
 
   useEffect(() => {
     setTab('Info');
+    setHist({ cpu: [], mem: [] });
     setEvents([]);
     setMetrics(null);
     setSecurity(null);
@@ -382,6 +390,7 @@ export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi }) {
         if (!cancelled) {
           setEvents(Array.isArray(ev) ? ev.slice(0, 12) : []);
           setMetrics(met);
+          if (met) setHist({ cpu: [Number(met.cpu_usage_percent) || 0], mem: [Number(met.memory_usage_percent) || 0] });
           setSecurity(sec);
         }
       } finally {
@@ -392,6 +401,31 @@ export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi }) {
       cancelled = true;
     };
   }, [row?.id, res?.kind]);
+
+  // Real history: poll live metrics every 10s while a running VM is selected and keep the last 30
+  // samples (the sparkline used to be drawn from a single reading, so it was always a flat line).
+  const rowKey = row?.id;
+  const rowName = row?.name;
+  const rowNs = row?.ns || 'default';
+  const running = row?.status === 'Running';
+  useEffect(() => {
+    if (!rowKey || res?.kind !== 'VirtualMachine' || !running) return undefined;
+    let stop = false;
+    const tick = async () => {
+      const m = await api.vmMetrics(rowName, rowNs).catch(() => null);
+      if (stop || !m) return;
+      setMetrics(m);
+      setHist((h) => ({
+        cpu: [...h.cpu, Number(m.cpu_usage_percent) || 0].slice(-30),
+        mem: [...h.mem, Number(m.memory_usage_percent) || 0].slice(-30),
+      }));
+    };
+    const t = setInterval(tick, 10000);
+    return () => {
+      stop = true;
+      clearInterval(t);
+    };
+  }, [rowKey, rowName, rowNs, running, res?.kind]);
 
   if (!row) {
     return (
@@ -420,8 +454,8 @@ export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi }) {
       : [['Events', loadingExtra ? 'Loading…' : 'No recent events']];
 
   const isVm = res.kind === 'VirtualMachine';
-  const tabNames = isVm ? ['Info', 'Events', 'Guest', 'Network', 'Ops'] : ['Info', 'Events'];
-  const acts = resolveActs(res, row);
+  const tabNames = isVm ? ['Info', 'Events', 'Guest', 'Network', ...(canMutate(role) ? ['Ops'] : [])] : ['Info', 'Events'];
+  const acts = resolveActs(res, row).filter((a) => canAct(role, a));
   const primary = acts.slice(0, 4);
   const more = acts.slice(4);
 
@@ -456,7 +490,7 @@ export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi }) {
             </small>
             <b>{row.cpu ?? '—'} vCPU</b>
             {hasMetrics ? (
-              <Spark data={[0, cpuPct || 0, cpuPct || 0]} color="var(--accent)" />
+              <Spark data={series(hist.cpu, cpuPct)} color="var(--accent)" />
             ) : (
               <small style={{ color: 'var(--ink-3)' }}>{loadingExtra ? 'Loading metrics…' : 'No live metrics'}</small>
             )}
@@ -467,7 +501,7 @@ export function Inspector({ res, row, hide, onAct, onOpsDone, onAskAi }) {
             </small>
             <b>{row.ram ?? '—'} GiB</b>
             {hasMetrics ? (
-              <Spark data={[0, memPct || 0, memPct || 0]} color="var(--green)" />
+              <Spark data={series(hist.mem, memPct)} color="var(--green)" />
             ) : (
               <small style={{ color: 'var(--ink-3)' }}>{loadingExtra ? '…' : '—'}</small>
             )}

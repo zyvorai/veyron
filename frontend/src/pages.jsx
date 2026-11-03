@@ -33,6 +33,9 @@ export function Mission({ data, go, onCreate, onConsole, healthOk, podSummary })
     ...hosts.filter((h) => ['Cordoned', 'NotReady'].includes(h.status)).map((h) => ['hosts', h]),
     ...(data.pvcs?.rows || []).filter((p) => p.status === 'Pending').map((p) => ['pvcs', p]),
   ];
+  // Firing alerts count too; before this, Mission Control could say "Operational" with an alert firing.
+  const firing = (data.alerts?.rows || []).filter((a) => !/resolved/i.test(String(a.status || '')));
+  attn.push(...firing.map((a) => ['alerts', { ...a, status: 'Degraded' }]));
   const hot = hosts.filter((h) => (h.cpu ?? 0) >= HOT_PCT || (h.mem ?? 0) >= HOT_PCT);
   for (const h of hot) {
     attn.push(['hosts', { ...h, status: 'Warning', why: `Under pressure: CPU ${h.cpu ?? 0}% · memory ${h.mem ?? 0}%` }]);
