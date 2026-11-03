@@ -88,6 +88,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- **`POST /api/v1/snapshots` answered `405`.** The static `GET /snapshots` route shadowed the nested
+  router's `POST`; the route is now registered on it directly. `POST /snapshots/:ns/:vm/create`
+  also honours a custom `name` (it only read `snapshot_name`).
+- **Snapshots of a VM that doesn't exist** are rejected with `404` instead of leaving a snapshot
+  stuck `InProgress` (CLI, both API routes and the scheduler).
+- **New VMs no longer flash `Stopped`.** A VM that is meant to run reports `Starting` until the
+  engine's status catches up.
+
 - Linux template cloud-init now quotes the generated password. About one VM in 22 got a password
   starting with `!`, `@` or `%`, which made the YAML invalid: the guest skipped its user, password
   and GuestKit setup, and merging custom user-data silently dropped the template's part.
