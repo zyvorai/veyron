@@ -493,6 +493,21 @@ spec:
               value: '${NODE_PORT}'
             - name: VEYRON_CLUSTER_DNS
               value: '10.43.0.10'
+          # Optional Secrets, same set as deploy/k8s.yaml. Without this block every API-only redeploy
+          # silently dropped multi-role RBAC keys (veyron-rbac-keys), Atlas auth, OIDC and integrations.
+          envFrom:
+            - secretRef:
+                name: veyron-integrations
+                optional: true
+            - secretRef:
+                name: veyron-atlas-auth
+                optional: true
+            - secretRef:
+                name: veyron-oidc
+                optional: true
+            - secretRef:
+                name: veyron-rbac-keys
+                optional: true
           ports:
             - containerPort: 5151
               name: https
