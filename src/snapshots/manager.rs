@@ -43,6 +43,25 @@ impl SnapshotManager {
 
     /// Create a VM snapshot
     pub async fn create_snapshot(&self, config: &SnapshotConfig) -> Result<SnapshotInfo> {
+        // Fail fast on an unknown VM. KubeVirt accepts a VirtualMachineSnapshot whose source
+        // doesn't exist and leaves it InProgress forever, so without this check the API
+        // answered 200 and left an orphaned object behind. The "not found" wording maps to
+        // 404 in both API create handlers.
+        let vms: Api<crate::kube::types::VirtualMachine> =
+            Api::namespaced(self.client.clone(), &self.namespace);
+        if vms
+            .get_opt(&config.vm_name)
+            .await
+            .with_context(|| format!("look up VM '{}'", config.vm_name))?
+            .is_none()
+        {
+            anyhow::bail!(
+                "VirtualMachine '{}' not found in namespace '{}'",
+                config.vm_name,
+                self.namespace
+            );
+        }
+
         let snapshots: Api<VirtualMachineSnapshot> =
             Api::namespaced(self.client.clone(), &self.namespace);
 
