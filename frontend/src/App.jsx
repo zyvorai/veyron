@@ -43,6 +43,7 @@ const AI_PAGE_COMPONENTS = {
 import { Status } from './status.jsx';
 import { GlobalNav } from './GlobalNav.jsx';
 import { CommandPalette } from './CommandPalette.jsx';
+import { canAct, canMutate, normRole } from './roles.js';
 import { InvestigationStrip } from './InvestigationStrip.jsx';
 import { Assistant } from './Assistant.jsx';
 import { EmptyArt, OsBadge, Reveal } from './story.jsx';
@@ -195,6 +196,7 @@ export default function App() {
 
   const [loginErr, setLoginErr] = useState('');
   const [user, setUser] = useState(() => getAuthUser());
+  const role = normRole(user?.role);
   const [page, setPage] = useState(pageFromHash);
   const [view, setView] = useState('list');
   const [qInput, setQInput] = useState('');
@@ -405,6 +407,10 @@ export default function App() {
   };
 
   const act = async (a, ids = selected) => {
+    if (!canAct(role, a)) {
+      showToast(`Your ${role} role can't ${ACT[a]?.[0]?.toLowerCase() || a}`, true);
+      return;
+    }
     setMenu(null);
     if (a === 'console') {
       if (!focus && !(ids instanceof Set && ids.size)) {
@@ -775,7 +781,7 @@ export default function App() {
         setShowBell(false);
         setShowInsp(false);
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'n' && res) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n' && res && canMutate(role)) {
         e.preventDefault();
         setSheet('new');
       }
@@ -799,7 +805,7 @@ export default function App() {
       window.removeEventListener('keydown', k);
       window.removeEventListener('click', c);
     };
-  }, [rows, res]);
+  }, [rows, res, role]);
 
   useFocusTrap(inspRef, !!(showInsp && focusRow));
 
@@ -808,7 +814,7 @@ export default function App() {
   }
 
   const tone = TONE_BY_PAGE[page] || 'sky';
-  const canCreate = !!(res?.canCreate || (!res && page === 'mission'));
+  const canCreate = canMutate(role) && !!(res?.canCreate || (!res && page === 'mission'));
   const sheetTarget = sheetMode === 'logs' ? focusRow : focusRow?.name ? focusRow : null;
   const warnRows = res ? warnCount(res.rows) : 0;
   const okRows = res ? res.rows.filter((r) => ['Running', 'Ready', 'Bound', 'Healthy', 'Succeeded', 'Up'].includes(r.status)).length : 0;
@@ -979,7 +985,7 @@ export default function App() {
                 <button className="tb" onClick={() => load()} title="Refresh" aria-label="Refresh">
                   <RefreshCw size={15} className={loading ? 'spin' : ''} />
                 </button>
-                {res.canCreate && (
+                {canMutate(role) && res.canCreate && (
                   <button className="btn primary sm" onClick={onNew}>
                     <Plus size={14} />
                     New
@@ -1052,7 +1058,7 @@ export default function App() {
                             ? 'Create a machine from a current OS template. It takes about a minute.'
                             : pageBlurb(page)}
                     </p>
-                    {loaded(page) && !q && res.canCreate && (
+                    {loaded(page) && !q && canMutate(role) && res.canCreate && (
                       <div className="acts">
                         <button className="pill" onClick={onNew}>
                           <Plus size={16} />
@@ -1141,7 +1147,7 @@ export default function App() {
               <div className="bulk">
                 <b>{selected.size} selected</b>
                 {res.acts
-                  .filter((a) => a !== 'console' && a !== 'logs')
+                  .filter((a) => a !== 'console' && a !== 'logs' && canAct(role, a))
                   .map((a) => {
                     const [l, I] = ACT[a] || [a, Activity];
                     return (
@@ -1178,6 +1184,7 @@ export default function App() {
               <X size={15} />
             </button>
             <Inspector
+              role={role}
               res={res}
               row={focusRow}
               hide={false}
@@ -1199,7 +1206,7 @@ export default function App() {
       {sheet === 'console' && sheetTarget && (
         <ConsoleSheet vm={sheetTarget} mode={sheetMode} onClose={() => setSheet(null)} />
       )}
-      {sheet === 'new' && (res || data.vms)?.canCreate && (
+      {sheet === 'new' && canMutate(role) && (res || data.vms)?.canCreate && (
         <NewSheet
           res={res?.canCreate ? res : data.vms}
           templates={data.templates.rows}
@@ -1241,7 +1248,7 @@ export default function App() {
       {menu && res && (
         <div className="menu" style={{ left: menu.x, top: menu.y }} onClick={(e) => e.stopPropagation()}>
           {(res.acts || [])
-            .filter((a) => a !== 'delete')
+            .filter((a) => a !== 'delete' && canAct(role, a))
             .map((a) => {
               const [l, I] = ACT[a] || [a, Activity];
               return (
@@ -1260,7 +1267,7 @@ export default function App() {
             <Info size={14} />
             Get info
           </button>
-          {(res.acts || []).includes('delete') && (
+          {(res.acts || []).includes('delete') && canAct(role, 'delete') && (
             <>
               <hr />
               <button className="danger" onClick={() => act('delete')}>
