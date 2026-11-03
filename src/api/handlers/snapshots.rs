@@ -138,7 +138,7 @@ async fn list_snapshots(
 }
 
 #[cfg(feature = "web")]
-async fn create_snapshot(
+pub async fn create_snapshot(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
     Json(req): Json<CreateSnapshotRequest>,

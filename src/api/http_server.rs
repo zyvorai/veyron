@@ -958,7 +958,14 @@ pub mod web {
                 .route("/api/v1/vms/:ns/:name/security", get(vm_security_handler))
                 .route("/api/v1/vms/:ns/:name/events", get(vm_events_handler))
                 // Snapshots
-                .route("/api/v1/snapshots", get(list_snapshots_handler))
+                // POST is registered here too: the nested handlers router's `POST /snapshots`
+                // is shadowed by this static node (same matchit issue as export below), so
+                // without it the documented create route answered 405.
+                .route(
+                    "/api/v1/snapshots",
+                    get(list_snapshots_handler)
+                        .post(crate::api::handlers::snapshots::create_snapshot),
+                )
                 // Registered directly here (not via the nested handlers router) because the
                 // static `/api/v1/snapshots` node above shadows nested `/snapshots/*` param
                 // routes under matchit — see export_snapshots in handlers::snapshots.

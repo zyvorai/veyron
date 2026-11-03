@@ -376,6 +376,9 @@ pub(super) async fn recent_events_handler(
 
 #[derive(Deserialize)]
 pub(super) struct CreateSnapshotRequest {
+    // `name` is what the docs and `POST /snapshots` use; without the alias a caller
+    // sending it was silently given an auto-generated name.
+    #[serde(alias = "name")]
     snapshot_name: Option<String>,
 }
 
