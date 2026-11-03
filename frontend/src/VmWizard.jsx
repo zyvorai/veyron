@@ -167,7 +167,7 @@ export function VmWizard({ templates, hosts, vms, existingNames, onClose, onCrea
             </div>
             <dl className="wiz-sum">
               <div><dt>Template</dt><dd>{template}</dd></div>
-              <div><dt>Compute</dt><dd>{effCpu || '?'} vCPU · {effMemGiB || '?'} GiB</dd></div>
+              <div><dt>Compute</dt><dd>{effCpu > 0 && effMemGiB > 0 ? `${effCpu} vCPU · ${effMemGiB} GiB` : 'Set by the template'}</dd></div>
               <div><dt>Disk</dt><dd>{disk}</dd></div>
               <div><dt>Namespace</dt><dd>default</dd></div>
             </dl>
