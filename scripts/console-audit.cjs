@@ -104,10 +104,12 @@ function layoutProbe() {
   const consoleErrors = {};
   const apiErrors = {};
   const push = (map, msg) => { (map[current] ||= []).push(msg.slice(0, 300)); };
-  page.on('console', (m) => { if (m.type() === 'error') push(consoleErrors, m.text()); });
+  // 501 is Veyron's deliberate "not on this backend" (kairon_guard KUBEVIRT_ONLY), not a fault.
+  const isNotImplemented = (t) => /status of 501\b/.test(t);
+  page.on('console', (m) => { if (m.type() === 'error' && !isNotImplemented(m.text())) push(consoleErrors, m.text()); });
   page.on('pageerror', (e) => push(consoleErrors, `uncaught: ${e.message}`));
   page.on('response', (r) => {
-    if (r.url().includes('/api/') && r.status() >= 500) push(apiErrors, `${r.status()} ${new URL(r.url()).pathname}`);
+    if (r.url().includes('/api/') && r.status() >= 500 && r.status() !== 501) push(apiErrors, `${r.status()} ${new URL(r.url()).pathname}`);
   });
 
   await page.goto(`${base}#/mission`, { waitUntil: 'domcontentloaded', timeout: 30000 });
