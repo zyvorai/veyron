@@ -115,6 +115,27 @@ check_http_200() {
     fi
 }
 
+# Routes that only exist on the KubeVirt backend answer 501 KUBEVIRT_ONLY on Kairon
+# (src/api/kairon_guard.rs). That is the intended answer there, so accept it.
+check_code_or_kubevirt_only() {
+    local name="$1"
+    local url="$2"
+    local ok_codes="$3"
+    local out code body
+    out=$(curl -skS --connect-timeout 15 --max-time 45 -w $'\n%{http_code}' \
+        -H "X-API-Key: ${KEY}" "${url}" || true)
+    code="${out##*$'\n'}"
+    body="${out%$'\n'*}"
+    if [[ " ${ok_codes} " == *" ${code} "* ]]; then
+        echo "  ✔ ${name} (HTTP ${code})"
+    elif [[ "${code}" == "501" ]] && echo "${body}" | grep -q 'KUBEVIRT_ONLY'; then
+        echo "  ✔ ${name} (HTTP 501 KUBEVIRT_ONLY, expected on Kairon)"
+    else
+        echo "  ✗ ${name} (HTTP ${code})"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
 check_json_grep() {
     local name="$1"
     local url="$2"
@@ -196,15 +217,8 @@ else
     echo ""
     FAIL=$((FAIL + 1))
 fi
-drift_code=$(curl -skS --connect-timeout 15 --max-time 45 -o /dev/null -w '%{http_code}' \
-    -H "X-API-Key: ${KEY}" \
-    "${BASE}/api/v1/vms/default/nonexistent-vm/drift" || echo "000")
-if [[ "${drift_code}" == "404" || "${drift_code}" == "200" ]]; then
-    echo "  ✔ GET /api/v1/vms/:ns/:name/drift (HTTP ${drift_code})"
-else
-    echo "  ✗ GET /api/v1/vms/:ns/:name/drift (HTTP ${drift_code})"
-    FAIL=$((FAIL + 1))
-fi
+check_code_or_kubevirt_only "GET /api/v1/vms/:ns/:name/drift" \
+    "${BASE}/api/v1/vms/default/nonexistent-vm/drift" "200 404"
 
 echo "  (feature-gap routes)"
 check_json_grep "GET /api/v1/compliance/status" \
@@ -262,7 +276,7 @@ fi
 check_json_grep "GET /api/v1/experience/copilot/backup" \
     "${BASE}/api/v1/experience/copilot/backup?namespace=all" '"module"'
 check_json_grep "GET /api/v1/crds/blueprints" \
-    "${BASE}/api/v1/crds/blueprints?namespace=all" '"items"'
+    "${BASE}/api/v1/crds/blueprints?namespace=all" '"items"|KUBEVIRT_ONLY'
 check_json_grep "GET /api/v1/experience/copilot/cost" \
     "${BASE}/api/v1/experience/copilot/cost?namespace=all" '"module"'
 check_json_grep "GET /api/v1/experience/copilot/performance" \
@@ -335,15 +349,8 @@ check_json_grep "GET /api/v1/backups" \
     "${BASE}/api/v1/backups?namespace=all" '^\['
 check_json_grep "GET /api/v1/velero/status" \
     "${BASE}/api/v1/velero/status" 'velero_available'
-dr_code=$(curl -skS --connect-timeout 15 --max-time 45 -o /dev/null -w '%{http_code}' \
-    -H "X-API-Key: ${KEY}" \
-    "${BASE}/api/v1/dr/export?namespace=default&vm_name=nonexistent-vm" || echo "000")
-if [[ "${dr_code}" == "404" || "${dr_code}" == "200" ]]; then
-    echo "  ✔ GET /api/v1/dr/export (HTTP ${dr_code})"
-else
-    echo "  ✗ GET /api/v1/dr/export (HTTP ${dr_code})"
-    FAIL=$((FAIL + 1))
-fi
+check_code_or_kubevirt_only "GET /api/v1/dr/export" \
+    "${BASE}/api/v1/dr/export?namespace=default&vm_name=nonexistent-vm" "200 404"
 check_html_contains "GET /console (SPA root)" "${BASE}/console" 'id="root"'
 
 echo "  (console SPA — Template Foundry, Cost Explorer, Network Intelligence)"
@@ -431,7 +438,8 @@ check_json_grep "GET /api/v1/storage/orphans" "${BASE}/api/v1/storage/orphans?na
 check_json_grep "GET /api/v1/cilium/status" "${BASE}/api/v1/cilium/status" '"agent_count"'
 check_http_200 "GET /api/v1/cilium/policies" "${BASE}/api/v1/cilium/policies?namespace=all"
 check_http_200 "GET /api/v1/ingress" "${BASE}/api/v1/ingress?namespace=all"
-first_vm=$(echo "${vms_body}" | grep -oE '"name"\s*:\s*"[^"]+"\s*,\s*"namespace"\s*:\s*"[^"]+"' | head -1)
+# grep exits 1 on an empty fleet; under pipefail that would end the script silently.
+first_vm=$(echo "${vms_body}" | grep -oE '"name"\s*:\s*"[^"]+"\s*,\s*"namespace"\s*:\s*"[^"]+"' | head -1 || true)
 if [[ -n "${first_vm}" ]]; then
     vm_name=$(echo "${first_vm}" | sed -E 's/.*"name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
     vm_ns=$(echo "${first_vm}" | sed -E 's/.*"namespace"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')

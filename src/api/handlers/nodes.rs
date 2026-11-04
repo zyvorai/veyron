@@ -233,14 +233,30 @@ async fn set_schedulable(state: SharedState, name: String, schedulable: bool) ->
             })),
         )
             .into_response(),
-        Err(e) => (
-            StatusCode::BAD_GATEWAY,
-            format!(
-                "{} failed: {e}",
-                if schedulable { "uncordon" } else { "cordon" }
-            ),
-        )
-            .into_response(),
+        Err(e) => {
+            let verb = if schedulable { "uncordon" } else { "cordon" };
+            let status = node_patch_status(&e);
+            let msg = if status == StatusCode::NOT_FOUND {
+                format!("{verb} failed: node '{name}' not found")
+            } else {
+                format!("{verb} failed: {e}")
+            };
+            (status, Json(serde_json::json!({ "error": msg }))).into_response()
+        }
+    }
+}
+
+/// An unknown node name is the caller's mistake (404), not a bad gateway.
+#[cfg(feature = "web")]
+fn node_patch_status(e: &anyhow::Error) -> StatusCode {
+    let not_found = e
+        .chain()
+        .filter_map(|c| c.downcast_ref::<kube::Error>())
+        .any(|k| matches!(k, kube::Error::Api(ae) if ae.code == 404));
+    if not_found {
+        StatusCode::NOT_FOUND
+    } else {
+        StatusCode::BAD_GATEWAY
     }
 }
 
@@ -366,4 +382,35 @@ pub async fn get_node(
 ) -> Json<Option<NodeResponse>> {
     let nodes = list_nodes(State(state)).await.0;
     Json(nodes.into_iter().find(|n| n.name == name))
+}
+
+#[cfg(all(test, feature = "web"))]
+mod node_status_tests {
+    use super::*;
+
+    fn api_err(code: u16) -> anyhow::Error {
+        anyhow::Error::new(kube::Error::Api(kube::core::ErrorResponse {
+            status: "Failure".into(),
+            message: "nodes \"x\" not found".into(),
+            reason: "NotFound".into(),
+            code,
+        }))
+    }
+
+    #[test]
+    fn unknown_node_is_404() {
+        assert_eq!(node_patch_status(&api_err(404)), StatusCode::NOT_FOUND);
+        // still found through added context
+        let wrapped = api_err(404).context("cordon");
+        assert_eq!(node_patch_status(&wrapped), StatusCode::NOT_FOUND);
+    }
+
+    #[test]
+    fn other_failures_stay_502() {
+        assert_eq!(node_patch_status(&api_err(500)), StatusCode::BAD_GATEWAY);
+        assert_eq!(
+            node_patch_status(&anyhow::anyhow!("connection refused")),
+            StatusCode::BAD_GATEWAY
+        );
+    }
 }
