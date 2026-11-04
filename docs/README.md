@@ -21,6 +21,7 @@ Kubernetes API.
 | Two racks or two sites | [multi-site.md](multi-site.md) |
 | Security operations (detections, SIEM export) | [soc.md](soc.md) |
 | AI assistant, MCP, proposals, sandboxes, in-cluster models | [ai.md](ai.md) |
+| Copilot agent: search, plan, approve, execute (API) | [COPILOT_AGENT.md](COPILOT_AGENT.md) |
 | Prometheus, Atlas, Netra, Paqtra, Copilot and more | [integrations.md](integrations.md) |
 
 **Status.** Kairon is Veyron's VM engine. Veyron never falls back to KubeVirt on its own; only an

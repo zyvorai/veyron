@@ -251,6 +251,9 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 | `VEYRON_GUEST_RUNTIME` | Guest runtime mode: `auto` (default), `guestkit`, or `qga` |
 | `VEYRON_NETRA_URL`, `VEYRON_NETRA_API_KEY`, `VEYRON_NETRA_EXTERNAL_URL`, `VEYRON_NETRA_TLS_VERIFY` | Optional. Netra integration — URL auto-detected from `netra-system/netra`, key defaults to `Admin@321`, self-signed TLS accepted unless `VEYRON_NETRA_TLS_VERIFY=1`. |
 | `VEYRON_PAQTRA_URL`, `VEYRON_PAQTRA_USERNAME`, `VEYRON_PAQTRA_PASSWORD`, `VEYRON_PAQTRA_EXTERNAL_URL`, `VEYRON_PAQTRA_TLS_VERIFY` | Optional. Paqtra integration — URL auto-detected from `paqtra/paqtra-api`, credentials read from `paqtra/paqtra-secret` unless `VEYRON_PAQTRA_PASSWORD` is set. |
+| `VEYRON_AI_MODE` | Copilot mode: `off` / `paraphrase` / `routing` / `agent`. `agent` enables the multi-turn tool loop and plan drafting — see `docs/COPILOT_AGENT.md` |
+| `VEYRON_AI_MAX_TOOL_ROUNDS` | Max LLM↔tool rounds per Copilot turn (default `6`) |
+| `VEYRON_AI_PLAN_TTL_SECS` | Lifetime of agent-drafted action plans before they expire (default `900`) |
 | `VEYRON_ATLAS_URL` | Optional. Atlas storage control-plane gateway base URL (e.g. `http://atlas-gateway.zyvor:5110`). When set, the **Atlas** integration enables Ceph-backed VM disk snapshot/backup/restore. Unset ⇒ routes report `configured:false`. |
 | `VEYRON_ATLAS_TOKEN` | Optional HS256 JWT bearer for Atlas (required when Atlas runs with `ATLAS_AUTH_REQUIRED=1`) |
 | `VEYRON_ATLAS_TENANT` | Optional tenant id recorded on Atlas-provisioned volumes/backups (default `global`) |
