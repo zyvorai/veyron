@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo fmt --all -- --check)",
+      "Bash(cargo clippy --all-targets -- -D warnings)",
+      "Bash(cargo check --workspace)",
+      "Bash(podman ps *)",
+      "Bash(npm run typecheck)"
+    ]
+  }
+}
