@@ -62,7 +62,7 @@ struct ChatMessageOut {
 
 #[derive(Debug, Clone, serde::Deserialize)]
 struct ToolCallOut {
-    _id: Option<String>,
+    id: Option<String>,
     function: Option<ToolFunctionOut>,
 }
 
@@ -197,7 +197,7 @@ pub fn max_tool_rounds() -> u32 {
     std::env::var("VEYRON_AI_MAX_TOOL_ROUNDS")
         .ok()
         .and_then(|s| s.parse().ok())
-        .unwrap_or(2)
+        .unwrap_or(6)
 }
 
 /// In-cluster models usually run on CPU, where reading a long prompt alone can take minutes.
@@ -350,12 +350,40 @@ pub struct AgentToolCall {
     pub args: ToolInvokeArgs,
 }
 
-/// Run one LLM turn with tools; returns tool calls if the model requested them.
+/// One step of the agent loop: either a final answer or a batch of tool calls.
+#[derive(Debug, Clone)]
+pub enum AgentStep {
+    Final(String),
+    Calls {
+        /// The assistant message (with `tool_calls`) to append to the transcript
+        /// before the matching `tool` result messages.
+        assistant: serde_json::Value,
+        /// `(tool_call_id, call)` pairs.
+        calls: Vec<(String, AgentToolCall)>,
+    },
+}
+
+const AGENT_SYSTEM_PROMPT: &str = "You are Veyron Copilot for KubeVirt. Use tools to fetch cluster facts, \
+    call several tools across turns when needed, and then answer concisely from the tool results. \
+    Never invent evidence; if a tool returns nothing, say so. Prefer specific tools over guessing.";
+
+/// Build the initial transcript (system + recent history + user query).
+pub fn agent_messages(query: &str, history: &[CopilotChatMessage]) -> Vec<serde_json::Value> {
+    let mut messages: Vec<serde_json::Value> = vec![serde_json::json!({
+        "role": "system",
+        "content": AGENT_SYSTEM_PROMPT
+    })];
+    for m in history.iter().rev().take(8).rev() {
+        messages.push(serde_json::json!({"role": m.role, "content": m.content}));
+    }
+    messages.push(serde_json::json!({"role": "user", "content": query}));
+    messages
+}
+
+/// Run one LLM turn over `messages` with tools enabled.
+/// Returns `None` when no LLM is configured or the request fails.
 #[cfg(feature = "web")]
-pub async fn agent_tool_calls(
-    query: &str,
-    history: &[CopilotChatMessage],
-) -> Option<Vec<AgentToolCall>> {
+pub async fn agent_step(messages: &[serde_json::Value]) -> Option<AgentStep> {
     let cfg = llm_config()?;
     let tools: Vec<serde_json::Value> = tool_definitions()
         .into_iter()
@@ -371,19 +399,6 @@ pub async fn agent_tool_calls(
         })
         .collect();
 
-    let mut messages: Vec<serde_json::Value> = vec![serde_json::json!({
-        "role": "system",
-        "content": "You are Veyron Copilot for KubeVirt. Use tools to fetch cluster facts. \
-                    Never invent evidence. Prefer specific tools over guessing."
-    })];
-    for m in history.iter().rev().take(8).rev() {
-        messages.push(serde_json::json!({
-            "role": m.role,
-            "content": m.content
-        }));
-    }
-    messages.push(serde_json::json!({"role": "user", "content": query}));
-
     let body = serde_json::json!({
         "model": cfg.model,
         "messages": messages,
@@ -395,28 +410,42 @@ pub async fn agent_tool_calls(
     let resp = post_chat_raw(&cfg, &body).await.ok()?;
     let choice = resp.choices?.into_iter().next()?;
     let msg = choice.message?;
-    let calls = msg.tool_calls.unwrap_or_default();
-    if calls.is_empty() {
-        return None;
+    let raw_calls = msg.tool_calls.unwrap_or_default();
+    let mut calls = Vec::new();
+    let mut wire_calls = Vec::new();
+    for (i, tc) in raw_calls.into_iter().enumerate() {
+        let Some(func) = tc.function else { continue };
+        let Some(name) = func.name else { continue };
+        let raw_args = func.arguments.unwrap_or_default();
+        let id = tc.id.unwrap_or_else(|| format!("call_{i}"));
+        wire_calls.push(serde_json::json!({
+            "id": id,
+            "type": "function",
+            "function": {"name": name, "arguments": raw_args}
+        }));
+        calls.push((
+            id,
+            AgentToolCall {
+                name,
+                args: parse_tool_args(&raw_args),
+            },
+        ));
     }
-    Some(
-        calls
-            .into_iter()
-            .filter_map(|tc| {
-                let func = tc.function?;
-                let name = func.name?;
-                let args = parse_tool_args(&func.arguments.unwrap_or_default());
-                Some(AgentToolCall { name, args })
-            })
-            .collect(),
-    )
+    if calls.is_empty() {
+        return Some(AgentStep::Final(msg.content.unwrap_or_default()));
+    }
+    Some(AgentStep::Calls {
+        assistant: serde_json::json!({
+            "role": "assistant",
+            "content": msg.content,
+            "tool_calls": wire_calls
+        }),
+        calls,
+    })
 }
 
 #[cfg(not(feature = "web"))]
-pub async fn agent_tool_calls(
-    _query: &str,
-    _history: &[CopilotChatMessage],
-) -> Option<Vec<AgentToolCall>> {
+pub async fn agent_step(_messages: &[serde_json::Value]) -> Option<AgentStep> {
     None
 }
 
@@ -542,7 +571,7 @@ mod tests {
     #[test]
     fn max_tool_rounds_default() {
         if std::env::var("VEYRON_AI_MAX_TOOL_ROUNDS").is_err() {
-            assert_eq!(max_tool_rounds(), 2);
+            assert_eq!(max_tool_rounds(), 6);
         }
     }
 

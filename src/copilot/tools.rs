@@ -28,6 +28,19 @@ pub struct ToolDefinition {
 pub fn tool_definitions() -> Vec<ToolDefinition> {
     vec![
         tool(
+            "search_resources",
+            "Search VMs, pods, nodes and PVCs. Query supports words plus filters \
+             kind:vm|pod|node|pvc, ns:<namespace>, status:<text>, os:<text>",
+            json!({
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string", "description": "Search query, e.g. 'kind:vm status:failed ns:prod'"},
+                    "namespace": {"type": "string"}
+                },
+                "required": ["message"]
+            }),
+        ),
+        tool(
             "vm_doctor",
             "Inspect a single VM health, events, and score",
             vm_params(),
@@ -247,6 +260,9 @@ pub async fn invoke_tool(
     scope: &str,
     fallback_query: &str,
 ) -> Option<CopilotResponse> {
+    if tool_name == "search_resources" {
+        return Some(search_tool(args, client, scope, fallback_query).await);
+    }
     let intent = tool_name_to_intent(tool_name)?;
     let query = if intent == CopilotIntent::ErrorExplainer || intent == CopilotIntent::YamlBuilder {
         args.message
@@ -264,6 +280,40 @@ pub async fn invoke_tool(
     Some(dispatch_intent(client, scope, intent, &req).await)
 }
 
+async fn search_tool(
+    args: &ToolInvokeArgs,
+    client: &KubeClient,
+    scope: &str,
+    fallback_query: &str,
+) -> CopilotResponse {
+    let raw = args.message.as_deref().unwrap_or(fallback_query);
+    let q = super::search::parse_query(raw);
+    let scope = q
+        .namespace
+        .clone()
+        .or_else(|| args.namespace.clone())
+        .unwrap_or_else(|| scope.to_string());
+    let hits = super::search::search(client, &scope, &q, super::search::DEFAULT_LIMIT).await;
+    let mut r = CopilotResponse::new(
+        "Veyron Search",
+        "search_resources",
+        format!("Search: {raw}"),
+    );
+    r.summary = if hits.is_empty() {
+        format!("No resources matched '{raw}' in scope '{scope}'.")
+    } else {
+        format!(
+            "{} resource(s) matched '{raw}' in scope '{scope}'.",
+            hits.len()
+        )
+    };
+    r.evidence = hits
+        .iter()
+        .map(|h| format!("{} {} — {}", h.kind, h.id, h.status))
+        .collect();
+    r
+}
+
 pub fn parse_tool_args(raw: &str) -> ToolInvokeArgs {
     serde_json::from_str(raw).unwrap_or_default()
 }
@@ -275,6 +325,9 @@ mod tests {
     #[test]
     fn every_tool_maps_to_intent() {
         for def in tool_definitions() {
+            if def.name == "search_resources" {
+                continue; // handled directly in invoke_tool
+            }
             assert!(
                 tool_name_to_intent(&def.name).is_some(),
                 "missing intent mapping for {}",
@@ -288,7 +341,8 @@ mod tests {
         let names: Vec<String> = tool_definitions().into_iter().map(|t| t.name).collect();
         assert!(names.iter().any(|n| n == "migration_advisor"));
         assert!(names.iter().any(|n| n == "yaml_preview"));
-        assert_eq!(names.len(), 27);
+        assert!(names.iter().any(|n| n == "search_resources"));
+        assert_eq!(names.len(), 28);
     }
 
     #[test]

@@ -84,6 +84,7 @@ pub mod recommendations;
 #[cfg(all(feature = "web", feature = "kairon"))]
 pub mod relay_ops;
 pub mod scheduling;
+pub mod search;
 pub mod security;
 pub mod self_healing;
 pub mod slo;
@@ -144,6 +145,7 @@ pub fn all_routes(
         // NOTE: pods, nodes, events, namespaces, snapshots, templates are served from
         // `http_server.rs` under `/api/v1/...` (ApiResponse envelope); do not merge here or routes duplicate after nest.
         .merge(vmis::router(state.clone()))
+        .merge(search::router(state.clone()))
         .merge(metrics::router(state.clone()))
         .merge(costs::router(state.clone()))
         .merge(crds::router(state.clone()))

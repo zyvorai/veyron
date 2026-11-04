@@ -34,6 +34,7 @@ mod observability_advisor;
 mod performance_advisor;
 mod quota_advisor;
 mod scheduling;
+pub mod search;
 mod security_sentinel;
 mod slo_advisor;
 mod storage_doctor;

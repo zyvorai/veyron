@@ -165,6 +165,12 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
         return ApiRole::Admin;
     }
 
+    // Copilot ask/chat only run read-only advisor tools (mutations will go through an
+    // explicit plan + execute step with its own role check), so a ReadOnly key may use them.
+    if path == "/api/v1/experience/copilot/ask" || path == "/api/v1/experience/copilot/chat" {
+        return ApiRole::ReadOnly;
+    }
+
     ApiRole::Write
 }
 
@@ -339,6 +345,26 @@ mod tests {
         assert_eq!(
             min_role_for_route(&Method::GET, "/api/v1/vms"),
             ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn readonly_can_chat_with_copilot_including_alias() {
+        for p in [
+            "/api/v1/experience/copilot/chat",
+            "/api/v1/experience/copilot/ask",
+            "/api/v1/veyron/experience/copilot/chat",
+        ] {
+            assert_eq!(
+                min_role_for_route(&Method::POST, p),
+                ApiRole::ReadOnly,
+                "{p}"
+            );
+        }
+        // Other copilot POSTs (blueprint save, gitops export) stay Write.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/experience/copilot/blueprint/save"),
+            ApiRole::Write
         );
     }
 
