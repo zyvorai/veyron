@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result, bail};
+use k8s_openapi::api::core::v1::Namespace;
 use kube::api::{
     Api, ApiResource, DeleteParams, DynamicObject, ListParams, Patch, PatchParams, PostParams,
 };
@@ -25,6 +26,32 @@ pub fn fork_parent() -> Option<String> {
     std::env::var("VEYRON_SANDBOX_KAIRON_PARENT")
         .ok()
         .filter(|s| !s.trim().is_empty())
+}
+
+/// The sandbox namespace as Veyron creates it. Unlike the KubeVirt path
+/// (`sandbox::kubevirt::ensure_namespace`) this has no ingress/egress
+/// NetworkPolicy: Kairon sandboxes are governed by `spec.network.egress` on the Machine.
+fn sandbox_namespace_object(ns: &str) -> Result<Namespace> {
+    Ok(serde_json::from_value(serde_json::json!({
+        "metadata": {"name": ns, "labels": {"veyron.io/sandbox-namespace": "true"}}
+    }))?)
+}
+
+/// Create the sandbox namespace if it is missing; without it every Machine create fails.
+async fn ensure_namespace(client: &kube::Client) -> Result<()> {
+    let ns = namespace();
+    let ns_api: Api<Namespace> = Api::all(client.clone());
+    if ns_api.get_opt(&ns).await?.is_some() {
+        return Ok(());
+    }
+    match ns_api
+        .create(&PostParams::default(), &sandbox_namespace_object(&ns)?)
+        .await
+    {
+        // Another request created it between the get and the create.
+        Ok(_) | Err(kube::Error::Api(kube::core::ErrorResponse { code: 409, .. })) => Ok(()),
+        Err(e) => Err(e).with_context(|| format!("create sandbox namespace '{ns}'")),
+    }
 }
 
 fn api(client: &kube::Client) -> Api<Machine> {
@@ -250,6 +277,7 @@ pub async fn claim(
             "a template cannot be combined with VEYRON_SANDBOX_KAIRON_POOL; the pool decides what it hands out"
         );
     }
+    ensure_namespace(client).await?;
     if let Some(pool) = pool_name() {
         return claim_from_pool(client, &pool, owner, ttl_minutes, internet, wait).await;
     }
@@ -456,6 +484,20 @@ pub async fn read_file(
 mod tests {
     use super::*;
     use crate::kairon::{GuestAgentSpec, MachineSpec};
+
+    #[test]
+    fn sandbox_namespace_is_labelled_and_has_no_network_policy_fields() {
+        let ns = sandbox_namespace_object("veyron-sandboxes").unwrap();
+        assert_eq!(ns.metadata.name.as_deref(), Some("veyron-sandboxes"));
+        assert_eq!(
+            ns.metadata
+                .labels
+                .as_ref()
+                .and_then(|l| l.get("veyron.io/sandbox-namespace"))
+                .map(String::as_str),
+            Some("true")
+        );
+    }
 
     #[test]
     fn template_sandboxes_run_flux_vm_with_the_vsock_agent() {
