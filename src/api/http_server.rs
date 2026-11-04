@@ -1477,6 +1477,12 @@ pub mod web {
             return "Invalid cron expression — use five fields (minute hour day month weekday, UTC), e.g. 0 2 * * *".to_string();
         }
 
+        // The kairon-node relay needs KAIRON_NODE_CONSOLE_TOKEN; without it the real
+        // cause is a missing deploy setting, not an internal error.
+        if lower.contains(RELAY_NOT_CONFIGURED) {
+            return "kairon-node relay is not configured: set KAIRON_NODE_CONSOLE_TOKEN (veyron-kairon Secret)".to_string();
+        }
+
         // Forge VM / CRUD: Kubernetes returns NotFound for missing namespaces and missing APIs —
         // distinguish those instead of collapsing everything to "Resource not found".
         if lower.contains("namespaces") && lower.contains("not found") {
@@ -1590,6 +1596,9 @@ pub mod web {
     /// allowed to do this". Call with the *sanitized* message (not the raw
     /// error) so this only ever inspects the same safe text already sent to
     /// the client.
+    /// Substring of the error `kairon::relay` returns when the relay token is unset.
+    const RELAY_NOT_CONFIGURED: &str = "relay is not configured";
+
     fn status_for_sanitized_error(msg: &str) -> u16 {
         let lower = msg.to_lowercase();
         if lower.contains("not found") {
@@ -1600,7 +1609,10 @@ pub mod web {
             403
         } else if lower.contains("unauthorized") {
             401
-        } else if lower.contains("timed out") || lower.contains("service unavailable") {
+        } else if lower.contains("timed out")
+            || lower.contains("service unavailable")
+            || lower.contains(RELAY_NOT_CONFIGURED)
+        {
             503
         } else {
             500
@@ -1682,6 +1694,17 @@ pub mod web {
         async fn full_router_builds_without_overlapping_routes() {
             let state = std::sync::Arc::new(tokio::sync::RwLock::new(WebState::for_router_test()));
             let _ = build_router(state);
+        }
+
+        #[test]
+        fn unset_relay_token_is_a_503_with_the_real_reason() {
+            let e = anyhow::anyhow!(
+                "kairon-node relay is not configured: set KAIRON_NODE_CONSOLE_TOKEN from the kairon-console-token Secret"
+            )
+            .context("create snapshot");
+            let msg = sanitize_error(&e);
+            assert!(msg.contains("KAIRON_NODE_CONSOLE_TOKEN"), "{msg}");
+            assert_eq!(status_for_sanitized_error(&msg), 503);
         }
 
         #[test]
