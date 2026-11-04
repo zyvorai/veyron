@@ -28,11 +28,15 @@ pub async fn copilot_chat(
             copilot,
             tool_trace: vec![],
             mode: format!("{:?}", ai_mode()).to_lowercase(),
+            #[cfg(feature = "web")]
+            plans: vec![],
         };
     }
 
     let history = &req.messages;
     let mut tool_trace = Vec::new();
+    #[cfg(feature = "web")]
+    let mut plans: Vec<super::plan::Plan> = Vec::new();
     let mut ask = CopilotAskRequest {
         query: query.to_string(),
         namespace: req.namespace.clone(),
@@ -40,7 +44,12 @@ pub async fn copilot_chat(
     };
 
     let copilot = if ai_mode() == AiMode::Agent {
-        match run_agent_loop(client, scope, query, history, &mut tool_trace).await {
+        let mut sink = ProposalSink {
+            allowed: req.can_propose,
+            #[cfg(feature = "web")]
+            plans: &mut plans,
+        };
+        match run_agent_loop(client, scope, query, history, &mut tool_trace, &mut sink).await {
             Some(r) => r,
             None => run_keyword_path(client, scope, &mut ask, history).await,
         }
@@ -63,7 +72,18 @@ pub async fn copilot_chat(
         copilot: finalize_copilot(copilot).await,
         tool_trace,
         mode: format!("{:?}", ai_mode()).to_lowercase(),
+        #[cfg(feature = "web")]
+        plans,
     }
+}
+
+/// Collects plans drafted by `propose_*` tools during one chat turn.
+struct ProposalSink<'a> {
+    allowed: bool,
+    #[cfg(feature = "web")]
+    plans: &'a mut Vec<super::plan::Plan>,
+    #[cfg(not(feature = "web"))]
+    _p: std::marker::PhantomData<&'a ()>,
 }
 
 /// Multi-turn agent loop: each tool result is fed back to the model as an
@@ -75,6 +95,7 @@ async fn run_agent_loop(
     query: &str,
     history: &[CopilotChatMessage],
     tool_trace: &mut Vec<CopilotToolTrace>,
+    sink: &mut ProposalSink<'_>,
 ) -> Option<CopilotResponse> {
     let mut messages = llm::agent_messages(query, history);
     let mut last: Option<CopilotResponse> = None;
@@ -93,7 +114,11 @@ async fn run_agent_loop(
                         tool: call.name.clone(),
                         args: serde_json::to_value(&call.args).unwrap_or_default(),
                     });
-                    let resp = invoke_tool(&call.name, &call.args, client, scope, query).await;
+                    let resp = if call.name.starts_with("propose_") {
+                        propose(&call, client, scope, query, sink).await
+                    } else {
+                        invoke_tool(&call.name, &call.args, client, scope, query).await
+                    };
                     let observation = match &resp {
                         Some(r) => tool_observation(r),
                         None => format!("unknown tool '{}'", call.name),
@@ -116,6 +141,48 @@ async fn run_agent_loop(
         resp.summary = text;
     }
     Some(resp)
+}
+
+/// Handle a `propose_*` call: drafts a plan (never executes). Failures and
+/// disallowed callers come back as an observation so the model can explain.
+async fn propose(
+    call: &llm::AgentToolCall,
+    client: &KubeClient,
+    scope: &str,
+    query: &str,
+    sink: &mut ProposalSink<'_>,
+) -> Option<CopilotResponse> {
+    let refusal = |msg: &str| {
+        let mut r = CopilotResponse::new("Veyron Agent", "propose_action", "Proposal not created");
+        r.summary = msg.to_string();
+        Some(r)
+    };
+    #[cfg(feature = "web")]
+    if sink.plans.len() >= 3 {
+        return refusal(
+            "Too many plans drafted in one turn (max 3); ask the user to approve these first.",
+        );
+    }
+    if !sink.allowed {
+        return refusal(
+            "This caller's role is read-only, so changes cannot be proposed. Ask an operator with Write access.",
+        );
+    }
+    #[cfg(feature = "web")]
+    {
+        match super::tools::propose_tool(&call.name, &call.args, client, scope, query).await {
+            Ok((resp, plan)) => {
+                sink.plans.push(plan);
+                Some(resp)
+            }
+            Err(e) => refusal(&format!("Could not draft the plan: {e}")),
+        }
+    }
+    #[cfg(not(feature = "web"))]
+    {
+        let _ = (call, client, scope, query);
+        refusal("Plans are unavailable in this build.")
+    }
 }
 
 /// Compact, bounded text view of a tool result for the model.

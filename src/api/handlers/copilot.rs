@@ -3,8 +3,10 @@
 
 #[cfg(feature = "web")]
 use axum::{
-    Json, Router,
+    Extension, Json, Router,
     extract::{Path, Query, State},
+    http::{HeaderMap, StatusCode},
+    response::{IntoResponse, Response},
     routing::{get, post},
 };
 
@@ -25,12 +27,28 @@ use crate::copilot::{
 
 #[cfg(feature = "web")]
 use super::namespace_scope::{self, DashboardNamespaceQuery};
+#[cfg(feature = "web")]
+use super::soc;
+#[cfg(feature = "web")]
+use crate::api::auth_context::AuthContext;
+#[cfg(feature = "web")]
+use crate::api::http_server::web::ApiRole;
+#[cfg(feature = "web")]
+use crate::copilot::plan;
 
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/experience/copilot/ask", post(copilot_ask_handler))
         .route("/experience/copilot/chat", post(copilot_chat_handler))
+        .route(
+            "/experience/copilot/plans/:id",
+            get(plan_get_handler).delete(plan_cancel_handler),
+        )
+        .route(
+            "/experience/copilot/plans/:id/execute",
+            post(plan_execute_handler),
+        )
         .route("/experience/copilot/status", get(copilot_status_handler))
         .route(
             "/experience/copilot/doctor/:ns/:name",
@@ -134,8 +152,10 @@ async fn copilot_status_handler() -> Json<crate::copilot::CopilotStatusResponse>
 #[cfg(feature = "web")]
 async fn copilot_chat_handler(
     State(state): State<SharedState>,
+    headers: HeaderMap,
+    auth: Option<Extension<AuthContext>>,
     Query(q): Query<DashboardNamespaceQuery>,
-    Json(body): Json<CopilotChatRequest>,
+    Json(mut body): Json<CopilotChatRequest>,
 ) -> Json<crate::copilot::CopilotChatResponse> {
     let (client, default_ns) = {
         let s = state.read().await;
@@ -143,7 +163,202 @@ async fn copilot_chat_handler(
     };
     let scope =
         namespace_scope::resolve_opt(body.namespace.clone().or(q.namespace.clone()), &default_ns);
-    Json(copilot_chat(&client, &scope, &body).await)
+    // Fail closed: no auth context ⇒ the agent may not draft mutating plans.
+    body.can_propose = auth
+        .as_ref()
+        .is_some_and(|Extension(c)| c.allows(&ApiRole::Write));
+    let mut resp = copilot_chat(&client, &scope, &body).await;
+
+    if !resp.plans.is_empty() {
+        let actor = actor_of(&state, &headers).await;
+        let kube = state.read().await.client().client();
+        let mut saved = Vec::new();
+        for mut plan in std::mem::take(&mut resp.plans) {
+            plan.created_by = actor.clone();
+            match plan::save(&kube, &default_ns, &plan).await {
+                Ok(()) => {
+                    soc::record_agent_audit(
+                        &state,
+                        &actor,
+                        "plan_created",
+                        &format!("{} step(s), needs {}", plan.steps.len(), plan.min_role),
+                        "",
+                        None,
+                        "success",
+                        &plan.id,
+                        &plan.prompt,
+                    )
+                    .await;
+                    saved.push(plan);
+                }
+                Err(e) => {
+                    log::warn!("could not persist copilot plan {}: {e}", plan.id);
+                    resp.message.content.push_str(
+                        "\n\n(A plan was drafted but could not be saved, so it cannot be approved.)",
+                    );
+                }
+            }
+        }
+        resp.plans = saved;
+    }
+    Json(resp)
+}
+
+/// Identity of the caller for plan ownership and audit: API key name, `primary`,
+/// or `bearer` for JWT/OIDC tokens (those carry no per-user name here).
+#[cfg(feature = "web")]
+async fn actor_of(state: &SharedState, headers: &HeaderMap) -> String {
+    let key = headers
+        .get("x-api-key")
+        .and_then(|v| v.to_str().ok())
+        .map(str::to_string)
+        .or_else(|| {
+            headers
+                .get(axum::http::header::AUTHORIZATION)
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.strip_prefix("Bearer ").map(str::to_string))
+        })
+        .unwrap_or_default();
+    let s = state.read().await;
+    if let Some(e) = s.api_keys.iter().find(|e| !key.is_empty() && e.key == key) {
+        return e.name.clone();
+    }
+    if s.api_key.as_deref() == Some(key.as_str()) && !key.is_empty() {
+        return "primary".into();
+    }
+    "bearer".into()
+}
+
+#[cfg(feature = "web")]
+fn plan_err(status: u16, msg: impl Into<String>) -> Response {
+    (
+        StatusCode::from_u16(status).unwrap_or(StatusCode::BAD_REQUEST),
+        Json(serde_json::json!({ "error": msg.into() })),
+    )
+        .into_response()
+}
+
+#[cfg(feature = "web")]
+async fn load_plan(
+    state: &SharedState,
+    id: &str,
+) -> Result<(plan::Plan, Option<String>, String, kube::Client), (u16, String)> {
+    let (ns, kube) = {
+        let s = state.read().await;
+        (s.namespace.clone(), s.client().client())
+    };
+    match plan::load(&kube, &ns, id).await {
+        Ok(Some((p, rv))) => Ok((p, rv, ns, kube)),
+        Ok(None) => Err((404, "plan not found".into())),
+        Err(e) => Err((502, format!("could not read plan: {e}"))),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn plan_get_handler(State(state): State<SharedState>, Path(id): Path<String>) -> Response {
+    match load_plan(&state, &id).await {
+        Ok((p, ..)) => Json(p).into_response(),
+        Err((code, msg)) => plan_err(code, msg),
+    }
+}
+
+#[cfg(feature = "web")]
+#[derive(Debug, serde::Deserialize, Default)]
+struct PlanExecuteBody {
+    /// Names of every destructive target, typed back by the user.
+    #[serde(default)]
+    confirm_names: Vec<String>,
+    #[serde(default)]
+    stop_on_error: Option<bool>,
+}
+
+#[cfg(feature = "web")]
+async fn plan_execute_handler(
+    State(state): State<SharedState>,
+    headers: HeaderMap,
+    auth: Option<Extension<AuthContext>>,
+    Path(id): Path<String>,
+    body: Option<Json<PlanExecuteBody>>,
+) -> Response {
+    let Some(Extension(caller)) = auth else {
+        return plan_err(403, "no authenticated role");
+    };
+    let body = body.map(|Json(b)| b).unwrap_or_default();
+    let actor = actor_of(&state, &headers).await;
+    let (mut p, rv, ns, kube) = match load_plan(&state, &id).await {
+        Ok(v) => v,
+        Err((code, msg)) => return plan_err(code, msg),
+    };
+    if let Err((code, msg)) = plan::check_can_act(&p, &caller, &actor, true, chrono::Utc::now()) {
+        return plan_err(code, msg);
+    }
+    if let Err(msg) = plan::check_confirmation(&p, &body.confirm_names) {
+        return plan_err(400, msg);
+    }
+    // Claim the plan atomically: a concurrent execute loses the resourceVersion race.
+    p.status = "executing".into();
+    if plan::update(&kube, &ns, &p, rv).await.is_err() {
+        return plan_err(409, "plan is already being executed");
+    }
+    let client = state.read().await.kube_client.clone();
+    plan::execute_steps(&client, &mut p.steps, body.stop_on_error.unwrap_or(true)).await;
+    p.status = plan::final_status(&p.steps).into();
+    for s in &p.steps {
+        let ok = s.result.as_ref().is_some_and(|r| r.ok);
+        soc::record_agent_audit(
+            &state,
+            &actor,
+            &format!("plan_step_{}", s.action),
+            &s.preview,
+            &s.namespace,
+            (s.kind == "vm").then_some(s.name.as_str()),
+            if ok { "success" } else { "failure" },
+            &p.id,
+            &p.prompt,
+        )
+        .await;
+    }
+    if let Err(e) = plan::update(&kube, &ns, &p, None).await {
+        log::warn!("could not record result of plan {}: {e}", p.id);
+    }
+    Json(p).into_response()
+}
+
+#[cfg(feature = "web")]
+async fn plan_cancel_handler(
+    State(state): State<SharedState>,
+    headers: HeaderMap,
+    auth: Option<Extension<AuthContext>>,
+    Path(id): Path<String>,
+) -> Response {
+    let Some(Extension(caller)) = auth else {
+        return plan_err(403, "no authenticated role");
+    };
+    let actor = actor_of(&state, &headers).await;
+    let (mut p, rv, ns, kube) = match load_plan(&state, &id).await {
+        Ok(v) => v,
+        Err((code, msg)) => return plan_err(code, msg),
+    };
+    if let Err((code, msg)) = plan::check_can_act(&p, &caller, &actor, false, chrono::Utc::now()) {
+        return plan_err(code, msg);
+    }
+    p.status = "cancelled".into();
+    if plan::update(&kube, &ns, &p, rv).await.is_err() {
+        return plan_err(409, "plan changed concurrently");
+    }
+    soc::record_agent_audit(
+        &state,
+        &actor,
+        "plan_cancelled",
+        "",
+        "",
+        None,
+        "success",
+        &p.id,
+        &p.prompt,
+    )
+    .await;
+    Json(p).into_response()
 }
 
 #[cfg(feature = "web")]

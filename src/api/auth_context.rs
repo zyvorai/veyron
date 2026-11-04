@@ -369,6 +369,17 @@ mod tests {
     }
 
     #[test]
+    fn plan_execute_and_cancel_require_write_and_get_is_readonly() {
+        let base = "/api/v1/experience/copilot/plans/p-1a2b";
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{base}/execute")),
+            ApiRole::Write
+        );
+        assert_eq!(min_role_for_route(&Method::DELETE, base), ApiRole::Write);
+        assert_eq!(min_role_for_route(&Method::GET, base), ApiRole::ReadOnly);
+    }
+
+    #[test]
     fn write_can_create_vm() {
         assert_eq!(
             min_role_for_route(&Method::POST, "/api/v1/vms"),

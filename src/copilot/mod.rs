@@ -33,6 +33,8 @@ mod node_advisor;
 mod observability_advisor;
 mod performance_advisor;
 mod quota_advisor;
+#[cfg(feature = "web")]
+pub mod plan;
 mod scheduling;
 pub mod search;
 mod security_sentinel;
@@ -100,6 +102,10 @@ pub struct CopilotChatRequest {
     pub namespace: Option<String>,
     #[serde(default)]
     pub vm_name: Option<String>,
+    /// Set server-side (never from the client): the caller may have the agent draft
+    /// mutating plans (Write role or above).
+    #[serde(skip)]
+    pub can_propose: bool,
 }
 
 impl CopilotChatRequest {
@@ -130,6 +136,10 @@ pub struct CopilotChatResponse {
     pub copilot: CopilotResponse,
     pub tool_trace: Vec<CopilotToolTrace>,
     pub mode: String,
+    /// Plans drafted by the agent this turn (unsaved; the handler persists them).
+    #[cfg(feature = "web")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub plans: Vec<plan::Plan>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
