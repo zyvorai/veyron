@@ -120,6 +120,14 @@ fn matches(q: &SearchQuery, name: &str, ns: &str, status: &str, haystack_extra: 
     })
 }
 
+/// Label text for a Kairon Machine row: its image reference, when it has one.
+fn machine_label_text(os: Option<&str>) -> String {
+    match os.map(str::trim).filter(|o| !o.is_empty()) {
+        Some(o) => format!("veyron.io/os={o}"),
+        None => String::new(),
+    }
+}
+
 fn label_text(labels: &Option<std::collections::BTreeMap<String, String>>) -> String {
     labels
         .as_ref()
@@ -134,7 +142,8 @@ fn label_text(labels: &Option<std::collections::BTreeMap<String, String>>) -> St
 
 /// `(name, namespace, status, label text)` for every VM in scope, from whichever
 /// backend runs the VMs (Kairon Machines, or KubeVirt when explicitly selected).
-/// Kairon rows carry no label text, so `os:`-style label filters only match KubeVirt VMs.
+/// Kairon rows carry the Machine's image reference as `veyron.io/os=<ref>`, so `os:` filters
+/// match the image name (e.g. `windows-server-2022`), not KubeVirt OS labels.
 async fn vm_rows(client: &KubeClient, scope: &str) -> Vec<(String, String, String, String)> {
     #[cfg(feature = "web")]
     if crate::api::vm_backend::is_kairon() {
@@ -149,7 +158,7 @@ async fn vm_rows(client: &KubeClient, scope: &str) -> Vec<(String, String, Strin
                 } else {
                     i.namespace
                 };
-                (i.name, ns, i.status, String::new())
+                (i.name, ns, i.status, machine_label_text(i.os.as_deref()))
             })
             .collect();
     }
@@ -309,6 +318,25 @@ mod tests {
             "kubevirt.io/os=windows2022"
         ));
         assert!(!matches(&q, "vm1", "d", "Running", "kubevirt.io/os=ubuntu"));
+    }
+
+    #[test]
+    fn os_filter_matches_kairon_image_refs() {
+        let q = parse_query("os:windows");
+        let win = machine_label_text(Some("windows-server-2022"));
+        assert_eq!(win, "veyron.io/os=windows-server-2022");
+        assert!(matches(&q, "vm1", "d", "Running", &win));
+        let ubu = machine_label_text(Some("ubuntu-24.04"));
+        assert!(!matches(&q, "vm1", "d", "Running", &ubu));
+        assert_eq!(machine_label_text(None), "");
+        assert_eq!(machine_label_text(Some("  ")), "");
+        assert!(!matches(
+            &q,
+            "vm1",
+            "d",
+            "Running",
+            &machine_label_text(None)
+        ));
     }
 
     #[test]
