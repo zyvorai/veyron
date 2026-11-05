@@ -254,6 +254,7 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 | `VEYRON_AI_MODE` | Copilot mode: `off` / `paraphrase` / `routing` / `agent`. `agent` enables the multi-turn tool loop and plan drafting — see `docs/COPILOT_AGENT.md` |
 | `VEYRON_AI_MAX_TOOL_ROUNDS` | Max LLM↔tool rounds per Copilot turn (default `6`) |
 | `VEYRON_AI_PLAN_TTL_SECS` | Lifetime of agent-drafted action plans before they expire (default `900`) |
+| `VEYRON_AI_PLAN_COOLDOWN_SECS` | Per-VM/node cooldown between agent plan steps (default `60`, `0` disables) |
 | `VEYRON_ATLAS_URL` | Optional. Atlas storage control-plane gateway base URL (e.g. `http://atlas-gateway.zyvor:5110`). When set, the **Atlas** integration enables Ceph-backed VM disk snapshot/backup/restore. Unset ⇒ routes report `configured:false`. |
 | `VEYRON_ATLAS_TOKEN` | Optional HS256 JWT bearer for Atlas (required when Atlas runs with `ATLAS_AUTH_REQUIRED=1`) |
 | `VEYRON_ATLAS_TENANT` | Optional tenant id recorded on Atlas-provisioned volumes/backups (default `global`) |

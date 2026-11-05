@@ -175,8 +175,16 @@ async fn copilot_chat_handler(
             .unwrap_or_else(|| "unknown".into());
         let kube = state.read().await.client().client();
         let mut saved = Vec::new();
+        let recent = plan::recent_started(&kube, &default_ns, chrono::Utc::now()).await;
         for mut plan in std::mem::take(&mut resp.plans) {
             plan.created_by = actor.clone();
+            plan::apply_cooldown(
+                &mut plan.steps,
+                &recent,
+                chrono::Utc::now(),
+                plan::cooldown_secs(),
+                &plan.id,
+            );
             match plan::save(&kube, &default_ns, &plan).await {
                 Ok(()) => {
                     soc::record_agent_audit(
@@ -282,11 +290,20 @@ async fn plan_execute_handler(
     }
     // Claim the plan atomically: a concurrent execute loses the resourceVersion race.
     p.status = "executing".into();
+    p.started_at = Some(chrono::Utc::now().to_rfc3339());
     if plan::update(&kube, &ns, &p, rv).await.is_err() {
         return plan_err(409, "plan is already being executed");
     }
     let client = state.read().await.kube_client.clone();
-    plan::execute_steps(&client, &mut p.steps, body.stop_on_error.unwrap_or(true)).await;
+    // Per-target loop guard: other plans that recently acted on the same VM/node.
+    let recent = plan::recent_started(&kube, &ns, chrono::Utc::now()).await;
+    plan::execute_steps(
+        &client,
+        &mut p.steps,
+        body.stop_on_error.unwrap_or(true),
+        Some((&recent, &p.id)),
+    )
+    .await;
     p.status = plan::final_status(&p.steps).into();
     for s in &p.steps {
         let ok = s.result.as_ref().is_some_and(|r| r.ok);
