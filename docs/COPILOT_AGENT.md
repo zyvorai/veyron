@@ -2,7 +2,8 @@
 
 The console's one-stop assistant. Operators search every resource, ask questions, and have the agent
 draft VM/node operations that they approve explicitly. Requires `VEYRON_AI_MODE=agent` and an
-OpenAI-compatible endpoint (`VEYRON_AI_URL`, `VEYRON_AI_API_KEY`); without an LLM the keyword
+OpenAI-compatible endpoint (`VEYRON_AI_URL`, `VEYRON_AI_API_KEY`) or Anthropic's Messages API
+(`VEYRON_AI_PROVIDER=anthropic`, below); without an LLM the keyword
 fallback still answers read-only questions, and no plans are drafted.
 
 ## Console
@@ -82,6 +83,14 @@ outcome, and labels `plan_id`, `via=copilot-agent`, `prompt`. Actor is the calle
 | `VEYRON_AI_MAX_TOOL_ROUNDS` | `6` | Max LLM↔tool rounds per turn |
 | `VEYRON_AI_PLAN_TTL_SECS` | `900` | Plan lifetime before it expires |
 | `VEYRON_AI_PLAN_COOLDOWN_SECS` | `60` | Per-VM/node cooldown between plan steps (`0` = off) |
+| `VEYRON_AI_PROVIDER` | (OpenAI-compatible) | `anthropic` talks to Anthropic's native Messages API (tool use). Also selected by an `sk-ant-` key or an `anthropic.com` URL |
+| `VEYRON_AI_MAX_TOKENS` | `2048` | `max_tokens` per Anthropic request (the API requires one) |
+
+With `VEYRON_AI_PROVIDER=anthropic`, set `VEYRON_AI_API_KEY` (or `ANTHROPIC_API_KEY`); the URL defaults to
+`https://api.anthropic.com` and the model to `claude-sonnet-5-5` (`VEYRON_AI_MODEL` overrides, e.g.
+`claude-haiku-5-5` for a cheaper loop). Veyron keeps the transcript in one provider-neutral shape and translates
+at the HTTP boundary, so plans, role checks and audit behave the same on either provider. Only the Copilot agent
+uses this setting; the `/ai` module has its own client.
 
 ## RBAC
 
