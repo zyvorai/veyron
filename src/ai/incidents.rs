@@ -799,6 +799,7 @@ async fn analyze_rules(
             query: Some(format!("why is vm {} failing", t.target.name)),
             namespace: Some(t.target.namespace.clone()),
             vm_name: Some(t.target.name.clone()),
+            can_propose: false,
         };
         let r = crate::copilot::copilot_chat(&ctx.kube, &ctx.scope, &creq).await;
         recs.extend(r.copilot.recommendations.into_iter().take(6));

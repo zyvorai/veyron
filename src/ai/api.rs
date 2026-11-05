@@ -143,6 +143,7 @@ async fn advisor_reply(ctx: &registry::ToolCtx, req: &AgentRequest) -> String {
         query: Some(query),
         namespace: req.context.namespace.clone(),
         vm_name: req.context.vm_name.clone(),
+        can_propose: false,
     };
     let r = crate::copilot::copilot_chat(&ctx.kube, &ctx.scope, &creq).await;
     let mut text = r.copilot.title.clone();
