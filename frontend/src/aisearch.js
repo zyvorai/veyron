@@ -65,3 +65,29 @@ export function looksLikeQuestion(q) {
   const words = t.split(/\s+/).filter(Boolean);
   return words.length >= 3 || /\?$/.test(t) || /^(which|what|why|how|show|list|find|who|where)\b/i.test(t);
 }
+
+/** Console page that lists each `/api/v1/search` hit kind. */
+const SEARCH_PAGE = { vm: 'vms', pod: 'pods', node: 'hosts', pvc: 'pvcs' };
+
+export function searchHitPage(kind) {
+  return SEARCH_PAGE[kind] || null;
+}
+
+/**
+ * Server hits the console has not already loaded, as `{ page, id, title, subtitle, status }`.
+ * `data` maps page id to `{ rows }`; a hit is dropped when its row is already there.
+ */
+export function newRemoteHits(hits, data) {
+  const out = [];
+  const seen = new Set();
+  for (const h of hits || []) {
+    const page = searchHitPage(h?.kind);
+    if (!page || !h.id) continue;
+    const key = `${page}:${h.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if ((data?.[page]?.rows || []).some((r) => r.id === h.id)) continue;
+    out.push({ page, id: h.id, title: h.title || h.id, subtitle: h.subtitle || '', status: h.status || '' });
+  }
+  return out;
+}
