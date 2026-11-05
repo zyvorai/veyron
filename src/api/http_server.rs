@@ -1714,6 +1714,53 @@ pub mod web {
             }
         }
 
+        /// The agent's plan routes through the real authorization gate: a read-only key can
+        /// chat and inspect plans but never approve (execute) or cancel one.
+        #[test]
+        fn copilot_plan_routes_are_gated_by_role() {
+            const PLAN: &str = "/api/v1/experience/copilot/plans/p-1a2b3c";
+            let exec = format!("{PLAN}/execute");
+
+            let status = |role: ApiRole, m: Method, path: &str| {
+                authorize_request(role, "caller".into(), &m, path)
+                    .err()
+                    .map(|(code, _)| code.as_u16())
+            };
+
+            // Read-only: chat + inspect allowed, execute/cancel refused with 403.
+            assert_eq!(
+                status(
+                    ApiRole::ReadOnly,
+                    Method::POST,
+                    "/api/v1/experience/copilot/chat"
+                ),
+                None
+            );
+            assert_eq!(status(ApiRole::ReadOnly, Method::GET, PLAN), None);
+            assert_eq!(status(ApiRole::ReadOnly, Method::POST, &exec), Some(403));
+            assert_eq!(status(ApiRole::ReadOnly, Method::DELETE, PLAN), Some(403));
+
+            // Write: may execute and cancel; the caller identity reaches the handler.
+            assert_eq!(status(ApiRole::Write, Method::POST, &exec), None);
+            assert_eq!(status(ApiRole::Write, Method::DELETE, PLAN), None);
+            let ctx = authorize_request(ApiRole::Write, "ops".into(), &Method::POST, &exec)
+                .expect("write may execute");
+            assert_eq!(ctx.subject, "ops");
+            assert_eq!(ctx.role, ApiRole::Write);
+
+            // Admin can do everything (admin-only steps are enforced per step in the handler).
+            assert_eq!(status(ApiRole::Admin, Method::POST, &exec), None);
+            // The /veyron alias is canonicalized to the same gate.
+            assert_eq!(
+                status(
+                    ApiRole::ReadOnly,
+                    Method::POST,
+                    "/api/v1/veyron/experience/copilot/plans/p-1a2b3c/execute"
+                ),
+                Some(403)
+            );
+        }
+
         #[test]
         fn readonly_can_read_but_not_mutate() {
             assert!(
