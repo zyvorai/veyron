@@ -27,8 +27,8 @@ pub const PRUNE_GRACE_SECS: i64 = 3600;
 pub const PLAN_LABEL_KEY: &str = "veyron.io/type";
 pub const PLAN_LABEL_VALUE: &str = "copilot-plan";
 
-pub const VM_ACTIONS: [&str; 7] = [
-    "start", "stop", "restart", "pause", "unpause", "migrate", "delete",
+pub const VM_ACTIONS: [&str; 8] = [
+    "start", "stop", "restart", "pause", "unpause", "migrate", "delete", "snapshot",
 ];
 pub const NODE_ACTIONS: [&str; 2] = ["cordon", "uncordon"];
 
@@ -111,6 +111,10 @@ pub fn route_for(action: &str, kind: &str, ns: &str, name: &str) -> (Method, Str
     match (kind, action) {
         ("node", a) => (Method::POST, format!("/api/v1/nodes/{name}/{a}")),
         ("vm", "delete") => (Method::DELETE, format!("/api/v1/vms/{ns}/{name}")),
+        ("vm", "snapshot") => (
+            Method::POST,
+            format!("/api/v1/snapshots/{ns}/{name}/create"),
+        ),
         (_, a) => (Method::POST, format!("/api/v1/vms/{ns}/{name}/{a}")),
     }
 }
@@ -340,6 +344,22 @@ async fn blocker_for(client: &KubeClient, s: &PlanStep) -> Option<String> {
     None
 }
 
+/// Take a snapshot named `<vm>-snap-<timestamp>` through the same code the REST route uses.
+async fn snapshot_vm(client: &KubeClient, ns: &str, name: &str) -> anyhow::Result<()> {
+    let snap = format!("{name}-snap-{}", chrono::Utc::now().format("%Y%m%d-%H%M%S"));
+    #[cfg(feature = "kairon")]
+    if crate::api::vm_backend::is_kairon() {
+        return crate::api::kairon_ops::create_snapshot(client, ns, name, &snap)
+            .await
+            .map(|_| ());
+    }
+    let manager = crate::snapshots::SnapshotManager::from_client(client.client(), ns);
+    manager
+        .create_snapshot(&crate::snapshots::SnapshotConfig::new(name, &snap))
+        .await
+        .map(|_| ())
+}
+
 async fn run_step(
     client: &KubeClient,
     s: &PlanStep,
@@ -370,6 +390,7 @@ async fn run_step(
             .await
             .map(|_| ()),
         ("vm", "delete") => backend.delete(ns, name).await,
+        ("vm", "snapshot") => snapshot_vm(client, ns, name).await,
         ("node", "cordon") => client.set_node_schedulable(&s.name, false).await,
         ("node", "uncordon") => client.set_node_schedulable(&s.name, true).await,
         _ => anyhow::bail!("unsupported step {} {}", s.kind, s.action),
@@ -537,7 +558,9 @@ pub fn cooldown_blocker(
     cooldown: i64,
     self_id: &str,
 ) -> Option<String> {
-    if cooldown <= 0 {
+    // Snapshots are non-disruptive: they neither wait on nor lock a target, so
+    // "snapshot, then change" works across plans.
+    if cooldown <= 0 || step.action == "snapshot" {
         return None;
     }
     for p in recent.iter().filter(|p| p.id != self_id) {
@@ -555,7 +578,7 @@ pub fn cooldown_blocker(
         for s in &p.steps {
             let same = s.kind == step.kind && s.namespace == step.namespace && s.name == step.name;
             let active = s.result.as_ref().is_none_or(|r| r.ok);
-            if same && active {
+            if same && active && s.action != "snapshot" {
                 return Some(format!(
                     "cooling down: {} ran on this target {age}s ago (plan {}); retry in {}s",
                     s.action,
@@ -857,6 +880,31 @@ mod tests {
         assert!(cooldown_blocker(&old, &step, now, 60, "p-9").is_none());
         assert!(cooldown_blocker(&recent, &step, now, 0, "p-9").is_none());
         assert!(cooldown_blocker(&recent, &step, now, 60, "p-1").is_none());
+    }
+
+    #[test]
+    fn snapshot_is_a_write_step_and_never_cooldown_locked() {
+        let snap = build_steps("vm", "snapshot", "ns", &names(&["a"]))
+            .unwrap()
+            .remove(0);
+        assert_eq!(snap.min_role, "write");
+        assert!(!snap.destructive);
+        assert_eq!(snap.preview, "snapshot VM ns/a");
+        let now = chrono::Utc::now();
+        // a recent restart does not delay a snapshot ...
+        let recent = vec![started_plan("p-1", "a", 5, Some(true))];
+        assert!(cooldown_blocker(&recent, &snap, now, 60, "p-9").is_none());
+        // ... and a recent snapshot does not delay a restart.
+        let mut p = started_plan("p-2", "a", 5, Some(true));
+        p.steps = vec![snap.clone()];
+        p.steps[0].result = Some(StepResult {
+            ok: true,
+            error: None,
+        });
+        let restart = build_steps("vm", "restart", "ns", &names(&["a"]))
+            .unwrap()
+            .remove(0);
+        assert!(cooldown_blocker(&[p], &restart, now, 60, "p-9").is_none());
     }
 
     #[test]
