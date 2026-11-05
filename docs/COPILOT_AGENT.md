@@ -88,6 +88,26 @@ every kind is searched. Templates and images are cluster-wide catalogs, so an `n
 Snapshots match their source VM's name. On Kairon, `os:` matches the Machine's image reference and the
 catalog image's OS, family and version; images exist only on the Kairon backend.
 
+## Notifications
+
+Set `VEYRON_AI_PLAN_WEBHOOK_URL` to an HTTP(S) endpoint (a Slack, Mattermost, Teams or Discord incoming webhook, or
+your own service) and Veyron posts a JSON message when a plan is drafted, approved, run, failed or cancelled. It is
+how a second approver finds out a plan needs them: the `created` message says "needs a second approver" for plans
+under the four-eyes policy.
+
+```json
+{"event": "plan.created", "text": "alice drafted a plan that needs a second approver: delete VM prod/db-1 [p-1a2b…]",
+ "content": "…same line for Discord…", "actor": "alice", "source": "veyron-copilot", "timestamp": "…",
+ "plan": {"id": "p-1a2b…", "status": "pending", "created_by": "alice", "min_role": "write", "steps": 1,
+          "preview": ["delete VM prod/db-1"], "needs_approval": true, "approved_by": null,
+          "confirm_count": null, "expires_at": "…", "prompt": "…"}}
+```
+
+`VEYRON_AI_PLAN_WEBHOOK_EVENTS` limits it to some of `created`, `approved`, `executed`, `failed`, `cancelled`
+(comma list; default all). Delivery is best effort in the background: it never delays or fails a plan operation,
+retries once on a network error or 5xx, does not retry a 4xx, and the URL (which may contain a token) is never logged.
+Keep the URL in a Secret-backed environment variable; nothing secret is in the payload, but the prompt is.
+
 ## Audit
 
 Each executed step is appended to the SOC event store with actor, action, target, namespace/VM,
@@ -101,6 +121,8 @@ outcome, and labels `plan_id`, `via=copilot-agent`, `prompt`. Actor is the calle
 | `VEYRON_AI_MAX_TOOL_ROUNDS` | `6` | Max LLM↔tool rounds per turn |
 | `VEYRON_AI_PLAN_TTL_SECS` | `900` | Plan lifetime before it expires |
 | `VEYRON_AI_PLAN_COOLDOWN_SECS` | `60` | Per-VM/node cooldown between plan steps (`0` = off) |
+| `VEYRON_AI_PLAN_WEBHOOK_URL` | (off) | HTTP(S) endpoint that receives a JSON message for plan events (see Notifications) |
+| `VEYRON_AI_PLAN_WEBHOOK_EVENTS` | (all) | Comma list of `created`, `approved`, `executed`, `failed`, `cancelled` |
 | `VEYRON_AI_FOUR_EYES` | (off) | `destructive`, `admin`, `all` (comma list): plans of that kind need a second approver |
 | `VEYRON_AI_BULK_CONFIRM_THRESHOLD` | `5` | Plans with more targets than this need `confirm_count` (the count typed back) |
 | `VEYRON_AI_PROVIDER` | (OpenAI-compatible) | `anthropic` talks to Anthropic's native Messages API (tool use). Also selected by an `sk-ant-` key or an `anthropic.com` URL |

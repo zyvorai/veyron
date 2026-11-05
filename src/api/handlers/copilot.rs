@@ -34,7 +34,7 @@ use crate::api::auth_context::AuthContext;
 #[cfg(feature = "web")]
 use crate::api::http_server::web::ApiRole;
 #[cfg(feature = "web")]
-use crate::copilot::plan;
+use crate::copilot::{notify, plan};
 
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
@@ -204,6 +204,7 @@ async fn copilot_chat_handler(
                         &plan.prompt,
                     )
                     .await;
+                    notify::emit("created", &plan, &actor);
                     saved.push(plan);
                 }
                 Err(e) => {
@@ -334,6 +335,15 @@ async fn plan_execute_handler(
         )
         .await;
     }
+    notify::emit(
+        if p.status == "executed" {
+            "executed"
+        } else {
+            "failed"
+        },
+        &p,
+        &actor,
+    );
     if let Err(e) = plan::update(&kube, &ns, &p, None).await {
         log::warn!("could not record result of plan {}: {e}", p.id);
     }
@@ -407,6 +417,7 @@ async fn plan_approve_handler(
         &p.prompt,
     )
     .await;
+    notify::emit("approved", &p, &actor);
     Json(p).into_response()
 }
 
@@ -443,6 +454,7 @@ async fn plan_cancel_handler(
         &p.prompt,
     )
     .await;
+    notify::emit("cancelled", &p, &actor);
     Json(p).into_response()
 }
 
