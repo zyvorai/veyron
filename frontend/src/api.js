@@ -1049,6 +1049,8 @@ export const api = {
     ),
   rejectProposal: async (id) =>
     unwrap(await request(`/api/v1/ai/proposals/${encodeURIComponent(id)}/reject`, { method: 'POST' })),
+  search: async (q, limit = 20) =>
+    unwrap(await request(`/api/v1/search?q=${encodeURIComponent(q)}&namespace=all&limit=${limit}`, { timeout: 15_000 })),
   aiSearch: async (query) =>
     unwrap(await request('/api/v1/ai/search', { method: 'POST', body: JSON.stringify({ query }), timeout: 60_000 })),
   aiIntentVm: async (body) =>

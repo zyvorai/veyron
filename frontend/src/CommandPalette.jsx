@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, CornerDownLeft, Plus, Sun, Moon, Terminal, ArrowRight, Sparkles, Filter } from 'lucide-react';
 import { api } from './api.js';
-import { applyFilter, looksLikeQuestion } from './aisearch.js';
+import { applyFilter, looksLikeQuestion, newRemoteHits } from './aisearch.js';
 import { NAV, RES_META, CHAPTER_ICONS, pageLabel, pageBlurb } from './resources.js';
 import { Status } from './status.jsx';
 import { useFocusTrap } from './a11y.js';
@@ -32,6 +32,7 @@ function loadRecent() {
 export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, onCreate, onConsole, onAsk }) {
   const [q, setQ] = useState('');
   const [found, setFound] = useState(null);
+  const [remote, setRemote] = useState([]);
   const [idx, setIdx] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
@@ -42,6 +43,7 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
     if (open) {
       setQ('');
       setFound(null);
+      setRemote([]);
       setIdx(0);
       setTimeout(() => inputRef.current?.focus(), 10);
     }
@@ -150,14 +152,47 @@ export function CommandPalette({ open, onClose, data, go, theme, onToggleTheme, 
       .map((x) => x.it);
     const order = [...new Set(ranked.map((it) => it.group))];
     const grouped = order.flatMap((g) => ranked.filter((it) => it.group === g));
+    const cluster = remote.map((h) => ({
+      key: `remote:${h.page}:${h.id}`,
+      group: 'Cluster search',
+      label: h.title,
+      hint: h.subtitle,
+      status: h.status,
+      I: data[h.page]?.I || ArrowRight,
+      run: () => go(h.page, h.id),
+    }));
+    if (cluster.length) grouped.push(...cluster);
     return ranked.length && !looksLikeQuestion(q) ? [...grouped, ...askItems] : [...askItems, ...grouped];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, q, found, data, onAsk]);
+  }, [items, q, found, data, onAsk, remote]);
 
   useEffect(() => {
     setIdx(0);
     setFound(null);
   }, [q]);
+
+  // Cross-resource server search (pods, nodes, PVCs, VMs beyond what the console has loaded).
+  useEffect(() => {
+    const text = q.trim();
+    if (!open || text.length < 2 || looksLikeQuestion(text)) {
+      setRemote([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const r = await api.search(text);
+        if (!cancelled) setRemote(newRemoteHits(r?.results, data));
+      } catch {
+        if (!cancelled) setRemote([]);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, open]);
 
   async function runFind(text) {
     setFound({ filter: { resource: 'vms' }, rows: [], explanation: 'Searching…', source: '' });
