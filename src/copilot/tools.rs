@@ -20,6 +20,10 @@ pub struct ToolInvokeArgs {
     pub action: Option<String>,
     #[serde(default)]
     pub names: Vec<String>,
+    #[serde(default)]
+    pub cpus: Option<u32>,
+    #[serde(default)]
+    pub memory: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,6 +60,21 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
                     "names": {"type": "array", "items": {"type": "string"}, "description": "VM names (max 25)"}
                 },
                 "required": ["action", "namespace", "names"]
+            }),
+        ),
+        tool(
+            "propose_vm_resize",
+            "PROPOSE (never executes) a live resize: grow CPU sockets and/or guest memory of one or \
+             more VMs. Grow-only and bounded by the VM's configured maximums; the user must approve.",
+            json!({
+                "type": "object",
+                "properties": {
+                    "namespace": {"type": "string"},
+                    "names": {"type": "array", "items": {"type": "string"}, "description": "VM names (max 25)"},
+                    "cpus": {"type": "integer", "description": "New CPU socket count"},
+                    "memory": {"type": "string", "description": "New guest memory, e.g. 4Gi or 512Mi"}
+                },
+                "required": ["namespace", "names"]
             }),
         ),
         tool(
@@ -364,10 +383,22 @@ pub async fn propose_tool(
                 .ok_or("namespace is required to propose a VM action")?;
             ("vm", ns)
         }
+        "propose_vm_resize" => {
+            let ns = args
+                .namespace
+                .clone()
+                .or_else(|| (scope != "all").then(|| scope.to_string()))
+                .ok_or("namespace is required to propose a resize")?;
+            ("resize", ns)
+        }
         "propose_node_action" => ("node", String::new()),
         _ => return Err(format!("unknown proposal tool '{tool_name}'")),
     };
-    let mut steps = plan::build_steps(kind, &action, &ns, &args.names)?;
+    let mut steps = if kind == "resize" {
+        plan::build_hotplug_steps(&ns, &args.names, args.cpus, args.memory.as_deref())?
+    } else {
+        plan::build_steps(kind, &action, &ns, &args.names)?
+    };
     plan::annotate_blockers(client, &mut steps).await;
     let drafted = plan::new_plan(prompt, "", steps, plan::ttl_secs());
     let mut r = CopilotResponse::new(
@@ -427,7 +458,7 @@ mod tests {
         assert!(names.iter().any(|n| n == "yaml_preview"));
         assert!(names.iter().any(|n| n == "search_resources"));
         assert!(names.iter().any(|n| n == "propose_vm_action"));
-        assert_eq!(names.len(), 30);
+        assert_eq!(names.len(), 31);
     }
 
     #[test]

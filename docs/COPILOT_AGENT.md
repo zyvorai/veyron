@@ -42,6 +42,11 @@ Actions: VM `start|stop|restart|pause|unpause|migrate|delete|snapshot`; node `co
 `snapshot` takes a `<vm>-snap-<timestamp>` snapshot (a disk snapshot, or a VM-state checkpoint on
 Kairon Machines without PVCs). It needs Write, is not destructive, and is exempt from the cooldown in
 both directions, so a plan can "snapshot, then change" without waiting.
+Resize: the `propose_vm_resize` tool drafts `hotplug` steps (`cpus` = CPU sockets, `memory` such as
+`512Mi`/`4Gi`/`1Ti`, at least one, up to 25 VMs). It needs Write and runs the same backend call as
+`POST /vms/:ns/:name/hotplug`: KubeVirt applies it live under LiveUpdate (otherwise at next restart);
+Kairon hotplugs live, grow-only, within the Machine's `maxCpu`/`maxMemory`. Shrinking or exceeding the
+maximums is rejected by the backend when the step runs, and the plan shows that error on the step.
 
 ## API
 
