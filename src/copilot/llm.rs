@@ -108,13 +108,27 @@ fn sanitize_header_value(v: &str) -> String {
     v.chars().filter(|c| *c != '\r' && *c != '\n').collect()
 }
 
+/// `VEYRON_AI_PROVIDER=anthropic` selects Anthropic's native Messages API instead of the
+/// OpenAI-compatible `/chat/completions` format (anything else keeps OpenAI-compatible).
+fn provider_env_is_anthropic() -> bool {
+    env_nonempty("VEYRON_AI_PROVIDER").is_some_and(|p| p.eq_ignore_ascii_case("anthropic"))
+}
+
 fn resolve_api_key() -> Option<String> {
     env_nonempty("VEYRON_AI_API_KEY")
+        .or_else(|| env_nonempty("ANTHROPIC_API_KEY").filter(|_| provider_env_is_anthropic()))
         .or_else(|| env_nonempty("OPENROUTER_API_KEY"))
         .or_else(|| env_nonempty("ANTHROPIC_AUTH_TOKEN").filter(|k| is_openrouter_key(k)))
 }
 
 fn resolve_base_url(key: &str) -> String {
+    if provider_env_is_anthropic() || key.starts_with("sk-ant-") {
+        // Same SSRF screen as the OpenAI path; a blocked URL falls back to Anthropic, not OpenAI.
+        return match env_nonempty("VEYRON_AI_URL").map(|u| normalize_openai_base_url(&u)) {
+            Some(u) if u != "https://api.openai.com/v1" => u,
+            _ => ANTHROPIC_DEFAULT_BASE.to_string(),
+        };
+    }
     if let Some(url) = env_nonempty("VEYRON_AI_URL")
         .or_else(|| env_nonempty("OPENROUTER_API_URL"))
         .or_else(|| env_nonempty("OPENROUTER_BASE_URL"))
@@ -133,7 +147,9 @@ fn resolve_model(key: &str) -> String {
         .or_else(|| env_nonempty("OPENROUTER_MODEL"))
         .or_else(|| env_nonempty("ANTHROPIC_MODEL"))
         .unwrap_or_else(|| {
-            if is_openrouter_key(key) {
+            if provider_env_is_anthropic() || key.starts_with("sk-ant-") {
+                ANTHROPIC_DEFAULT_MODEL.into()
+            } else if is_openrouter_key(key) {
                 "openrouter/free".into()
             } else {
                 "gpt-4o-mini".into()
@@ -497,8 +513,185 @@ pub fn extra_headers() -> Vec<(&'static str, String)> {
     out
 }
 
+const ANTHROPIC_VERSION: &str = "2023-06-01";
+const ANTHROPIC_DEFAULT_BASE: &str = "https://api.anthropic.com";
+const ANTHROPIC_DEFAULT_MODEL: &str = "claude-sonnet-5-5";
+const ANTHROPIC_DEFAULT_MAX_TOKENS: u64 = 2048;
+
+/// Whether `cfg` should be spoken to with Anthropic's Messages API: an Anthropic URL or
+/// `sk-ant-` key, or `VEYRON_AI_PROVIDER=anthropic` when no in-cluster override is active.
+pub fn is_anthropic(cfg: &LlmConfig) -> bool {
+    cfg.base_url.contains("anthropic.com")
+        || cfg.api_key.starts_with("sk-ant-")
+        || (provider_env_is_anthropic() && runtime_override().is_none())
+}
+
+fn anthropic_messages_url(base: &str) -> String {
+    let b = base.trim_end_matches('/');
+    if b.ends_with("/v1/messages") {
+        b.to_string()
+    } else if b.ends_with("/v1") {
+        format!("{b}/messages")
+    } else {
+        format!("{b}/v1/messages")
+    }
+}
+
+fn append_blocks(msgs: &mut Vec<serde_json::Value>, role: &str, blocks: Vec<serde_json::Value>) {
+    if blocks.is_empty() {
+        return;
+    }
+    // The API wants alternating roles: fold consecutive same-role messages together
+    // (e.g. several tool results answering one assistant turn become one user message).
+    if let Some(last) = msgs.last_mut() {
+        if last["role"] == role {
+            if let Some(arr) = last["content"].as_array_mut() {
+                arr.extend(blocks);
+                return;
+            }
+        }
+    }
+    msgs.push(serde_json::json!({"role": role, "content": blocks}));
+}
+
+/// Translate the agent's OpenAI-format chat body into an Anthropic Messages request.
+pub(crate) fn to_anthropic_request(body: &serde_json::Value) -> serde_json::Value {
+    use serde_json::{Value, json};
+    let text_of = |m: &Value| m["content"].as_str().unwrap_or("").to_string();
+    let mut system: Vec<String> = Vec::new();
+    let mut msgs: Vec<Value> = Vec::new();
+    for m in body["messages"].as_array().into_iter().flatten() {
+        match m["role"].as_str().unwrap_or("user") {
+            "system" => {
+                let t = text_of(m);
+                if !t.is_empty() {
+                    system.push(t);
+                }
+            }
+            "assistant" => {
+                let mut blocks = Vec::new();
+                let t = text_of(m);
+                if !t.is_empty() {
+                    blocks.push(json!({"type": "text", "text": t}));
+                }
+                for tc in m["tool_calls"].as_array().into_iter().flatten() {
+                    let args = tc["function"]["arguments"].as_str().unwrap_or("{}");
+                    let input: Value = serde_json::from_str(args).unwrap_or_else(|_| json!({}));
+                    blocks.push(json!({
+                        "type": "tool_use",
+                        "id": tc["id"],
+                        "name": tc["function"]["name"],
+                        "input": input
+                    }));
+                }
+                append_blocks(&mut msgs, "assistant", blocks);
+            }
+            "tool" => append_blocks(
+                &mut msgs,
+                "user",
+                vec![json!({
+                    "type": "tool_result",
+                    "tool_use_id": m["tool_call_id"],
+                    "content": text_of(m)
+                })],
+            ),
+            _ => {
+                let t = text_of(m);
+                if !t.is_empty() {
+                    append_blocks(&mut msgs, "user", vec![json!({"type": "text", "text": t})]);
+                }
+            }
+        }
+    }
+    let max_tokens = std::env::var("VEYRON_AI_MAX_TOKENS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .filter(|n| *n > 0)
+        .unwrap_or(ANTHROPIC_DEFAULT_MAX_TOKENS);
+    let mut req = json!({
+        "model": body["model"],
+        "max_tokens": max_tokens,
+        "messages": msgs,
+    });
+    if !system.is_empty() {
+        req["system"] = json!(system.join("\n\n"));
+    }
+    if let Some(t) = body.get("temperature").filter(|t| t.is_number()) {
+        req["temperature"] = t.clone();
+    }
+    let tools: Vec<Value> = body["tools"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|t| {
+            json!({
+                "name": t["function"]["name"],
+                "description": t["function"]["description"],
+                "input_schema": t["function"]["parameters"]
+            })
+        })
+        .collect();
+    if !tools.is_empty() {
+        req["tools"] = json!(tools);
+        req["tool_choice"] = json!({"type": "auto"});
+    }
+    req
+}
+
+/// Translate an Anthropic Messages response into the OpenAI-shaped `ChatResponse` the
+/// rest of the Copilot reads.
+fn from_anthropic_response(v: &serde_json::Value) -> anyhow::Result<ChatResponse> {
+    use serde_json::json;
+    let mut text = String::new();
+    let mut calls = Vec::new();
+    for b in v["content"].as_array().into_iter().flatten() {
+        match b["type"].as_str() {
+            Some("text") => text.push_str(b["text"].as_str().unwrap_or("")),
+            Some("tool_use") => calls.push(json!({
+                "id": b["id"],
+                "type": "function",
+                "function": {"name": b["name"], "arguments": b["input"].to_string()}
+            })),
+            _ => {}
+        }
+    }
+    let mut message = json!({"content": if text.is_empty() { json!(null) } else { json!(text) }});
+    if !calls.is_empty() {
+        message["tool_calls"] = json!(calls);
+    }
+    Ok(serde_json::from_value(
+        json!({"choices": [{"message": message}]}),
+    )?)
+}
+
+#[cfg(feature = "web")]
+async fn post_anthropic(cfg: &LlmConfig, body: &serde_json::Value) -> anyhow::Result<ChatResponse> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(timeout_secs()))
+        .build()?;
+    let base = if cfg.base_url.is_empty() {
+        ANTHROPIC_DEFAULT_BASE
+    } else {
+        cfg.base_url.as_str()
+    };
+    let resp = client
+        .post(anthropic_messages_url(base))
+        .header("x-api-key", &cfg.api_key)
+        .header("anthropic-version", ANTHROPIC_VERSION)
+        .json(&to_anthropic_request(body))
+        .send()
+        .await?;
+    if !resp.status().is_success() {
+        anyhow::bail!("LLM HTTP {}", resp.status());
+    }
+    from_anthropic_response(&resp.json().await?)
+}
+
 #[cfg(feature = "web")]
 async fn post_chat_raw(cfg: &LlmConfig, body: &serde_json::Value) -> anyhow::Result<ChatResponse> {
+    if is_anthropic(cfg) {
+        return post_anthropic(cfg, body).await;
+    }
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(timeout_secs()))
         .build()?;
@@ -585,6 +778,187 @@ mod tests {
             normalize_openai_base_url("https://openrouter.ai/api/v1/"),
             "https://openrouter.ai/api/v1"
         );
+    }
+
+    #[test]
+    fn anthropic_request_translates_the_agent_transcript() {
+        use serde_json::json;
+        let body = json!({
+            "model": "claude-sonnet-5-5",
+            "temperature": 0.2,
+            "tool_choice": "auto",
+            "tools": [{"type": "function", "function": {
+                "name": "propose_vm_action", "description": "d",
+                "parameters": {"type": "object", "properties": {}}}}],
+            "messages": [
+                {"role": "system", "content": "be brief"},
+                {"role": "user", "content": "restart web-1"},
+                {"role": "assistant", "content": null, "tool_calls": [
+                    {"id": "t1", "type": "function", "function": {"name": "a", "arguments": "{\"x\":1}"}},
+                    {"id": "t2", "type": "function", "function": {"name": "b", "arguments": "not json"}}]},
+                {"role": "tool", "tool_call_id": "t1", "content": "r1"},
+                {"role": "tool", "tool_call_id": "t2", "content": "r2"}
+            ]
+        });
+        let r = to_anthropic_request(&body);
+        assert_eq!(r["model"], "claude-sonnet-5-5");
+        assert_eq!(r["system"], "be brief");
+        assert!(r["max_tokens"].as_u64().unwrap() > 0);
+        assert_eq!(r["tool_choice"], json!({"type": "auto"}));
+        assert_eq!(r["tools"][0]["name"], "propose_vm_action");
+        assert!(r["tools"][0]["input_schema"].is_object());
+        let m = r["messages"].as_array().unwrap();
+        assert_eq!(
+            m.len(),
+            3,
+            "user, assistant(tool_use x2), user(tool_result x2)"
+        );
+        assert_eq!(m[0]["role"], "user");
+        assert_eq!(m[1]["role"], "assistant");
+        assert_eq!(
+            m[1]["content"][0],
+            json!({"type": "tool_use", "id": "t1", "name": "a", "input": {"x": 1}})
+        );
+        assert_eq!(
+            m[1]["content"][1]["input"],
+            json!({}),
+            "unparseable args become an empty object"
+        );
+        assert_eq!(m[2]["role"], "user");
+        assert_eq!(m[2]["content"][0]["type"], "tool_result");
+        assert_eq!(m[2]["content"][1]["tool_use_id"], "t2");
+    }
+
+    #[test]
+    fn anthropic_response_becomes_an_openai_shaped_choice() {
+        use serde_json::json;
+        let r = from_anthropic_response(&json!({"content": [
+            {"type": "text", "text": "Let me check. "},
+            {"type": "tool_use", "id": "toolu_1", "name": "propose_vm_action",
+             "input": {"action": "snapshot", "names": ["db-1"]}}]}))
+        .unwrap();
+        let msg = r.choices.unwrap().remove(0).message.unwrap();
+        assert_eq!(msg.content.as_deref(), Some("Let me check. "));
+        let call = msg.tool_calls.unwrap().remove(0);
+        assert_eq!(call.id.as_deref(), Some("toolu_1"));
+        let f = call.function.unwrap();
+        assert_eq!(f.name.as_deref(), Some("propose_vm_action"));
+        let args = parse_tool_args(&f.arguments.unwrap());
+        assert_eq!(args.action.as_deref(), Some("snapshot"));
+        assert_eq!(args.names, vec!["db-1"]);
+
+        let plain =
+            from_anthropic_response(&json!({"content": [{"type": "text", "text": "done"}]}))
+                .unwrap();
+        let m = plain.choices.unwrap().remove(0).message.unwrap();
+        assert_eq!(m.content.as_deref(), Some("done"));
+        assert!(m.tool_calls.is_none());
+    }
+
+    #[test]
+    fn anthropic_url_and_detection() {
+        assert_eq!(
+            anthropic_messages_url("https://api.anthropic.com"),
+            "https://api.anthropic.com/v1/messages"
+        );
+        assert_eq!(
+            anthropic_messages_url("https://gw.example/v1/"),
+            "https://gw.example/v1/messages"
+        );
+        assert_eq!(
+            anthropic_messages_url("https://gw.example/v1/messages"),
+            "https://gw.example/v1/messages"
+        );
+        let cfg = |url: &str, key: &str| LlmConfig {
+            base_url: url.into(),
+            api_key: key.into(),
+            model: "m".into(),
+        };
+        assert!(is_anthropic(&cfg("https://api.anthropic.com", "k")));
+        assert!(is_anthropic(&cfg(
+            "https://api.openai.com/v1",
+            "sk-ant-abc"
+        )));
+        assert!(!is_anthropic(&cfg(
+            "https://api.openai.com/v1",
+            "sk-proj-abc"
+        )));
+        assert!(!is_anthropic(&cfg("http://llm.svc:8080/v1", "")));
+    }
+
+    /// The real HTTP path against a mock Anthropic server: URL, auth headers, the translated
+    /// request body, and the tool_use reply coming back as an OpenAI-shaped tool call.
+    #[cfg(feature = "web")]
+    #[tokio::test]
+    async fn anthropic_wire_roundtrip_against_a_mock_server() {
+        use axum::{Json, Router, http::HeaderMap, routing::post};
+        use serde_json::{Value, json};
+        use std::sync::{Arc, Mutex};
+
+        let seen: Arc<Mutex<Option<(String, String, Value)>>> = Arc::new(Mutex::new(None));
+        let sink = seen.clone();
+        let app = Router::new().route(
+            "/v1/messages",
+            post(move |headers: HeaderMap, Json(body): Json<Value>| {
+                let sink = sink.clone();
+                async move {
+                    let h = |k: &str| {
+                        headers
+                            .get(k)
+                            .and_then(|v| v.to_str().ok())
+                            .unwrap_or("")
+                            .to_string()
+                    };
+                    *sink.lock().unwrap() = Some((h("x-api-key"), h("anthropic-version"), body));
+                    Json(json!({"content": [
+                        {"type": "tool_use", "id": "toolu_9", "name": "propose_vm_action",
+                         "input": {"action": "restart", "namespace": "prod", "names": ["web-1"]}}
+                    ]}))
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+        let cfg = LlmConfig {
+            base_url: format!("http://127.0.0.1:{port}"),
+            api_key: "sk-ant-test-key".into(),
+            model: "claude-sonnet-5-5".into(),
+        };
+        assert!(is_anthropic(&cfg));
+        let body = json!({
+            "model": cfg.model,
+            "messages": [
+                {"role": "system", "content": "sys"},
+                {"role": "user", "content": "restart web-1"}],
+            "tools": [{"type": "function", "function": {
+                "name": "propose_vm_action", "description": "d", "parameters": {"type": "object"}}}]
+        });
+        let resp = post_chat_raw(&cfg, &body).await.expect("mock reply");
+
+        let (key, version, sent) = seen.lock().unwrap().clone().expect("request seen");
+        assert_eq!(key, "sk-ant-test-key");
+        assert_eq!(version, "2023-06-01");
+        assert_eq!(sent["model"], "claude-sonnet-5-5");
+        assert_eq!(sent["system"], "sys");
+        assert_eq!(sent["messages"][0]["content"][0]["text"], "restart web-1");
+        assert_eq!(sent["tools"][0]["name"], "propose_vm_action");
+
+        let call = resp
+            .choices
+            .unwrap()
+            .remove(0)
+            .message
+            .unwrap()
+            .tool_calls
+            .unwrap()
+            .remove(0);
+        assert_eq!(call.id.as_deref(), Some("toolu_9"));
+        let args = parse_tool_args(&call.function.unwrap().arguments.unwrap());
+        assert_eq!(args.action.as_deref(), Some("restart"));
+        assert_eq!(args.namespace.as_deref(), Some("prod"));
+        assert_eq!(args.names, vec!["web-1"]);
     }
 
     #[test]
