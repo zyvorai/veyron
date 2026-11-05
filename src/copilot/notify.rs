@@ -112,12 +112,69 @@ pub fn payload(event: &str, p: &Plan, actor: &str) -> Value {
     })
 }
 
+/// HMAC-SHA256 (RFC 2104) built on `sha2`, so signing needs no extra dependency.
+pub fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+    let mut k = [0u8; 64];
+    if key.len() > 64 {
+        k[..32].copy_from_slice(&Sha256::digest(key));
+    } else {
+        k[..key.len()].copy_from_slice(key);
+    }
+    let mut inner = Sha256::new();
+    inner.update(k.map(|b| b ^ 0x36));
+    inner.update(msg);
+    let mut outer = Sha256::new();
+    outer.update(k.map(|b| b ^ 0x5c));
+    outer.update(inner.finalize());
+    outer.finalize().into()
+}
+
+/// `sha256=<hex>` over `"<timestamp>.<body>"`, the value of `X-Veyron-Signature`. Signing the
+/// timestamp with the body lets a receiver reject replays of an old delivery.
+pub fn signature(secret: &str, timestamp: &str, body: &[u8]) -> String {
+    let mut msg = Vec::with_capacity(timestamp.len() + 1 + body.len());
+    msg.extend_from_slice(timestamp.as_bytes());
+    msg.push(b'.');
+    msg.extend_from_slice(body);
+    format!(
+        "sha256={}",
+        hex::encode(hmac_sha256(secret.as_bytes(), &msg))
+    )
+}
+
+/// The secret configured for signing, if any (`VEYRON_AI_PLAN_WEBHOOK_SECRET`).
+pub fn webhook_secret() -> Option<String> {
+    std::env::var("VEYRON_AI_PLAN_WEBHOOK_SECRET")
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
 /// POST `body` to `url`; one retry after a short pause on a network error or 5xx.
 #[cfg(feature = "web")]
 pub(crate) async fn deliver(url: &str, body: &Value) -> bool {
+    deliver_signed(url, body, webhook_secret().as_deref()).await
+}
+
+/// [`deliver`] with an explicit signing secret (`None` sends no signature headers).
+#[cfg(feature = "web")]
+pub(crate) async fn deliver_signed(url: &str, body: &Value, secret: Option<&str>) -> bool {
     let client = crate::soc::http_client();
+    // Serialize once so the signature covers exactly the bytes that are sent.
+    let bytes = serde_json::to_vec(body).unwrap_or_default();
     for attempt in 0..2 {
-        match client.post(url).json(body).send().await {
+        let mut req = client
+            .post(url)
+            .header("content-type", "application/json")
+            .body(bytes.clone());
+        if let Some(secret) = secret {
+            let ts = chrono::Utc::now().timestamp().to_string();
+            req = req
+                .header("X-Veyron-Signature", signature(secret, &ts, &bytes))
+                .header("X-Veyron-Timestamp", ts);
+        }
+        match req.send().await {
             Ok(r) if r.status().is_success() => return true,
             Ok(r) if r.status().is_client_error() => {
                 log::warn!("plan webhook rejected with HTTP {}", r.status());
@@ -320,5 +377,97 @@ mod tests {
         assert_eq!(hits.load(Ordering::SeqCst), 1, "a 4xx is final");
         // an unreachable endpoint also just returns false
         assert!(!deliver("http://127.0.0.1:1/hook", &body).await);
+    }
+
+    #[test]
+    fn hmac_matches_the_rfc_4231_vectors() {
+        // Test case 1
+        assert_eq!(
+            hex::encode(hmac_sha256(&[0x0b; 20], b"Hi There")),
+            "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"
+        );
+        // Test case 2
+        assert_eq!(
+            hex::encode(hmac_sha256(b"Jefe", b"what do ya want for nothing?")),
+            "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+        );
+        // Test case 6: a key longer than the block size is hashed first
+        assert_eq!(
+            hex::encode(hmac_sha256(
+                &[0xaa; 131],
+                b"Test Using Larger Than Block-Size Key - Hash Key First"
+            )),
+            "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+        );
+    }
+
+    #[test]
+    fn the_signature_covers_the_timestamp_and_the_body() {
+        let a = signature("s3cret", "1700000000", br#"{"a":1}"#);
+        assert!(a.starts_with("sha256="), "{a}");
+        assert_eq!(a.len(), "sha256=".len() + 64);
+        assert_eq!(a, signature("s3cret", "1700000000", br#"{"a":1}"#));
+        assert_ne!(
+            a,
+            signature("s3cret", "1700000001", br#"{"a":1}"#),
+            "timestamp"
+        );
+        assert_ne!(a, signature("s3cret", "1700000000", br#"{"a":2}"#), "body");
+        assert_ne!(a, signature("other", "1700000000", br#"{"a":1}"#), "secret");
+    }
+
+    #[cfg(feature = "web")]
+    #[tokio::test]
+    async fn signed_delivery_lets_the_receiver_verify_the_exact_bytes() {
+        use axum::{Router, body::Bytes, http::HeaderMap, routing::post};
+        use std::sync::{Arc, Mutex};
+
+        type Seen = (Option<String>, Option<String>, Vec<u8>);
+        let got: Arc<Mutex<Vec<Seen>>> = Arc::new(Mutex::new(Vec::new()));
+        let sink = got.clone();
+        let app = Router::new().route(
+            "/hook",
+            post(move |headers: HeaderMap, body: Bytes| {
+                let sink = sink.clone();
+                async move {
+                    let h = |n: &str| {
+                        headers
+                            .get(n)
+                            .and_then(|v| v.to_str().ok())
+                            .map(String::from)
+                    };
+                    sink.lock().unwrap().push((
+                        h("x-veyron-signature"),
+                        h("x-veyron-timestamp"),
+                        body.to_vec(),
+                    ));
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move { axum::serve(listener, app).await.ok() });
+        let url = format!("http://127.0.0.1:{port}/hook");
+        let body = payload("created", &plan(&["web-1"], "restart"), "alice");
+
+        assert!(deliver_signed(&url, &body, Some("s3cret")).await);
+        assert!(deliver_signed(&url, &body, None).await);
+        let g = got.lock().unwrap();
+        let (sig, ts, raw) = &g[0];
+        let (sig, ts) = (sig.clone().unwrap(), ts.clone().unwrap());
+        assert_eq!(
+            sig,
+            signature("s3cret", &ts, raw),
+            "receiver recomputes the same value"
+        );
+        assert_eq!(
+            serde_json::from_slice::<Value>(raw).unwrap()["event"],
+            "plan.created"
+        );
+        assert!(ts.parse::<i64>().is_ok(), "{ts}");
+        assert!(
+            g[1].0.is_none() && g[1].1.is_none(),
+            "no secret, no signature headers"
+        );
     }
 }

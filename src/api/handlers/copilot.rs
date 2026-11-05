@@ -54,6 +54,10 @@ pub fn router(state: SharedState) -> Router {
             "/experience/copilot/plans/:id/approve",
             post(plan_approve_handler),
         )
+        .route(
+            "/experience/copilot/plans/:id/undo",
+            post(plan_undo_handler),
+        )
         .route("/experience/copilot/status", get(copilot_status_handler))
         .route(
             "/experience/copilot/doctor/:ns/:name",
@@ -419,6 +423,73 @@ async fn plan_approve_handler(
     .await;
     notify::emit("approved", &p, &actor);
     Json(p).into_response()
+}
+
+/// Draft a new pending plan that reverses what an executed plan did. It is an ordinary plan:
+/// the caller still has to approve (and, under four-eyes, someone else too) and run it.
+#[cfg(feature = "web")]
+async fn plan_undo_handler(
+    State(state): State<SharedState>,
+    auth: Option<Extension<AuthContext>>,
+    Path(id): Path<String>,
+) -> Response {
+    let Some(Extension(caller)) = auth else {
+        return plan_err(403, "no authenticated role");
+    };
+    if !caller.allows(&ApiRole::Write) {
+        return plan_err(403, "Write role required");
+    }
+    let actor = caller.subject.clone();
+    let (original, _rv, ns, kube) = match load_plan(&state, &id).await {
+        Ok(v) => v,
+        Err((code, msg)) => return plan_err(code, msg),
+    };
+    if original.created_by != actor && !caller.allows(&ApiRole::Admin) {
+        return plan_err(403, "only the plan's creator or an admin may undo it");
+    }
+    let (mut steps, skipped) = match plan::build_undo_steps(&original) {
+        Ok(v) => v,
+        Err(e) => return plan_err(409, e),
+    };
+    let client = state.read().await.client().clone();
+    plan::annotate_blockers(&client, &mut steps).await;
+    let prompt = format!("undo {}: {}", original.id, original.prompt);
+    let mut undo = plan::new_plan(&prompt, &actor, steps, plan::ttl_secs());
+    let recent = plan::recent_started(&kube, &ns, chrono::Utc::now()).await;
+    plan::apply_cooldown(
+        &mut undo.steps,
+        &recent,
+        chrono::Utc::now(),
+        plan::cooldown_secs(),
+        &undo.id,
+    );
+    if let Err(e) = plan::save(&kube, &ns, &undo).await {
+        log::warn!("could not persist undo plan {}: {e}", undo.id);
+        return plan_err(502, "could not save the undo plan");
+    }
+    soc::record_agent_audit(
+        &state,
+        &actor,
+        "plan_created",
+        &format!(
+            "undo of {}: {} step(s), needs {}",
+            original.id,
+            undo.steps.len(),
+            undo.min_role
+        ),
+        "",
+        None,
+        "success",
+        &undo.id,
+        &undo.prompt,
+    )
+    .await;
+    notify::emit("created", &undo, &actor);
+    (
+        StatusCode::CREATED,
+        Json(serde_json::json!({ "plan": undo, "undoes": original.id, "skipped": skipped })),
+    )
+        .into_response()
 }
 
 #[cfg(feature = "web")]

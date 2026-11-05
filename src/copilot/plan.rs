@@ -604,6 +604,56 @@ pub fn check_can_act(
     Ok(())
 }
 
+/// The action that puts a target back where `action` left it, for the pairs that have a
+/// true inverse. `restart`, `heal`, `snapshot`, `hotplug` and `migrate` leave nothing to put
+/// back (or the previous value was never recorded) and `delete` cannot be taken back.
+pub fn inverse_action(action: &str) -> Option<&'static str> {
+    Some(match action {
+        "start" => "stop",
+        "stop" => "start",
+        "pause" => "unpause",
+        "unpause" => "pause",
+        "cordon" => "uncordon",
+        "uncordon" => "cordon",
+        _ => return None,
+    })
+}
+
+/// Steps that undo what `plan` did: the inverse of every step that actually succeeded, in
+/// reverse order. Returns them with a note for each step that was left out (never ran,
+/// failed, or has no inverse). `Err` when nothing can be undone.
+pub fn build_undo_steps(plan: &Plan) -> Result<(Vec<PlanStep>, Vec<String>), String> {
+    if plan.status != "executed" && plan.status != "failed" {
+        return Err(format!(
+            "plan is {}; only a plan that has run can be undone",
+            plan.status
+        ));
+    }
+    let mut steps = Vec::new();
+    let mut skipped = Vec::new();
+    for s in plan.steps.iter().rev() {
+        if !s.result.as_ref().is_some_and(|r| r.ok) {
+            skipped.push(format!("{} (did not succeed)", s.preview));
+            continue;
+        }
+        let Some(inv) = inverse_action(&s.action) else {
+            skipped.push(format!("{} (cannot be undone)", s.preview));
+            continue;
+        };
+        steps.extend(build_steps(
+            &s.kind,
+            inv,
+            &s.namespace,
+            std::slice::from_ref(&s.name),
+        )?);
+    }
+    if steps.is_empty() {
+        return Err("nothing in this plan can be undone".into());
+    }
+    skipped.reverse();
+    Ok((steps, skipped))
+}
+
 /// Every destructive step's target name must be typed back by the caller.
 pub fn check_confirmation(plan: &Plan, confirm_names: &[String]) -> Result<(), String> {
     let missing: Vec<&str> = plan
@@ -1610,5 +1660,94 @@ mod tests {
                 .starts_with("cooling down")
         );
         assert_eq!(steps[1].blocked.as_deref(), Some("VM not found"));
+    }
+
+    fn ran(action: &str, kind: &str, ns: &str, names: &[&str], ok: &[bool]) -> Plan {
+        let n: Vec<String> = names.iter().map(|s| s.to_string()).collect();
+        let mut p = new_plan(
+            "do it",
+            "alice",
+            build_steps(kind, action, ns, &n).unwrap(),
+            600,
+        );
+        for (s, ok) in p.steps.iter_mut().zip(ok) {
+            s.result = Some(StepResult {
+                ok: *ok,
+                error: (!ok).then(|| "boom".to_string()),
+            });
+        }
+        p.status = if ok.iter().all(|b| *b) {
+            "executed"
+        } else {
+            "failed"
+        }
+        .into();
+        p
+    }
+
+    #[test]
+    fn undo_reverses_start_stop_pause_and_cordon() {
+        for (a, b) in [
+            ("start", "stop"),
+            ("stop", "start"),
+            ("pause", "unpause"),
+            ("unpause", "pause"),
+        ] {
+            let (steps, skipped) =
+                build_undo_steps(&ran(a, "vm", "prod", &["a", "b"], &[true, true])).unwrap();
+            assert!(skipped.is_empty());
+            assert!(steps.iter().all(|s| s.action == b), "{a} -> {b}");
+            // reverse order: the last VM touched is put back first
+            assert_eq!(
+                steps.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(),
+                ["b", "a"]
+            );
+        }
+        let (steps, _) = build_undo_steps(&ran("cordon", "node", "", &["n1"], &[true])).unwrap();
+        assert_eq!(
+            (steps[0].action.as_str(), steps[0].kind.as_str()),
+            ("uncordon", "node")
+        );
+    }
+
+    #[test]
+    fn undo_only_covers_steps_that_succeeded() {
+        let (steps, skipped) = build_undo_steps(&ran(
+            "stop",
+            "vm",
+            "prod",
+            &["a", "b", "c"],
+            &[true, false, true],
+        ))
+        .unwrap();
+        assert_eq!(
+            steps.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(),
+            ["c", "a"]
+        );
+        assert_eq!(skipped.len(), 1);
+        assert!(
+            skipped[0].contains("prod/b") && skipped[0].contains("did not succeed"),
+            "{skipped:?}"
+        );
+    }
+
+    #[test]
+    fn undo_refuses_what_has_no_inverse_or_has_not_run() {
+        for a in ["restart", "delete", "snapshot", "migrate"] {
+            let e = build_undo_steps(&ran(a, "vm", "prod", &["a"], &[true])).unwrap_err();
+            assert!(e.contains("nothing"), "{a}: {e}");
+        }
+        let pending = new_plan(
+            "x",
+            "alice",
+            build_steps("vm", "stop", "prod", &["a".to_string()]).unwrap(),
+            600,
+        );
+        assert!(build_undo_steps(&pending).unwrap_err().contains("pending"));
+        let mut cancelled = pending.clone();
+        cancelled.status = "cancelled".into();
+        assert!(build_undo_steps(&cancelled).is_err());
+        assert_eq!(inverse_action("heal"), None);
+        assert_eq!(inverse_action("start"), Some("stop"));
     }
 }
