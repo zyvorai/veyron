@@ -7,9 +7,12 @@ fallback still answers read-only questions, and no plans are drafted.
 
 ## Console
 
-This change is **API-only**. The existing console assistant (`Assistant.jsx`, with its own proposal
-cards from the `/ai` module — see `docs/ai.md`) is unchanged; wiring it, or a new drawer, to the
-plan endpoints below is follow-up work.
+In the Veyron AI drawer (`Assistant.jsx`), Write+ users get a **Plan actions** checkbox. When on, the
+message goes to the Copilot agent (`/experience/copilot/chat`) instead of the streaming `/ai/chat`
+agent. Its answer and evidence are shown, and any drafted plans appear as approval cards
+(`CopilotPlanCard.jsx`): steps with blocked reasons, destructive steps needing typed VM names,
+Approve & run / Cancel, and per-step results. The default mode (streaming `/ai` agent with its own
+proposals, see `docs/ai.md`) is unchanged.
 
 ## Safety model
 
