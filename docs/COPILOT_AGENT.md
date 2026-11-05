@@ -61,6 +61,14 @@ maximums is rejected by the backend when the step runs, and the plan shows that 
 | `POST /api/v1/experience/copilot/plans/:id/execute` | Write (+ per step) | Body `{confirm_names, stop_on_error}` |
 | `DELETE /api/v1/experience/copilot/plans/:id` | Write | Cancel |
 
+### Search syntax
+
+Free-text words must all match a name, namespace or label. Filters: `kind:vm|pod|node|pvc|snapshot|template|image`
+(comma-separated, plural aliases accepted), `ns:<namespace>`, `status:<text>`, `os:<text>`. With no `kind:`
+every kind is searched. Templates and images are cluster-wide catalogs, so an `ns:` filter excludes them.
+Snapshots match their source VM's name. On Kairon, `os:` matches the Machine's image reference and the
+catalog image's OS, family and version; images exist only on the Kairon backend.
+
 ## Audit
 
 Each executed step is appended to the SOC event store with actor, action, target, namespace/VM,

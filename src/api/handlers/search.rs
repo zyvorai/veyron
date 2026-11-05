@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 //! `GET /api/v1/search?q=&limit=&namespace=` — cross-resource search
-//! (VMs, pods, nodes, PVCs). Read-only; see `copilot::search` for the query syntax.
+//! (VMs, pods, nodes, PVCs, snapshots, templates, images). Read-only; see `copilot::search` for the query syntax.
 
 #[cfg(feature = "web")]
 use axum::{
