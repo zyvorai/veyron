@@ -153,7 +153,8 @@ export function Assistant({ open, onClose, context, user, seed, onSeedUsed }) {
       setTurns((t) => [...t, { q, text: '', calls: [], proposals: [], plans: [], error: '', mode: null, done: false }]);
       setBusy(true);
       if (actMode) {
-        setTurns((t) => [...t, { q, text: '', calls: [], proposals: [], plans: [], error: '', mode: 'plan', done: false }]);
+        // The turn was already added above; fill it in rather than pushing a second one.
+        patchLast((t) => ({ ...t, mode: 'plan' }));
         try {
           const r = await api.copilotChat(q, history);
           const c = r?.copilot || {};
