@@ -203,6 +203,9 @@
       <div class="tile reveal" style="--c:#ff9f0a"><h3>GPU and Windows</h3><p>GPU passthrough with a live-migration guard. A versioned image catalog with uploads, golden images, sysprep, domain join, RDP guardrails. No CDI.</p></div>
       <div class="tile reveal" style="--c:#ff453a"><h3>Secure</h3><p>Admin, write and read-only roles, OIDC SSO, and a SOC with SIEM export.</p></div>
       <div class="tile reveal" style="--c:#64d2ff"><h3>No database</h3><p>State lives in Kubernetes. Unsupported actions return 501 with a reason, never a fake success.</p></div>
+      <div class="tile reveal" style="--c:#5e5ce6"><h3>Ask, then approve</h3><p>The Copilot agent drafts a plan: start, stop, restart, migrate, snapshot, resize, heal, delete. Nothing runs until you approve it. Plans are single-use, expire, and delete needs the VM name typed back.</p></div>
+      <div class="tile reveal" style="--c:#ffd60a"><h3>Search everything</h3><p>One box for VMs, pods, nodes and volumes, with filters like <code>status:failed</code> and <code>os:windows</code>. It runs as you, so it only finds and does what your role allows.</p></div>
+      <div class="tile reveal" style="--c:#ff6482"><h3>Audited, loop-proof</h3><p>Every plan step is audited with who approved it, the prompt and the plan id. A per-VM cooldown stops the agent re-running the same action on the same target.</p></div>
     </div>
   </section>
 
