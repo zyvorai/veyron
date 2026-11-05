@@ -19,6 +19,9 @@ use crate::kube::KubeClient;
 
 pub const MAX_STEPS: usize = 25;
 pub const DEFAULT_TTL_SECS: i64 = 900;
+/// Per-target loop guard: after a step succeeds (or is still running) on a VM/node, further
+/// plan steps on the same target are refused for this long. `0` disables it.
+pub const DEFAULT_COOLDOWN_SECS: i64 = 60;
 /// Finished or expired plans stay readable this long past `expires_at`, then are pruned.
 pub const PRUNE_GRACE_SECS: i64 = 3600;
 pub const PLAN_LABEL_KEY: &str = "veyron.io/type";
@@ -66,6 +69,17 @@ pub struct Plan {
     pub status: String,
     pub min_role: String,
     pub steps: Vec<PlanStep>,
+    /// When execution was claimed; drives the per-target cooldown.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+}
+
+pub fn cooldown_secs() -> i64 {
+    std::env::var("VEYRON_AI_PLAN_COOLDOWN_SECS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .filter(|v: &i64| *v >= 0)
+        .unwrap_or(DEFAULT_COOLDOWN_SECS)
 }
 
 pub fn ttl_secs() -> i64 {
@@ -210,6 +224,7 @@ pub fn new_plan(prompt: &str, created_by: &str, steps: Vec<PlanStep>, ttl: i64) 
         status: "pending".into(),
         min_role,
         steps,
+        started_at: None,
     }
 }
 
@@ -325,10 +340,19 @@ async fn blocker_for(client: &KubeClient, s: &PlanStep) -> Option<String> {
     None
 }
 
-async fn run_step(client: &KubeClient, s: &PlanStep) -> anyhow::Result<()> {
+async fn run_step(
+    client: &KubeClient,
+    s: &PlanStep,
+    cooldown: Option<(&[Plan], &str)>,
+) -> anyhow::Result<()> {
     use crate::api::vm_backend::{BackendKind, MigrateRequest, VmBackend};
     if let Some(b) = blocker_for(client, s).await {
         anyhow::bail!(b);
+    }
+    if let Some((recent, self_id)) = cooldown {
+        if let Some(b) = cooldown_blocker(recent, s, chrono::Utc::now(), cooldown_secs(), self_id) {
+            anyhow::bail!(b);
+        }
     }
     let backend = VmBackend::for_client(client);
     let (ns, name) = (s.namespace.as_str(), s.name.as_str());
@@ -354,7 +378,12 @@ async fn run_step(client: &KubeClient, s: &PlanStep) -> anyhow::Result<()> {
 
 /// Run all steps in order. Steps are re-checked for blockers right before running.
 /// On a failure with `stop_on_error`, remaining steps are marked skipped.
-pub async fn execute_steps(client: &KubeClient, steps: &mut [PlanStep], stop_on_error: bool) {
+pub async fn execute_steps(
+    client: &KubeClient,
+    steps: &mut [PlanStep],
+    stop_on_error: bool,
+    cooldown: Option<(&[Plan], &str)>,
+) {
     let mut aborted = false;
     for s in steps.iter_mut() {
         if aborted {
@@ -364,7 +393,7 @@ pub async fn execute_steps(client: &KubeClient, steps: &mut [PlanStep], stop_on_
             });
             continue;
         }
-        match run_step(client, s).await {
+        match run_step(client, s, cooldown).await {
             Ok(()) => {
                 s.result = Some(StepResult {
                     ok: true,
@@ -494,6 +523,97 @@ pub fn is_prunable(plan: &Plan, now: chrono::DateTime<chrono::Utc>, grace_secs: 
     chrono::DateTime::parse_from_rfc3339(&plan.expires_at)
         .map(|e| now.signed_duration_since(e).num_seconds() > grace_secs)
         .unwrap_or(false)
+}
+
+// ── Per-target cooldown ─────────────────────────────────────────────
+
+/// Why `step` must wait: another plan acted on the same target within `cooldown` seconds.
+/// A step counts if it succeeded or is still running; failed attempts never lock a target.
+/// `self_id` is skipped so a plan never blocks itself.
+pub fn cooldown_blocker(
+    recent: &[Plan],
+    step: &PlanStep,
+    now: chrono::DateTime<chrono::Utc>,
+    cooldown: i64,
+    self_id: &str,
+) -> Option<String> {
+    if cooldown <= 0 {
+        return None;
+    }
+    for p in recent.iter().filter(|p| p.id != self_id) {
+        let Some(t) = p
+            .started_at
+            .as_deref()
+            .and_then(|t| chrono::DateTime::parse_from_rfc3339(t).ok())
+        else {
+            continue;
+        };
+        let age = now.signed_duration_since(t).num_seconds();
+        if !(0..cooldown).contains(&age) {
+            continue;
+        }
+        for s in &p.steps {
+            let same = s.kind == step.kind && s.namespace == step.namespace && s.name == step.name;
+            let active = s.result.as_ref().is_none_or(|r| r.ok);
+            if same && active {
+                return Some(format!(
+                    "cooling down: {} ran on this target {age}s ago (plan {}); retry in {}s",
+                    s.action,
+                    p.id,
+                    cooldown - age
+                ));
+            }
+        }
+    }
+    None
+}
+
+/// Mark steps that are in cooldown as blocked (keeps an existing blocker).
+pub fn apply_cooldown(
+    steps: &mut [PlanStep],
+    recent: &[Plan],
+    now: chrono::DateTime<chrono::Utc>,
+    cooldown: i64,
+    self_id: &str,
+) {
+    for s in steps.iter_mut() {
+        if s.blocked.is_none() {
+            s.blocked = cooldown_blocker(recent, s, now, cooldown, self_id);
+        }
+    }
+}
+
+/// Plans whose execution started within the cooldown window (best effort: `[]` on error).
+pub async fn recent_started(
+    client: &kube::Client,
+    ns: &str,
+    now: chrono::DateTime<chrono::Utc>,
+) -> Vec<Plan> {
+    use k8s_openapi::api::core::v1::ConfigMap;
+    use kube::api::ListParams;
+    let cooldown = cooldown_secs();
+    if cooldown <= 0 {
+        return Vec::new();
+    }
+    let api: kube::Api<ConfigMap> = kube::Api::namespaced(client.clone(), ns);
+    let lp = ListParams::default().labels(&format!("{PLAN_LABEL_KEY}={PLAN_LABEL_VALUE}"));
+    let Ok(list) = api.list(&lp).await else {
+        return Vec::new();
+    };
+    list.items
+        .into_iter()
+        .filter_map(|cm| cm.data?.get("plan").cloned())
+        .filter_map(|raw| serde_json::from_str::<Plan>(&raw).ok())
+        .filter(|p| {
+            p.started_at
+                .as_deref()
+                .and_then(|t| chrono::DateTime::parse_from_rfc3339(t).ok())
+                .is_some_and(|t| {
+                    let age = now.signed_duration_since(t).num_seconds();
+                    (0..cooldown).contains(&age)
+                })
+        })
+        .collect()
 }
 
 /// Delete plan ConfigMaps that expired more than `PRUNE_GRACE_SECS` ago. Best effort:
@@ -698,5 +818,77 @@ mod tests {
         assert!(!is_prunable(&p, now, 0), "live plans are never pruned");
         p.expires_at = "garbage".into();
         assert!(!is_prunable(&p, now, 0), "unparseable expiry is kept");
+    }
+
+    fn started_plan(id: &str, name: &str, ago_secs: i64, ok: Option<bool>) -> Plan {
+        let mut p = new_plan(
+            "x",
+            "u",
+            build_steps("vm", "restart", "ns", &names(&[name])).unwrap(),
+            60,
+        );
+        p.id = id.into();
+        p.started_at =
+            Some((chrono::Utc::now() - chrono::Duration::seconds(ago_secs)).to_rfc3339());
+        p.steps[0].result = ok.map(|ok| StepResult { ok, error: None });
+        p
+    }
+
+    #[test]
+    fn cooldown_blocks_the_same_target_only_inside_the_window() {
+        let now = chrono::Utc::now();
+        let step = build_steps("vm", "stop", "ns", &names(&["a"]))
+            .unwrap()
+            .remove(0);
+        let recent = vec![started_plan("p-1", "a", 10, Some(true))];
+        let msg = cooldown_blocker(&recent, &step, now, 60, "p-9").expect("blocked");
+        assert!(msg.contains("restart ran on this target"), "{msg}");
+        assert!(msg.contains("p-1"), "{msg}");
+        // other VM, other namespace, expired window, disabled, and self are all fine
+        let other = build_steps("vm", "stop", "ns", &names(&["b"]))
+            .unwrap()
+            .remove(0);
+        assert!(cooldown_blocker(&recent, &other, now, 60, "p-9").is_none());
+        let other_ns = build_steps("vm", "stop", "other", &names(&["a"]))
+            .unwrap()
+            .remove(0);
+        assert!(cooldown_blocker(&recent, &other_ns, now, 60, "p-9").is_none());
+        let old = vec![started_plan("p-1", "a", 120, Some(true))];
+        assert!(cooldown_blocker(&old, &step, now, 60, "p-9").is_none());
+        assert!(cooldown_blocker(&recent, &step, now, 0, "p-9").is_none());
+        assert!(cooldown_blocker(&recent, &step, now, 60, "p-1").is_none());
+    }
+
+    #[test]
+    fn failed_attempts_do_not_lock_but_running_ones_do() {
+        let now = chrono::Utc::now();
+        let step = build_steps("vm", "stop", "ns", &names(&["a"]))
+            .unwrap()
+            .remove(0);
+        let failed = vec![started_plan("p-1", "a", 5, Some(false))];
+        assert!(cooldown_blocker(&failed, &step, now, 60, "p-9").is_none());
+        let running = vec![started_plan("p-1", "a", 5, None)];
+        assert!(cooldown_blocker(&running, &step, now, 60, "p-9").is_some());
+    }
+
+    #[test]
+    fn apply_cooldown_keeps_an_existing_blocker() {
+        let now = chrono::Utc::now();
+        let mut steps = build_steps("vm", "stop", "ns", &names(&["a", "b"])).unwrap();
+        steps[1].blocked = Some("VM not found".into());
+        steps[0].name = "a".into();
+        let recent = vec![
+            started_plan("p-1", "a", 5, Some(true)),
+            started_plan("p-2", "b", 5, Some(true)),
+        ];
+        apply_cooldown(&mut steps, &recent, now, 60, "p-9");
+        assert!(
+            steps[0]
+                .blocked
+                .as_deref()
+                .unwrap()
+                .starts_with("cooling down")
+        );
+        assert_eq!(steps[1].blocked.as_deref(), Some("VM not found"));
     }
 }

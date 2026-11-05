@@ -32,6 +32,11 @@ proposals, see `docs/ai.md`) is unchanged.
 6. **Migration guard.** `migrate` steps are checked with the same eligibility logic as the direct
    API (e.g. GPU passthrough VMs); blocked steps are flagged in the plan.
 7. **Stop on error** by default (`stop_on_error: true`); per-step results are returned.
+8. **Per-target cooldown.** After a step succeeds (or is still running) on a VM or node, any other
+   plan's step on the same target is refused for `VEYRON_AI_PLAN_COOLDOWN_SECS` (default 60,
+   `0` disables). New plans show such steps as blocked ("cooling down … retry in Ns") and execute
+   re-checks. Failed or skipped steps never lock a target. It reads the plan ConfigMaps, so it is
+   best effort: two plans executed in the same instant on different API replicas can both pass.
 
 Actions: VM `start|stop|restart|pause|unpause|migrate|delete`; node `cordon|uncordon`.
 
@@ -57,6 +62,7 @@ outcome, and labels `plan_id`, `via=copilot-agent`, `prompt`. Actor is the calle
 | `VEYRON_AI_MODE` | `routing` | Set `agent` for the tool-calling loop |
 | `VEYRON_AI_MAX_TOOL_ROUNDS` | `6` | Max LLM↔tool rounds per turn |
 | `VEYRON_AI_PLAN_TTL_SECS` | `900` | Plan lifetime before it expires |
+| `VEYRON_AI_PLAN_COOLDOWN_SECS` | `60` | Per-VM/node cooldown between plan steps (`0` = off) |
 
 ## RBAC
 
@@ -65,5 +71,5 @@ verbs (`deploy/k8s.yaml`, `charts/veyron/templates/clusterrole.yaml`). Nothing n
 
 ## Not yet implemented
 
-Snapshot, hotplug and self-heal plan steps; per-VM cooldown loop guard; audit actor in the generic
+Snapshot, hotplug and self-heal plan steps; audit actor in the generic
 HTTP middleware (still `api`); unattended auto-execution (deliberately out of scope).
