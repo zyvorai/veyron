@@ -51,6 +51,12 @@ pub struct PlanStep {
     /// Informational; execution re-derives the role from the route.
     pub min_role: String,
     pub preview: String,
+    /// `hotplug` only: new CPU socket count.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cpus: Option<u32>,
+    /// `hotplug` only: new guest memory (`Mi`/`Gi`/`Ti` quantity).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory: Option<String>,
     /// Why this step cannot run (checked at proposal time and again at execution).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub blocked: Option<String>,
@@ -154,8 +160,20 @@ pub fn build_steps(
     namespace: &str,
     names: &[String],
 ) -> Result<Vec<PlanStep>, String> {
+    build_steps_for(kind, action, namespace, names, false)
+}
+
+/// `hotplug` carries parameters, so it is only reachable through `build_hotplug_steps`.
+fn build_steps_for(
+    kind: &str,
+    action: &str,
+    namespace: &str,
+    names: &[String],
+    allow_hotplug: bool,
+) -> Result<Vec<PlanStep>, String> {
     let action = action.trim().to_lowercase();
     let allowed: &[&str] = match kind {
+        "vm" if allow_hotplug && action == "hotplug" => &["hotplug"],
         "vm" => &VM_ACTIONS,
         "node" => &NODE_ACTIONS,
         _ => return Err(format!("unknown kind '{kind}'")),
@@ -197,6 +215,8 @@ pub fn build_steps(
             destructive: kind == "vm" && action == "delete",
             min_role: String::new(),
             preview: String::new(),
+            cpus: None,
+            memory: None,
             blocked: None,
             result: None,
         };
@@ -207,6 +227,63 @@ pub fn build_steps(
             format!("{action} node {n}")
         };
         steps.push(step);
+    }
+    Ok(steps)
+}
+
+pub const MAX_HOTPLUG_CPUS: u32 = 512;
+
+/// `4Gi`, `512Mi`, `1Ti` - a positive integer with a binary suffix, nothing else.
+fn valid_memory(m: &str) -> bool {
+    let Some(i) = m.len().checked_sub(2) else {
+        return false;
+    };
+    let (num, unit) = m.split_at(i);
+    matches!(unit, "Mi" | "Gi" | "Ti")
+        && !num.is_empty()
+        && num.len() <= 7
+        && !num.starts_with('0')
+        && num.chars().all(|c| c.is_ascii_digit())
+}
+
+/// Live-resize steps (`hotplug`): grow CPU sockets and/or guest memory on VMs.
+/// Grow-only and `maxCpu`/`maxMemory` limits are enforced by the backend at execution.
+pub fn build_hotplug_steps(
+    namespace: &str,
+    names: &[String],
+    cpus: Option<u32>,
+    memory: Option<&str>,
+) -> Result<Vec<PlanStep>, String> {
+    if cpus.is_none() && memory.is_none() {
+        return Err("at least one of cpus/memory is required".into());
+    }
+    if let Some(c) = cpus {
+        if c == 0 || c > MAX_HOTPLUG_CPUS {
+            return Err(format!("cpus must be 1-{MAX_HOTPLUG_CPUS}"));
+        }
+    }
+    if let Some(m) = memory {
+        if !valid_memory(m) {
+            return Err(format!("invalid memory '{m}' (use e.g. 512Mi, 4Gi)"));
+        }
+    }
+    let mut steps = build_steps_for("vm", "hotplug", namespace, names, true)?;
+    for s in &mut steps {
+        s.cpus = cpus;
+        s.memory = memory.map(str::to_string);
+        let mut want = Vec::new();
+        if let Some(c) = cpus {
+            want.push(format!("{c} CPU"));
+        }
+        if let Some(m) = memory {
+            want.push(format!("{m} memory"));
+        }
+        s.preview = format!(
+            "resize VM {}/{} to {}",
+            s.namespace,
+            s.name,
+            want.join(" + ")
+        );
     }
     Ok(steps)
 }
@@ -391,6 +468,7 @@ async fn run_step(
             .map(|_| ()),
         ("vm", "delete") => backend.delete(ns, name).await,
         ("vm", "snapshot") => snapshot_vm(client, ns, name).await,
+        ("vm", "hotplug") => backend.hotplug(ns, name, s.cpus, s.memory.as_deref()).await,
         ("node", "cordon") => client.set_node_schedulable(&s.name, false).await,
         ("node", "uncordon") => client.set_node_schedulable(&s.name, true).await,
         _ => anyhow::bail!("unsupported step {} {}", s.kind, s.action),
@@ -880,6 +958,46 @@ mod tests {
         assert!(cooldown_blocker(&old, &step, now, 60, "p-9").is_none());
         assert!(cooldown_blocker(&recent, &step, now, 0, "p-9").is_none());
         assert!(cooldown_blocker(&recent, &step, now, 60, "p-1").is_none());
+    }
+
+    #[test]
+    fn hotplug_steps_carry_validated_params_and_need_write() {
+        let s = build_hotplug_steps("ns", &names(&["a", "b"]), Some(4), Some("8Gi")).unwrap();
+        assert_eq!(s.len(), 2);
+        assert_eq!(s[0].action, "hotplug");
+        assert_eq!((s[0].cpus, s[0].memory.as_deref()), (Some(4), Some("8Gi")));
+        assert_eq!(s[0].min_role, "write");
+        assert!(!s[0].destructive);
+        assert_eq!(s[0].preview, "resize VM ns/a to 4 CPU + 8Gi memory");
+        let only_mem = build_hotplug_steps("ns", &names(&["a"]), None, Some("512Mi")).unwrap();
+        assert_eq!(only_mem[0].preview, "resize VM ns/a to 512Mi memory");
+        for bad in [
+            "",
+            "4",
+            "Gi",
+            "0Gi",
+            "04Gi",
+            "4gb",
+            "4GiB",
+            "-4Gi",
+            "4.5Gi",
+            "1e3Mi",
+            "99999999Gi",
+        ] {
+            assert!(
+                build_hotplug_steps("ns", &names(&["a"]), None, Some(bad)).is_err(),
+                "{bad} should be rejected"
+            );
+        }
+        assert!(build_hotplug_steps("ns", &names(&["a"]), None, None).is_err());
+        assert!(build_hotplug_steps("ns", &names(&["a"]), Some(0), None).is_err());
+        assert!(build_hotplug_steps("ns", &names(&["a"]), Some(513), None).is_err());
+        assert!(build_hotplug_steps("ns", &names(&["a;x"]), Some(2), None).is_err());
+    }
+
+    #[test]
+    fn hotplug_is_not_reachable_through_the_generic_vm_action() {
+        assert!(build_steps("vm", "hotplug", "ns", &names(&["a"])).is_err());
     }
 
     #[test]
