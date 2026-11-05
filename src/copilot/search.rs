@@ -1,10 +1,10 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-//! Cross-resource search (VMs, pods, nodes, PVCs) shared by `GET /api/v1/search`
+//! Cross-resource search (VMs, pods, nodes, PVCs, snapshots, templates, images) shared by `GET /api/v1/search`
 //! and the agent's `search_resources` tool.
 //!
 //! Query syntax: free-text words (all must match name/namespace/labels) plus
-//! optional filters `kind:vm|pod|node|pvc`, `ns:<namespace>`, `status:<text>`,
+//! optional filters `kind:vm|pod|node|pvc|snapshot|template|image`, `ns:<namespace>`, `status:<text>`,
 //! `os:<text>`. Example: `kind:vm status:failed ns:prod web`.
 
 use serde::Serialize;
@@ -37,6 +37,9 @@ fn canonical_kind(k: &str) -> Option<&'static str> {
         "pod" | "pods" => Some("pod"),
         "node" | "nodes" | "host" | "hosts" => Some("node"),
         "pvc" | "pvcs" | "disk" | "disks" | "volume" | "volumes" => Some("pvc"),
+        "snapshot" | "snapshots" | "snap" | "snaps" => Some("snapshot"),
+        "template" | "templates" => Some("template"),
+        "image" | "images" => Some("image"),
         _ => None,
     }
 }
@@ -183,6 +186,93 @@ async fn vm_rows(client: &KubeClient, scope: &str) -> Vec<(String, String, Strin
         .collect()
 }
 
+/// `(name, namespace, status, extra text)` for every snapshot in scope. Kairon lists disk
+/// snapshots plus VM-state checkpoints; KubeVirt lists `VirtualMachineSnapshot`s. The extra
+/// text carries the source VM so searching a VM name also finds its snapshots.
+async fn snapshot_rows(client: &KubeClient, scope: &str) -> Vec<(String, String, String, String)> {
+    #[cfg(all(feature = "web", feature = "kairon"))]
+    if crate::api::vm_backend::is_kairon() {
+        return crate::api::kairon_ops::list_snapshots(client, scope, None)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|s| {
+                (
+                    s.name,
+                    s.namespace,
+                    s.status,
+                    format!("vm={} kind={}", s.vm_name, s.kind),
+                )
+            })
+            .collect();
+    }
+    #[cfg(feature = "web")]
+    {
+        let raw = client.client();
+        let namespaces = if scope == "all" {
+            crate::api::handlers::namespace_scope::kubernetes_namespace_names(&raw).await
+        } else {
+            vec![scope.to_string()]
+        };
+        let mut out = Vec::new();
+        for ns in namespaces {
+            let manager = crate::snapshots::SnapshotManager::from_client(raw.clone(), &ns);
+            for s in manager.list_all_snapshots().await.unwrap_or_default() {
+                out.push((
+                    s.name,
+                    s.namespace,
+                    s.status.to_string(),
+                    format!("vm={}", s.vm_name),
+                ));
+            }
+        }
+        return out;
+    }
+    #[allow(unreachable_code)]
+    {
+        let _ = (client, scope);
+        Vec::new()
+    }
+}
+
+/// `(name, status, extra text)` for each Kairon catalog image (cluster-scoped). Empty on KubeVirt.
+async fn image_rows(client: &KubeClient) -> Vec<(String, String, String)> {
+    #[cfg(all(feature = "web", feature = "kairon"))]
+    if crate::api::vm_backend::is_kairon() {
+        use kube::api::{Api, ListParams};
+        let list = Api::<crate::kairon::CatalogImage>::all(client.client())
+            .list(&ListParams::default())
+            .await
+            .map(|l| l.items)
+            .unwrap_or_default();
+        return list
+            .iter()
+            .map(|m| {
+                let j = crate::api::handlers::machine_images::catalog_json(m);
+                let field = |k: &str| j[k].as_str().unwrap_or("").to_string();
+                (
+                    m.metadata.name.clone().unwrap_or_default(),
+                    if m.spec.deprecated {
+                        "Deprecated"
+                    } else {
+                        "Available"
+                    }
+                    .to_string(),
+                    format!(
+                        "os={} family={} version={} kind={}",
+                        field("os"),
+                        field("family"),
+                        field("version"),
+                        field("kind")
+                    ),
+                )
+            })
+            .collect();
+    }
+    let _ = client;
+    Vec::new()
+}
+
 /// Run the search. `scope` is a namespace or `"all"`; a `ns:` filter narrows it.
 pub async fn search(
     client: &KubeClient,
@@ -271,6 +361,46 @@ pub async fn search(
             }
         }
     }
+    if q.wants_kind("snapshot") {
+        for (name, ns, status, extra) in snapshot_rows(client, scope).await {
+            if matches(q, &name, &ns, &status, &extra) {
+                hits.push(SearchHit {
+                    kind: "snapshot".into(),
+                    id: format!("{ns}/{name}"),
+                    title: name,
+                    subtitle: format!("{ns} · {status}"),
+                    status,
+                });
+            }
+        }
+    }
+    // Templates and images are cluster-wide catalogs: a namespace filter excludes them.
+    if q.wants_kind("template") && q.namespace.is_none() {
+        for name in crate::templates::TEMPLATES.list() {
+            if matches(q, &name, "", "Available", "") {
+                hits.push(SearchHit {
+                    kind: "template".into(),
+                    id: name.clone(),
+                    title: name,
+                    subtitle: "built-in template".into(),
+                    status: "Available".into(),
+                });
+            }
+        }
+    }
+    if q.wants_kind("image") && q.namespace.is_none() {
+        for (name, status, extra) in image_rows(client).await {
+            if matches(q, &name, "", &status, &extra) {
+                hits.push(SearchHit {
+                    kind: "image".into(),
+                    id: name.clone(),
+                    title: name,
+                    subtitle: format!("catalog image · {status}"),
+                    status,
+                });
+            }
+        }
+    }
     hits.truncate(limit);
     hits
 }
@@ -337,6 +467,18 @@ mod tests {
             "Running",
             &machine_label_text(None)
         ));
+    }
+
+    #[test]
+    fn new_kinds_parse_with_their_aliases() {
+        let q = parse_query("kind:snaps,templates,images db");
+        assert_eq!(q.kinds, vec!["snapshot", "template", "image"]);
+        assert!(q.wants_kind("snapshot") && !q.wants_kind("vm"));
+        assert_eq!(q.words, vec!["db"]);
+        assert!(
+            parse_query("db").wants_kind("template"),
+            "default searches every kind"
+        );
     }
 
     #[test]

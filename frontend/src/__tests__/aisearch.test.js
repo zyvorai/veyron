@@ -39,7 +39,10 @@ describe('newRemoteHits', () => {
   it('maps kinds to console pages and drops hits already loaded', () => {
     expect(searchHitPage('node')).toBe('hosts');
     expect(searchHitPage('pvc')).toBe('pvcs');
-    expect(searchHitPage('snapshot')).toBeNull();
+    expect(searchHitPage('snapshot')).toBe('snapshots');
+    expect(searchHitPage('template')).toBe('templates');
+    expect(searchHitPage('image')).toBe('images');
+    expect(searchHitPage('mystery')).toBeNull();
     const hits = [
       { kind: 'vm', id: 'a/web-1', title: 'web-1', subtitle: 'a · Running', status: 'Running' },
       { kind: 'pod', id: 'a/web-1-abc', title: 'web-1-abc', subtitle: 'a · Running', status: 'Running' },
@@ -49,6 +52,20 @@ describe('newRemoteHits', () => {
       { kind: 'vm' },
     ];
     expect(newRemoteHits(hits, data).map((h) => `${h.page}:${h.id}`)).toEqual(['pods:a/web-1-abc', 'hosts:n1']);
+  });
+  it('opens catalog images by their prefixed row id and skips ones already loaded', () => {
+    const hits = [
+      { kind: 'image', id: 'ubuntu-24.04', title: 'ubuntu-24.04', subtitle: 'catalog image', status: 'Available' },
+      { kind: 'image', id: 'debian-13', title: 'debian-13' },
+      { kind: 'snapshot', id: 'a/web-1-snap', title: 'web-1-snap' },
+      { kind: 'template', id: 'fedora-44', title: 'fedora-44' },
+    ];
+    const loaded = { images: { rows: [{ id: 'catalog/debian-13' }] } };
+    expect(newRemoteHits(hits, loaded).map((h) => `${h.page}:${h.id}`)).toEqual([
+      'images:catalog/ubuntu-24.04',
+      'snapshots:a/web-1-snap',
+      'templates:fedora-44',
+    ]);
   });
   it('tolerates missing input', () => {
     expect(newRemoteHits(undefined, {})).toEqual([]);

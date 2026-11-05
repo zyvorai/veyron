@@ -67,7 +67,12 @@ export function looksLikeQuestion(q) {
 }
 
 /** Console page that lists each `/api/v1/search` hit kind. */
-const SEARCH_PAGE = { vm: 'vms', pod: 'pods', node: 'hosts', pvc: 'pvcs' };
+const SEARCH_PAGE = { vm: 'vms', pod: 'pods', node: 'hosts', pvc: 'pvcs', snapshot: 'snapshots', template: 'templates', image: 'images' };
+
+/** Console row id for a search hit (catalog images are listed as `catalog/<name>`). */
+function rowId(kind, id) {
+  return kind === 'image' ? `catalog/${id}` : id;
+}
 
 export function searchHitPage(kind) {
   return SEARCH_PAGE[kind] || null;
@@ -83,11 +88,12 @@ export function newRemoteHits(hits, data) {
   for (const h of hits || []) {
     const page = searchHitPage(h?.kind);
     if (!page || !h.id) continue;
-    const key = `${page}:${h.id}`;
+    const id = rowId(h.kind, h.id);
+    const key = `${page}:${id}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    if ((data?.[page]?.rows || []).some((r) => r.id === h.id)) continue;
-    out.push({ page, id: h.id, title: h.title || h.id, subtitle: h.subtitle || '', status: h.status || '' });
+    if ((data?.[page]?.rows || []).some((r) => r.id === id)) continue;
+    out.push({ page, id, title: h.title || h.id, subtitle: h.subtitle || '', status: h.status || '' });
   }
   return out;
 }
