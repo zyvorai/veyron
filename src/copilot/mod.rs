@@ -32,9 +32,9 @@ mod network_lens;
 mod node_advisor;
 mod observability_advisor;
 mod performance_advisor;
-mod quota_advisor;
 #[cfg(feature = "web")]
 pub mod plan;
+mod quota_advisor;
 mod scheduling;
 pub mod search;
 mod security_sentinel;
