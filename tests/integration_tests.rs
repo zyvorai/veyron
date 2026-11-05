@@ -1688,8 +1688,9 @@ mod copilot_agent {
     use veyron::api::auth_context::AuthContext;
     use veyron::api::http_server::web::ApiRole;
     use veyron::copilot::plan::{
-        Plan, StepResult, apply_cooldown, build_hotplug_steps, build_steps, check_can_act,
-        check_confirmation, cooldown_blocker, final_status, new_plan,
+        Plan, StepResult, apply_cooldown, build_hotplug_steps, build_steps, build_target_steps,
+        check_blast_radius, check_can_act, check_confirmation, cooldown_blocker, final_status,
+        new_plan,
     };
     use veyron::copilot::search::parse_query;
 
@@ -1940,5 +1941,51 @@ mod copilot_agent {
         let plain = parse_query("db");
         assert!(plain.kinds.is_empty() && plain.status.is_none() && plain.os.is_none());
         assert_eq!(plain.words, ["db"]);
+    }
+
+    #[test]
+    fn a_bulk_plan_over_the_threshold_needs_the_count_and_the_names_for_deletes() {
+        let now = Utc::now();
+        let targets: Vec<(String, String)> = (0..8)
+            .map(|i| {
+                (
+                    if i % 2 == 0 { "prod" } else { "dev" }.to_string(),
+                    format!("vm-{i}"),
+                )
+            })
+            .collect();
+
+        // A restart wave: no typed names, but the count must match.
+        let steps = build_target_steps("restart", &targets, None, None).unwrap();
+        let plan = roundtrip(&new_plan("restart the failed ones", "alice", steps, 900));
+        assert_eq!(plan.steps.len(), 8);
+        assert_eq!(plan.confirm_count, Some(8));
+        assert!(check_confirmation(&plan, &[]).is_ok());
+        assert!(check_blast_radius(&plan, None).is_err());
+        assert!(check_blast_radius(&plan, Some(3)).is_err());
+        assert!(check_blast_radius(&plan, Some(8)).is_ok());
+        // Ownership and role rules are unchanged by size.
+        assert!(check_can_act(&plan, &caller(ApiRole::Write, "alice"), "alice", true, now).is_ok());
+        assert_eq!(
+            check_can_act(&plan, &caller(ApiRole::Write, "bob"), "bob", true, now)
+                .unwrap_err()
+                .0,
+            403
+        );
+
+        // A bulk delete needs every name AND the count.
+        let del = build_target_steps("delete", &targets, None, None).unwrap();
+        let del = roundtrip(&new_plan("delete them", "alice", del, 900));
+        let all: Vec<String> = targets.iter().map(|(_, n)| n.clone()).collect();
+        assert!(check_confirmation(&del, &all[..7]).is_err());
+        assert!(check_confirmation(&del, &all).is_ok());
+        assert!(check_blast_radius(&del, None).is_err());
+        assert!(check_blast_radius(&del, Some(8)).is_ok());
+
+        // Too many matches is an error, never a silent truncation.
+        let many: Vec<(String, String)> = (0..30)
+            .map(|i| ("prod".into(), format!("vm-{i}")))
+            .collect();
+        assert!(build_target_steps("restart", &many, None, None).is_err());
     }
 }

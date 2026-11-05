@@ -18,6 +18,8 @@ use crate::api::http_server::web::ApiRole;
 use crate::kube::KubeClient;
 
 pub const MAX_STEPS: usize = 25;
+/// Plans touching more targets than this need the user to type the count back.
+pub const DEFAULT_BULK_CONFIRM_THRESHOLD: usize = 5;
 pub const DEFAULT_TTL_SECS: i64 = 900;
 /// Per-target loop guard: after a step succeeds (or is still running) on a VM/node, further
 /// plan steps on the same target are refused for this long. `0` disables it.
@@ -78,6 +80,18 @@ pub struct Plan {
     /// When execution was claimed; drives the per-target cooldown.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub started_at: Option<String>,
+    /// Blast-radius guard: set to the step count when the plan affects more targets than
+    /// `VEYRON_AI_BULK_CONFIRM_THRESHOLD`. Execution then needs `confirm_count` to match it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub confirm_count: Option<usize>,
+}
+
+/// Plans with more steps than this require `confirm_count` (`VEYRON_AI_BULK_CONFIRM_THRESHOLD`).
+pub fn bulk_confirm_threshold() -> usize {
+    std::env::var("VEYRON_AI_BULK_CONFIRM_THRESHOLD")
+        .ok()
+        .and_then(|v| v.trim().parse::<usize>().ok())
+        .unwrap_or(DEFAULT_BULK_CONFIRM_THRESHOLD)
 }
 
 pub fn cooldown_secs() -> i64 {
@@ -248,14 +262,7 @@ fn valid_memory(m: &str) -> bool {
         && num.chars().all(|c| c.is_ascii_digit())
 }
 
-/// Live-resize steps (`hotplug`): grow CPU sockets and/or guest memory on VMs.
-/// Grow-only and `maxCpu`/`maxMemory` limits are enforced by the backend at execution.
-pub fn build_hotplug_steps(
-    namespace: &str,
-    names: &[String],
-    cpus: Option<u32>,
-    memory: Option<&str>,
-) -> Result<Vec<PlanStep>, String> {
+fn validate_hotplug(cpus: Option<u32>, memory: Option<&str>) -> Result<(), String> {
     if cpus.is_none() && memory.is_none() {
         return Err("at least one of cpus/memory is required".into());
     }
@@ -269,8 +276,11 @@ pub fn build_hotplug_steps(
             return Err(format!("invalid memory '{m}' (use e.g. 512Mi, 4Gi)"));
         }
     }
-    let mut steps = build_steps_for("vm", "hotplug", namespace, names, true)?;
-    for s in &mut steps {
+    Ok(())
+}
+
+fn apply_hotplug_params(steps: &mut [PlanStep], cpus: Option<u32>, memory: Option<&str>) {
+    for s in steps {
         s.cpus = cpus;
         s.memory = memory.map(str::to_string);
         let mut want = Vec::new();
@@ -287,7 +297,76 @@ pub fn build_hotplug_steps(
             want.join(" + ")
         );
     }
+}
+
+/// Live-resize steps (`hotplug`): grow CPU sockets and/or guest memory on VMs.
+/// Grow-only and `maxCpu`/`maxMemory` limits are enforced by the backend at execution.
+pub fn build_hotplug_steps(
+    namespace: &str,
+    names: &[String],
+    cpus: Option<u32>,
+    memory: Option<&str>,
+) -> Result<Vec<PlanStep>, String> {
+    validate_hotplug(cpus, memory)?;
+    let mut steps = build_steps_for("vm", "hotplug", namespace, names, true)?;
+    apply_hotplug_params(&mut steps, cpus, memory);
     Ok(steps)
+}
+
+/// Steps for one VM action over `(namespace, name)` targets that may span namespaces,
+/// typically resolved from a search query. Never silently truncates: more than
+/// [`MAX_STEPS`] targets is an error telling the caller to narrow the query.
+pub fn build_target_steps(
+    action: &str,
+    targets: &[(String, String)],
+    cpus: Option<u32>,
+    memory: Option<&str>,
+) -> Result<Vec<PlanStep>, String> {
+    if targets.is_empty() {
+        return Err("no targets".into());
+    }
+    if targets.len() > MAX_STEPS {
+        return Err(format!(
+            "matched {} VMs, more than the {MAX_STEPS} a single plan can hold; narrow the query",
+            targets.len()
+        ));
+    }
+    let hotplug = action.trim().eq_ignore_ascii_case("hotplug");
+    if hotplug {
+        validate_hotplug(cpus, memory)?;
+    }
+    // Group by namespace, keeping first-seen order, so each group goes through the same
+    // validation as a single-namespace plan.
+    let mut order: Vec<&str> = Vec::new();
+    for (ns, _) in targets {
+        if !order.contains(&ns.as_str()) {
+            order.push(ns);
+        }
+    }
+    let mut steps = Vec::new();
+    for ns in order {
+        let names: Vec<String> = targets
+            .iter()
+            .filter(|(n, _)| n == ns)
+            .map(|(_, name)| name.clone())
+            .collect();
+        steps.extend(build_steps_for("vm", action, ns, &names, hotplug)?);
+    }
+    if hotplug {
+        apply_hotplug_params(&mut steps, cpus, memory);
+    }
+    Ok(steps)
+}
+
+/// Blast-radius guard: a plan over the threshold needs its target count typed back.
+pub fn check_blast_radius(plan: &Plan, confirm_count: Option<usize>) -> Result<(), String> {
+    match (plan.confirm_count, confirm_count) {
+        (None, _) => Ok(()),
+        (Some(n), Some(c)) if n == c => Ok(()),
+        (Some(n), _) => Err(format!(
+            "this plan affects {n} targets; confirm by sending confirm_count={n}"
+        )),
+    }
 }
 
 pub fn new_plan(prompt: &str, created_by: &str, steps: Vec<PlanStep>, ttl: i64) -> Plan {
@@ -306,6 +385,7 @@ pub fn new_plan(prompt: &str, created_by: &str, steps: Vec<PlanStep>, ttl: i64) 
         expires_at: (now + chrono::Duration::seconds(ttl)).to_rfc3339(),
         status: "pending".into(),
         min_role,
+        confirm_count: (steps.len() > bulk_confirm_threshold()).then_some(steps.len()),
         steps,
         started_at: None,
     }
@@ -1044,6 +1124,87 @@ mod tests {
         ] {
             assert!(!is_unhealthy_status(ok), "{ok}");
         }
+    }
+
+    fn targets(v: &[(&str, &str)]) -> Vec<(String, String)> {
+        v.iter()
+            .map(|(n, m)| (n.to_string(), m.to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn bulk_targets_span_namespaces_and_keep_every_guard() {
+        let t = targets(&[("prod", "a"), ("dev", "b"), ("prod", "c"), ("prod", "a")]);
+        let steps = build_target_steps("restart", &t, None, None).unwrap();
+        let got: Vec<_> = steps
+            .iter()
+            .map(|s| format!("{}/{}", s.namespace, s.name))
+            .collect();
+        assert_eq!(
+            got,
+            ["prod/a", "prod/c", "dev/b"],
+            "grouped by namespace, deduplicated"
+        );
+        assert!(
+            steps
+                .iter()
+                .all(|s| s.action == "restart" && s.min_role == "write")
+        );
+
+        // Deletes stay destructive and need typed names.
+        let del = build_target_steps("delete", &t, None, None).unwrap();
+        assert!(del.iter().all(|s| s.destructive));
+
+        // Resize carries its values and is validated up front.
+        let hp = build_target_steps("hotplug", &t, Some(4), Some("8Gi")).unwrap();
+        assert!(
+            hp.iter()
+                .all(|s| s.cpus == Some(4) && s.memory.as_deref() == Some("8Gi"))
+        );
+        assert!(build_target_steps("hotplug", &t, None, None).is_err());
+        assert!(build_target_steps("hotplug", &t, None, Some("8GB")).is_err());
+
+        // Bad input is refused, never trimmed.
+        assert!(build_target_steps("format", &t, None, None).is_err());
+        assert!(build_target_steps("restart", &[], None, None).is_err());
+        assert!(build_target_steps("restart", &targets(&[("Bad NS", "a")]), None, None).is_err());
+        let many: Vec<(String, String)> = (0..26)
+            .map(|i| ("prod".into(), format!("vm-{i}")))
+            .collect();
+        let e = build_target_steps("restart", &many, None, None).unwrap_err();
+        assert!(e.contains("26") && e.contains("narrow the query"), "{e}");
+    }
+
+    #[test]
+    fn plans_over_the_threshold_need_their_count_typed_back() {
+        let plan_of = |n: usize| {
+            let names: Vec<String> = (0..n).map(|i| format!("vm-{i}")).collect();
+            new_plan(
+                "p",
+                "alice",
+                build_steps("vm", "restart", "ns", &names).unwrap(),
+                60,
+            )
+        };
+        // At or below the default threshold of 5: no extra confirmation.
+        let small = plan_of(DEFAULT_BULK_CONFIRM_THRESHOLD);
+        assert_eq!(small.confirm_count, None);
+        assert!(check_blast_radius(&small, None).is_ok());
+        // One over: the exact count is required.
+        let big = plan_of(DEFAULT_BULK_CONFIRM_THRESHOLD + 1);
+        assert_eq!(big.confirm_count, Some(6));
+        assert!(check_blast_radius(&big, Some(6)).is_ok());
+        for wrong in [None, Some(0), Some(5), Some(7)] {
+            let e = check_blast_radius(&big, wrong).unwrap_err();
+            assert!(e.contains("6") && e.contains("confirm_count=6"), "{e}");
+        }
+        // The requirement survives storage and old stored plans without the field still load.
+        let back: Plan = serde_json::from_str(&serde_json::to_string(&big).unwrap()).unwrap();
+        assert_eq!(back.confirm_count, Some(6));
+        let mut v: serde_json::Value = serde_json::to_value(&small).unwrap();
+        v.as_object_mut().unwrap().remove("confirm_count");
+        let old: Plan = serde_json::from_value(v).unwrap();
+        assert_eq!(old.confirm_count, None);
     }
 
     #[test]

@@ -38,6 +38,9 @@ proposals, see `docs/ai.md`) is unchanged.
    `0` disables). New plans show such steps as blocked ("cooling down … retry in Ns") and execute
    re-checks. Failed or skipped steps never lock a target. It reads the plan ConfigMaps, so it is
    best effort: two plans executed in the same instant on different API replicas can both pass.
+9. **Blast radius.** A plan that touches more targets than `VEYRON_AI_BULK_CONFIRM_THRESHOLD` (default 5) records
+   its target count; the console then asks the user to type that number, and `execute` refuses with 400 unless the body
+   carries a matching `confirm_count`. Deletes still need every name typed as well.
 
 Actions: VM `start|stop|restart|pause|unpause|migrate|delete|snapshot|heal`; node `cordon|uncordon`.
 `snapshot` takes a `<vm>-snap-<timestamp>` snapshot (a disk snapshot, or a VM-state checkpoint on
@@ -46,6 +49,11 @@ both directions, so a plan can "snapshot, then change" without waiting.
 `heal` is a guarded restart: it needs Write like `restart`, but the step is blocked ("already healthy") unless
 the VM's status is Failed, Error, Unknown, CrashLoopBackOff or unschedulable, checked when the plan is drafted
 and again when it runs.
+Bulk: the `propose_bulk_vm_action` tool applies one action (any VM action, including `hotplug` with `cpus`/`memory`)
+to every VM matching a search query (`status:failed ns:prod`), across namespaces. The query must narrow the VMs, is
+resolved once when the plan is drafted (approving later never widens it), and a query matching more than 25 VMs is an error,
+never a silent truncation.
+
 Resize: the `propose_vm_resize` tool drafts `hotplug` steps (`cpus` = CPU sockets, `memory` such as
 `512Mi`/`4Gi`/`1Ti`, at least one, up to 25 VMs). It needs Write and runs the same backend call as
 `POST /vms/:ns/:name/hotplug`: KubeVirt applies it live under LiveUpdate (otherwise at next restart);
@@ -59,7 +67,7 @@ maximums is rejected by the backend when the step runs, and the plan shows that 
 | `GET /api/v1/search?q=&limit=&namespace=` | ReadOnly | Cross-resource search |
 | `POST /api/v1/experience/copilot/chat` | ReadOnly | Agent turn; `plans[]` in response for Write+ |
 | `GET /api/v1/experience/copilot/plans/:id` | ReadOnly | Inspect a plan |
-| `POST /api/v1/experience/copilot/plans/:id/execute` | Write (+ per step) | Body `{confirm_names, stop_on_error}` |
+| `POST /api/v1/experience/copilot/plans/:id/execute` | Write (+ per step) | Body `{confirm_names, confirm_count, stop_on_error}` |
 | `DELETE /api/v1/experience/copilot/plans/:id` | Write | Cancel |
 
 ### Search syntax
@@ -83,6 +91,7 @@ outcome, and labels `plan_id`, `via=copilot-agent`, `prompt`. Actor is the calle
 | `VEYRON_AI_MAX_TOOL_ROUNDS` | `6` | Max LLM↔tool rounds per turn |
 | `VEYRON_AI_PLAN_TTL_SECS` | `900` | Plan lifetime before it expires |
 | `VEYRON_AI_PLAN_COOLDOWN_SECS` | `60` | Per-VM/node cooldown between plan steps (`0` = off) |
+| `VEYRON_AI_BULK_CONFIRM_THRESHOLD` | `5` | Plans with more targets than this need `confirm_count` (the count typed back) |
 | `VEYRON_AI_PROVIDER` | (OpenAI-compatible) | `anthropic` talks to Anthropic's native Messages API (tool use). Also selected by an `sk-ant-` key or an `anthropic.com` URL |
 | `VEYRON_AI_MAX_TOKENS` | `2048` | `max_tokens` per Anthropic request (the API requires one) |
 
