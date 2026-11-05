@@ -1589,3 +1589,29 @@ export const enterpriseAssessment = (kind, payload) => request(assessmentPath(ki
 export const enterpriseOperations = (namespace) => request(`/api/v1/enterprise/operations?${operationQuery(namespace)}`);
 export const enterpriseSubmit = (payload) => request(`/api/v1/enterprise/operations?${operationQuery(payload.namespace)}`, {method:'POST',body:JSON.stringify(payload)});
 export const enterpriseCancel = (namespace,id) => request(`/api/v1/enterprise/operations/${encodeURIComponent(id)}/cancel?${operationQuery(namespace)}`, {method:'POST'});
+
+// ── Copilot agent: plan → approve → execute (docs/COPILOT_AGENT.md) ──
+const COPILOT = '/api/v1/experience/copilot';
+
+Object.assign(api, {
+  copilotChat: async (query, history = []) =>
+    unwrap(
+      await request(`${COPILOT}/chat`, {
+        method: 'POST',
+        timeout: 120_000,
+        body: JSON.stringify({
+          query,
+          namespace: 'all',
+          messages: history.slice(-8).map((m) => ({ role: m.role, content: m.content })),
+        }),
+      }),
+    ),
+  executePlan: async (id, confirmNames = []) =>
+    unwrap(
+      await request(`${COPILOT}/plans/${encodeURIComponent(id)}/execute`, {
+        method: 'POST',
+        body: JSON.stringify({ confirm_names: confirmNames, stop_on_error: true }),
+      }),
+    ),
+  cancelPlan: async (id) => unwrap(await request(`${COPILOT}/plans/${encodeURIComponent(id)}`, { method: 'DELETE' })),
+});

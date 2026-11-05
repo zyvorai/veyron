@@ -16,6 +16,10 @@ pub struct ToolInvokeArgs {
     pub vm_name: Option<String>,
     #[serde(default)]
     pub message: Option<String>,
+    #[serde(default)]
+    pub action: Option<String>,
+    #[serde(default)]
+    pub names: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +31,45 @@ pub struct ToolDefinition {
 
 pub fn tool_definitions() -> Vec<ToolDefinition> {
     vec![
+        tool(
+            "search_resources",
+            "Search VMs, pods, nodes and PVCs. Query supports words plus filters \
+             kind:vm|pod|node|pvc, ns:<namespace>, status:<text>, os:<text>",
+            json!({
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string", "description": "Search query, e.g. 'kind:vm status:failed ns:prod'"},
+                    "namespace": {"type": "string"}
+                },
+                "required": ["message"]
+            }),
+        ),
+        tool(
+            "propose_vm_action",
+            "PROPOSE (never executes) a change to one or more VMs for the user to approve. \
+             The user must approve in the console; do not claim it was performed.",
+            json!({
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["start", "stop", "restart", "pause", "unpause", "migrate", "delete"]},
+                    "namespace": {"type": "string"},
+                    "names": {"type": "array", "items": {"type": "string"}, "description": "VM names (max 25)"}
+                },
+                "required": ["action", "namespace", "names"]
+            }),
+        ),
+        tool(
+            "propose_node_action",
+            "PROPOSE (never executes) cordoning/uncordoning nodes; needs admin approval.",
+            json!({
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["cordon", "uncordon"]},
+                    "names": {"type": "array", "items": {"type": "string"}, "description": "Node names"}
+                },
+                "required": ["action", "names"]
+            }),
+        ),
         tool(
             "vm_doctor",
             "Inspect a single VM health, events, and score",
@@ -247,6 +290,9 @@ pub async fn invoke_tool(
     scope: &str,
     fallback_query: &str,
 ) -> Option<CopilotResponse> {
+    if tool_name == "search_resources" {
+        return Some(search_tool(args, client, scope, fallback_query).await);
+    }
     let intent = tool_name_to_intent(tool_name)?;
     let query = if intent == CopilotIntent::ErrorExplainer || intent == CopilotIntent::YamlBuilder {
         args.message
@@ -264,6 +310,94 @@ pub async fn invoke_tool(
     Some(dispatch_intent(client, scope, intent, &req).await)
 }
 
+async fn search_tool(
+    args: &ToolInvokeArgs,
+    client: &KubeClient,
+    scope: &str,
+    fallback_query: &str,
+) -> CopilotResponse {
+    let raw = args.message.as_deref().unwrap_or(fallback_query);
+    let q = super::search::parse_query(raw);
+    let scope = q
+        .namespace
+        .clone()
+        .or_else(|| args.namespace.clone())
+        .unwrap_or_else(|| scope.to_string());
+    let hits = super::search::search(client, &scope, &q, super::search::DEFAULT_LIMIT).await;
+    let mut r = CopilotResponse::new(
+        "Veyron Search",
+        "search_resources",
+        format!("Search: {raw}"),
+    );
+    r.summary = if hits.is_empty() {
+        format!("No resources matched '{raw}' in scope '{scope}'.")
+    } else {
+        format!(
+            "{} resource(s) matched '{raw}' in scope '{scope}'.",
+            hits.len()
+        )
+    };
+    r.evidence = hits
+        .iter()
+        .map(|h| format!("{} {} — {}", h.kind, h.id, h.status))
+        .collect();
+    r
+}
+
+/// Draft a plan from a `propose_*` tool call. Nothing is executed or persisted here.
+#[cfg(feature = "web")]
+pub async fn propose_tool(
+    tool_name: &str,
+    args: &ToolInvokeArgs,
+    client: &KubeClient,
+    scope: &str,
+    prompt: &str,
+) -> Result<(CopilotResponse, super::plan::Plan), String> {
+    use super::plan;
+    let action = args.action.clone().unwrap_or_default();
+    let (kind, ns) = match tool_name {
+        "propose_vm_action" => {
+            let ns = args
+                .namespace
+                .clone()
+                .or_else(|| (scope != "all").then(|| scope.to_string()))
+                .ok_or("namespace is required to propose a VM action")?;
+            ("vm", ns)
+        }
+        "propose_node_action" => ("node", String::new()),
+        _ => return Err(format!("unknown proposal tool '{tool_name}'")),
+    };
+    let mut steps = plan::build_steps(kind, &action, &ns, &args.names)?;
+    plan::annotate_blockers(client, &mut steps).await;
+    let drafted = plan::new_plan(prompt, "", steps, plan::ttl_secs());
+    let mut r = CopilotResponse::new(
+        "Veyron Agent",
+        "propose_action",
+        format!("Proposed plan {}", drafted.id),
+    );
+    let blocked = drafted.steps.iter().filter(|s| s.blocked.is_some()).count();
+    r.summary = format!(
+        "Plan {} drafted: {} step(s), needs {} role. Awaiting the user's approval in the console — nothing has been executed.{}",
+        drafted.id,
+        drafted.steps.len(),
+        drafted.min_role,
+        if blocked > 0 {
+            format!(" {blocked} step(s) are currently blocked.")
+        } else {
+            String::new()
+        }
+    );
+    r.evidence = drafted
+        .steps
+        .iter()
+        .map(|s| match &s.blocked {
+            Some(b) => format!("{} — BLOCKED: {b}", s.preview),
+            None => s.preview.clone(),
+        })
+        .collect();
+    Ok((r, drafted))
+}
+
 pub fn parse_tool_args(raw: &str) -> ToolInvokeArgs {
     serde_json::from_str(raw).unwrap_or_default()
 }
@@ -275,6 +409,9 @@ mod tests {
     #[test]
     fn every_tool_maps_to_intent() {
         for def in tool_definitions() {
+            if def.name == "search_resources" || def.name.starts_with("propose_") {
+                continue; // handled directly in invoke_tool
+            }
             assert!(
                 tool_name_to_intent(&def.name).is_some(),
                 "missing intent mapping for {}",
@@ -288,7 +425,9 @@ mod tests {
         let names: Vec<String> = tool_definitions().into_iter().map(|t| t.name).collect();
         assert!(names.iter().any(|n| n == "migration_advisor"));
         assert!(names.iter().any(|n| n == "yaml_preview"));
-        assert_eq!(names.len(), 27);
+        assert!(names.iter().any(|n| n == "search_resources"));
+        assert!(names.iter().any(|n| n == "propose_vm_action"));
+        assert_eq!(names.len(), 30);
     }
 
     #[test]

@@ -676,3 +676,20 @@ table.vt { width: 100%; border-collapse: collapse; font-size: 14px; user-select:
 .badge-pill.err { background: var(--danger-bg); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
 .badge-pill.info { background: var(--info-bg); color: var(--accent-cyan-text); border-color: var(--info-border); }
 .eyebrow { font-size: 12px; letter-spacing: 0.14em; font-weight: 700; color: var(--apple-blue); text-transform: uppercase; }
+.plan { border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 12px; background: var(--pane); display: flex; flex-direction: column; gap: 8px; }
+.plan-h { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.plan-st { color: var(--ink-2); margin-left: auto; }
+.plan-role { font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--hover); color: var(--ink-2); }
+.plan-role.admin { color: var(--red); }
+.plan-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.plan-steps li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.plan-steps .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); margin: 0 3px; }
+.plan-steps .ok { color: var(--green, #30d158); }
+.plan-steps .bad { color: var(--red); }
+.plan-steps .tag { font-style: normal; font-size: 11px; color: var(--red); }
+.plan-steps .why { flex-basis: 100%; padding-left: 20px; color: var(--ink-3); }
+.plan-confirm { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
+.plan-confirm input { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--ctl-line); background: var(--ctl); color: var(--ink); }
+.plan-err { color: var(--red); font-size: 12.5px; }
+.plan-f { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.plan-f small { margin-right: auto; color: var(--ink-3); }

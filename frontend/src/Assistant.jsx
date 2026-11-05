@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState, Fragment } from 'react';
 import { Sparkles, X, Send, Square, Wrench, Check, AlertTriangle, RotateCcw } from 'lucide-react';
 import { api, streamAiChat } from './api.js';
 import { ProposalCard } from './ProposalCard.jsx';
+import { CopilotPlanCard } from './CopilotPlanCard.jsx';
+import { canMutate } from './roles.js';
 import { useFocusTrap } from './a11y.js';
 
 const SUGGESTIONS = [
@@ -105,6 +107,8 @@ export function Assistant({ open, onClose, context, user, seed, onSeedUsed }) {
   const [turns, setTurns] = useState([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  // "Actions" mode: ask the Copilot agent, which drafts plans (docs/COPILOT_AGENT.md) that you approve.
+  const [actMode, setActMode] = useState(false);
   const [status, setStatus] = useState(null);
   const abortRef = useRef(null);
   const scrollRef = useRef(null);
@@ -146,8 +150,27 @@ export function Assistant({ open, onClose, context, user, seed, onSeedUsed }) {
           { role: 'assistant', content: t.text },
         ])
         .slice(-12);
-      setTurns((t) => [...t, { q, text: '', calls: [], proposals: [], error: '', mode: null, done: false }]);
+      setTurns((t) => [...t, { q, text: '', calls: [], proposals: [], plans: [], error: '', mode: null, done: false }]);
       setBusy(true);
+      if (actMode) {
+        setTurns((t) => [...t, { q, text: '', calls: [], proposals: [], plans: [], error: '', mode: 'plan', done: false }]);
+        try {
+          const r = await api.copilotChat(q, history);
+          const c = r?.copilot || {};
+          const ev = (c.evidence || []).slice(0, 8).map((e) => `- ${e}`).join('\n');
+          patchLast((t) => ({
+            ...t,
+            text: [c.title, c.summary && c.summary !== c.title ? c.summary : '', ev].filter(Boolean).join('\n\n'),
+            plans: r?.plans || [],
+          }));
+        } catch (e) {
+          patchLast((t) => ({ ...t, error: e.message || String(e) }));
+        } finally {
+          patchLast((t) => ({ ...t, done: true }));
+          setBusy(false);
+        }
+        return;
+      }
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       try {
@@ -195,7 +218,7 @@ export function Assistant({ open, onClose, context, user, seed, onSeedUsed }) {
         abortRef.current = null;
       }
     },
-    [input, busy, turns, context, patchLast],
+    [input, busy, turns, context, patchLast, actMode],
   );
 
   useEffect(() => {
@@ -280,6 +303,9 @@ export function Assistant({ open, onClose, context, user, seed, onSeedUsed }) {
                 {t.proposals.map((p) => (
                   <ProposalCard key={p.id} proposal={p} user={user} />
                 ))}
+                {(t.plans || []).map((p) => (
+                  <CopilotPlanCard key={p.id} initial={p} />
+                ))}
                 {t.error && <div className="ops-err">{t.error}</div>}
               </div>
             ))
@@ -294,6 +320,11 @@ export function Assistant({ open, onClose, context, user, seed, onSeedUsed }) {
           }}
         >
           {ctxLabel && <span className="ai-ctx">Looking at {ctxLabel}</span>}
+          {canMutate(user?.role) && (
+            <label className="ai-ctx" title="Ask the Copilot agent to draft start/stop/migrate/delete plans you approve">
+              <input type="checkbox" checked={actMode} onChange={(e) => setActMode(e.target.checked)} /> Plan actions
+            </label>
+          )}
           <div className="ai-input-row">
             <textarea
               ref={inputRef}

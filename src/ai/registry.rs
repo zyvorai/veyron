@@ -914,6 +914,7 @@ async fn invoke_advisor(ctx: &ToolCtx, name: &str, args: &Value) -> ToolOutput {
         namespace: arg(args, "namespace").map(str::to_string),
         vm_name: arg(args, "vm_name").map(str::to_string),
         message: arg(args, "message").map(str::to_string),
+        ..Default::default()
     };
     match crate::copilot::invoke_tool(name, &a, &ctx.kube, &ctx.scope, "").await {
         Some(resp) => ToolOutput {

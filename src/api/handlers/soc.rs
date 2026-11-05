@@ -282,6 +282,54 @@ pub async fn record_api_audit(
     store::append_events(&k8s, &ns, vec![ev]).await;
 }
 
+/// Audit an agent (plan) event with the real caller and the originating prompt.
+/// Unlike `record_api_audit` this is not path-filtered: plan lifecycle events
+/// (`/experience/copilot/plans/*`) would otherwise never be recorded.
+#[cfg(feature = "web")]
+#[allow(clippy::too_many_arguments)]
+pub async fn record_agent_audit(
+    state: &SharedState,
+    actor: &str,
+    action: &str,
+    target: &str,
+    namespace: &str,
+    vm: Option<&str>,
+    outcome: &str,
+    plan_id: &str,
+    prompt: &str,
+) {
+    let s = state.read().await;
+    let ns = s.namespace.clone();
+    let k8s = s.client().client();
+    drop(s);
+    let severity = if outcome == "success" {
+        "low"
+    } else {
+        "medium"
+    };
+    let mut ev = crate::soc::event::SecurityEvent::new(
+        "audit",
+        severity,
+        "veyron-agent",
+        format!("agent {action} {target} — {outcome} (plan {plan_id})"),
+    )
+    .with_actor(actor)
+    .with_action(action)
+    .with_target(target)
+    .with_outcome(outcome);
+    if !namespace.is_empty() {
+        ev = ev.with_namespace(namespace);
+    }
+    if let Some(v) = vm {
+        ev = ev.with_vm(v);
+    }
+    ev.labels.insert("plan_id".into(), plan_id.into());
+    ev.labels.insert("via".into(), "copilot-agent".into());
+    ev.labels
+        .insert("prompt".into(), prompt.chars().take(200).collect());
+    store::append_events(&k8s, &ns, vec![ev]).await;
+}
+
 #[cfg(feature = "web")]
 fn is_soc_audit_path(path: &str, method: &str) -> bool {
     if method == "GET" || method == "HEAD" || method == "OPTIONS" {
