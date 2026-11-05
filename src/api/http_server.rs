@@ -1761,6 +1761,115 @@ pub mod web {
             );
         }
 
+        /// Requests the full router (auth middleware included) in-process against an
+        /// unreachable API server, so only the authn/authz outcome is under test.
+        async fn status_via_router(key: Option<&str>, method: Method, path: &str) -> u16 {
+            status_via_router_with(true, key, method, path).await
+        }
+
+        async fn status_via_router_with(
+            configured: bool,
+            key: Option<&str>,
+            method: Method,
+            path: &str,
+        ) -> u16 {
+            use axum::body::Body;
+            use tower::ServiceExt;
+            let mut st = WebState::for_router_test();
+            if configured {
+                st.api_key = Some("k-primary".into());
+            }
+            for (k, role, name) in [
+                ("k-ro", ApiRole::ReadOnly, "viewer"),
+                ("k-rw", ApiRole::Write, "ops"),
+                ("k-admin", ApiRole::Admin, "root"),
+            ] {
+                st.api_keys.push(ApiKeyEntry {
+                    key: k.into(),
+                    role,
+                    name: name.into(),
+                });
+            }
+            let app = build_router(std::sync::Arc::new(tokio::sync::RwLock::new(st)));
+            let mut req = axum::http::Request::builder().method(method).uri(path);
+            if let Some(k) = key {
+                req = req.header("x-api-key", k);
+            }
+            let body = if req.method_ref() == Some(&Method::POST) {
+                req = req.header("content-type", "application/json");
+                Body::from("{}")
+            } else {
+                Body::empty()
+            };
+            app.oneshot(req.body(body).expect("request"))
+                .await
+                .expect("router never errors")
+                .status()
+                .as_u16()
+        }
+
+        /// The agent endpoints through the real router and auth middleware: anonymous callers
+        /// get 401, a read-only key can search and chat but is refused (403) on execute and
+        /// cancel, and write/admin keys get past auth (the unreachable cluster then answers).
+        #[tokio::test]
+        async fn copilot_and_search_routes_through_the_real_router() {
+            const PLAN: &str = "/api/v1/experience/copilot/plans/p-1a2b3c";
+            let exec = format!("{PLAN}/execute");
+            let chat = "/api/v1/experience/copilot/chat";
+            let search = "/api/v1/search?q=web";
+
+            // A server with no API key configured refuses everything (fails closed).
+            assert_eq!(
+                status_via_router_with(false, Some("k-rw"), Method::GET, search).await,
+                503
+            );
+
+            // No credentials at all.
+            for (m, p) in [
+                (Method::GET, search),
+                (Method::POST, chat),
+                (Method::POST, exec.as_str()),
+                (Method::DELETE, PLAN),
+            ] {
+                assert_eq!(status_via_router(None, m.clone(), p).await, 401, "{m} {p}");
+            }
+            // A wrong key is no better.
+            assert_eq!(
+                status_via_router(Some("nope"), Method::GET, search).await,
+                401
+            );
+
+            // Read-only: search and chat pass auth; execute and cancel are 403.
+            let past_auth = |c: u16| c != 401 && c != 403;
+            assert!(past_auth(
+                status_via_router(Some("k-ro"), Method::GET, search).await
+            ));
+            assert!(past_auth(
+                status_via_router(Some("k-ro"), Method::POST, chat).await
+            ));
+            assert!(past_auth(
+                status_via_router(Some("k-ro"), Method::GET, PLAN).await
+            ));
+            assert_eq!(
+                status_via_router(Some("k-ro"), Method::POST, &exec).await,
+                403
+            );
+            assert_eq!(
+                status_via_router(Some("k-ro"), Method::DELETE, PLAN).await,
+                403
+            );
+
+            // Write and admin keys are let through to the handler.
+            for key in ["k-rw", "k-admin", "k-primary"] {
+                assert!(past_auth(
+                    status_via_router(Some(key), Method::POST, &exec).await
+                ));
+                assert!(past_auth(
+                    status_via_router(Some(key), Method::DELETE, PLAN).await
+                ));
+            }
+        }
+
         #[test]
         fn readonly_can_read_but_not_mutate() {
             assert!(
