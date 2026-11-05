@@ -202,6 +202,15 @@ async fn copilot_chat_handler(
             }
         }
         resp.plans = saved;
+        // Housekeeping: drop plans that expired over an hour ago (best effort, off the response path).
+        let prune_client = kube.clone();
+        let prune_ns = default_ns.clone();
+        tokio::spawn(async move {
+            let n = plan::prune(&prune_client, &prune_ns, chrono::Utc::now()).await;
+            if n > 0 {
+                log::info!("pruned {n} expired copilot plan(s)");
+            }
+        });
     }
     Json(resp)
 }
@@ -325,7 +334,7 @@ async fn plan_cancel_handler(
         &state,
         &actor,
         "plan_cancelled",
-        "",
+        &plan::summary(&p),
         "",
         None,
         "success",

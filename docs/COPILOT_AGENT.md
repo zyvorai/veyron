@@ -24,6 +24,8 @@ proposals, see `docs/ai.md`) is unchanged.
 3. **Single-use, expiring.** A plan is a ConfigMap (`veyron.io/type=copilot-plan`,
    `veyron-plan-<id>`) in the API default namespace, claimed atomically on execute (no double run),
    expiring after `VEYRON_AI_PLAN_TTL_SECS` (410 when expired, 409 when already used).
+   Plans stay readable for an hour after expiry, then the next plan drafted prunes them
+   (best effort); the SOC audit events are the permanent record.
 4. **Creator or admin.** Only the plan's creator, or an Admin, can execute or cancel it.
 5. **Destructive steps** (`delete`) require the caller to type each VM name back
    (`confirm_names`).
