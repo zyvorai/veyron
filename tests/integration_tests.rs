@@ -1679,3 +1679,266 @@ fn test_multus_network_patch_shape() {
     });
     assert_eq!(net["multus"]["networkName"], "other-ns/my-nad");
 }
+
+// ── Copilot agent: plan lifecycle and search (public API, no cluster) ───────────
+
+#[cfg(feature = "web")]
+mod copilot_agent {
+    use chrono::{Duration, Utc};
+    use veyron::api::auth_context::AuthContext;
+    use veyron::api::http_server::web::ApiRole;
+    use veyron::copilot::plan::{
+        Plan, StepResult, apply_cooldown, build_hotplug_steps, build_steps, check_can_act,
+        check_confirmation, cooldown_blocker, final_status, new_plan,
+    };
+    use veyron::copilot::search::parse_query;
+
+    fn names(v: &[&str]) -> Vec<String> {
+        v.iter().map(|s| s.to_string()).collect()
+    }
+
+    fn caller(role: ApiRole, who: &str) -> AuthContext {
+        AuthContext {
+            role,
+            subject: who.into(),
+        }
+    }
+
+    /// What the console receives and what is stored in the plan ConfigMap.
+    fn roundtrip(p: &Plan) -> Plan {
+        serde_json::from_str(&serde_json::to_string(p).unwrap()).unwrap()
+    }
+
+    fn mark_executed(p: &mut Plan, ago_secs: i64) {
+        p.status = "executed".into();
+        p.started_at = Some((Utc::now() - Duration::seconds(ago_secs)).to_rfc3339());
+        for s in &mut p.steps {
+            s.result = Some(StepResult {
+                ok: true,
+                error: None,
+            });
+        }
+    }
+
+    #[test]
+    fn a_plan_is_drafted_stored_approved_once_and_by_the_right_people() {
+        let now = Utc::now();
+        let mut steps = build_steps("vm", "snapshot", "prod", &names(&["db-1"])).unwrap();
+        steps.extend(build_steps("vm", "restart", "prod", &names(&["db-1"])).unwrap());
+        let plan = roundtrip(&new_plan(
+            "snapshot db-1 then restart it",
+            "alice",
+            steps,
+            900,
+        ));
+        assert_eq!(plan.status, "pending");
+        assert_eq!(plan.min_role, "write");
+        assert_eq!(plan.steps.len(), 2);
+        assert!(plan.steps.iter().all(|s| !s.destructive));
+
+        // Read-only callers can never approve or cancel.
+        for execute in [true, false] {
+            let e = check_can_act(
+                &plan,
+                &caller(ApiRole::ReadOnly, "viewer"),
+                "viewer",
+                execute,
+                now,
+            )
+            .unwrap_err();
+            assert_eq!(e.0, 403);
+        }
+        // Another write user is not the creator.
+        let e = check_can_act(&plan, &caller(ApiRole::Write, "bob"), "bob", true, now).unwrap_err();
+        assert_eq!(e.0, 403);
+        // The creator and any admin can.
+        assert!(check_can_act(&plan, &caller(ApiRole::Write, "alice"), "alice", true, now).is_ok());
+        assert!(check_can_act(&plan, &caller(ApiRole::Admin, "root"), "root", true, now).is_ok());
+
+        // Plans are single-use: once claimed or finished they answer 409.
+        let mut claimed = plan.clone();
+        claimed.status = "executing".into();
+        let e = check_can_act(
+            &claimed,
+            &caller(ApiRole::Write, "alice"),
+            "alice",
+            true,
+            now,
+        )
+        .unwrap_err();
+        assert_eq!(e.0, 409);
+
+        // And they expire.
+        let later = now + Duration::seconds(901);
+        let e = check_can_act(
+            &plan,
+            &caller(ApiRole::Write, "alice"),
+            "alice",
+            true,
+            later,
+        )
+        .unwrap_err();
+        assert_eq!(e.0, 410);
+    }
+
+    #[test]
+    fn node_plans_need_an_admin_even_for_their_creator() {
+        let now = Utc::now();
+        let steps = build_steps("node", "cordon", "", &names(&["n1", "n2"])).unwrap();
+        let plan = roundtrip(&new_plan("cordon n1 and n2", "alice", steps, 900));
+        assert_eq!(plan.min_role, "admin");
+        let e =
+            check_can_act(&plan, &caller(ApiRole::Write, "alice"), "alice", true, now).unwrap_err();
+        assert_eq!(e.0, 403);
+        assert!(check_can_act(&plan, &caller(ApiRole::Admin, "alice"), "alice", true, now).is_ok());
+    }
+
+    #[test]
+    fn deletes_need_every_vm_name_typed_back() {
+        let steps = build_steps("vm", "delete", "prod", &names(&["a", "b"])).unwrap();
+        let plan = roundtrip(&new_plan("delete a and b", "alice", steps, 900));
+        assert!(plan.steps.iter().all(|s| s.destructive));
+        assert!(check_confirmation(&plan, &[]).is_err());
+        let partial = check_confirmation(&plan, &names(&["a"])).unwrap_err();
+        assert!(
+            partial.contains('b') && !partial.contains("a,"),
+            "{partial}"
+        );
+        assert!(check_confirmation(&plan, &names(&["a", "wrong"])).is_err());
+        assert!(check_confirmation(&plan, &names(&["a", "b"])).is_ok());
+        // Non-destructive plans never ask.
+        let safe = new_plan(
+            "restart a",
+            "alice",
+            build_steps("vm", "restart", "prod", &names(&["a"])).unwrap(),
+            900,
+        );
+        assert!(check_confirmation(&safe, &[]).is_ok());
+    }
+
+    #[test]
+    fn the_cooldown_stops_repeats_on_a_target_but_not_snapshots_or_other_targets() {
+        let now = Utc::now();
+        let mut earlier = new_plan(
+            "restart db-1",
+            "alice",
+            build_steps("vm", "restart", "prod", &names(&["db-1"])).unwrap(),
+            900,
+        );
+        mark_executed(&mut earlier, 5);
+        let recent = vec![earlier.clone()];
+
+        let mut steps = build_steps("vm", "stop", "prod", &names(&["db-1", "web-1"])).unwrap();
+        steps.extend(build_steps("vm", "snapshot", "prod", &names(&["db-1"])).unwrap());
+        apply_cooldown(&mut steps, &recent, now, 60, "p-new");
+        let blocked: Vec<_> = steps
+            .iter()
+            .map(|s| (s.action.as_str(), s.name.as_str(), s.blocked.is_some()))
+            .collect();
+        assert_eq!(
+            blocked,
+            [
+                ("stop", "db-1", true),
+                ("stop", "web-1", false),
+                ("snapshot", "db-1", false)
+            ]
+        );
+        let msg = steps[0].blocked.as_deref().unwrap();
+        assert!(
+            msg.contains("cooling down") && msg.contains(&earlier.id),
+            "{msg}"
+        );
+
+        // Outside the window, with the cooldown disabled, or for the plan itself: free to run.
+        assert!(
+            cooldown_blocker(
+                &recent,
+                &steps[0],
+                now + Duration::seconds(120),
+                60,
+                "p-new"
+            )
+            .is_none()
+        );
+        assert!(cooldown_blocker(&recent, &steps[0], now, 0, "p-new").is_none());
+        assert!(cooldown_blocker(&recent, &steps[0], now, 60, &earlier.id).is_none());
+
+        // A failed attempt never locks the target.
+        let mut failed = earlier.clone();
+        failed.steps[0].result = Some(StepResult {
+            ok: false,
+            error: Some("boom".into()),
+        });
+        assert!(cooldown_blocker(&[failed], &steps[0], now, 60, "p-new").is_none());
+    }
+
+    #[test]
+    fn resize_steps_carry_their_values_through_storage() {
+        let steps = build_hotplug_steps("prod", &names(&["db-1"]), Some(8), Some("16Gi")).unwrap();
+        let plan = roundtrip(&new_plan("resize db-1", "alice", steps, 900));
+        let s = &plan.steps[0];
+        assert_eq!(
+            (s.action.as_str(), s.cpus, s.memory.as_deref()),
+            ("hotplug", Some(8), Some("16Gi"))
+        );
+        assert_eq!(plan.min_role, "write");
+        // Bad values never become a plan.
+        assert!(build_hotplug_steps("prod", &names(&["db-1"]), None, Some("16GB")).is_err());
+        assert!(build_hotplug_steps("prod", &names(&["db-1"]), None, None).is_err());
+        // The generic VM action cannot smuggle in an unparameterised resize.
+        assert!(build_steps("vm", "hotplug", "prod", &names(&["db-1"])).is_err());
+    }
+
+    #[test]
+    fn a_plan_is_executed_only_if_every_step_succeeded() {
+        let mut p = new_plan(
+            "restart a and b",
+            "alice",
+            build_steps("vm", "restart", "prod", &names(&["a", "b"])).unwrap(),
+            900,
+        );
+        assert_eq!(
+            final_status(&p.steps),
+            "failed",
+            "unrun steps are not success"
+        );
+        mark_executed(&mut p, 1);
+        assert_eq!(final_status(&p.steps), "executed");
+        p.steps[1].result = Some(StepResult {
+            ok: false,
+            error: Some("skipped after earlier failure".into()),
+        });
+        assert_eq!(final_status(&p.steps), "failed");
+    }
+
+    #[test]
+    fn plan_input_is_validated_before_anything_is_drafted() {
+        assert!(build_steps("vm", "format", "prod", &names(&["a"])).is_err());
+        assert!(build_steps("vm", "restart", "prod", &[]).is_err());
+        assert!(build_steps("vm", "restart", "Prod NS", &names(&["a"])).is_err());
+        assert!(build_steps("vm", "restart", "prod", &names(&["a; rm -rf /"])).is_err());
+        assert!(build_steps("pod", "delete", "prod", &names(&["a"])).is_err());
+        let many: Vec<String> = (0..26).map(|i| format!("vm-{i}")).collect();
+        assert!(build_steps("vm", "restart", "prod", &many).is_err());
+        assert_eq!(
+            build_steps("vm", "restart", "prod", &names(&["a", "a", "b"]))
+                .unwrap()
+                .len(),
+            2,
+            "duplicates collapse"
+        );
+    }
+
+    #[test]
+    fn search_queries_parse_filters_kinds_and_words() {
+        let q = parse_query("kind:vm,pvc status:failed ns:prod os:windows web-01");
+        assert_eq!(q.kinds, ["vm", "pvc"]);
+        assert_eq!(q.status.as_deref(), Some("failed"));
+        assert_eq!(q.namespace.as_deref(), Some("prod"));
+        assert_eq!(q.os.as_deref(), Some("windows"));
+        assert_eq!(q.words, ["web-01"]);
+        let plain = parse_query("db");
+        assert!(plain.kinds.is_empty() && plain.status.is_none() && plain.os.is_none());
+        assert_eq!(plain.words, ["db"]);
+    }
+}
