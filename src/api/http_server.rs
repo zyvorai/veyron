@@ -1817,6 +1817,8 @@ pub mod web {
             let exec = format!("{PLAN}/execute");
             let chat = "/api/v1/experience/copilot/chat";
             let search = "/api/v1/search?q=web";
+            let approve = format!("{PLAN}/approve");
+            let list = "/api/v1/experience/copilot/plans";
 
             // A server with no API key configured refuses everything (fails closed).
             assert_eq!(
@@ -1859,6 +1861,17 @@ pub mod web {
                 403
             );
 
+            // Listing plans is a read; approving one is not.
+            assert!(past_auth(
+                status_via_router(Some("k-ro"), Method::GET, list).await
+            ));
+            assert_eq!(
+                status_via_router(Some("k-ro"), Method::POST, &approve).await,
+                403
+            );
+            assert_eq!(status_via_router(None, Method::GET, list).await, 401);
+            assert_eq!(status_via_router(None, Method::POST, &approve).await, 401);
+
             // Write and admin keys are let through to the handler.
             for key in ["k-rw", "k-admin", "k-primary"] {
                 assert!(past_auth(
@@ -1866,6 +1879,9 @@ pub mod web {
                 ));
                 assert!(past_auth(
                     status_via_router(Some(key), Method::DELETE, PLAN).await
+                ));
+                assert!(past_auth(
+                    status_via_router(Some(key), Method::POST, &approve).await
                 ));
             }
         }

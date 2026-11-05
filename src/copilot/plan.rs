@@ -84,6 +84,15 @@ pub struct Plan {
     /// `VEYRON_AI_BULK_CONFIRM_THRESHOLD`. Execution then needs `confirm_count` to match it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub confirm_count: Option<usize>,
+    /// Four-eyes policy: set at draft time (`VEYRON_AI_FOUR_EYES`) when a second person must
+    /// approve before the plan can run. Stored on the plan so a later policy change never
+    /// silently relaxes or tightens plans that already exist.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub needs_approval: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub approved_by: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub approved_at: Option<String>,
 }
 
 /// Plans with more steps than this require `confirm_count` (`VEYRON_AI_BULK_CONFIRM_THRESHOLD`).
@@ -92,6 +101,26 @@ pub fn bulk_confirm_threshold() -> usize {
         .ok()
         .and_then(|v| v.trim().parse::<usize>().ok())
         .unwrap_or(DEFAULT_BULK_CONFIRM_THRESHOLD)
+}
+
+/// Which plans need a second approver, from `VEYRON_AI_FOUR_EYES`: a comma list of
+/// `destructive` (plans with a delete), `admin` (plans needing the Admin role) or `all`.
+/// Unset, empty or `off` means nobody; unknown words are ignored.
+pub fn requires_second_approver(steps: &[PlanStep], policy: &str) -> bool {
+    let min_admin = max_role(steps) == ApiRole::Admin;
+    policy
+        .split(',')
+        .map(|w| w.trim().to_lowercase())
+        .any(|w| match w.as_str() {
+            "all" => true,
+            "destructive" => steps.iter().any(|s| s.destructive),
+            "admin" => min_admin,
+            _ => false,
+        })
+}
+
+fn four_eyes_policy() -> String {
+    std::env::var("VEYRON_AI_FOUR_EYES").unwrap_or_default()
 }
 
 pub fn cooldown_secs() -> i64 {
@@ -369,6 +398,137 @@ pub fn check_blast_radius(plan: &Plan, confirm_count: Option<usize>) -> Result<(
     }
 }
 
+/// Four-eyes: may `caller` (acting as `actor`) approve this plan? Never the creator, even an
+/// admin, and never below the role the plan itself needs. `Err((http_status, message))`.
+pub fn check_can_approve(
+    plan: &Plan,
+    caller: &AuthContext,
+    actor: &str,
+    now: chrono::DateTime<chrono::Utc>,
+) -> Result<(), (u16, String)> {
+    if plan.status != "pending" {
+        return Err((409, format!("plan is already {}", plan.status)));
+    }
+    if is_expired(plan, now) {
+        return Err((
+            410,
+            "plan expired - ask the assistant to propose it again".into(),
+        ));
+    }
+    if !plan.needs_approval {
+        return Err((409, "this plan does not need a second approver".into()));
+    }
+    if let Some(by) = &plan.approved_by {
+        return Err((409, format!("already approved by {by}")));
+    }
+    if !caller.allows(&ApiRole::Write) {
+        return Err((403, "Write role required".into()));
+    }
+    if actor == plan.created_by {
+        return Err((
+            403,
+            "the plan's creator cannot approve their own plan".into(),
+        ));
+    }
+    if !caller.allows(&role_from_str(&plan.min_role)) {
+        return Err((
+            403,
+            format!("approving this plan needs the {} role", plan.min_role),
+        ));
+    }
+    Ok(())
+}
+
+/// Execute is refused until a plan that needs a second approver has one.
+pub fn check_approved(plan: &Plan) -> Result<(), String> {
+    if plan.needs_approval && plan.approved_by.is_none() {
+        Err("this plan needs approval from a second person before it can run".into())
+    } else {
+        Ok(())
+    }
+}
+
+/// Compact listing row; the full plan (with steps) is `GET .../plans/:id`.
+#[derive(Debug, Clone, Serialize)]
+pub struct PlanSummary {
+    pub id: String,
+    pub prompt: String,
+    pub created_by: String,
+    pub created_at: String,
+    pub expires_at: String,
+    pub status: String,
+    pub min_role: String,
+    pub steps: usize,
+    pub preview: Vec<String>,
+    pub needs_approval: bool,
+    pub approved_by: Option<String>,
+    pub confirm_count: Option<usize>,
+}
+
+impl PlanSummary {
+    pub fn of(p: &Plan) -> Self {
+        Self {
+            id: p.id.clone(),
+            prompt: p.prompt.clone(),
+            created_by: p.created_by.clone(),
+            created_at: p.created_at.clone(),
+            expires_at: p.expires_at.clone(),
+            status: p.status.clone(),
+            min_role: p.min_role.clone(),
+            steps: p.steps.len(),
+            preview: p.steps.iter().take(3).map(|s| s.preview.clone()).collect(),
+            needs_approval: p.needs_approval,
+            approved_by: p.approved_by.clone(),
+            confirm_count: p.confirm_count,
+        }
+    }
+}
+
+/// Plans filtered by `status` (`pending`, `executed`, ... or `all`), newest first. A plan
+/// whose time ran out still reads `pending` in storage, so expired ones are reported as
+/// `expired` and only match `expired` or `all`.
+pub fn filter_plans(
+    mut plans: Vec<Plan>,
+    status: &str,
+    now: chrono::DateTime<chrono::Utc>,
+    limit: usize,
+) -> Vec<PlanSummary> {
+    let eff = |p: &Plan| {
+        if p.status == "pending" && is_expired(p, now) {
+            "expired".to_string()
+        } else {
+            p.status.clone()
+        }
+    };
+    plans.retain(|p| status == "all" || eff(p) == status);
+    plans.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    plans
+        .iter()
+        .take(limit)
+        .map(|p| {
+            let mut row = PlanSummary::of(p);
+            row.status = eff(p);
+            row
+        })
+        .collect()
+}
+
+/// Every stored plan (best effort: `[]` on error).
+pub async fn list_all(client: &kube::Client, ns: &str) -> Vec<Plan> {
+    use k8s_openapi::api::core::v1::ConfigMap;
+    use kube::api::ListParams;
+    let api: kube::Api<ConfigMap> = kube::Api::namespaced(client.clone(), ns);
+    let lp = ListParams::default().labels(&format!("{PLAN_LABEL_KEY}={PLAN_LABEL_VALUE}"));
+    let Ok(list) = api.list(&lp).await else {
+        return Vec::new();
+    };
+    list.items
+        .into_iter()
+        .filter_map(|cm| cm.data?.get("plan").cloned())
+        .filter_map(|raw| serde_json::from_str::<Plan>(&raw).ok())
+        .collect()
+}
+
 pub fn new_plan(prompt: &str, created_by: &str, steps: Vec<PlanStep>, ttl: i64) -> Plan {
     let now = chrono::Utc::now();
     let id = format!(
@@ -386,6 +546,9 @@ pub fn new_plan(prompt: &str, created_by: &str, steps: Vec<PlanStep>, ttl: i64) 
         status: "pending".into(),
         min_role,
         confirm_count: (steps.len() > bulk_confirm_threshold()).then_some(steps.len()),
+        needs_approval: requires_second_approver(&steps, &four_eyes_policy()),
+        approved_by: None,
+        approved_at: None,
         steps,
         started_at: None,
     }
@@ -1205,6 +1368,190 @@ mod tests {
         v.as_object_mut().unwrap().remove("confirm_count");
         let old: Plan = serde_json::from_value(v).unwrap();
         assert_eq!(old.confirm_count, None);
+    }
+
+    #[test]
+    fn the_four_eyes_policy_picks_plans_by_kind() {
+        let restart = build_steps("vm", "restart", "ns", &names(&["a"])).unwrap();
+        let delete = build_steps("vm", "delete", "ns", &names(&["a"])).unwrap();
+        let cordon = build_steps("node", "cordon", "", &names(&["n1"])).unwrap();
+        for off in ["", "off", "nonsense", "  "] {
+            assert!(!requires_second_approver(&delete, off), "{off:?}");
+        }
+        assert!(requires_second_approver(&delete, "destructive"));
+        assert!(!requires_second_approver(&restart, "destructive"));
+        assert!(requires_second_approver(&cordon, "admin"));
+        assert!(
+            !requires_second_approver(&delete, "admin"),
+            "delete needs Write, not Admin"
+        );
+        assert!(requires_second_approver(&restart, "all"));
+        assert!(
+            requires_second_approver(&delete, "admin, Destructive"),
+            "comma list, any case"
+        );
+        // new_plan stores the answer, so it survives later policy changes.
+        let p = new_plan("p", "alice", delete, 60);
+        assert_eq!(
+            p.needs_approval,
+            requires_second_approver(&p.steps, &four_eyes_policy())
+        );
+    }
+
+    fn pending_plan(needs_approval: bool, min_role: &str) -> Plan {
+        let mut p = new_plan(
+            "delete a",
+            "alice",
+            build_steps("vm", "delete", "ns", &names(&["a"])).unwrap(),
+            600,
+        );
+        p.needs_approval = needs_approval;
+        p.min_role = min_role.into();
+        p
+    }
+
+    #[test]
+    fn only_a_different_capable_person_can_approve() {
+        let now = chrono::Utc::now();
+        let p = pending_plan(true, "write");
+        // not the creator, even an admin creator
+        assert_eq!(
+            check_can_approve(&p, &ctx(ApiRole::Write), "alice", now)
+                .unwrap_err()
+                .0,
+            403
+        );
+        assert_eq!(
+            check_can_approve(&p, &ctx(ApiRole::Admin), "alice", now)
+                .unwrap_err()
+                .0,
+            403
+        );
+        // not read-only
+        assert_eq!(
+            check_can_approve(&p, &ctx(ApiRole::ReadOnly), "bob", now)
+                .unwrap_err()
+                .0,
+            403
+        );
+        // a different Write user, or an admin, can
+        assert!(check_can_approve(&p, &ctx(ApiRole::Write), "bob", now).is_ok());
+        assert!(check_can_approve(&p, &ctx(ApiRole::Admin), "carol", now).is_ok());
+        // an Admin-level plan needs an Admin approver
+        let admin_plan = pending_plan(true, "admin");
+        assert_eq!(
+            check_can_approve(&admin_plan, &ctx(ApiRole::Write), "bob", now)
+                .unwrap_err()
+                .0,
+            403
+        );
+        assert!(check_can_approve(&admin_plan, &ctx(ApiRole::Admin), "bob", now).is_ok());
+    }
+
+    #[test]
+    fn approval_states_are_single_use_and_time_limited() {
+        let now = chrono::Utc::now();
+        // nothing to approve
+        let free = pending_plan(false, "write");
+        assert_eq!(
+            check_can_approve(&free, &ctx(ApiRole::Write), "bob", now)
+                .unwrap_err()
+                .0,
+            409
+        );
+        // already approved
+        let mut done = pending_plan(true, "write");
+        done.approved_by = Some("bob".into());
+        let e = check_can_approve(&done, &ctx(ApiRole::Write), "carol", now).unwrap_err();
+        assert_eq!(e.0, 409);
+        assert!(e.1.contains("bob"), "{}", e.1);
+        // finished or expired plans
+        let mut run = pending_plan(true, "write");
+        run.status = "executed".into();
+        assert_eq!(
+            check_can_approve(&run, &ctx(ApiRole::Write), "bob", now)
+                .unwrap_err()
+                .0,
+            409
+        );
+        let later = now + chrono::Duration::seconds(601);
+        assert_eq!(
+            check_can_approve(
+                &pending_plan(true, "write"),
+                &ctx(ApiRole::Write),
+                "bob",
+                later
+            )
+            .unwrap_err()
+            .0,
+            410
+        );
+    }
+
+    #[test]
+    fn execute_waits_for_the_second_approver() {
+        let mut p = pending_plan(true, "write");
+        assert!(check_approved(&p).unwrap_err().contains("second person"));
+        p.approved_by = Some("bob".into());
+        assert!(check_approved(&p).is_ok());
+        assert!(check_approved(&pending_plan(false, "write")).is_ok());
+        // old stored plans without the new fields still load and need nothing
+        let mut v = serde_json::to_value(pending_plan(false, "write")).unwrap();
+        for k in ["needs_approval", "approved_by", "approved_at"] {
+            v.as_object_mut().unwrap().remove(k);
+        }
+        let old: Plan = serde_json::from_value(v).unwrap();
+        assert!(!old.needs_approval && check_approved(&old).is_ok());
+    }
+
+    #[test]
+    fn plan_listing_filters_orders_and_reports_expiry() {
+        let now = chrono::Utc::now();
+        let mk = |id: &str, status: &str, created: i64, ttl: i64| {
+            let mut p = new_plan(
+                "p",
+                "alice",
+                build_steps("vm", "stop", "ns", &names(&["a"])).unwrap(),
+                ttl,
+            );
+            p.id = id.into();
+            p.status = status.into();
+            p.created_at = (now + chrono::Duration::seconds(created)).to_rfc3339();
+            p.expires_at = (now + chrono::Duration::seconds(ttl)).to_rfc3339();
+            p
+        };
+        let plans = vec![
+            mk("p-old", "pending", -100, 500),
+            mk("p-new", "pending", -10, 500),
+            mk("p-gone", "pending", -2000, -100),
+            mk("p-done", "executed", -50, 500),
+        ];
+        let ids = |rows: Vec<PlanSummary>| rows.into_iter().map(|r| r.id).collect::<Vec<_>>();
+        assert_eq!(
+            ids(filter_plans(plans.clone(), "pending", now, 50)),
+            ["p-new", "p-old"],
+            "newest first, expired excluded"
+        );
+        assert_eq!(
+            ids(filter_plans(plans.clone(), "expired", now, 50)),
+            ["p-gone"]
+        );
+        assert_eq!(
+            ids(filter_plans(plans.clone(), "executed", now, 50)),
+            ["p-done"]
+        );
+        assert_eq!(filter_plans(plans.clone(), "all", now, 50).len(), 4);
+        assert_eq!(
+            filter_plans(plans.clone(), "all", now, 2).len(),
+            2,
+            "limit applies"
+        );
+        let all = filter_plans(plans, "all", now, 50);
+        assert_eq!(
+            all.iter().find(|r| r.id == "p-gone").unwrap().status,
+            "expired"
+        );
+        assert_eq!(all[0].preview, vec!["stop VM ns/a"]);
     }
 
     #[test]

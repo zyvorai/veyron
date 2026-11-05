@@ -1689,8 +1689,8 @@ mod copilot_agent {
     use veyron::api::http_server::web::ApiRole;
     use veyron::copilot::plan::{
         Plan, StepResult, apply_cooldown, build_hotplug_steps, build_steps, build_target_steps,
-        check_blast_radius, check_can_act, check_confirmation, cooldown_blocker, final_status,
-        new_plan,
+        check_approved, check_blast_radius, check_can_act, check_can_approve, check_confirmation,
+        cooldown_blocker, final_status, new_plan, requires_second_approver,
     };
     use veyron::copilot::search::parse_query;
 
@@ -1987,5 +1987,57 @@ mod copilot_agent {
             .map(|i| ("prod".into(), format!("vm-{i}")))
             .collect();
         assert!(build_target_steps("restart", &many, None, None).is_err());
+    }
+
+    #[test]
+    fn four_eyes_a_second_person_approves_then_the_creator_runs_it() {
+        let now = Utc::now();
+        let steps = build_steps("vm", "delete", "prod", &names(&["db-1"])).unwrap();
+        // The policy is read from VEYRON_AI_FOUR_EYES at draft time; here we apply it directly.
+        assert!(requires_second_approver(&steps, "destructive"));
+        let mut plan = roundtrip(&new_plan("delete db-1", "alice", steps, 900));
+        plan.needs_approval = true;
+        plan.min_role = "write".into();
+
+        // Not runnable yet, and alice cannot approve her own plan.
+        assert!(check_approved(&plan).is_err());
+        let alice = caller(ApiRole::Write, "alice");
+        assert_eq!(
+            check_can_approve(&plan, &alice, "alice", now)
+                .unwrap_err()
+                .0,
+            403
+        );
+        let admin_alice = caller(ApiRole::Admin, "alice");
+        assert_eq!(
+            check_can_approve(&plan, &admin_alice, "alice", now)
+                .unwrap_err()
+                .0,
+            403
+        );
+
+        // Bob (Write) approves; the approval is recorded and survives storage.
+        let bob = caller(ApiRole::Write, "bob");
+        check_can_approve(&plan, &bob, "bob", now).unwrap();
+        plan.approved_by = Some("bob".into());
+        let plan = roundtrip(&plan);
+        assert_eq!(plan.approved_by.as_deref(), Some("bob"));
+        let carol = caller(ApiRole::Write, "carol");
+        assert_eq!(
+            check_can_approve(&plan, &carol, "carol", now)
+                .unwrap_err()
+                .0,
+            409
+        );
+
+        // Now alice can run it, with the destructive confirmation as always.
+        assert!(check_approved(&plan).is_ok());
+        assert!(check_can_act(&plan, &alice, "alice", true, now).is_ok());
+        assert!(check_confirmation(&plan, &names(&["db-1"])).is_ok());
+        // Bob did not draft it, so he cannot execute it unless he is an admin.
+        assert_eq!(
+            check_can_act(&plan, &bob, "bob", true, now).unwrap_err().0,
+            403
+        );
     }
 }

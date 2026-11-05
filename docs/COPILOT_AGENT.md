@@ -41,6 +41,14 @@ proposals, see `docs/ai.md`) is unchanged.
 9. **Blast radius.** A plan that touches more targets than `VEYRON_AI_BULK_CONFIRM_THRESHOLD` (default 5) records
    its target count; the console then asks the user to type that number, and `execute` refuses with 400 unless the body
    carries a matching `confirm_count`. Deletes still need every name typed as well.
+10. **Four-eyes approval (opt-in).** With `VEYRON_AI_FOUR_EYES` set, plans of the chosen kind need a second person
+    before they can run. The value is a comma list of `destructive` (plans with a delete), `admin` (plans that need
+    the Admin role) and `all`; unset or `off` disables it. The plan records `needs_approval` when it is drafted, so
+    changing the setting never alters plans that already exist. Another user with Write calls
+    `POST .../plans/:id/approve` (at least the role the plan needs); the creator can never approve their own plan,
+    not even as an admin. `execute` answers 403 until it is approved. Approving does not run the plan: the creator
+    (or an admin) still executes it. Approval is audited (`plan_approved`). The console shows an
+    "Awaiting your approval" list in the assistant, and the creator's card updates when the approval arrives.
 
 Actions: VM `start|stop|restart|pause|unpause|migrate|delete|snapshot|heal`; node `cordon|uncordon`.
 `snapshot` takes a `<vm>-snap-<timestamp>` snapshot (a disk snapshot, or a VM-state checkpoint on
@@ -67,6 +75,8 @@ maximums is rejected by the backend when the step runs, and the plan shows that 
 | `GET /api/v1/search?q=&limit=&namespace=` | ReadOnly | Cross-resource search |
 | `POST /api/v1/experience/copilot/chat` | ReadOnly | Agent turn; `plans[]` in response for Write+ |
 | `GET /api/v1/experience/copilot/plans/:id` | ReadOnly | Inspect a plan |
+| `GET /api/v1/experience/copilot/plans?status=&limit=` | ReadOnly | Plans newest first: `pending` (default), `expired`, `executed`, `failed`, `cancelled`, `executing` or `all` |
+| `POST /api/v1/experience/copilot/plans/:id/approve` | Write (+ the plan's role) | Four-eyes approval by someone other than the creator |
 | `POST /api/v1/experience/copilot/plans/:id/execute` | Write (+ per step) | Body `{confirm_names, confirm_count, stop_on_error}` |
 | `DELETE /api/v1/experience/copilot/plans/:id` | Write | Cancel |
 
@@ -91,6 +101,7 @@ outcome, and labels `plan_id`, `via=copilot-agent`, `prompt`. Actor is the calle
 | `VEYRON_AI_MAX_TOOL_ROUNDS` | `6` | Max LLM↔tool rounds per turn |
 | `VEYRON_AI_PLAN_TTL_SECS` | `900` | Plan lifetime before it expires |
 | `VEYRON_AI_PLAN_COOLDOWN_SECS` | `60` | Per-VM/node cooldown between plan steps (`0` = off) |
+| `VEYRON_AI_FOUR_EYES` | (off) | `destructive`, `admin`, `all` (comma list): plans of that kind need a second approver |
 | `VEYRON_AI_BULK_CONFIRM_THRESHOLD` | `5` | Plans with more targets than this need `confirm_count` (the count typed back) |
 | `VEYRON_AI_PROVIDER` | (OpenAI-compatible) | `anthropic` talks to Anthropic's native Messages API (tool use). Also selected by an `sk-ant-` key or an `anthropic.com` URL |
 | `VEYRON_AI_MAX_TOKENS` | `2048` | `max_tokens` per Anthropic request (the API requires one) |
