@@ -475,7 +475,10 @@ mod tests {
     }
 
     fn ctx(role: ApiRole) -> AuthContext {
-        AuthContext { role }
+        AuthContext {
+            role,
+            subject: "tester".into(),
+        }
     }
 
     #[test]

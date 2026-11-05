@@ -5,7 +5,7 @@
 use axum::{
     Extension, Json, Router,
     extract::{Path, Query, State},
-    http::{HeaderMap, StatusCode},
+    http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, post},
 };
@@ -152,7 +152,6 @@ async fn copilot_status_handler() -> Json<crate::copilot::CopilotStatusResponse>
 #[cfg(feature = "web")]
 async fn copilot_chat_handler(
     State(state): State<SharedState>,
-    headers: HeaderMap,
     auth: Option<Extension<AuthContext>>,
     Query(q): Query<DashboardNamespaceQuery>,
     Json(mut body): Json<CopilotChatRequest>,
@@ -170,7 +169,10 @@ async fn copilot_chat_handler(
     let mut resp = copilot_chat(&client, &scope, &body).await;
 
     if !resp.plans.is_empty() {
-        let actor = actor_of(&state, &headers).await;
+        let actor = auth
+            .as_ref()
+            .map(|Extension(c)| c.subject.clone())
+            .unwrap_or_else(|| "unknown".into());
         let kube = state.read().await.client().client();
         let mut saved = Vec::new();
         for mut plan in std::mem::take(&mut resp.plans) {
@@ -202,31 +204,6 @@ async fn copilot_chat_handler(
         resp.plans = saved;
     }
     Json(resp)
-}
-
-/// Identity of the caller for plan ownership and audit: API key name, `primary`,
-/// or `bearer` for JWT/OIDC tokens (those carry no per-user name here).
-#[cfg(feature = "web")]
-async fn actor_of(state: &SharedState, headers: &HeaderMap) -> String {
-    let key = headers
-        .get("x-api-key")
-        .and_then(|v| v.to_str().ok())
-        .map(str::to_string)
-        .or_else(|| {
-            headers
-                .get(axum::http::header::AUTHORIZATION)
-                .and_then(|v| v.to_str().ok())
-                .and_then(|v| v.strip_prefix("Bearer ").map(str::to_string))
-        })
-        .unwrap_or_default();
-    let s = state.read().await;
-    if let Some(e) = s.api_keys.iter().find(|e| !key.is_empty() && e.key == key) {
-        return e.name.clone();
-    }
-    if s.api_key.as_deref() == Some(key.as_str()) && !key.is_empty() {
-        return "primary".into();
-    }
-    "bearer".into()
 }
 
 #[cfg(feature = "web")]
@@ -275,7 +252,6 @@ struct PlanExecuteBody {
 #[cfg(feature = "web")]
 async fn plan_execute_handler(
     State(state): State<SharedState>,
-    headers: HeaderMap,
     auth: Option<Extension<AuthContext>>,
     Path(id): Path<String>,
     body: Option<Json<PlanExecuteBody>>,
@@ -284,7 +260,7 @@ async fn plan_execute_handler(
         return plan_err(403, "no authenticated role");
     };
     let body = body.map(|Json(b)| b).unwrap_or_default();
-    let actor = actor_of(&state, &headers).await;
+    let actor = caller.subject.clone();
     let (mut p, rv, ns, kube) = match load_plan(&state, &id).await {
         Ok(v) => v,
         Err((code, msg)) => return plan_err(code, msg),
@@ -327,14 +303,13 @@ async fn plan_execute_handler(
 #[cfg(feature = "web")]
 async fn plan_cancel_handler(
     State(state): State<SharedState>,
-    headers: HeaderMap,
     auth: Option<Extension<AuthContext>>,
     Path(id): Path<String>,
 ) -> Response {
     let Some(Extension(caller)) = auth else {
         return plan_err(403, "no authenticated role");
     };
-    let actor = actor_of(&state, &headers).await;
+    let actor = caller.subject.clone();
     let (mut p, rv, ns, kube) = match load_plan(&state, &id).await {
         Ok(v) => v,
         Err((code, msg)) => return plan_err(code, msg),
