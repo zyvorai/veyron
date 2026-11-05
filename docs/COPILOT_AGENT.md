@@ -38,10 +38,13 @@ proposals, see `docs/ai.md`) is unchanged.
    re-checks. Failed or skipped steps never lock a target. It reads the plan ConfigMaps, so it is
    best effort: two plans executed in the same instant on different API replicas can both pass.
 
-Actions: VM `start|stop|restart|pause|unpause|migrate|delete|snapshot`; node `cordon|uncordon`.
+Actions: VM `start|stop|restart|pause|unpause|migrate|delete|snapshot|heal`; node `cordon|uncordon`.
 `snapshot` takes a `<vm>-snap-<timestamp>` snapshot (a disk snapshot, or a VM-state checkpoint on
 Kairon Machines without PVCs). It needs Write, is not destructive, and is exempt from the cooldown in
 both directions, so a plan can "snapshot, then change" without waiting.
+`heal` is a guarded restart: it needs Write like `restart`, but the step is blocked ("already healthy") unless
+the VM's status is Failed, Error, Unknown, CrashLoopBackOff or unschedulable, checked when the plan is drafted
+and again when it runs.
 Resize: the `propose_vm_resize` tool drafts `hotplug` steps (`cpus` = CPU sockets, `memory` such as
 `512Mi`/`4Gi`/`1Ti`, at least one, up to 25 VMs). It needs Write and runs the same backend call as
 `POST /vms/:ns/:name/hotplug`: KubeVirt applies it live under LiveUpdate (otherwise at next restart);
