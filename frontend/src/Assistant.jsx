@@ -3,6 +3,7 @@ import { Sparkles, X, Send, Square, Wrench, Check, AlertTriangle, RotateCcw } fr
 import { api, streamAiChat } from './api.js';
 import { ProposalCard } from './ProposalCard.jsx';
 import { CopilotPlanCard } from './CopilotPlanCard.jsx';
+import { PlanInbox } from './PlanInbox.jsx';
 import { canMutate } from './roles.js';
 import { useFocusTrap } from './a11y.js';
 
@@ -312,6 +313,8 @@ export function Assistant({ open, onClose, context, user, seed, onSeedUsed }) {
             ))
           )}
         </div>
+
+        <PlanInbox user={user} open={open} />
 
         <form
           className="ai-input"

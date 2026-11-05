@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { api } from './api.js';
+import { needsSecondApprover } from './planutil.js';
 
 const STATUS_LABEL = {
   pending: 'Awaiting approval',
@@ -28,6 +29,21 @@ export function CopilotPlanCard({ initial, onDone }) {
   const namespaces = new Set(plan.steps.map((s) => s.namespace).filter(Boolean)).size;
   const blocked = plan.steps.filter((s) => s.blocked).length;
   const pending = plan.status === 'pending';
+  const waitingApproval = pending && needsSecondApprover(plan);
+
+  // Four-eyes: pick up the second person's approval without making the user reload.
+  useEffect(() => {
+    if (!waitingApproval) return undefined;
+    const t = setInterval(async () => {
+      try {
+        const fresh = await api.getPlan(plan.id);
+        if (fresh?.steps) setPlan(fresh);
+      } catch {
+        /* keep the card as it is; the next tick retries */
+      }
+    }, 8000);
+    return () => clearInterval(t);
+  }, [waitingApproval, plan.id]);
 
   const act = async (fn, label) => {
     setBusy(true);
@@ -67,6 +83,16 @@ export function CopilotPlanCard({ initial, onDone }) {
           </li>
         ))}
       </ul>
+      {waitingApproval && (
+        <div className="plan-approval wait" role="note">
+          <ShieldAlert size={13} /> Needs approval from a second person (Write role) before it can run.
+        </div>
+      )}
+      {pending && plan.needs_approval && plan.approved_by && (
+        <div className="plan-approval ok" role="note">
+          <Check size={13} /> Approved by {plan.approved_by}
+        </div>
+      )}
       {needCount != null && (
         <div className="plan-blast" role="note">
           <ShieldAlert size={13} className="bad" /> Blast radius: {needCount} targets
@@ -99,7 +125,7 @@ export function CopilotPlanCard({ initial, onDone }) {
           </button>
           <button
             className="tb primary"
-            disabled={busy || !confirmed}
+            disabled={busy || !confirmed || waitingApproval}
             onClick={() =>
               act(
                 () =>

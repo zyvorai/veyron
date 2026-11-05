@@ -45,9 +45,14 @@ pub fn router(state: SharedState) -> Router {
             "/experience/copilot/plans/:id",
             get(plan_get_handler).delete(plan_cancel_handler),
         )
+        .route("/experience/copilot/plans", get(plan_list_handler))
         .route(
             "/experience/copilot/plans/:id/execute",
             post(plan_execute_handler),
+        )
+        .route(
+            "/experience/copilot/plans/:id/approve",
+            post(plan_approve_handler),
         )
         .route("/experience/copilot/status", get(copilot_status_handler))
         .route(
@@ -294,6 +299,9 @@ async fn plan_execute_handler(
     if let Err(msg) = plan::check_blast_radius(&p, body.confirm_count) {
         return plan_err(400, msg);
     }
+    if let Err(msg) = plan::check_approved(&p) {
+        return plan_err(403, msg);
+    }
     // Claim the plan atomically: a concurrent execute loses the resourceVersion race.
     p.status = "executing".into();
     p.started_at = Some(chrono::Utc::now().to_rfc3339());
@@ -329,6 +337,76 @@ async fn plan_execute_handler(
     if let Err(e) = plan::update(&kube, &ns, &p, None).await {
         log::warn!("could not record result of plan {}: {e}", p.id);
     }
+    Json(p).into_response()
+}
+
+#[cfg(feature = "web")]
+#[derive(Debug, serde::Deserialize)]
+struct PlanListQuery {
+    /// `pending` (default), `expired`, `executed`, `failed`, `cancelled`, `executing` or `all`.
+    #[serde(default)]
+    status: Option<String>,
+    #[serde(default)]
+    limit: Option<usize>,
+}
+
+/// Plans newest first, so a second approver can find what is waiting for them.
+#[cfg(feature = "web")]
+async fn plan_list_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<PlanListQuery>,
+) -> Response {
+    let (ns, kube) = {
+        let s = state.read().await;
+        (s.namespace.clone(), s.client().client())
+    };
+    let status = q.status.as_deref().unwrap_or("pending").to_lowercase();
+    let rows = plan::filter_plans(
+        plan::list_all(&kube, &ns).await,
+        &status,
+        chrono::Utc::now(),
+        q.limit.unwrap_or(50).clamp(1, 200),
+    );
+    Json(rows).into_response()
+}
+
+/// Four-eyes: a second person approves a plan their colleague drafted. Approving does not
+/// run it; the creator (or an admin) still executes.
+#[cfg(feature = "web")]
+async fn plan_approve_handler(
+    State(state): State<SharedState>,
+    auth: Option<Extension<AuthContext>>,
+    Path(id): Path<String>,
+) -> Response {
+    let Some(Extension(caller)) = auth else {
+        return plan_err(403, "no authenticated role");
+    };
+    let actor = caller.subject.clone();
+    let (mut p, rv, ns, kube) = match load_plan(&state, &id).await {
+        Ok(v) => v,
+        Err((code, msg)) => return plan_err(code, msg),
+    };
+    let now = chrono::Utc::now();
+    if let Err((code, msg)) = plan::check_can_approve(&p, &caller, &actor, now) {
+        return plan_err(code, msg);
+    }
+    p.approved_by = Some(actor.clone());
+    p.approved_at = Some(now.to_rfc3339());
+    if plan::update(&kube, &ns, &p, rv).await.is_err() {
+        return plan_err(409, "plan changed concurrently");
+    }
+    soc::record_agent_audit(
+        &state,
+        &actor,
+        "plan_approved",
+        &plan::summary(&p),
+        "",
+        None,
+        "success",
+        &p.id,
+        &p.prompt,
+    )
+    .await;
     Json(p).into_response()
 }
 

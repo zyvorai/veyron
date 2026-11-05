@@ -377,6 +377,23 @@ mod tests {
         );
         assert_eq!(min_role_for_route(&Method::DELETE, base), ApiRole::Write);
         assert_eq!(min_role_for_route(&Method::GET, base), ApiRole::ReadOnly);
+        // Four-eyes: approving needs Write (the creator/role rules are enforced per plan);
+        // listing plans is a read.
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{base}/approve")),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(
+                &Method::GET,
+                "/api/v1/experience/copilot/plans?status=pending"
+            ),
+            ApiRole::ReadOnly
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/experience/copilot/plans"),
+            ApiRole::ReadOnly
+        );
     }
 
     #[test]
