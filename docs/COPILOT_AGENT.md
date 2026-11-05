@@ -7,10 +7,9 @@ fallback still answers read-only questions, and no plans are drafted.
 
 ## Console
 
-- **Ctrl/Cmd+K** — command palette. Instant search over VMs, pods, nodes (hosts) and PVCs.
-  Filters: `kind:vm|pod|node|pvc`, `ns:<name>`, `status:<text>`, `os:<text>`. Enter opens the
-  resource; the first row, or a `>` prefix, sends the text to the agent.
-- **Sparkles button (top bar)** — agent drawer: chat, evidence, tools used, and **plan cards**.
+This change is **API-only**. The existing console assistant (`Assistant.jsx`, with its own proposal
+cards from the `/ai` module — see `docs/ai.md`) is unchanged; wiring it, or a new drawer, to the
+plan endpoints below is follow-up work.
 
 ## Safety model
 
@@ -44,11 +43,7 @@ Actions: VM `start|stop|restart|pause|unpause|migrate|delete`; node `cordon|unco
 ## Audit
 
 Each executed step is appended to the SOC event store with actor, action, target, namespace/VM,
-outcome, and labels `plan_id`, `via=copilot-agent`, `prompt`. Actor is the API key name, `primary`,
-or `bearer`.
-
-**Limitation:** JWT/OIDC bearer callers share the single actor `bearer`; per-user attribution needs
-the token subject plumbed into `AuthContext`.
+outcome, and labels `plan_id`, `via=copilot-agent`, `prompt`. Actor is the caller's `AuthContext.subject` (API key name, local user, or JWT/OIDC `sub`).
 
 ## Configuration
 
