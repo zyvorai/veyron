@@ -1623,6 +1623,8 @@ Object.assign(api, {
   getPlan: async (id) => unwrap(await request(`${COPILOT}/plans/${encodeURIComponent(id)}`)),
   listPlans: async (status = 'pending') =>
     unwrap(await request(`${COPILOT}/plans?status=${encodeURIComponent(status)}`)),
+  undoPlan: async (id) =>
+    unwrap(await request(`${COPILOT}/plans/${encodeURIComponent(id)}/undo`, { method: 'POST' })),
   approvePlan: async (id) =>
     unwrap(await request(`${COPILOT}/plans/${encodeURIComponent(id)}/approve`, { method: 'POST' })),
 });

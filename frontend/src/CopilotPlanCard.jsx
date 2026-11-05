@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Check, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { api } from './api.js';
-import { needsSecondApprover } from './planutil.js';
+import { canUndo, needsSecondApprover } from './planutil.js';
 
 const STATUS_LABEL = {
   pending: 'Awaiting approval',
@@ -142,7 +142,18 @@ export function CopilotPlanCard({ initial, onDone }) {
           </button>
         </div>
       )}
+      {canUndo(plan) && (
+        <div className="plan-f">
+          <small>Drafts a new plan that reverses the steps that succeeded; you still approve it.</small>
+          <button
+            className="tb"
+            disabled={busy}
+            onClick={() => act(async () => (await api.undoPlan(plan.id))?.plan, 'Undo plan drafted')}
+          >
+            Undo
+          </button>
+        </div>
+      )}
     </div>
   );
 }
-

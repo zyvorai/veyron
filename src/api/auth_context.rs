@@ -384,6 +384,10 @@ mod tests {
             ApiRole::Write
         );
         assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{base}/undo")),
+            ApiRole::Write
+        );
+        assert_eq!(
             min_role_for_route(
                 &Method::GET,
                 "/api/v1/experience/copilot/plans?status=pending"

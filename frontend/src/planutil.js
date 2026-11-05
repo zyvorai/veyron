@@ -15,3 +15,16 @@ export function planByline(p) {
 export function needsSecondApprover(plan) {
   return Boolean(plan?.needs_approval) && !plan?.approved_by;
 }
+
+const INVERSE = { start: 'stop', stop: 'start', pause: 'unpause', unpause: 'pause', cordon: 'uncordon', uncordon: 'cordon' };
+
+/** Steps of a finished plan that succeeded and have a true inverse (mirrors the server's undo). */
+export function undoableSteps(plan) {
+  if (!plan || (plan.status !== 'executed' && plan.status !== 'failed')) return [];
+  return (plan.steps || []).filter((s) => s.result?.ok && INVERSE[s.action]);
+}
+
+/** Whether to offer "Undo" on a plan card. */
+export function canUndo(plan) {
+  return undoableSteps(plan).length > 0;
+}

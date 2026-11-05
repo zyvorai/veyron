@@ -77,6 +77,7 @@ maximums is rejected by the backend when the step runs, and the plan shows that 
 | `GET /api/v1/experience/copilot/plans/:id` | ReadOnly | Inspect a plan |
 | `GET /api/v1/experience/copilot/plans?status=&limit=` | ReadOnly | Plans newest first: `pending` (default), `expired`, `executed`, `failed`, `cancelled`, `executing` or `all` |
 | `POST /api/v1/experience/copilot/plans/:id/approve` | Write (+ the plan's role) | Four-eyes approval by someone other than the creator |
+| `POST /api/v1/experience/copilot/plans/:id/undo` | Write (creator or admin) | Draft a new pending plan that reverses a plan that has run |
 | `POST /api/v1/experience/copilot/plans/:id/execute` | Write (+ per step) | Body `{confirm_names, confirm_count, stop_on_error}` |
 | `DELETE /api/v1/experience/copilot/plans/:id` | Write | Cancel |
 
@@ -87,6 +88,17 @@ Free-text words must all match a name, namespace or label. Filters: `kind:vm|pod
 every kind is searched. Templates and images are cluster-wide catalogs, so an `ns:` filter excludes them.
 Snapshots match their source VM's name. On Kairon, `os:` matches the Machine's image reference and the
 catalog image's OS, family and version; images exist only on the Kairon backend.
+
+## Undo
+
+`POST .../plans/:id/undo` (or the **Undo** button on an executed or failed plan card) drafts a **new pending plan** that
+puts things back: the inverse of every step that succeeded, in reverse order. Only pairs with a true inverse are
+covered: `start`↔`stop`, `pause`↔`unpause`, `cordon`↔`uncordon`. `restart`, `heal`, `snapshot`, `migrate` and
+`hotplug` leave nothing to put back (the previous value is not recorded) and `delete` cannot be taken back, so those
+steps are listed in `skipped` and left out; a plan with nothing reversible answers 409. Steps that failed or never ran
+are skipped too. The undo is an ordinary plan: only the original's creator or an admin can ask for it, it is audited and
+announced like any other (prompt `undo <id>: …`), it is subject to the cooldown, blast-radius and four-eyes rules, and
+nothing runs until someone approves and executes it.
 
 ## Notifications
 
@@ -108,6 +120,18 @@ under the four-eyes policy.
 retries once on a network error or 5xx, does not retry a 4xx, and the URL (which may contain a token) is never logged.
 Keep the URL in a Secret-backed environment variable; nothing secret is in the payload, but the prompt is.
 
+**Signing.** Set `VEYRON_AI_PLAN_WEBHOOK_SECRET` and every delivery carries `X-Veyron-Timestamp` (Unix seconds) and
+`X-Veyron-Signature: sha256=<hex>`, an HMAC-SHA256 of `"<timestamp>.<raw body>"` keyed with the secret. A receiver
+recomputes it over the raw bytes it received, compares in constant time, and rejects a timestamp that is too old
+(replay protection). Without a secret no signature headers are sent. Chat tools that accept only a URL ignore the headers.
+
+```python
+import hmac, hashlib
+def valid(secret, ts, body, header):
+    want = "sha256=" + hmac.new(secret.encode(), ts.encode() + b"." + body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(want, header)
+```
+
 ## Audit
 
 Each executed step is appended to the SOC event store with actor, action, target, namespace/VM,
@@ -123,6 +147,7 @@ outcome, and labels `plan_id`, `via=copilot-agent`, `prompt`. Actor is the calle
 | `VEYRON_AI_PLAN_COOLDOWN_SECS` | `60` | Per-VM/node cooldown between plan steps (`0` = off) |
 | `VEYRON_AI_PLAN_WEBHOOK_URL` | (off) | HTTP(S) endpoint that receives a JSON message for plan events (see Notifications) |
 | `VEYRON_AI_PLAN_WEBHOOK_EVENTS` | (all) | Comma list of `created`, `approved`, `executed`, `failed`, `cancelled` |
+| `VEYRON_AI_PLAN_WEBHOOK_SECRET` | (off) | Signs each webhook delivery (`X-Veyron-Signature`, `X-Veyron-Timestamp`); see Notifications |
 | `VEYRON_AI_FOUR_EYES` | (off) | `destructive`, `admin`, `all` (comma list): plans of that kind need a second approver |
 | `VEYRON_AI_BULK_CONFIRM_THRESHOLD` | `5` | Plans with more targets than this need `confirm_count` (the count typed back) |
 | `VEYRON_AI_PROVIDER` | (OpenAI-compatible) | `anthropic` talks to Anthropic's native Messages API (tool use). Also selected by an `sk-ant-` key or an `anthropic.com` URL |
@@ -141,5 +166,5 @@ verbs (`deploy/k8s.yaml`, `charts/veyron/templates/clusterrole.yaml`). Nothing n
 
 ## Not yet implemented
 
-Snapshot, hotplug and self-heal plan steps; audit actor in the generic
-HTTP middleware (still `api`); unattended auto-execution (deliberately out of scope).
+Audit actor in the generic HTTP middleware (still `api`); undo for steps without an inverse
+(restart, heal, snapshot restore, migrate back); unattended auto-execution (deliberately out of scope).
