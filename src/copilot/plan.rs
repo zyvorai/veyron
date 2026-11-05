@@ -27,8 +27,8 @@ pub const PRUNE_GRACE_SECS: i64 = 3600;
 pub const PLAN_LABEL_KEY: &str = "veyron.io/type";
 pub const PLAN_LABEL_VALUE: &str = "copilot-plan";
 
-pub const VM_ACTIONS: [&str; 8] = [
-    "start", "stop", "restart", "pause", "unpause", "migrate", "delete", "snapshot",
+pub const VM_ACTIONS: [&str; 9] = [
+    "start", "stop", "restart", "pause", "unpause", "migrate", "delete", "snapshot", "heal",
 ];
 pub const NODE_ACTIONS: [&str; 2] = ["cordon", "uncordon"];
 
@@ -221,7 +221,9 @@ fn build_steps_for(
             result: None,
         };
         step.min_role = role_str(&required_role(&step)).to_string();
-        step.preview = if kind == "vm" {
+        step.preview = if kind == "vm" && action == "heal" {
+            format!("heal VM {namespace}/{n} (restart only if unhealthy)")
+        } else if kind == "vm" {
             format!("{action} VM {namespace}/{n}")
         } else {
             format!("{action} node {n}")
@@ -387,6 +389,14 @@ pub async fn annotate_blockers(client: &KubeClient, steps: &mut [PlanStep]) {
     }
 }
 
+/// Statuses that mean a VM is broken (not merely stopped, paused or starting).
+pub fn is_unhealthy_status(status: &str) -> bool {
+    let s = status.to_lowercase();
+    ["error", "fail", "crashloop", "unschedulable", "unknown"]
+        .iter()
+        .any(|bad| s.contains(bad))
+}
+
 async fn blocker_for(client: &KubeClient, s: &PlanStep) -> Option<String> {
     use crate::api::vm_backend::{BackendKind, VmBackend};
     if s.kind != "vm" {
@@ -395,6 +405,18 @@ async fn blocker_for(client: &KubeClient, s: &PlanStep) -> Option<String> {
     let backend = VmBackend::for_client(client);
     if backend.get(&s.namespace, &s.name).await.is_err() {
         return Some("VM not found".into());
+    }
+    if s.action == "heal" {
+        if let Ok(list) = backend.list(&s.namespace).await {
+            if let Some(vm) = list.iter().find(|v| v.name == s.name) {
+                if !is_unhealthy_status(&vm.status) {
+                    return Some(format!(
+                        "already healthy (status {}); nothing to heal",
+                        vm.status
+                    ));
+                }
+            }
+        }
     }
     // Only KubeVirt needs the pre-flight gate; Kairon's migrate refuses VFIO devices itself.
     if s.action == "migrate" && backend.kind() == BackendKind::KubeVirt {
@@ -456,7 +478,7 @@ async fn run_step(
     match (s.kind.as_str(), s.action.as_str()) {
         ("vm", "start") => backend.start(ns, name).await,
         ("vm", "stop") => backend.stop(ns, name).await,
-        ("vm", "restart") => backend.restart(ns, name).await,
+        ("vm", "restart") | ("vm", "heal") => backend.restart(ns, name).await,
         ("vm", "pause") => backend.pause(ns, name).await,
         ("vm", "unpause") => backend.unpause(ns, name).await,
         ("vm", "migrate") if backend.kind() == BackendKind::KubeVirt => {
@@ -998,6 +1020,30 @@ mod tests {
     #[test]
     fn hotplug_is_not_reachable_through_the_generic_vm_action() {
         assert!(build_steps("vm", "hotplug", "ns", &names(&["a"])).is_err());
+    }
+
+    #[test]
+    fn heal_is_a_guarded_write_restart() {
+        let s = build_steps("vm", "heal", "ns", &names(&["a"]))
+            .unwrap()
+            .remove(0);
+        assert_eq!(s.min_role, "write");
+        assert!(!s.destructive);
+        assert_eq!(s.preview, "heal VM ns/a (restart only if unhealthy)");
+        for bad in [
+            "Failed",
+            "ErrorUnschedulable",
+            "CrashLoopBackOff",
+            "Error",
+            "Unknown",
+        ] {
+            assert!(is_unhealthy_status(bad), "{bad}");
+        }
+        for ok in [
+            "Running", "Stopped", "Paused", "Pending", "Starting", "Halted", "",
+        ] {
+            assert!(!is_unhealthy_status(ok), "{ok}");
+        }
     }
 
     #[test]
