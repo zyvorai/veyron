@@ -292,13 +292,16 @@ pub async fn annotate_blockers(client: &KubeClient, steps: &mut [PlanStep]) {
 }
 
 async fn blocker_for(client: &KubeClient, s: &PlanStep) -> Option<String> {
+    use crate::api::vm_backend::{BackendKind, VmBackend};
     if s.kind != "vm" {
         return None;
     }
-    if client.get_vm(&s.namespace, &s.name).await.is_err() {
+    let backend = VmBackend::for_client(client);
+    if backend.get(&s.namespace, &s.name).await.is_err() {
         return Some("VM not found".into());
     }
-    if s.action == "migrate" {
+    // Only KubeVirt needs the pre-flight gate; Kairon's migrate refuses VFIO devices itself.
+    if s.action == "migrate" && backend.kind() == BackendKind::KubeVirt {
         if let Ok(el) = client
             .migration_eligibility(
                 &s.namespace,
@@ -323,17 +326,26 @@ async fn blocker_for(client: &KubeClient, s: &PlanStep) -> Option<String> {
 }
 
 async fn run_step(client: &KubeClient, s: &PlanStep) -> anyhow::Result<()> {
+    use crate::api::vm_backend::{BackendKind, MigrateRequest, VmBackend};
     if let Some(b) = blocker_for(client, s).await {
         anyhow::bail!(b);
     }
+    let backend = VmBackend::for_client(client);
+    let (ns, name) = (s.namespace.as_str(), s.name.as_str());
     match (s.kind.as_str(), s.action.as_str()) {
-        ("vm", "start") => client.start_vm(&s.namespace, &s.name).await.map(|_| ()),
-        ("vm", "stop") => client.stop_vm(&s.namespace, &s.name).await.map(|_| ()),
-        ("vm", "restart") => client.restart_vm(&s.namespace, &s.name).await.map(|_| ()),
-        ("vm", "pause") => client.pause_vm(&s.namespace, &s.name).await,
-        ("vm", "unpause") => client.unpause_vm(&s.namespace, &s.name).await,
-        ("vm", "migrate") => client.migrate_vm(&s.namespace, &s.name, None).await,
-        ("vm", "delete") => client.delete_vm(&s.namespace, &s.name).await,
+        ("vm", "start") => backend.start(ns, name).await,
+        ("vm", "stop") => backend.stop(ns, name).await,
+        ("vm", "restart") => backend.restart(ns, name).await,
+        ("vm", "pause") => backend.pause(ns, name).await,
+        ("vm", "unpause") => backend.unpause(ns, name).await,
+        ("vm", "migrate") if backend.kind() == BackendKind::KubeVirt => {
+            client.migrate_vm(ns, name, None).await
+        }
+        ("vm", "migrate") => backend
+            .migrate(ns, name, &MigrateRequest::default())
+            .await
+            .map(|_| ()),
+        ("vm", "delete") => backend.delete(ns, name).await,
         ("node", "cordon") => client.set_node_schedulable(&s.name, false).await,
         ("node", "uncordon") => client.set_node_schedulable(&s.name, true).await,
         _ => anyhow::bail!("unsupported step {} {}", s.kind, s.action),
