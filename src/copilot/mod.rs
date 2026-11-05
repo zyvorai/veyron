@@ -30,6 +30,8 @@ mod llm;
 mod migration_advisor;
 mod network_lens;
 mod node_advisor;
+#[cfg(feature = "web")]
+pub mod notify;
 mod observability_advisor;
 mod performance_advisor;
 #[cfg(feature = "web")]
