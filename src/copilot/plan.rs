@@ -19,6 +19,8 @@ use crate::kube::KubeClient;
 
 pub const MAX_STEPS: usize = 25;
 pub const DEFAULT_TTL_SECS: i64 = 900;
+/// Finished or expired plans stay readable this long past `expires_at`, then are pruned.
+pub const PRUNE_GRACE_SECS: i64 = 3600;
 pub const PLAN_LABEL_KEY: &str = "veyron.io/type";
 pub const PLAN_LABEL_VALUE: &str = "copilot-plan";
 
@@ -458,6 +460,64 @@ pub async fn update(
     Ok(())
 }
 
+/// One-line description of what a plan does, for audit targets (`start VM ns/a; stop VM ns/b (+2 more)`).
+pub fn summary(plan: &Plan) -> String {
+    const SHOWN: usize = 3;
+    let mut out = plan
+        .steps
+        .iter()
+        .take(SHOWN)
+        .map(|s| s.preview.as_str())
+        .collect::<Vec<_>>()
+        .join("; ");
+    if plan.steps.len() > SHOWN {
+        out.push_str(&format!(" (+{} more)", plan.steps.len() - SHOWN));
+    }
+    out
+}
+
+/// A plan is prunable once it has been expired for longer than `grace_secs`.
+/// Every status qualifies: the plan is single-use and its audit trail lives in the SOC store.
+pub fn is_prunable(plan: &Plan, now: chrono::DateTime<chrono::Utc>, grace_secs: i64) -> bool {
+    chrono::DateTime::parse_from_rfc3339(&plan.expires_at)
+        .map(|e| now.signed_duration_since(e).num_seconds() > grace_secs)
+        .unwrap_or(false)
+}
+
+/// Delete plan ConfigMaps that expired more than `PRUNE_GRACE_SECS` ago. Best effort:
+/// returns how many were deleted and never fails the caller.
+pub async fn prune(client: &kube::Client, ns: &str, now: chrono::DateTime<chrono::Utc>) -> usize {
+    use k8s_openapi::api::core::v1::ConfigMap;
+    use kube::api::{DeleteParams, ListParams};
+    let api: kube::Api<ConfigMap> = kube::Api::namespaced(client.clone(), ns);
+    let lp = ListParams::default().labels(&format!("{PLAN_LABEL_KEY}={PLAN_LABEL_VALUE}"));
+    let Ok(list) = api.list(&lp).await else {
+        return 0;
+    };
+    let mut deleted = 0;
+    for cm in list.items {
+        let Some(name) = cm.metadata.name.clone() else {
+            continue;
+        };
+        let plan = cm
+            .data
+            .as_ref()
+            .and_then(|d| d.get("plan"))
+            .and_then(|raw| serde_json::from_str::<Plan>(raw).ok());
+        let stale = match plan {
+            Some(p) => is_prunable(&p, now, PRUNE_GRACE_SECS),
+            // Unreadable plan data can never be executed; drop it once it is old enough.
+            None => cm.metadata.creation_timestamp.as_ref().is_some_and(|t| {
+                now.signed_duration_since(t.0).num_seconds() > ttl_secs() + PRUNE_GRACE_SECS
+            }),
+        };
+        if stale && api.delete(&name, &DeleteParams::default()).await.is_ok() {
+            deleted += 1;
+        }
+    }
+    deleted
+}
+
 pub fn role_label(r: &ApiRole) -> &'static str {
     role_str(r)
 }
@@ -597,5 +657,34 @@ mod tests {
         assert_eq!(final_status(&s), "failed");
         s[0].result = None;
         assert_eq!(final_status(&s), "failed");
+    }
+
+    #[test]
+    fn summary_lists_first_steps() {
+        let steps = build_steps("vm", "stop", "ns", &names(&["a", "b", "c", "d", "e"])).unwrap();
+        let mut p = new_plan("x", "u", steps, 60);
+        assert!(summary(&p).ends_with("(+2 more)"));
+        assert_eq!(summary(&p).matches("; ").count(), 2);
+        p.steps.truncate(1);
+        assert_eq!(summary(&p), p.steps[0].preview);
+    }
+
+    #[test]
+    fn prunable_only_after_expiry_plus_grace() {
+        let now = chrono::Utc::now();
+        let mut p = new_plan(
+            "x",
+            "u",
+            build_steps("vm", "stop", "ns", &names(&["a"])).unwrap(),
+            60,
+        );
+        p.expires_at = (now - chrono::Duration::seconds(10)).to_rfc3339();
+        assert!(!is_prunable(&p, now, 3600), "just expired stays readable");
+        p.expires_at = (now - chrono::Duration::seconds(3601)).to_rfc3339();
+        assert!(is_prunable(&p, now, 3600));
+        p.expires_at = (now + chrono::Duration::seconds(60)).to_rfc3339();
+        assert!(!is_prunable(&p, now, 0), "live plans are never pruned");
+        p.expires_at = "garbage".into();
+        assert!(!is_prunable(&p, now, 0), "unparseable expiry is kept");
     }
 }
