@@ -51,7 +51,7 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
             json!({
                 "type": "object",
                 "properties": {
-                    "action": {"type": "string", "enum": ["start", "stop", "restart", "pause", "unpause", "migrate", "delete"]},
+                    "action": {"type": "string", "enum": ["start", "stop", "restart", "pause", "unpause", "migrate", "delete", "snapshot"]},
                     "namespace": {"type": "string"},
                     "names": {"type": "array", "items": {"type": "string"}, "description": "VM names (max 25)"}
                 },

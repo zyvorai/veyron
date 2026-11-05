@@ -38,7 +38,10 @@ proposals, see `docs/ai.md`) is unchanged.
    re-checks. Failed or skipped steps never lock a target. It reads the plan ConfigMaps, so it is
    best effort: two plans executed in the same instant on different API replicas can both pass.
 
-Actions: VM `start|stop|restart|pause|unpause|migrate|delete`; node `cordon|uncordon`.
+Actions: VM `start|stop|restart|pause|unpause|migrate|delete|snapshot`; node `cordon|uncordon`.
+`snapshot` takes a `<vm>-snap-<timestamp>` snapshot (a disk snapshot, or a VM-state checkpoint on
+Kairon Machines without PVCs). It needs Write, is not destructive, and is exempt from the cooldown in
+both directions, so a plan can "snapshot, then change" without waiting.
 
 ## API
 
