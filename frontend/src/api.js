@@ -1608,11 +1608,15 @@ Object.assign(api, {
         }),
       }),
     ),
-  executePlan: async (id, confirmNames = []) =>
+  executePlan: async (id, confirmNames = [], confirmCount = null) =>
     unwrap(
       await request(`${COPILOT}/plans/${encodeURIComponent(id)}/execute`, {
         method: 'POST',
-        body: JSON.stringify({ confirm_names: confirmNames, stop_on_error: true }),
+        body: JSON.stringify({
+          confirm_names: confirmNames,
+          ...(confirmCount == null ? {} : { confirm_count: confirmCount }),
+          stop_on_error: true,
+        }),
       }),
     ),
   cancelPlan: async (id) => unwrap(await request(`${COPILOT}/plans/${encodeURIComponent(id)}`, { method: 'DELETE' })),

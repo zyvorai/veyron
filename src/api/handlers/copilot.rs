@@ -262,6 +262,9 @@ struct PlanExecuteBody {
     /// Names of every destructive target, typed back by the user.
     #[serde(default)]
     confirm_names: Vec<String>,
+    /// For plans over the blast-radius threshold: the number of targets, typed back.
+    #[serde(default)]
+    confirm_count: Option<usize>,
     #[serde(default)]
     stop_on_error: Option<bool>,
 }
@@ -286,6 +289,9 @@ async fn plan_execute_handler(
         return plan_err(code, msg);
     }
     if let Err(msg) = plan::check_confirmation(&p, &body.confirm_names) {
+        return plan_err(400, msg);
+    }
+    if let Err(msg) = plan::check_blast_radius(&p, body.confirm_count) {
         return plan_err(400, msg);
     }
     // Claim the plan atomically: a concurrent execute loses the resourceVersion race.

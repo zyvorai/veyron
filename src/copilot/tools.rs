@@ -24,6 +24,9 @@ pub struct ToolInvokeArgs {
     pub cpus: Option<u32>,
     #[serde(default)]
     pub memory: Option<String>,
+    /// `propose_bulk_vm_action`: search query (`status:failed ns:prod web`) selecting the VMs.
+    #[serde(default)]
+    pub query: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,6 +78,23 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
                     "memory": {"type": "string", "description": "New guest memory, e.g. 4Gi or 512Mi"}
                 },
                 "required": ["namespace", "names"]
+            }),
+        ),
+        tool(
+            "propose_bulk_vm_action",
+            "PROPOSE (never executes) one action over every VM matching a search query, across \
+             namespaces, e.g. restart all Failed VMs in prod. The query uses the search syntax \
+             (status:, ns:, os:, free words) and must not be empty. At most 25 VMs; larger plans \
+             make the user type the VM count to confirm. For action 'hotplug' pass cpus and/or memory.",
+            json!({
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["start", "stop", "restart", "pause", "unpause", "migrate", "delete", "snapshot", "heal", "hotplug"]},
+                    "query": {"type": "string", "description": "Search query selecting the VMs, e.g. 'status:failed ns:prod'"},
+                    "cpus": {"type": "integer", "description": "hotplug only: new CPU socket count"},
+                    "memory": {"type": "string", "description": "hotplug only: new guest memory, e.g. 4Gi"}
+                },
+                "required": ["action", "query"]
             }),
         ),
         tool(
@@ -363,6 +383,82 @@ async fn search_tool(
     r
 }
 
+/// VMs selected by a bulk query as `(namespace, name)`. The query is resolved once, now; the
+/// plan stores the concrete list, so approving it later never expands the target set.
+#[cfg(feature = "web")]
+async fn resolve_bulk_targets(
+    client: &KubeClient,
+    scope: &str,
+    query: Option<&str>,
+) -> Result<Vec<(String, String)>, String> {
+    use super::{plan, search};
+    let raw = query.unwrap_or("").trim();
+    let mut q = search::parse_query(raw);
+    if q.words.is_empty() && q.namespace.is_none() && q.status.is_none() && q.os.is_none() {
+        return Err(
+            "a bulk action needs a query that narrows the VMs (status:, ns:, os: or words)".into(),
+        );
+    }
+    q.kinds = vec!["vm".to_string()];
+    let scope = q.namespace.clone().unwrap_or_else(|| scope.to_string());
+    let hits = search::search(client, &scope, &q, plan::MAX_STEPS + 1).await;
+    if hits.is_empty() {
+        return Err(format!("no VMs match '{raw}'"));
+    }
+    if hits.len() > plan::MAX_STEPS {
+        return Err(format!(
+            "'{raw}' matches more than {} VMs, the most one plan can hold; narrow the query",
+            plan::MAX_STEPS
+        ));
+    }
+    Ok(hits
+        .into_iter()
+        .filter_map(|h| {
+            h.id.split_once('/')
+                .map(|(n, v)| (n.to_string(), v.to_string()))
+        })
+        .collect())
+}
+
+/// The agent-facing description of a bulk plan, led by its blast radius.
+#[cfg(feature = "web")]
+fn bulk_response(drafted: &super::plan::Plan, query: &str) -> CopilotResponse {
+    let n = drafted.steps.len();
+    let namespaces: std::collections::BTreeSet<&str> =
+        drafted.steps.iter().map(|s| s.namespace.as_str()).collect();
+    let blocked = drafted.steps.iter().filter(|s| s.blocked.is_some()).count();
+    let mut r = CopilotResponse::new(
+        "Veyron Agent",
+        "propose_action",
+        format!("Proposed bulk plan {}", drafted.id),
+    );
+    r.summary = format!(
+        "Plan {} drafted for '{query}': blast radius {n} VM(s) in {} namespace(s), needs {} role. {}Awaiting the user's approval in the console - nothing has been executed.{}",
+        drafted.id,
+        namespaces.len(),
+        drafted.min_role,
+        if drafted.confirm_count.is_some() {
+            "The user must type the VM count to confirm. "
+        } else {
+            ""
+        },
+        if blocked > 0 {
+            format!(" {blocked} step(s) are currently blocked.")
+        } else {
+            String::new()
+        }
+    );
+    r.evidence = drafted
+        .steps
+        .iter()
+        .map(|s| match &s.blocked {
+            Some(b) => format!("{} - BLOCKED: {b}", s.preview),
+            None => s.preview.clone(),
+        })
+        .collect();
+    r
+}
+
 /// Draft a plan from a `propose_*` tool call. Nothing is executed or persisted here.
 #[cfg(feature = "web")]
 pub async fn propose_tool(
@@ -374,6 +470,17 @@ pub async fn propose_tool(
 ) -> Result<(CopilotResponse, super::plan::Plan), String> {
     use super::plan;
     let action = args.action.clone().unwrap_or_default();
+    if tool_name == "propose_bulk_vm_action" {
+        let targets = resolve_bulk_targets(client, scope, args.query.as_deref()).await?;
+        let mut steps =
+            plan::build_target_steps(&action, &targets, args.cpus, args.memory.as_deref())?;
+        plan::annotate_blockers(client, &mut steps).await;
+        let drafted = plan::new_plan(prompt, "", steps, plan::ttl_secs());
+        return Ok((
+            bulk_response(&drafted, args.query.as_deref().unwrap_or("")),
+            drafted,
+        ));
+    }
     let (kind, ns) = match tool_name {
         "propose_vm_action" => {
             let ns = args
@@ -458,7 +565,7 @@ mod tests {
         assert!(names.iter().any(|n| n == "yaml_preview"));
         assert!(names.iter().any(|n| n == "search_resources"));
         assert!(names.iter().any(|n| n == "propose_vm_action"));
-        assert_eq!(names.len(), 31);
+        assert_eq!(names.len(), 32);
     }
 
     #[test]

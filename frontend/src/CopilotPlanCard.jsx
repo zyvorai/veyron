@@ -14,12 +14,18 @@ const STATUS_LABEL = {
 export function CopilotPlanCard({ initial, onDone }) {
   const [plan, setPlan] = useState(initial);
   const [typed, setTyped] = useState('');
+  const [typedCount, setTypedCount] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
   const destructive = plan.steps.filter((s) => s.destructive);
   const typedNames = typed.split(/[\s,]+/).filter(Boolean);
-  const confirmed = destructive.every((s) => typedNames.includes(s.name));
+  const namesOk = destructive.every((s) => typedNames.includes(s.name));
+  // Blast-radius guard: plans over the server's threshold need the target count typed back.
+  const needCount = plan.confirm_count ?? null;
+  const countOk = needCount == null || Number(typedCount.trim()) === needCount;
+  const confirmed = namesOk && countOk;
+  const namespaces = new Set(plan.steps.map((s) => s.namespace).filter(Boolean)).size;
   const blocked = plan.steps.filter((s) => s.blocked).length;
   const pending = plan.status === 'pending';
 
@@ -61,6 +67,23 @@ export function CopilotPlanCard({ initial, onDone }) {
           </li>
         ))}
       </ul>
+      {needCount != null && (
+        <div className="plan-blast" role="note">
+          <ShieldAlert size={13} className="bad" /> Blast radius: {needCount} targets
+          {namespaces > 1 ? ` in ${namespaces} namespaces` : ''}
+        </div>
+      )}
+      {pending && needCount != null && (
+        <label className="plan-confirm">
+          Type {needCount} to confirm
+          <input
+            value={typedCount}
+            onChange={(e) => setTypedCount(e.target.value)}
+            inputMode="numeric"
+            aria-label="Type the number of targets to confirm"
+          />
+        </label>
+      )}
       {pending && destructive.length > 0 && (
         <label className="plan-confirm">
           Type {destructive.map((s) => s.name).join(', ')} to confirm
@@ -78,7 +101,15 @@ export function CopilotPlanCard({ initial, onDone }) {
             className="tb primary"
             disabled={busy || !confirmed}
             onClick={() =>
-              act(() => api.executePlan(plan.id, destructive.map((s) => s.name).filter((n) => typedNames.includes(n))), 'Plan executed')
+              act(
+                () =>
+                  api.executePlan(
+                    plan.id,
+                    destructive.map((s) => s.name).filter((n) => typedNames.includes(n)),
+                    needCount == null ? null : Number(typedCount.trim()),
+                  ),
+                'Plan executed',
+              )
             }
           >
             {busy ? 'Working…' : `Approve & run (${plan.steps.length})`}

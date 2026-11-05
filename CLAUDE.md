@@ -255,6 +255,7 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 | `VEYRON_AI_MAX_TOOL_ROUNDS` | Max LLM↔tool rounds per Copilot turn (default `6`) |
 | `VEYRON_AI_PLAN_TTL_SECS` | Lifetime of agent-drafted action plans before they expire (default `900`) |
 | `VEYRON_AI_PLAN_COOLDOWN_SECS` | Per-VM/node cooldown between agent plan steps (default `60`, `0` disables) |
+| `VEYRON_AI_BULK_CONFIRM_THRESHOLD` | Agent plans touching more targets than this (default `5`) require `confirm_count` (the count typed back) to execute |
 | `VEYRON_AI_PROVIDER`, `VEYRON_AI_MAX_TOKENS` | Copilot agent LLM wire format: `anthropic` uses Anthropic's native Messages API (default URL `https://api.anthropic.com`, model `claude-sonnet-5-5`, key `VEYRON_AI_API_KEY`/`ANTHROPIC_API_KEY`; auto-selected by an `sk-ant-` key or anthropic.com URL); unset keeps OpenAI-compatible. `MAX_TOKENS` (default 2048) is the per-request cap Anthropic requires. |
 | `VEYRON_ATLAS_URL` | Optional. Atlas storage control-plane gateway base URL (e.g. `http://atlas-gateway.zyvor:5110`). When set, the **Atlas** integration enables Ceph-backed VM disk snapshot/backup/restore. Unset ⇒ routes report `configured:false`. |
 | `VEYRON_ATLAS_TOKEN` | Optional HS256 JWT bearer for Atlas (required when Atlas runs with `ATLAS_AUTH_REQUIRED=1`) |
