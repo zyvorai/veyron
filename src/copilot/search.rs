@@ -132,6 +132,48 @@ fn label_text(labels: &Option<std::collections::BTreeMap<String, String>>) -> St
         .unwrap_or_default()
 }
 
+/// `(name, namespace, status, label text)` for every VM in scope, from whichever
+/// backend runs the VMs (Kairon Machines, or KubeVirt when explicitly selected).
+/// Kairon rows carry no label text, so `os:`-style label filters only match KubeVirt VMs.
+async fn vm_rows(client: &KubeClient, scope: &str) -> Vec<(String, String, String, String)> {
+    #[cfg(feature = "web")]
+    if crate::api::vm_backend::is_kairon() {
+        return crate::api::vm_backend::VmBackend::for_client(client)
+            .list(scope)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|i| {
+                let ns = if i.namespace.is_empty() {
+                    "default".to_string()
+                } else {
+                    i.namespace
+                };
+                (i.name, ns, i.status, String::new())
+            })
+            .collect();
+    }
+    client
+        .list_vms_for_scope(scope)
+        .await
+        .into_iter()
+        .map(|vm| {
+            (
+                vm.metadata.name.clone().unwrap_or_default(),
+                vm.metadata
+                    .namespace
+                    .clone()
+                    .unwrap_or_else(|| "default".into()),
+                vm.status
+                    .as_ref()
+                    .and_then(|s| s.printable_status.clone())
+                    .unwrap_or_else(|| "Unknown".into()),
+                label_text(&vm.metadata.labels),
+            )
+        })
+        .collect()
+}
+
 /// Run the search. `scope` is a namespace or `"all"`; a `ns:` filter narrows it.
 pub async fn search(
     client: &KubeClient,
@@ -146,19 +188,12 @@ pub async fn search(
     let limit = limit.clamp(1, 200);
 
     if q.wants_kind("vm") {
-        for vm in client.list_vms_for_scope(scope).await {
-            let name = vm.metadata.name.as_deref().unwrap_or("");
-            let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
-            let status = vm
-                .status
-                .as_ref()
-                .and_then(|s| s.printable_status.clone())
-                .unwrap_or_else(|| "Unknown".into());
-            if matches(q, name, ns, &status, &label_text(&vm.metadata.labels)) {
+        for (name, ns, status, labels) in vm_rows(client, scope).await {
+            if matches(q, &name, &ns, &status, &labels) {
                 hits.push(SearchHit {
                     kind: "vm".into(),
                     id: format!("{ns}/{name}"),
-                    title: name.into(),
+                    title: name,
                     subtitle: format!("{ns} · {status}"),
                     status,
                 });
