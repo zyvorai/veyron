@@ -345,6 +345,7 @@ pub(super) async fn kubevirt_subresource_ws_proxy(
         })
     }
 
+    let mut kube_roots: Option<Vec<Vec<u8>>> = None;
     let (ws_url, bearer, verify_tls) = match upstream {
         Upstream::Relay { url, token } => {
             log::info!(
@@ -373,6 +374,7 @@ pub(super) async fn kubevirt_subresource_ws_proxy(
                     return;
                 }
             };
+            kube_roots = config.root_cert.clone();
             let api_url = config
                 .cluster_url
                 .to_string()
@@ -391,19 +393,18 @@ pub(super) async fn kubevirt_subresource_ws_proxy(
                 std::fs::read_to_string("/var/run/secrets/kubernetes.io/serviceaccount/token")
                     .ok()
                     .map(|t| t.trim().to_string());
-            (url, token, false)
+            // Verified against the cluster CA unless explicitly opted out.
+            (url, token, !kubevirt_ws_insecure_tls())
         }
     };
 
     let tls_connector = if verify_tls {
-        None
+        // Relay: default trust store (as before). KubeVirt: the cluster CA.
+        kubevirt_ws_connector(kube_roots.as_deref(), false)
     } else {
-        let tls_config = rustls::ClientConfig::builder()
-            .dangerous()
-            .with_custom_certificate_verifier(std::sync::Arc::new(AcceptAllVerifier))
-            .with_no_client_auth();
-        let connector = tokio_tungstenite::Connector::Rustls(std::sync::Arc::new(tls_config));
-        Some(connector)
+        // Explicit opt-outs only (relay: VEYRON_KAIRON_NODE_TLS_INSECURE;
+        // KubeVirt: VEYRON_KUBEVIRT_WS_INSECURE_TLS).
+        kubevirt_ws_connector(None, true)
     };
 
     let mut request =

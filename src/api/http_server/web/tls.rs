@@ -56,6 +56,65 @@ impl rustls::client::danger::ServerCertVerifier for AcceptAllVerifier {
     }
 }
 
+/// `VEYRON_KUBEVIRT_WS_INSECURE_TLS=1|true` opts out of verifying the Kubernetes
+/// API server certificate on the legacy KubeVirt console proxy.
+pub(super) fn kubevirt_ws_insecure_tls() -> bool {
+    flag_enabled(std::env::var("VEYRON_KUBEVIRT_WS_INSECURE_TLS").ok().as_deref())
+}
+
+fn flag_enabled(v: Option<&str>) -> bool {
+    v.is_some_and(|v| v.trim() == "1" || v.trim().eq_ignore_ascii_case("true"))
+}
+
+/// TLS connector for the upstream Kubernetes API WebSocket. Verifies the server
+/// certificate by default: against the cluster CA (`roots`, DER, from the
+/// kube config / service account) when present, else the default trust store
+/// (`None`). `insecure` skips verification entirely.
+pub(super) fn kubevirt_ws_connector(
+    roots: Option<&[Vec<u8>]>,
+    insecure: bool,
+) -> Option<tokio_tungstenite::Connector> {
+    if insecure {
+        log::warn!(
+            "VEYRON_KUBEVIRT_WS_INSECURE_TLS is set: the KubeVirt console proxy does not verify the Kubernetes API certificate"
+        );
+        let cfg = rustls::ClientConfig::builder()
+            .dangerous()
+            .with_custom_certificate_verifier(Arc::new(AcceptAllVerifier))
+            .with_no_client_auth();
+        return Some(tokio_tungstenite::Connector::Rustls(Arc::new(cfg)));
+    }
+    let roots = roots.filter(|r| !r.is_empty())?;
+    let mut store = rustls::RootCertStore::empty();
+    for der in roots {
+        let _ = store.add(rustls::pki_types::CertificateDer::from(der.clone()));
+    }
+    let cfg = rustls::ClientConfig::builder()
+        .with_root_certificates(store)
+        .with_no_client_auth();
+    Some(tokio_tungstenite::Connector::Rustls(Arc::new(cfg)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flag_parsing() {
+        assert!(flag_enabled(Some("1")) && flag_enabled(Some("TRUE")));
+        assert!(!flag_enabled(None) && !flag_enabled(Some("0")) && !flag_enabled(Some("")));
+    }
+
+    #[test]
+    fn kubevirt_connector_verifies_by_default() {
+        // default trust store: no custom connector
+        assert!(kubevirt_ws_connector(None, false).is_none());
+        // cluster CA given: a verifying connector (never the accept-all one)
+        assert!(kubevirt_ws_connector(Some(&[vec![1, 2, 3]]), false).is_some());
+        assert!(kubevirt_ws_connector(None, true).is_some());
+    }
+}
+
 /// Build a rustls ClientConfig that authenticates to the K8s API server.
 /// Supports client certificate auth (k3s/kubeadm) and falls back to no client auth.
 #[allow(dead_code)]
