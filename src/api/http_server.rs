@@ -88,6 +88,10 @@ pub mod web {
         }
 
         fn check_rate_limit(&self) -> bool {
+            // `--rate-limit 0` means "disabled" (CLI help, config, Helm), not "reject everything".
+            if self.max_requests == 0 {
+                return true;
+            }
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
@@ -1806,6 +1810,16 @@ pub mod web {
                 .expect("router never errors")
                 .status()
                 .as_u16()
+        }
+
+        #[test]
+        fn rate_limit_zero_disables_the_limiter() {
+            let off = RateLimiterState::new(0, 60);
+            assert!((0..1000).all(|_| off.check_rate_limit()));
+            let two = RateLimiterState::new(2, 60);
+            assert!(two.check_rate_limit());
+            assert!(two.check_rate_limit());
+            assert!(!two.check_rate_limit());
         }
 
         /// A read-only key must not reach the interactive VNC/serial consoles (403 before the
