@@ -168,7 +168,7 @@ async fn resolve_client_role(
     if let Some(role) = state.authenticate(&key) {
         return role.clone();
     }
-    if let Some(role) = state.authenticate_jwt(&key) {
+    if let Some(role) = state.authenticate_jwt_checked(&key).await {
         return role;
     }
     if crate::api::oidc::oidc_configured() {

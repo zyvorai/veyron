@@ -32,6 +32,29 @@ pub struct UserAccount {
     pub role: String, // "admin" | "write" | "readonly"
     pub display_name: String,
     pub created_at: String,
+    /// Bumped on password reset; session JWTs carry the value they were minted
+    /// with and are rejected once it no longer matches (see [`session_valid`]).
+    #[serde(default)]
+    pub token_version: u64,
+}
+
+/// Whether a login-minted session token (`sub`, `tv` claims) is still valid:
+/// the user must still exist and the token version must be current.
+pub fn session_valid(users: &[UserAccount], sub: &str, token_version: u64) -> bool {
+    users
+        .iter()
+        .any(|u| u.username == sub && u.token_version == token_version)
+}
+
+/// Short-lived cache of the user list so per-request session checks do not
+/// read the Secret every time. Cleared on every write; stale by at most the TTL
+/// across API replicas.
+static USER_CACHE: std::sync::Mutex<Option<(std::time::Instant, Vec<UserAccount>)>> =
+    std::sync::Mutex::new(None);
+const USER_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(5);
+
+fn clear_user_cache() {
+    *USER_CACHE.lock().unwrap_or_else(|e| e.into_inner()) = None;
 }
 
 /// Hash a plaintext password with Argon2id (library default, OWASP-recommended params).
@@ -116,6 +139,7 @@ impl KubeClient {
                 display_name.to_string()
             },
             created_at: chrono::Utc::now().to_rfc3339(),
+            token_version: 0,
         });
         self.write_users(namespace, &users).await
     }
@@ -136,6 +160,8 @@ impl KubeClient {
             .find(|u| u.username == username)
             .ok_or_else(|| anyhow::anyhow!("user '{username}' not found"))?;
         user.password_hash = hash_password(password)?;
+        // Invalidate every session token issued before this reset.
+        user.token_version = user.token_version.wrapping_add(1);
         self.write_users(namespace, &users).await
     }
 
@@ -150,7 +176,37 @@ impl KubeClient {
         self.write_users(namespace, &users).await
     }
 
+    /// Whether a login-minted session token is still valid (user exists, token
+    /// version current). Fails closed when the user list cannot be read and no
+    /// cached copy exists.
+    pub async fn session_token_valid(&self, namespace: &str, sub: &str, tv: u64) -> bool {
+        {
+            let cache = USER_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some((at, users)) = cache.as_ref() {
+                if at.elapsed() < USER_CACHE_TTL {
+                    return session_valid(users, sub, tv);
+                }
+            }
+        }
+        match self.list_users(namespace).await {
+            Ok(users) => {
+                let ok = session_valid(&users, sub, tv);
+                *USER_CACHE.lock().unwrap_or_else(|e| e.into_inner()) =
+                    Some((std::time::Instant::now(), users));
+                ok
+            }
+            Err(e) => {
+                log::warn!("session check: could not read users: {e}");
+                let cache = USER_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+                cache
+                    .as_ref()
+                    .is_some_and(|(_, users)| session_valid(users, sub, tv))
+            }
+        }
+    }
+
     async fn write_users(&self, namespace: &str, users: &[UserAccount]) -> Result<()> {
+        clear_user_cache();
         let secrets: kube::Api<Secret> = kube::Api::namespaced(self.client.clone(), namespace);
         let body = serde_json::to_string(users).context("serialize veyron-users")?;
         let mut data = BTreeMap::new();
@@ -284,6 +340,35 @@ fn decode_users(secret: &Secret) -> Vec<UserAccount> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn acct(name: &str, tv: u64) -> UserAccount {
+        UserAccount {
+            username: name.into(),
+            password_hash: String::new(),
+            role: "admin".into(),
+            display_name: name.into(),
+            created_at: String::new(),
+            token_version: tv,
+        }
+    }
+
+    #[test]
+    fn session_revoked_on_delete_and_password_reset() {
+        let users = vec![acct("alice", 2)];
+        assert!(session_valid(&users, "alice", 2));
+        assert!(!session_valid(&users, "alice", 1), "reset bumps version");
+        assert!(!session_valid(&users, "bob", 0), "deleted/unknown user");
+        assert!(!session_valid(&[], "alice", 2));
+    }
+
+    #[test]
+    fn legacy_user_records_default_token_version_zero() {
+        let u: UserAccount = serde_json::from_str(
+            r#"{"username":"a","password_hash":"x","role":"admin","display_name":"a","created_at":"t"}"#,
+        )
+        .unwrap();
+        assert_eq!(u.token_version, 0);
+    }
 
     #[test]
     fn hash_and_verify_round_trip() {

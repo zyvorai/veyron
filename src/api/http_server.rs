@@ -359,6 +359,30 @@ pub mod web {
         ///
         /// The token signature is verified using HMAC-SHA256 before claims are trusted.
         pub fn authenticate_jwt(&self, token: &str) -> Option<ApiRole> {
+            self.verify_jwt(token).map(|(role, _)| role)
+        }
+
+        /// [`Self::authenticate_jwt`] plus revocation for login-minted session
+        /// tokens: such a token (claim `vsess`) stops working once its user is
+        /// deleted or their password is reset. Tokens from other issuers of the
+        /// shared secret (no `vsess`) are unaffected.
+        pub async fn authenticate_jwt_checked(&self, token: &str) -> Option<ApiRole> {
+            let (role, claims) = self.verify_jwt(token)?;
+            if claims.get("vsess").and_then(|v| v.as_bool()) == Some(true) {
+                let sub = claims.get("sub").and_then(|v| v.as_str())?;
+                let tv = claims.get("tv").and_then(|v| v.as_u64()).unwrap_or(0);
+                if !self
+                    .kube_client
+                    .session_token_valid(&self.namespace, sub, tv)
+                    .await
+                {
+                    return None;
+                }
+            }
+            Some(role)
+        }
+
+        fn verify_jwt(&self, token: &str) -> Option<(ApiRole, serde_json::Value)> {
             let secret = std::env::var("VEYRON_JWT_SECRET").ok()?;
             let expected_issuer = std::env::var("VEYRON_JWT_ISSUER").ok()?;
             if secret.is_empty() || expected_issuer.is_empty() {
@@ -394,7 +418,7 @@ pub mod web {
                 _ => ApiRole::ReadOnly,
             };
 
-            Some(role)
+            Some((role, token_data.claims))
         }
 
         /// Whether another login attempt from `client` (the peer IP) for
@@ -413,6 +437,7 @@ pub mod web {
             username: &str,
             role: &str,
             ttl_secs: i64,
+            token_version: u64,
         ) -> Result<String, String> {
             let secret = std::env::var("VEYRON_JWT_SECRET")
                 .map_err(|_| "VEYRON_JWT_SECRET is not configured".to_string())?;
@@ -430,6 +455,10 @@ pub mod web {
                 serde_json::Value::String(username.to_string()),
             );
             claims.insert("iss".to_string(), serde_json::Value::String(issuer));
+            // Marks a login-minted session so it can be revoked (user deleted /
+            // password reset): see `authenticate_jwt_checked`.
+            claims.insert("vsess".to_string(), serde_json::Value::Bool(true));
+            claims.insert("tv".to_string(), serde_json::Value::from(token_version));
             claims.insert("iat".to_string(), serde_json::Value::from(now));
             claims.insert("exp".to_string(), serde_json::Value::from(now + ttl_secs));
             claims.insert(role_claim, serde_json::Value::String(role.to_string()));
@@ -566,7 +595,7 @@ pub mod web {
         if let Some(role) = s.authenticate(key) {
             return Some(role.clone());
         }
-        if let Some(role) = s.authenticate_jwt(key) {
+        if let Some(role) = s.authenticate_jwt_checked(key).await {
             return Some(role);
         }
         drop(s);
