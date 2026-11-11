@@ -1329,26 +1329,28 @@ pub mod web {
                     redirect_addr,
                     https_port
                 );
+                let public_host = env_var_first(&["VEYRON_PUBLIC_HOST"]);
                 let redirect_app =
-                    Router::new().fallback(move |req: axum::extract::Request| async move {
-                        let host = req
-                            .headers()
-                            .get("host")
-                            .and_then(|h| h.to_str().ok())
-                            .unwrap_or("localhost");
-                        // Strip port from host header if present
-                        let hostname = host.split(':').next().unwrap_or(host);
-                        let path = req
-                            .uri()
-                            .path_and_query()
-                            .map(|pq| pq.as_str())
-                            .unwrap_or("/");
-                        let https_url = if https_port == 443 {
-                            format!("https://{}{}", hostname, path)
-                        } else {
-                            format!("https://{}:{}{}", hostname, https_port, path)
-                        };
-                        axum::response::Redirect::temporary(&https_url).into_response()
+                    Router::new().fallback(move |req: axum::extract::Request| {
+                        let public_host = public_host.clone();
+                        async move {
+                            let host = req.headers().get("host").and_then(|h| h.to_str().ok());
+                            let path = req
+                                .uri()
+                                .path_and_query()
+                                .map(|pq| pq.as_str())
+                                .unwrap_or("/");
+                            match https_redirect_target(
+                                public_host.as_deref(),
+                                host,
+                                https_port,
+                                path,
+                            ) {
+                                Some(u) => axum::response::Redirect::temporary(&u).into_response(),
+                                None => (StatusCode::BAD_REQUEST, "invalid Host header")
+                                    .into_response(),
+                            }
+                        }
                     });
                 match tokio::net::TcpListener::bind(&redirect_addr).await {
                     Ok(listener) => {
@@ -1378,6 +1380,60 @@ pub mod web {
         }
 
         Ok(())
+    }
+
+    /// Whether `h` is a plain DNS name, IPv4 or bracketed IPv6 literal (no
+    /// userinfo, path, whitespace or control characters).
+    fn is_valid_redirect_host(h: &str) -> bool {
+        if h.is_empty() || h.len() > 253 {
+            return false;
+        }
+        if let Some(inner) = h.strip_prefix('[').and_then(|r| r.strip_suffix(']')) {
+            return inner.parse::<std::net::Ipv6Addr>().is_ok();
+        }
+        h.split('.').all(|l| {
+            !l.is_empty()
+                && l.len() <= 63
+                && !l.starts_with('-')
+                && !l.ends_with('-')
+                && l.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+        })
+    }
+
+    /// Target of the HTTP->HTTPS redirect. A configured `VEYRON_PUBLIC_HOST`
+    /// is always used and the request's Host header is ignored; otherwise the
+    /// Host header (port stripped) is used only if it is a well-formed
+    /// hostname/IP. `None` means reject the request.
+    fn https_redirect_target(
+        public_host: Option<&str>,
+        host_header: Option<&str>,
+        https_port: u16,
+        path: &str,
+    ) -> Option<String> {
+        let hostname = match public_host.map(str::trim).filter(|h| !h.is_empty()) {
+            Some(h) => h.to_string(),
+            None => {
+                let raw = host_header?;
+                let h = if raw.starts_with('[') {
+                    raw.split_once("]").map(|(a, _)| format!("{a}]"))?
+                } else {
+                    raw.split(':').next().unwrap_or(raw).to_string()
+                };
+                if !is_valid_redirect_host(&h) {
+                    return None;
+                }
+                h
+            }
+        };
+        if !is_valid_redirect_host(&hostname) {
+            return None;
+        }
+        let path = if path.starts_with('/') { path } else { "/" };
+        Some(if https_port == 443 {
+            format!("https://{hostname}{path}")
+        } else {
+            format!("https://{hostname}:{https_port}{path}")
+        })
     }
 
     async fn root_handler() -> impl IntoResponse {
@@ -1771,6 +1827,24 @@ pub mod web {
 
     #[cfg(test)]
     mod tests {
+        #[test]
+        fn redirect_uses_configured_host_and_validates_host_header() {
+            use super::https_redirect_target as t;
+            assert_eq!(
+                t(Some("veyron.example.com"), Some("evil.com"), 443, "/a?b=1").unwrap(),
+                "https://veyron.example.com/a?b=1"
+            );
+            assert_eq!(
+                t(None, Some("node.lan:8080"), 8443, "/x").unwrap(),
+                "https://node.lan:8443/x"
+            );
+            assert_eq!(t(None, Some("[::1]:80"), 443, "/").unwrap(), "https://[::1]/");
+            assert!(t(None, Some("evil.com/@x"), 443, "/").is_none());
+            assert!(t(None, Some("a b"), 443, "/").is_none());
+            assert!(t(None, None, 443, "/").is_none());
+            assert!(t(Some("bad host"), None, 443, "/").is_none());
+        }
+
         #[test]
         fn login_limiter_is_per_client_not_global() {
             let l = super::LoginRateLimiter::new();
