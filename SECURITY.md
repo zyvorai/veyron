@@ -122,7 +122,7 @@ Veyron implements the following security measures:
 - PAM usernames limited to 32 characters
 - API error responses do not leak internal details
 - Security headers on all responses (CSP, X-Frame-Options DENY, HSTS, no-sniff, no-referrer)
-- Global rate limiting (`--rate-limit`, requests per minute, default 60, `0` disables; health, console assets and operator GET polling are exempt)
+- Global rate limiting (`--rate-limit`, requests per minute, default 60; health, console assets and operator GET polling are exempt)
 - Kubernetes name validation (RFC 1123) on all VM/snapshot names
 - On Kairon, VNC and serial WebSockets are proxied to the kairon-node relay with its bearer token (`KAIRON_NODE_CONSOLE_TOKEN`); on the legacy KubeVirt backend they go through the Kubernetes API's `subresources.kubevirt.io` WebSocket
 - **VeyronPolicy CRD enforcement**: VM creation evaluates VeyronPolicy CRDs before proceeding. Policies with `Deny` enforcement block creation outright; policies with `Warn` enforcement log warnings but allow the operation to continue.

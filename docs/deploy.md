@@ -28,7 +28,7 @@ Run the API and console with `veyron api-serve`:
 | `-p, --port` | Listen port (config default 8080; the in-cluster Deployment uses 5151) |
 | `--host` | Bind address (config default `127.0.0.1`; the Deployment uses `0.0.0.0`) |
 | `--tls`, `--tls-cert`, `--tls-key` | Serve HTTPS from a PEM certificate and key. Both paths are required with `--tls`. Without `--tls` the server speaks plain HTTP, so API keys cross the network in clear text |
-| `--rate-limit` | Global requests per minute (default 60; `0` disables the limit). Health, console assets and high-frequency operator GET polling are exempt |
+| `--rate-limit` | Global requests per minute (default 60). `0` is documented as "disabled", but in v0.4.0 it makes the limiter reject every non-exempt request with `429`; use a large number instead. Health, console assets and high-frequency operator GET polling are exempt |
 | `--auth` | Accepted for compatibility. The HTTP server always requires an API key, JWT or OIDC bearer; this flag does not change that |
 | `--namespace` (global, `VEYRON_NAMESPACE`) | Namespace for Veyron's own state (the `veyron-users` Secret, settings ConfigMaps) |
 
