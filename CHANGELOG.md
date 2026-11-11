@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-11
+
+### Fixed
+
+- **Supply chain.** CI and the release workflow pin the guestkit dependency to one tested commit (the
+  release workflow was unpinned and built against whatever guestkit's default branch held), which also
+  removes the `evtx` 0.12 downgrade that carried RUSTSEC-2026-0431. Dependencies are updated to their
+  latest semver-compatible versions; `cargo audit` reports no vulnerabilities.
+
 ### Changed
 
 - **Kairon is the VM engine.** Veyron is being rebuilt as the command center for
