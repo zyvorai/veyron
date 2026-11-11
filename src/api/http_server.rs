@@ -110,6 +110,85 @@ pub mod web {
         }
     }
 
+    /// Fixed-window limiter with one counter per key (client IP, IP+username).
+    /// Bounded: when the map is full, expired windows are dropped first and, if it
+    /// is still full, the oldest entry is evicted, so a flood of distinct keys
+    /// cannot grow memory without limit.
+    struct KeyedRateLimiter {
+        inner: std::sync::Mutex<std::collections::HashMap<String, (u64, u64)>>,
+        max_requests: u64,
+        window_secs: u64,
+    }
+
+    const KEYED_LIMITER_MAX_KEYS: usize = 10_000;
+
+    impl KeyedRateLimiter {
+        fn new(max_requests: u64, window_secs: u64) -> Self {
+            Self {
+                inner: std::sync::Mutex::new(std::collections::HashMap::new()),
+                max_requests,
+                window_secs,
+            }
+        }
+
+        fn check(&self, key: &str) -> bool {
+            self.check_at(key, now_secs())
+        }
+
+        fn check_at(&self, key: &str, now: u64) -> bool {
+            if self.max_requests == 0 {
+                return true;
+            }
+            let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+            if map.len() >= KEYED_LIMITER_MAX_KEYS && !map.contains_key(key) {
+                let window = self.window_secs;
+                map.retain(|_, (_, start)| now.saturating_sub(*start) < window);
+                if map.len() >= KEYED_LIMITER_MAX_KEYS {
+                    if let Some(oldest) = map.iter().min_by_key(|(_, (_, s))| *s).map(|(k, _)| k.clone()) {
+                        map.remove(&oldest);
+                    }
+                }
+            }
+            let entry = map.entry(key.to_string()).or_insert((0, now));
+            if now.saturating_sub(entry.1) >= self.window_secs {
+                *entry = (0, now);
+            }
+            entry.0 += 1;
+            entry.0 <= self.max_requests
+        }
+    }
+
+    fn now_secs() -> u64 {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    }
+
+    /// Login brute-force guard: a per-client-IP budget plus a tighter budget per
+    /// (IP, username), so one client flooding cannot lock out other clients.
+    struct LoginRateLimiter {
+        per_ip: KeyedRateLimiter,
+        per_ip_user: KeyedRateLimiter,
+    }
+
+    impl LoginRateLimiter {
+        fn new() -> Self {
+            Self {
+                per_ip: KeyedRateLimiter::new(30, 300),
+                per_ip_user: KeyedRateLimiter::new(10, 300),
+            }
+        }
+
+        fn check(&self, ip: &str, username: &str) -> bool {
+            let user = username.trim().to_lowercase();
+            // Evaluate both so every attempt is counted against both budgets.
+            let a = self.per_ip.check(ip);
+            let b = self.per_ip_user.check(&format!("{ip}|{user}"));
+            a && b
+        }
+    }
+
     /// TLS configuration for the API server.
     #[derive(Clone, Debug)]
     pub struct TlsConfig {
@@ -158,7 +237,7 @@ pub mod web {
         pub api_keys: Vec<ApiKeyEntry>,
         rate_limiter: RateLimiterState,
         ai_rate_limiter: RateLimiterState,
-        login_rate_limiter: RateLimiterState,
+        login_rate_limiter: LoginRateLimiter,
     }
 
     impl WebState {
@@ -220,7 +299,7 @@ pub mod web {
                 rate_limiter: RateLimiterState::new(rate_limit_per_minute, 60),
                 ai_rate_limiter: RateLimiterState::new(copilot::ai_rate_limit_per_min(), 60),
                 // Brute-force guard on the public, unauthenticated login endpoint.
-                login_rate_limiter: RateLimiterState::new(30, 300),
+                login_rate_limiter: LoginRateLimiter::new(),
             })
         }
 
@@ -237,7 +316,7 @@ pub mod web {
                 api_keys: Vec::new(),
                 rate_limiter: RateLimiterState::new(60, 60),
                 ai_rate_limiter: RateLimiterState::new(60, 60),
-                login_rate_limiter: RateLimiterState::new(30, 300),
+                login_rate_limiter: LoginRateLimiter::new(),
             }
         }
 
@@ -318,12 +397,11 @@ pub mod web {
             Some(role)
         }
 
-        /// Whether another login attempt is allowed under the shared brute-force
-        /// guard for `POST /api/v1/auth/login`. Global, not per-caller — matches
-        /// the existing `rate_limiter`/`ai_rate_limiter` pattern (no per-IP state
-        /// exists elsewhere in this codebase).
-        pub fn check_login_rate_limit(&self) -> bool {
-            self.login_rate_limiter.check_rate_limit()
+        /// Whether another login attempt from `client` (the peer IP) for
+        /// `username` is allowed: 30 per 5 min per IP and 10 per 5 min per
+        /// (IP, username). One client's flood does not affect other clients.
+        pub fn check_login_rate_limit(&self, client: &str, username: &str) -> bool {
+            self.login_rate_limiter.check(client, username)
         }
 
         /// Mint a signed session token for a successfully authenticated username+
@@ -1287,12 +1365,16 @@ pub mod web {
             });
 
             axum_server::bind_rustls(tls_addr, rustls_config)
-                .serve(app.into_make_service())
+                .serve(app.into_make_service_with_connect_info::<std::net::SocketAddr>())
                 .await?;
         } else {
             log::info!("Starting HTTP server on {}", addr);
             let listener = tokio::net::TcpListener::bind(&addr).await?;
-            axum::serve(listener, app).await?;
+            axum::serve(
+                listener,
+                app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+            )
+            .await?;
         }
 
         Ok(())
@@ -1689,6 +1771,34 @@ pub mod web {
 
     #[cfg(test)]
     mod tests {
+        #[test]
+        fn login_limiter_is_per_client_not_global() {
+            let l = super::LoginRateLimiter::new();
+            for _ in 0..40 {
+                l.check("10.0.0.1", "admin");
+            }
+            assert!(!l.check("10.0.0.1", "admin"), "flooding client is limited");
+            assert!(l.check("10.0.0.2", "admin"), "other clients are unaffected");
+            // rotating usernames from one IP still hits the per-IP budget
+            let l = super::LoginRateLimiter::new();
+            for i in 0..40 {
+                l.check("10.0.0.1", &format!("u{i}"));
+            }
+            assert!(!l.check("10.0.0.1", "fresh"));
+        }
+
+        #[test]
+        fn keyed_limiter_is_bounded_and_window_resets() {
+            let l = super::KeyedRateLimiter::new(1, 10);
+            assert!(l.check_at("a", 100));
+            assert!(!l.check_at("a", 101));
+            assert!(l.check_at("a", 111));
+            for i in 0..(super::KEYED_LIMITER_MAX_KEYS + 50) {
+                l.check_at(&format!("k{i}"), 200);
+            }
+            assert!(l.inner.lock().unwrap().len() <= super::KEYED_LIMITER_MAX_KEYS);
+        }
+
         use super::*;
         use axum::http::Method;
 
