@@ -99,26 +99,6 @@ pub(super) fn kubevirt_ws_connector(
     Some(tokio_tungstenite::Connector::Rustls(Arc::new(cfg)))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn flag_parsing() {
-        assert!(flag_enabled(Some("1")) && flag_enabled(Some("TRUE")));
-        assert!(!flag_enabled(None) && !flag_enabled(Some("0")) && !flag_enabled(Some("")));
-    }
-
-    #[test]
-    fn kubevirt_connector_verifies_by_default() {
-        // default trust store: no custom connector
-        assert!(kubevirt_ws_connector(None, false).is_none());
-        // cluster CA given: a verifying connector (never the accept-all one)
-        assert!(kubevirt_ws_connector(Some(&[vec![1, 2, 3]]), false).is_some());
-        assert!(kubevirt_ws_connector(None, true).is_some());
-    }
-}
-
 /// Build a rustls ClientConfig that authenticates to the K8s API server.
 /// Supports client certificate auth (k3s/kubeadm) and falls back to no client auth.
 #[allow(dead_code)]
@@ -190,4 +170,24 @@ pub(super) fn build_k8s_tls_config() -> rustls::ClientConfig {
         .dangerous()
         .with_custom_certificate_verifier(Arc::new(AcceptAllVerifier))
         .with_no_client_auth()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flag_parsing() {
+        assert!(flag_enabled(Some("1")) && flag_enabled(Some("TRUE")));
+        assert!(!flag_enabled(None) && !flag_enabled(Some("0")) && !flag_enabled(Some("")));
+    }
+
+    #[test]
+    fn kubevirt_connector_verifies_by_default() {
+        // default trust store: no custom connector
+        assert!(kubevirt_ws_connector(None, false).is_none());
+        // cluster CA given: a verifying connector (never the accept-all one)
+        assert!(kubevirt_ws_connector(Some(&[vec![1, 2, 3]]), false).is_some());
+        assert!(kubevirt_ws_connector(None, true).is_some());
+    }
 }
