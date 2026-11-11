@@ -684,7 +684,7 @@ pub mod web {
         };
         drop(s);
 
-        // Check X-API-Key header, Authorization: Bearer, ?ticket= (WS consoles), or legacy ?token=
+        // Check X-API-Key header, Authorization: Bearer, ?ticket= (WS consoles), or legacy ?token= (WebSocket upgrades only)
         let ws_ticket = request.uri().query().and_then(|q| {
             q.split('&')
                 .find_map(|p| p.strip_prefix("ticket=").map(percent_decode))
@@ -713,6 +713,13 @@ pub mod web {
                     .and_then(|v| v.strip_prefix("Bearer ").map(|s| s.to_string()))
             })
             .or_else(|| {
+                let is_ws_upgrade = headers
+                    .get(header::UPGRADE)
+                    .and_then(|v| v.to_str().ok())
+                    .is_some_and(|v| v.eq_ignore_ascii_case("websocket"));
+                if !auth_context::query_token_allowed(path, is_ws_upgrade) {
+                    return None;
+                }
                 request.uri().query().and_then(|q| {
                     q.split('&')
                         .find_map(|p| p.strip_prefix("token=").map(percent_decode))

@@ -196,6 +196,14 @@ pub fn is_ws_console_path(path: &str) -> bool {
     path.ends_with("/vnc") || path.ends_with("/serial") || path.ends_with("/tunnel")
 }
 
+/// Whether the legacy `?token=<key>` query credential is accepted. Browsers
+/// cannot set headers on a WebSocket upgrade, so it is allowed only on the
+/// WebSocket routes (consoles and the metrics stream) and only for an actual
+/// upgrade request; every other route must use a header.
+pub fn query_token_allowed(path: &str, is_ws_upgrade: bool) -> bool {
+    is_ws_upgrade && (is_ws_console_path(path) || path == "/api/v1/ws/metrics")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -608,5 +616,14 @@ mod tests {
         assert!(is_ws_console_path("/api/v1/vms/ns/vm/vnc"));
         assert!(is_ws_console_path("/api/v1/vms/ns/vm/serial"));
         assert!(!is_ws_console_path("/api/v1/vms/ns/vm/start"));
+    }
+
+    #[test]
+    fn legacy_query_token_only_on_websocket_upgrades() {
+        assert!(query_token_allowed("/api/v1/vms/ns/vm/vnc", true));
+        assert!(query_token_allowed("/api/v1/ws/metrics", true));
+        assert!(!query_token_allowed("/api/v1/vms/ns/vm/vnc", false));
+        assert!(!query_token_allowed("/api/v1/vms", true));
+        assert!(!query_token_allowed("/api/v1/vms/ns/vm/delete", false));
     }
 }
