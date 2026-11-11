@@ -27,7 +27,8 @@ Kubernetes API.
 
 **Status.** Kairon is Veyron's VM engine. Veyron never falls back to KubeVirt on its own; only an
 explicit `VEYRON_VM_BACKEND=kubevirt` brings the legacy path back. On Kairon, KubeVirt/CDI-only
-routes return `501 KUBEVIRT_ONLY`. Pages note where a feature still needs the legacy path.
+routes return `501 KUBEVIRT_ONLY`. Pages note where a feature still needs the legacy path. The CLI's VM commands (`veyron create`, `list`, ...)
+still work on KubeVirt `VirtualMachine`s only; use the console or the API for Kairon.
 
 ## Enterprise workflow center
 

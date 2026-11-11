@@ -14,7 +14,10 @@ the local `admin` account remains as break-glass access.
    API exchanges the code on the server side, so a confidential client's secret never reaches the
    browser.
 3. The client sends `Authorization: Bearer <access_token>` on every call. Veyron checks the RS256
-   signature (JWKS), issuer and expiry, then maps the group claim to a role.
+   signature (JWKS), issuer and expiry, then maps the group claim to a role. The `aud` claim is **not**
+   checked, so any token your IdP issues for this issuer is accepted, whichever client it was minted for;
+   restrict who can obtain tokens (or use a dedicated realm) accordingly. `VEYRON_API_KEY` must also be set:
+   without it the API answers `503` before it looks at the bearer token.
 
 ## Settings
 
@@ -24,7 +27,8 @@ the local `admin` account remains as break-glass access.
 | `VEYRON_OIDC_CLIENT_ID` | Required |
 | `VEYRON_OIDC_CLIENT_SECRET` | Required for confidential clients (Keycloak's default). Omit for public clients |
 | `VEYRON_OIDC_AUTHORIZATION_URL`, `VEYRON_OIDC_TOKEN_URL` | For IdPs that don't use Keycloak's URL layout |
-| `VEYRON_OIDC_JWKS_URL` | Recommended: enables local signature checks |
+| `VEYRON_OIDC_JWKS_URL` | Recommended: enables local signature checks. Without it, tokens are only accepted if `VEYRON_OIDC_USERINFO_URL` is set and the IdP's userinfo endpoint approves them |
+| `VEYRON_OIDC_USERINFO_URL` | Fallback validation by calling the IdP's userinfo endpoint |
 | `VEYRON_OIDC_REDIRECT_URI` | Where the IdP sends users back; register the full URL with the IdP |
 | `VEYRON_OIDC_ROLE_CLAIM` | Claim holding groups (default `groups`) |
 | `VEYRON_OIDC_GROUP_ADMIN` | Groups mapped to `admin` (default `veyron-admins,cluster-admins`) |

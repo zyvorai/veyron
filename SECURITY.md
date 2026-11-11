@@ -1,6 +1,6 @@
 # Security Policy
 
-**Related documentation:** [README.md](README.md) (TLS, API keys), [docs/api.md](docs/api.md) (cluster access patterns).
+**Related documentation:** [README.md](README.md) (install and verify), [docs/api.md](docs/api.md) (authentication and roles), [docs/deploy.md](docs/deploy.md) (TLS, release binaries).
 
 ## Supported Versions
 
@@ -8,8 +8,11 @@ We release patches for security vulnerabilities for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.2.x   | :white_check_mark: |
-| 0.1.x   | :x:                |
+| 0.4.x   | :white_check_mark: |
+| < 0.4   | :x:                |
+
+Versions 0.3.x were never released as binaries; container images with those tags on `ghcr.io/zyvorai/veyron` predate the
+Kairon rewrite and are not supported.
 
 ## Reporting a Vulnerability
 
@@ -86,7 +89,10 @@ Veyron implements the following security measures:
 #### Authentication & Authorization
 - **JWT Bearer token auth** with HMAC-SHA256 signature verification and OIDC issuer checking
 - **Multi-key RBAC** via `VEYRON_API_KEYS` environment variable with three roles: `admin` (full access), `write` (create/modify operations), `readonly` (read-only access)
-- API key authentication via `X-API-Key` header, `Authorization: Bearer`, or `?token=` query param
+- API key authentication via `X-API-Key` header or `Authorization: Bearer`. A legacy `?token=` query parameter is still accepted on every route; do not use it (URLs are logged by proxies)
+- `VEYRON_API_KEY` is required: without it the API denies every request (`503`), even if other keys, JWT or OIDC are configured
+- Session tokens from `POST /auth/login` are stateless 24 h JWTs: deleting a user or resetting a password does not revoke them. Login attempts share one global rate limit (30 per 5 minutes)
+- OIDC bearer tokens are verified for signature, issuer and expiry; the audience claim is not checked
 - Constant-time API key comparison prevents timing attacks
 - **Auth bypass removed**: A previous referer-based dashboard bypass has been removed. The dashboard now sends the API key via the `X-API-Key` header like any other client, ensuring uniform authentication for all API requests.
 
@@ -101,8 +107,8 @@ Veyron implements the following security measures:
 #### SSRF Prevention
 - Webhook URLs are validated against private/internal IP ranges (RFC 1918, RFC 6598 CGNAT, link-local, loopback)
 - DNS resolution is performed upfront and all returned addresses are validated
-- Curl is pinned to the resolved IP via `--resolve` to prevent DNS rebinding attacks
-- Only `http://` and `https://` schemes are allowed
+- The CLI's webhook delivery pins curl to the validated IP via `--resolve`; the API's webhook delivery (`src/api/webhooks.rs`) validates the host but does not pin it, so DNS rebinding between validation and delivery is possible, and the webhook secret is passed to `curl` on its command line
+- Only `https://` webhook URLs are accepted
 
 #### Data Persistence
 - Persistent data is never written to world-readable `/tmp`
@@ -112,22 +118,22 @@ Veyron implements the following security measures:
 
 #### API Security
 - CORS disabled by default; requires explicit origin configuration
-- TLS certificate validation is always enforced
+- Outbound TLS verification is on by default. Explicit opt-outs exist for self-signed lab setups: `VEYRON_KAIRON_NODE_TLS_INSECURE`, `VEYRON_IMAGE_STORE_INSECURE_TLS`, `VEYRON_NETRA_TLS_VERIFY`, `VEYRON_PAQTRA_TLS_VERIFY`, the Gryvia and MCP server settings, and the legacy KubeVirt console proxy, which does not verify the Kubernetes API certificate
 - PAM usernames limited to 32 characters
 - API error responses do not leak internal details
 - Security headers on all responses (CSP, X-Frame-Options DENY, HSTS, no-sniff, no-referrer)
-- Rate limiting (configurable per minute, dashboard endpoints exempt)
+- Global rate limiting (`--rate-limit`, requests per minute, default 60, `0` disables; health, console assets and operator GET polling are exempt)
 - Kubernetes name validation (RFC 1123) on all VM/snapshot names
-- VNC WebSocket proxy uses direct K8s API WebSocket with client certificate authentication (mTLS)
+- On Kairon, VNC and serial WebSockets are proxied to the kairon-node relay with its bearer token (`KAIRON_NODE_CONSOLE_TOKEN`); on the legacy KubeVirt backend they go through the Kubernetes API's `subresources.kubevirt.io` WebSocket
 - **VeyronPolicy CRD enforcement**: VM creation evaluates VeyronPolicy CRDs before proceeding. Policies with `Deny` enforcement block creation outright; policies with `Warn` enforcement log warnings but allow the operation to continue.
 - **Structured error types**: The API returns proper HTTP status codes (e.g., 401 for auth failures, 409 for conflicts) instead of returning 200 with silent failures where feasible. VM lifecycle routes use Kubernetes directly; analytics routes may return heuristic projections labeled in JSON where applicable.
 - **Input validation on batch operations**: Batch VM operations validate Kubernetes names (RFC 1123) before processing. Budget creation ensures the `veyron-system` namespace exists before writing resources.
 - **CRDPolicyRule structured value field**: Policy conditions use a structured `value` field for thresholds instead of parsing values from message strings, which was fragile and potentially exploitable via crafted input.
 
 #### Dashboard Security
-- API key stored in localStorage (opt-in "Remember me") or sessionStorage
-- 401 responses auto-clear stored key and re-prompt
-- CSP restricts scripts to `'self'` only (no external CDN dependencies)
+- The session token (or API key) is kept in the browser's `localStorage` and sent as `Authorization: Bearer`; any script that runs on the console origin can read it
+- 401 responses clear the stored session and return to sign-in
+- CSP is `default-src 'self'` with `script-src 'self' 'unsafe-inline'` (inline scripts are allowed) and Google Fonts for styles/fonts; no external script CDNs
 - noVNC bundled locally (no runtime CDN fetches)
 - Dashboard page served without auth; all API calls require valid key
 - Core endpoints return cluster-backed data; auxiliary endpoints document estimate/disclaimer fields where values are not sourced from billing or external SaaS.

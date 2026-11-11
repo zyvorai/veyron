@@ -5,7 +5,10 @@ fullnameOverride: "veyron-api"
 
 image:
   repository: ghcr.io/zyvorai/veyron
-  tag: "latest"  # or pin to a specific version e.g. "0.3.1"
+  # NOTE: ghcr.io/zyvorai/veyron:0.4.0 is NOT published (GHCR refused the release workflow's push). "latest" is the older
+  # 2026-10-04 image (pre-Kairon). Build and push your own image (scripts/deploy-remote.sh builds on a node) and set
+  # image.repository / image.tag, rather than pinning 0.4.0. Tags 0.3.x on GHCR are also pre-Kairon images.
+  tag: "latest"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

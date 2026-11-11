@@ -15,6 +15,10 @@ First release published from CI. The version numbers 0.3.0 to 0.3.2 were already
 - **Release workflow** logs in to GHCR with the built-in `GITHUB_TOKEN` instead of a personal access token secret that was
   not configured. The `veyron` package must grant this repository Write access (package settings, *Manage Actions access*).
 
+Known gaps in the v0.4.0 release: the container image `ghcr.io/zyvorai/veyron:0.4.0` was **not published** (the GHCR package
+refused the push), so Helm's default `latest` is still the older 2026-10-04 image; and the cosign signature and SBOM were not
+attached. The assets are the four `veyron-{linux,darwin}-{amd64,arm64}` binaries and `SHA256SUMS`.
+
 ## [0.3.1 (unreleased)] - 2026-11-11
 
 First published release (the `v0.3.0` tag was cut before the release workflow's GHCR login was fixed and never produced a release). Contents are those of the 0.3.0 entry below plus:
@@ -34,7 +38,10 @@ First published release (the `v0.3.0` tag was cut before the release workflow's 
 
 - **Kairon is the VM engine.** Veyron is being rebuilt as the command center for
   [Kairon](https://github.com/zyvorai/kairon) `Machine`s (`kairon.zyvor.dev`), talking to the
-  Kubernetes API directly. KubeVirt, CDI and the Veyron operator are on the way out.
+  Kubernetes API directly. KubeVirt is a legacy, explicit opt-in that is still in the tree and not removed:
+  `VEYRON_VM_BACKEND=kubevirt` (API), the CDI image routes (`/images/upload`, `/images/publish`), the Go
+  `veyron-operator` chart and the CLI's VM commands (`veyron create`, `list`, `start`, `snapshot-*`, `tui`), which
+  talk to KubeVirt `VirtualMachine`s directly and do not go through the Kairon backend in this release.
 - **New console look.** Login, buttons, colors and components follow the Zyvor (Netra) design
   system, in light and dark themes.
 - **License: Zyvor Production License v1.0** (`LicenseRef-Zyvor-Production-1.0`). The source is
