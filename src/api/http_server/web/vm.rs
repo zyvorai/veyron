@@ -2291,6 +2291,9 @@ pub(super) struct CreateVmGpuSugarReq {
     vgpu_profile: Option<String>,
 }
 
+/// Upper bound for the `gpu.count` shorthand; the loop that expands it allocates per device.
+const MAX_GPUS_PER_VM: u32 = 16;
+
 pub(super) fn default_gpu_count() -> u32 {
     1
 }
@@ -2848,6 +2851,13 @@ pub(super) async fn create_vm_handler(
             (None, Some(profile)) => format!("nvidia.com/{profile}"),
             (None, None) => "nvidia.com/gpu".to_string(),
         };
+        if g.count > MAX_GPUS_PER_VM {
+            return err_json(
+                400,
+                "INVALID_GPU",
+                &format!("gpu.count must be at most {MAX_GPUS_PER_VM}"),
+            );
+        }
         for i in 0..g.count.max(1) {
             config.gpus.push(crate::config::VmGpuDevice {
                 name: format!("gpu{i}"),

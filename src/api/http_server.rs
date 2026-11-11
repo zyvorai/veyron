@@ -1808,6 +1808,24 @@ pub mod web {
                 .as_u16()
         }
 
+        /// A read-only key must not reach the interactive VNC/serial consoles (403 before the
+        /// WebSocket upgrade); a write key passes auth (the handler then answers its own error).
+        #[tokio::test]
+        async fn readonly_key_cannot_open_vnc_or_serial() {
+            for p in ["/api/v1/vms/ns/vm/vnc", "/api/v1/vms/ns/vm/serial"] {
+                assert_eq!(
+                    status_via_router(Some("k-ro"), Method::GET, p).await,
+                    403,
+                    "{p}"
+                );
+                assert_ne!(
+                    status_via_router(Some("k-rw"), Method::GET, p).await,
+                    403,
+                    "{p}"
+                );
+            }
+        }
+
         /// The agent endpoints through the real router and auth middleware: anonymous callers
         /// get 401, a read-only key can search and chat but is refused (403) on execute and
         /// cancel, and write/admin keys get past auth (the unreachable cluster then answers).
