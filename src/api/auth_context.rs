@@ -53,7 +53,11 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
         if path.ends_with("/screenshot") || path.ends_with("/input") {
             return ApiRole::Admin;
         }
-        if path.ends_with("/tunnel")
+        // VNC and serial are interactive guest consoles (keyboard input, logged-in sessions),
+        // the same access as the TCP tunnel, so a read-only key must not open them.
+        if path.ends_with("/vnc")
+            || (path.ends_with("/serial") && !path.ends_with("/console/serial"))
+            || path.ends_with("/tunnel")
             || path.contains("/diagnostics/")
             || path.contains("/network/capture/")
         {
@@ -338,6 +342,22 @@ mod tests {
             ApiRole::Write
         );
         assert_eq!(get("/api/v1/vms/ns/vm/network/flows"), ApiRole::ReadOnly);
+    }
+
+    #[test]
+    fn interactive_consoles_are_not_readonly() {
+        for p in [
+            "/api/v1/vms/ns/vm/vnc",
+            "/api/v1/vms/ns/vm/serial",
+            "/api/v1/veyron/vms/ns/vm/vnc",
+        ] {
+            assert_eq!(min_role_for_route(&Method::GET, p), ApiRole::Write, "{p}");
+        }
+        // The read-only serial-console hint stays readable.
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/vms/ns/vm/console/serial"),
+            ApiRole::ReadOnly
+        );
     }
 
     #[test]

@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **A read-only key could open the interactive VNC and serial consoles.** `GET /vms/:ns/:name/vnc` and `/serial` were
+  classified as safe methods, so any `readonly` credential (header or `?token=`) could drive a guest's console, while the
+  TCP tunnel needs `write` and screenshot/input need `admin`. Both now need `write`; the read-only
+  `/console/serial` hint is unchanged. Browser sessions were unaffected because `POST /ws/ticket` already needs `write`.
+- **`--rate-limit 0` rejected every request.** The flag, config and docs say `0` disables the limit, but the limiter
+  answered `429` to everything. `0` now disables it.
+- **`gpu.count` on `POST /vms` was unbounded** (a `write` caller could make the API allocate billions of GPU devices).
+  Counts above 16 answer `400 INVALID_GPU`.
+
 ## [0.4.0] - 2026-11-11
 
 First release published from CI. The version numbers 0.3.0 to 0.3.2 were already taken by container images pushed to

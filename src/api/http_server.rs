@@ -88,6 +88,10 @@ pub mod web {
         }
 
         fn check_rate_limit(&self) -> bool {
+            // `--rate-limit 0` means "disabled" (CLI help, config, Helm), not "reject everything".
+            if self.max_requests == 0 {
+                return true;
+            }
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
@@ -1806,6 +1810,54 @@ pub mod web {
                 .expect("router never errors")
                 .status()
                 .as_u16()
+        }
+
+        /// `gpu.count` is validated before anything touches the cluster, so an absurd value is a
+        /// plain 400 even against an unreachable API server (and allocates nothing).
+        #[tokio::test]
+        async fn absurd_gpu_count_is_rejected() {
+            use axum::body::Body;
+            use tower::ServiceExt;
+            let mut st = WebState::for_router_test();
+            st.api_key = Some("k-primary".into());
+            let app = build_router(std::sync::Arc::new(tokio::sync::RwLock::new(st)));
+            let req = axum::http::Request::builder()
+                .method(Method::POST)
+                .uri("/api/v1/vms")
+                .header("x-api-key", "k-primary")
+                .header("content-type", "application/json")
+                .body(Body::from(r#"{"name":"g1","gpu":{"count":4000000000}}"#))
+                .expect("request");
+            let resp = app.oneshot(req).await.expect("router never errors");
+            assert_eq!(resp.status().as_u16(), 400);
+        }
+
+        #[test]
+        fn rate_limit_zero_disables_the_limiter() {
+            let off = RateLimiterState::new(0, 60);
+            assert!((0..1000).all(|_| off.check_rate_limit()));
+            let two = RateLimiterState::new(2, 60);
+            assert!(two.check_rate_limit());
+            assert!(two.check_rate_limit());
+            assert!(!two.check_rate_limit());
+        }
+
+        /// A read-only key must not reach the interactive VNC/serial consoles (403 before the
+        /// WebSocket upgrade); a write key passes auth (the handler then answers its own error).
+        #[tokio::test]
+        async fn readonly_key_cannot_open_vnc_or_serial() {
+            for p in ["/api/v1/vms/ns/vm/vnc", "/api/v1/vms/ns/vm/serial"] {
+                assert_eq!(
+                    status_via_router(Some("k-ro"), Method::GET, p).await,
+                    403,
+                    "{p}"
+                );
+                assert_ne!(
+                    status_via_router(Some("k-rw"), Method::GET, p).await,
+                    403,
+                    "{p}"
+                );
+            }
         }
 
         /// The agent endpoints through the real router and auth middleware: anonymous callers
