@@ -2,7 +2,58 @@
 <!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0 -->
 # Deploy
 
-Three ways to run Veyron, plus a standalone client tarball.
+Ways to run Veyron: the release binaries, a remote deploy script, Helm, or plain manifests, plus a standalone
+client tarball.
+
+## Release binaries
+
+Each GitHub release (v0.4.0 is the latest) carries `veyron-linux-amd64`, `veyron-linux-arm64`,
+`veyron-darwin-amd64`, `veyron-darwin-arm64` and `SHA256SUMS`. The console is embedded. Linux builds link
+glibc dynamically; the darwin builds are only ad-hoc signed (no Developer ID, not notarized). v0.4.0 has no cosign bundle or SBOM, so
+the checksum file is the only integrity check, and it comes from the same release page as the binaries.
+
+```bash
+V=v0.4.0; A=linux-amd64        # linux-arm64, darwin-amd64 or darwin-arm64
+curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/veyron-$A
+curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/SHA256SUMS
+grep " veyron-$A\$" SHA256SUMS | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)   # expect "veyron-$A: OK"
+chmod +x veyron-$A && sudo install -m 0755 veyron-$A /usr/local/bin/veyron
+veyron --version               # veyron 0.4.0
+```
+
+Run the API and console with `veyron api-serve`:
+
+| Flag | Meaning |
+|---|---|
+| `-p, --port` | Listen port (config default 8080; the in-cluster Deployment uses 5151) |
+| `--host` | Bind address (config default `127.0.0.1`; the Deployment uses `0.0.0.0`) |
+| `--tls`, `--tls-cert`, `--tls-key` | Serve HTTPS from a PEM certificate and key. Both paths are required with `--tls`. Without `--tls` the server speaks plain HTTP, so API keys cross the network in clear text |
+| `--rate-limit` | Global requests per minute (default 60). `0` is documented as "disabled", but in v0.4.0 it makes the limiter reject every non-exempt request with `429`; use a large number instead. Health, console assets and high-frequency operator GET polling are exempt |
+| `--auth` | Accepted for compatibility. The HTTP server always requires an API key, JWT or OIDC bearer; this flag does not change that |
+| `--namespace` (global, `VEYRON_NAMESPACE`) | Namespace for Veyron's own state (the `veyron-users` Secret, settings ConfigMaps) |
+
+With `--tls` the server also opens a plain-HTTP redirect listener (port 80 when the HTTPS port is 443, otherwise `port - 1`, for example 5150)
+that sends browsers to HTTPS (it builds the target from the request's `Host` header, so do not expose it where untrusted Host headers matter).
+
+Settings come from the environment (the same variables the manifests set):
+
+| Variable | Notes |
+|---|---|
+| `VEYRON_API_KEY` | **Required.** The primary key, role `admin`. When it is unset every request answers `503 AUTH_NOT_CONFIGURED`, even if `VEYRON_API_KEYS`, JWT or OIDC are set |
+| `VEYRON_API_KEYS` | More keys as `name:key:role,...` (`admin`, `write`, `readonly`; a missing or unknown role means `readonly`). Keys must not contain `:` or `,` |
+| `VEYRON_JWT_SECRET`, `VEYRON_JWT_ISSUER`, `VEYRON_JWT_ROLE_CLAIM` | HS256 secret and issuer for session tokens (console sign-in) and for your own JWTs; role claim defaults to `role` |
+| `VEYRON_BOOTSTRAP_ADMIN`, `_USER`, `_PASSWORD`, `_SYNC` | First console account, see [getting-started.md](getting-started.md#default-credentials) |
+| `VEYRON_OIDC_*` | Single sign-on, see [sso.md](sso.md) |
+| `VEYRON_CORS_ORIGINS` | Comma-separated extra origins. Unset means same-origin only |
+| `VEYRON_VM_BACKEND` | Unset, `auto` or `kairon`: Kairon. `kubevirt`: legacy |
+| `VEYRON_HTTP_REQUEST_TIMEOUT_SECS` | Per-request timeout for ordinary routes (default 30) |
+| `KUBECONFIG` | Cluster access outside a pod (in a pod the ServiceAccount is used) |
+
+Needs a reachable Kubernetes API and, for VM routes, Kairon's CRDs (see [Kairon settings](#kairon-settings)).
+Only the in-cluster Deployment (sections below) comes with the image-store volume and the relay Secret wired up.
+
+The `veyron` CLI's VM commands (`create`, `list`, `start`, ...) manage KubeVirt `VirtualMachine`s only in
+v0.4.0; they do not manage Kairon Machines.
 
 ## 1. Remote deploy script (fastest)
 
@@ -78,6 +129,12 @@ Veyron runs VMs on Kairon. It needs no KubeVirt and no CDI, but it does need:
 cluster; Veyron never switches to it on its own.
 
 ## 2. Helm
+
+> **Image caveat.** `ghcr.io/zyvorai/veyron:0.4.0` is **not published** (the GHCR package refuses writes from the
+> release workflow). The chart's `image.tag` defaults to `latest`, which is the older 2026-10-04 image from before
+> the Kairon rewrite, and the chart's `appVersion` (0.4.0) does not change that. Do not pin `image.tag=0.4.0`:
+> the pull fails. Use the remote deploy script (it builds the image from source on a node), or build and push
+> the image yourself and set `image.repository` and `image.tag` (`--set image.repository=... --set image.tag=...`).
 
 ```bash
 helm upgrade --install veyron ./charts/veyron -n veyron-system --create-namespace \

@@ -12,36 +12,55 @@ Send one of:
 | Method | How |
 |---|---|
 | API key | `X-API-Key: <key>` (or `Authorization: Bearer <key>`) |
-| Local account | `POST /api/v1/auth/login` with `{"username","password"}` returns a session token |
-| JWT | `Authorization: Bearer <jwt>`, HMAC-SHA256 (`VEYRON_JWT_SECRET`, `VEYRON_JWT_ISSUER`) |
+| Local account | `POST /api/v1/auth/login` with `{"username","password"}` returns a session token (a JWT, valid 24 h) |
+| JWT | `Authorization: Bearer <jwt>`, HMAC-SHA256 (`VEYRON_JWT_SECRET`, `VEYRON_JWT_ISSUER`, role claim `VEYRON_JWT_ROLE_CLAIM`, default `role`; unknown or missing role means `readonly`) |
 | OIDC | `Authorization: Bearer <access_token>` from your IdP, verified against JWKS ([sso.md](sso.md)) |
 
-Browser console and serial sessions use a one-time ticket from `POST /api/v1/ws/ticket`, so
-long-lived credentials never go in a WebSocket URL.
+Notes that matter in practice:
+
+- **`VEYRON_API_KEY` must be set.** Without it every request (except the public routes below) answers
+  `503 AUTH_NOT_CONFIGURED`, even when `VEYRON_API_KEYS`, JWT or OIDC are configured.
+- The only unauthenticated routes are `GET /api/v1/health`, the console shell and assets, `POST /auth/login`,
+  `GET /auth/oidc/config`, `POST /auth/oidc/token`, `GET /platform/guestkit/binary` and the image-store blob download
+  (the SHA-256 in its path is the credential).
+- Login needs `VEYRON_JWT_SECRET` and `VEYRON_JWT_ISSUER` (otherwise `503`). Logins share one global limiter of 30
+  attempts per 5 minutes (`429 RATE_LIMITED`), not one per caller. Passwords are at least 8 characters, stored as
+  Argon2 hashes in the `veyron-users` Secret. Session tokens are stateless: deleting a user, resetting a password
+  or changing a role does not revoke tokens already issued; they expire after 24 h.
+- A legacy `?token=<key>` query parameter is still accepted on any route. Avoid it: URLs end up in proxy and
+  access logs. Use headers.
+- OIDC bearer tokens are checked for signature (RS256 via `VEYRON_OIDC_JWKS_URL`), issuer and expiry. The `aud`
+  claim is not checked. Without a JWKS URL, tokens are validated by calling `VEYRON_OIDC_USERINFO_URL` when set,
+  and rejected otherwise.
+
+Browser console and serial sessions use a one-time ticket from `POST /api/v1/ws/ticket` (needs the `write`
+role, valid 60 s, single use), so long-lived credentials never go in a WebSocket URL.
 
 ## Roles
 
-Three roles, each including the one below it:
+Three roles, each including the one below it. The rule is by route and method, from
+`src/api/auth_context.rs` (`/api/v1/veyron/*` is an alias of `/api/v1/*` and gets the same rules):
 
 | Role | Can |
 |---|---|
-| `readonly` | Every `GET` |
-| `write` | Create, change and delete VMs, snapshots, networks, alerts and the rest |
-| `admin` | Cluster-wide or destructive actions (below) and user management |
+| `readonly` | `GET`, `HEAD` and `OPTIONS` on everything except the routes listed below; chat, search, intent and draft AI routes; `POST /mcp` |
+| `write` | Create, change and delete VMs, snapshots, networks, alerts and the rest; also `GET` on `/vms/:ns/:name/tunnel`, `/diagnostics/*` and `/network/capture/*` |
+| `admin` | The routes below, and user management |
 
-Admin-only routes, from `src/api/auth_context.rs`:
+Admin-only routes:
 
-- `/auth/users*` (even `GET`)
-- any path containing `/restore`
-- `/dr/*`, `/tenants*`
-- `/gitops/sync`, `/catalog/sync`
-- `/clusters/:id/activate`
-- `/nodes/:name/{cordon,uncordon,reboot}`
-- `DELETE /storage/orphans`
-- `/soc/playbooks/*`
-- `/images/publish`
-- `/platform/*`, except the public GuestKit binary download
-- `/ai/settings/llm` and `/ai/mcp-servers*` (even `GET`)
+- `/auth/users*` for every method, including `GET`
+- `GET /vms/:ns/:name/{screenshot,diagnostics/.../memory-dump}`, `POST /vms/:ns/:name/input`, and
+  `/migrations/.../recovery`
+- any non-read request to a path containing `/restore`
+- non-read methods on `/dr/*`, `/tenants*`, `/platform/*` (except the public GuestKit binary download),
+  `/kairon/fleet/*`, `/machine-images*`, `/soc/playbooks/*`
+- `POST /gitops/sync`, `POST /catalog/sync`, `POST /clusters/:id/activate`, `POST /images/publish`
+- `POST /nodes/:name/{cordon,uncordon,reboot}`, `DELETE /storage/orphans`
+- `DELETE /image-store/:name`, `POST /vms/:ns/:name/capture`
+- changes to a VM's network access (`/vms/:ns/:name/egress*`, `/egress/apply`, `/nodes/:name/egress-defaults`)
+- node branches (`/nodes/:name/branches/...`) and agent-session approvals, grants and promotion
+- `/ai/settings/llm` and `/ai/mcp-servers*` for non-read methods (a `GET` of either is `readonly`; neither returns secrets)
 
 AI routes that only read or draft (`/ai/chat`, `/ai/chat/stream`, `/ai/search`, `/ai/intent/vm`,
 `/ai/policies/draft`, `/mcp`) need only `readonly`; anything they want to change becomes a

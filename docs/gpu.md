@@ -41,6 +41,7 @@ curl -sk -X POST https://<host>:30151/api/v1/vms \
   -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
   -d '{"name":"gpu-vm","template":"ubuntu-24.04","gpu":{"count":1}}'
 
+# CLI: creates a KubeVirt VirtualMachine only (legacy backend); it does not create Kairon Machines in v0.4.0
 veyron create gpu-vm --template ubuntu-24.04 --gpu 1
 veyron create gpu-vm --template ubuntu-24.04 --gpu nvidia.com/GRID_T4-2Q:2
 ```

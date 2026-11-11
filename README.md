@@ -133,7 +133,33 @@ An operator that asks first: it reads your cluster with your permissions, invest
 
 ## Quickstart
 
-On a Kubernetes cluster whose VM hosts run [Kairon](https://github.com/zyvorai/kairon):
+On a Kubernetes cluster whose VM hosts run [Kairon](https://github.com/zyvorai/kairon) (a Kairon release with `v1beta1` CRDs; see [docs/deploy.md](docs/deploy.md#kairon-settings)).
+
+**Release binaries (v0.4.0).** One binary per platform (`veyron-linux-amd64`, `-linux-arm64`, `-darwin-amd64`, `-darwin-arm64`; Linux builds are
+dynamically linked against glibc) with the console embedded, plus `SHA256SUMS`. The darwin binaries are only ad-hoc signed (no Developer ID, not notarized; Gatekeeper may need
+`xattr -d com.apple.quarantine`), and v0.4.0 has no cosign signature or SBOM. Verify the checksum before running:
+
+```bash
+V=v0.4.0; A=linux-amd64        # or linux-arm64, darwin-amd64, darwin-arm64
+curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/veyron-$A
+curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/SHA256SUMS
+grep " veyron-$A\$" SHA256SUMS | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)   # must print: veyron-$A: OK
+install -m 0755 veyron-$A /usr/local/bin/veyron && veyron --version
+```
+
+The binary reads your kubeconfig (`KUBECONFIG`, `--namespace`/`VEYRON_NAMESPACE`). To run the API and console from it
+on a workstation or VM (the same server the in-cluster Deployment runs, `veyron api-serve`):
+
+```bash
+export VEYRON_API_KEY="$(openssl rand -hex 24)"          # required, or every request answers 503
+export VEYRON_JWT_SECRET="$(openssl rand -hex 32)" VEYRON_JWT_ISSUER=veyron   # needed for console sign-in
+veyron api-serve --host 127.0.0.1 --port 5151 --tls --tls-cert tls.crt --tls-key tls.key
+# console: https://127.0.0.1:5151/console   (omit --tls only behind a TLS-terminating proxy)
+```
+
+**In the cluster.** The release binaries do not include a container image: `ghcr.io/zyvorai/veyron:0.4.0` is **not
+published** yet. The Helm chart's default tag is `latest`, which is still the older 2026-10-04 image (it predates
+the Kairon rewrite). Until a 0.4.0 image exists, build and deploy from source (this builds the image on the node):
 
 ```bash
 git clone https://github.com/zyvorai/veyron.git && cd veyron
@@ -146,9 +172,12 @@ Open `https://<node-ip>:30151/console` and sign in as `admin` / `Admin@321` (lab
 curl -sk -H "X-API-Key: ${VEYRON_API_KEY:-Admin@321}" -H 'Content-Type: application/json' \
   -X POST https://<node-ip>:30151/api/v1/vms \
   -d '{"name":"demo","template":"ubuntu-24.04","cpus":2,"memory":"4Gi"}'
-
-veyron create demo --template ubuntu-24.04 --cpus 2 --memory 4Gi
 ```
+
+> **CLI scope in v0.4.0.** The VM commands of the CLI (`veyron create`, `list`, `start`, `snapshot-*`, `tui`, and so on) talk to
+> the Kubernetes API directly and create, list and change **KubeVirt `VirtualMachine`s**; they do not go through the Kairon
+> backend. To manage Kairon `Machine`s use the console, the API, or the MCP bridge (`veyron mcp`). `veyron api-serve` is what
+> serves the console and API, and honours Kairon.
 
 Helm, plain manifests, the production checklist and the standalone client tarball are covered in [docs/deploy.md](docs/deploy.md). The first VM, end to end: [docs/getting-started.md](docs/getting-started.md).
 
@@ -162,11 +191,11 @@ Helm, plain manifests, the production checklist and the standalone client tarbal
 | Snapshots, clones, backups, Velero | Stable |
 | Day-2 operations (hotplug, bulk, guest patching, self-healing) | Stable |
 | API keys, roles, local accounts | Stable |
-| OIDC SSO | API stable; console sign-in button planned |
+| OIDC SSO | Bearer tokens on the API; no SSO button in the console yet (it signs in with local accounts or API keys) |
 | SOC detections and SIEM export | Stable |
 | GPU passthrough | Phase 1 (whole-GPU); vGPU next |
 | Atlas (Ceph) protection, Kryton lab machines, Netra, Paqtra | Integration, needs those products |
-| Kairon engine | Default and only engine; KubeVirt is an explicit legacy opt-in (`VEYRON_VM_BACKEND=kubevirt`) |
+| Kairon engine | Default. KubeVirt is a legacy, explicit opt-in (`VEYRON_VM_BACKEND=kubevirt`) that is still in the tree but not where new work goes |
 | VM import (h2kvm → Kairon) | Stable (verified live, 2026-10-07) |
 | Multi-node live migration on Kairon | API done; hardware matrix needs a second node |
 
@@ -188,6 +217,7 @@ Helm, plain manifests, the production checklist and the standalone client tarbal
 ## Develop
 
 ```bash
+# needs a checkout of zyvorai/zyvor-guestkit at ./guestkit (the commit pinned as GUESTKIT_REF in .github/workflows/ci.yml)
 make ci                                 # fmt check, clippy, tests (RUST_MIN_STACK is set for you)
 cd frontend && npm install && npm run dev   # console against a local API on :5151
 ```
