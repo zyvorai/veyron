@@ -89,10 +89,11 @@ Veyron implements the following security measures:
 #### Authentication & Authorization
 - **JWT Bearer token auth** with HMAC-SHA256 signature verification and OIDC issuer checking
 - **Multi-key RBAC** via `VEYRON_API_KEYS` environment variable with three roles: `admin` (full access), `write` (create/modify operations), `readonly` (read-only access)
-- API key authentication via `X-API-Key` header or `Authorization: Bearer`. A legacy `?token=` query parameter is still accepted on every route; do not use it (URLs are logged by proxies)
+- API key authentication via `X-API-Key` header or `Authorization: Bearer`. The legacy `?token=` query parameter is accepted only on WebSocket upgrade routes (`/vnc`, `/serial`, `/tunnel`, `/ws/metrics`), where browsers cannot set headers; elsewhere it is ignored (URLs are logged by proxies). Prefer one-time `?ticket=`
 - `VEYRON_API_KEY` is required: without it the API denies every request (`503`), even if other keys, JWT or OIDC are configured
-- Session tokens from `POST /auth/login` are stateless 24 h JWTs: deleting a user or resetting a password does not revoke them. Login attempts share one global rate limit (30 per 5 minutes)
-- OIDC bearer tokens are verified for signature, issuer and expiry; the audience claim is not checked
+- Session tokens from `POST /auth/login` are 24 h JWTs revoked when the user is deleted or their password is reset (checked against the user list, cache up to 5 s; a role change is not applied until the token expires; tokens minted by older versions expire on their own). Login attempts are rate limited per client IP (30 per 5 minutes) and per IP and username (10 per 5 minutes), keyed on the TCP peer address (`X-Forwarded-For` is not trusted; behind a reverse proxy all users share the proxy's budget)
+- `veyron api-key-create`, `api-key-delete` and `api-key-list` do not persist anything and now fail with an explanation: keys come from `VEYRON_API_KEY` / `VEYRON_API_KEYS`
+- OIDC bearer tokens are verified for signature, issuer and expiry, and audience when `VEYRON_OIDC_AUDIENCE` is set (unset: not checked)
 - Constant-time API key comparison prevents timing attacks
 - **Auth bypass removed**: A previous referer-based dashboard bypass has been removed. The dashboard now sends the API key via the `X-API-Key` header like any other client, ensuring uniform authentication for all API requests.
 
@@ -107,7 +108,7 @@ Veyron implements the following security measures:
 #### SSRF Prevention
 - Webhook URLs are validated against private/internal IP ranges (RFC 1918, RFC 6598 CGNAT, link-local, loopback)
 - DNS resolution is performed upfront and all returned addresses are validated
-- The CLI's webhook delivery pins curl to the validated IP via `--resolve`; the API's webhook delivery (`src/api/webhooks.rs`) validates the host but does not pin it, so DNS rebinding between validation and delivery is possible, and the webhook secret is passed to `curl` on its command line
+- Both the CLI's and the API's webhook delivery re-validate at delivery time and pin curl to the validated IP via `--resolve` (no second DNS lookup, no redirects, `--proto =https`). The API's delivery (`src/api/webhooks.rs`) passes the secret and all headers to curl on stdin (`--config -`), never on its command line. CGNAT (RFC 6598) is blocked by the CLI's check only; the API's check covers RFC 1918, loopback, link-local and unique-local ranges
 - Only `https://` webhook URLs are accepted
 
 #### Data Persistence
@@ -118,10 +119,12 @@ Veyron implements the following security measures:
 
 #### API Security
 - CORS disabled by default; requires explicit origin configuration
-- Outbound TLS verification is on by default. Explicit opt-outs exist for self-signed lab setups: `VEYRON_KAIRON_NODE_TLS_INSECURE`, `VEYRON_IMAGE_STORE_INSECURE_TLS`, `VEYRON_NETRA_TLS_VERIFY`, `VEYRON_PAQTRA_TLS_VERIFY`, the Gryvia and MCP server settings, and the legacy KubeVirt console proxy, which does not verify the Kubernetes API certificate
+- Outbound TLS verification is on by default. Explicit opt-outs exist for self-signed lab setups: `VEYRON_KAIRON_NODE_TLS_INSECURE`, `VEYRON_IMAGE_STORE_INSECURE_TLS`, `VEYRON_NETRA_TLS_VERIFY`, `VEYRON_PAQTRA_TLS_VERIFY`, the Gryvia and MCP server settings, and the legacy KubeVirt console proxy (`VEYRON_KUBEVIRT_WS_INSECURE_TLS=1`; by default it verifies the Kubernetes API certificate against the cluster CA)
 - PAM usernames limited to 32 characters
 - API error responses do not leak internal details
 - Security headers on all responses (CSP, X-Frame-Options DENY, HSTS, no-sniff, no-referrer)
+- Image-store uploads are capped (`VEYRON_IMAGE_STORE_MAX_BYTES`, default 64 GiB, `0` = unlimited)
+- The HTTP-to-HTTPS redirect listener uses `VEYRON_PUBLIC_HOST` when set, otherwise only a well-formed `Host` header
 - Global rate limiting (`--rate-limit`, requests per minute, default 60; health, console assets and operator GET polling are exempt)
 - Kubernetes name validation (RFC 1123) on all VM/snapshot names
 - On Kairon, VNC and serial WebSockets are proxied to the kairon-node relay with its bearer token (`KAIRON_NODE_CONSOLE_TOKEN`); on the legacy KubeVirt backend they go through the Kubernetes API's `subresources.kubevirt.io` WebSocket
