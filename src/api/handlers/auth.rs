@@ -157,16 +157,12 @@ async fn login(
         );
     }
 
-    let token = match state
-        .read()
-        .await
-        .issue_jwt(
-            &user.username,
-            &user.role,
-            LOGIN_TOKEN_TTL_SECS,
-            user.token_version,
-        )
-    {
+    let token = match state.read().await.issue_jwt(
+        &user.username,
+        &user.role,
+        LOGIN_TOKEN_TTL_SECS,
+        user.token_version,
+    ) {
         Ok(t) => t,
         Err(e) => {
             log::error!("login: failed to issue session token: {e}");

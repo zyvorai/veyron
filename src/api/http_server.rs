@@ -144,7 +144,11 @@ pub mod web {
                 let window = self.window_secs;
                 map.retain(|_, (_, start)| now.saturating_sub(*start) < window);
                 if map.len() >= KEYED_LIMITER_MAX_KEYS {
-                    if let Some(oldest) = map.iter().min_by_key(|(_, (_, s))| *s).map(|(k, _)| k.clone()) {
+                    if let Some(oldest) = map
+                        .iter()
+                        .min_by_key(|(_, (_, s))| *s)
+                        .map(|(k, _)| k.clone())
+                    {
                         map.remove(&oldest);
                     }
                 }
@@ -1366,28 +1370,24 @@ pub mod web {
                     https_port
                 );
                 let public_host = env_var_first(&["VEYRON_PUBLIC_HOST"]);
-                let redirect_app =
-                    Router::new().fallback(move |req: axum::extract::Request| {
-                        let public_host = public_host.clone();
-                        async move {
-                            let host = req.headers().get("host").and_then(|h| h.to_str().ok());
-                            let path = req
-                                .uri()
-                                .path_and_query()
-                                .map(|pq| pq.as_str())
-                                .unwrap_or("/");
-                            match https_redirect_target(
-                                public_host.as_deref(),
-                                host,
-                                https_port,
-                                path,
-                            ) {
-                                Some(u) => axum::response::Redirect::temporary(&u).into_response(),
-                                None => (StatusCode::BAD_REQUEST, "invalid Host header")
-                                    .into_response(),
+                let redirect_app = Router::new().fallback(move |req: axum::extract::Request| {
+                    let public_host = public_host.clone();
+                    async move {
+                        let host = req.headers().get("host").and_then(|h| h.to_str().ok());
+                        let path = req
+                            .uri()
+                            .path_and_query()
+                            .map(|pq| pq.as_str())
+                            .unwrap_or("/");
+                        match https_redirect_target(public_host.as_deref(), host, https_port, path)
+                        {
+                            Some(u) => axum::response::Redirect::temporary(&u).into_response(),
+                            None => {
+                                (StatusCode::BAD_REQUEST, "invalid Host header").into_response()
                             }
                         }
-                    });
+                    }
+                });
                 match tokio::net::TcpListener::bind(&redirect_addr).await {
                     Ok(listener) => {
                         let _ = axum::serve(listener, redirect_app).await;
@@ -1874,7 +1874,10 @@ pub mod web {
                 t(None, Some("node.lan:8080"), 8443, "/x").unwrap(),
                 "https://node.lan:8443/x"
             );
-            assert_eq!(t(None, Some("[::1]:80"), 443, "/").unwrap(), "https://[::1]/");
+            assert_eq!(
+                t(None, Some("[::1]:80"), 443, "/").unwrap(),
+                "https://[::1]/"
+            );
             assert!(t(None, Some("evil.com/@x"), 443, "/").is_none());
             assert!(t(None, Some("a b"), 443, "/").is_none());
             assert!(t(None, None, 443, "/").is_none());

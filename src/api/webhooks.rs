@@ -45,9 +45,7 @@ fn validate_webhook_url_pinned(
     let after_scheme = url.strip_prefix("https://").unwrap_or(url);
     let host_port = after_scheme.split('/').next().unwrap_or("");
     let explicit_port: Option<u16> = if host_port.starts_with('[') {
-        host_port
-            .split_once("]:")
-            .and_then(|(_, p)| p.parse().ok())
+        host_port.split_once("]:").and_then(|(_, p)| p.parse().ok())
     } else {
         host_port.split_once(':').and_then(|(_, p)| p.parse().ok())
     };
@@ -587,7 +585,11 @@ mod tests {
             .unwrap()
             .with_secret("s3cr3t-value");
         w.add_header("Authorization", "Bearer tok-123").unwrap();
-        let pin = ("example.com".to_string(), 443u16, "93.184.216.34".parse().unwrap());
+        let pin = (
+            "example.com".to_string(),
+            443u16,
+            "93.184.216.34".parse().unwrap(),
+        );
         let args = curl_args(&w, Some(&pin)).join(" ");
         assert!(!args.contains("s3cr3t-value") && !args.contains("tok-123"));
         assert!(!args.contains("https://"), "url is not on argv");

@@ -437,7 +437,9 @@ async fn upload(
             return Err(fail(
                 StatusCode::PAYLOAD_TOO_LARGE,
                 "UPLOAD_TOO_LARGE",
-                format!("Content-Length {len} exceeds the {max} byte limit (VEYRON_IMAGE_STORE_MAX_BYTES)"),
+                format!(
+                    "Content-Length {len} exceeds the {max} byte limit (VEYRON_IMAGE_STORE_MAX_BYTES)"
+                ),
             ));
         }
     }
@@ -817,18 +819,37 @@ mod tests {
                 Ok(vec![2u8; 600]),
             ])
         };
-        let e = store_stream_limited(dir.path(), "big", "raw".into(), chunks(), None, false, Some(1000))
-            .await
-            .unwrap_err();
+        let e = store_stream_limited(
+            dir.path(),
+            "big",
+            "raw".into(),
+            chunks(),
+            None,
+            false,
+            Some(1000),
+        )
+        .await
+        .unwrap_err();
         assert_eq!(e.status, StatusCode::PAYLOAD_TOO_LARGE);
         assert!(read_stored(dir.path(), "big").await.is_none());
-        let leftovers = std::fs::read_dir(dir.path().join("blobs/sha256")).unwrap().count();
+        let leftovers = std::fs::read_dir(dir.path().join("blobs/sha256"))
+            .unwrap()
+            .count();
         assert_eq!(leftovers, 0, "partial upload removed");
-        let ok = store_stream_limited(dir.path(), "ok", "raw".into(), chunks(), None, false, Some(1200))
-            .await
-            .unwrap();
+        let ok = store_stream_limited(
+            dir.path(),
+            "ok",
+            "raw".into(),
+            chunks(),
+            None,
+            false,
+            Some(1200),
+        )
+        .await
+        .unwrap();
         assert_eq!(ok.size, 1200);
-        let ok = store_stream_limited(dir.path(), "ok2", "raw".into(), chunks(), None, false, None).await;
+        let ok = store_stream_limited(dir.path(), "ok2", "raw".into(), chunks(), None, false, None)
+            .await;
         assert!(ok.is_ok());
     }
 

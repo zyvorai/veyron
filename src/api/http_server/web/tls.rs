@@ -59,7 +59,11 @@ impl rustls::client::danger::ServerCertVerifier for AcceptAllVerifier {
 /// `VEYRON_KUBEVIRT_WS_INSECURE_TLS=1|true` opts out of verifying the Kubernetes
 /// API server certificate on the legacy KubeVirt console proxy.
 pub(super) fn kubevirt_ws_insecure_tls() -> bool {
-    flag_enabled(std::env::var("VEYRON_KUBEVIRT_WS_INSECURE_TLS").ok().as_deref())
+    flag_enabled(
+        std::env::var("VEYRON_KUBEVIRT_WS_INSECURE_TLS")
+            .ok()
+            .as_deref(),
+    )
 }
 
 fn flag_enabled(v: Option<&str>) -> bool {
