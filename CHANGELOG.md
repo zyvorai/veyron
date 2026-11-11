@@ -6,7 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-11-11
+## [0.3.1] - 2026-11-11
+
+First published release (the `v0.3.0` tag was cut before the release workflow's GHCR login was fixed and never produced a release). Contents are those of the 0.3.0 entry below plus:
+
+- **Release workflow** logs in to GHCR with the built-in `GITHUB_TOKEN` instead of a personal access token secret that was not configured.
+
+## [0.3.0 (unpublished)] - 2026-11-11
 
 ### Fixed
 
