@@ -11,6 +11,8 @@ env:
   IMAGE_NAME: zyvorai/veyron
   CHARTS_REPO: ghcr.io/zyvorai/charts
   GUESTKIT_REPO: zyvorai/zyvor-guestkit
+  # Pinned (same commit as ci.yml): a release must not build against whatever guestkit main is that day.
+  GUESTKIT_REF: 7736c26de254e81576503ff1d71530206716b4ae
 
 permissions:
   contents: write
@@ -44,6 +46,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.GUESTKIT_REPO }}
+          ref: ${{ env.GUESTKIT_REF }}
           path: guestkit
       - uses: actions/download-artifact@v4
         with:
@@ -82,6 +85,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.GUESTKIT_REPO }}
+          ref: ${{ env.GUESTKIT_REF }}
           path: guestkit
       - uses: actions/download-artifact@v4
         with:
@@ -123,6 +127,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.GUESTKIT_REPO }}
+          ref: ${{ env.GUESTKIT_REF }}
           path: guestkit
 
       - name: Log in to GHCR

@@ -16,7 +16,7 @@ env:
   RUST_MIN_STACK: 8388608
   # guestkit is a path dependency (Cargo.toml) that lives in its own public repo.
   GUESTKIT_REPO: zyvorai/zyvor-guestkit
-  GUESTKIT_REF: 79116287283941b8caf861c2a36cb7cdec022c7f
+  GUESTKIT_REF: 7736c26de254e81576503ff1d71530206716b4ae
 
 jobs:
   fmt:
