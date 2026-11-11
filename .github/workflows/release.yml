@@ -134,8 +134,9 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ssahani
-          password: ${{ secrets.GHCR_TOKEN }}
+          # The built-in token has packages: write (see permissions above); no personal access token to expire or go missing.
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract versions
         id: version
