@@ -6,7 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-## [0.3.1] - 2026-11-11
+## [0.4.0] - 2026-11-11
+
+First release published from CI. The version numbers 0.3.0 to 0.3.2 were already taken by container images pushed to
+`ghcr.io/zyvorai/veyron` on 2026-10-04 (before the move to Kairon), so this release continues from 0.4.0; the `v0.3.0` and
+`v0.3.1` git tags were never released. Contents are those of the 0.3.0 entry below, plus:
+
+- **Release workflow** logs in to GHCR with the built-in `GITHUB_TOKEN` instead of a personal access token secret that was
+  not configured. The `veyron` package must grant this repository Write access (package settings, *Manage Actions access*).
+
+## [0.3.1 (unreleased)] - 2026-11-11
 
 First published release (the `v0.3.0` tag was cut before the release workflow's GHCR login was fixed and never produced a release). Contents are those of the 0.3.0 entry below plus:
 
