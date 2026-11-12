@@ -130,6 +130,15 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     {
         return ApiRole::Admin;
     }
+    // VeyronPolicy rules (enforcement `Deny`) are checked on VM create for everyone; a caller
+    // bound by one must not be able to delete or rewrite it.
+    if path == "/api/v1/crds/policies" || path.starts_with("/api/v1/crds/policies/") {
+        return ApiRole::Admin;
+    }
+    // Approving a VeyronAction releases it to the operator: not the same role that may draft one.
+    if path.starts_with("/api/v1/crds/actions/") && path.ends_with("/approve") {
+        return ApiRole::Admin;
+    }
     if path == "/api/v1/gitops/sync" || path == "/api/v1/catalog/sync" {
         return ApiRole::Admin;
     }
@@ -219,6 +228,40 @@ mod tests {
             );
             assert_eq!(
                 min_role_for_route(&Method::POST, &format!("{prefix}/enterprise/operations")),
+                ApiRole::Write
+            );
+        }
+    }
+
+    #[test]
+    fn changing_a_veyron_policy_is_admin_but_reading_is_not() {
+        for prefix in ["/api/v1", "/api/v1/veyron"] {
+            let p = format!("{prefix}/crds/policies");
+            assert_eq!(min_role_for_route(&Method::POST, &p), ApiRole::Admin);
+            assert_eq!(
+                min_role_for_route(&Method::DELETE, &format!("{p}/ns/max-cpu")),
+                ApiRole::Admin
+            );
+            assert_eq!(min_role_for_route(&Method::GET, &p), ApiRole::ReadOnly);
+            assert_eq!(
+                min_role_for_route(&Method::POST, &format!("{prefix}/crds/blueprints")),
+                ApiRole::Write
+            );
+        }
+    }
+
+    #[test]
+    fn approving_a_veyron_action_is_admin_but_drafting_one_is_write() {
+        for prefix in ["/api/v1", "/api/v1/veyron"] {
+            assert_eq!(
+                min_role_for_route(
+                    &Method::POST,
+                    &format!("{prefix}/crds/actions/ns/act-1/approve")
+                ),
+                ApiRole::Admin
+            );
+            assert_eq!(
+                min_role_for_route(&Method::POST, &format!("{prefix}/crds/actions")),
                 ApiRole::Write
             );
         }

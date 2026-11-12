@@ -809,8 +809,10 @@ async fn get_action(
 #[cfg(feature = "web")]
 async fn create_action(
     State(state): State<SharedState>,
+    axum::Extension(caller): axum::Extension<crate::api::auth_context::AuthContext>,
     Json(spec): Json<VeyronActionSpec>,
 ) -> Result<Json<VeyronActionSummary>, (StatusCode, Json<serde_json::Value>)> {
+    let spec = enforce_action_approval(spec, &caller);
     let s = state.read().await;
     let ns = &s.namespace;
     let api: Api<VeyronAction> = Api::namespaced(s.client().client().clone(), ns);
@@ -834,6 +836,20 @@ async fn create_action(
         })),
         Err(e) => Err(crd_write_err(e)),
     }
+}
+
+/// Approving an action is an Admin decision (`auth_context::min_role_for_route`), so a caller
+/// below Admin may not create one that is already approved or approves itself.
+#[cfg(feature = "web")]
+fn enforce_action_approval(
+    mut spec: VeyronActionSpec,
+    caller: &crate::api::auth_context::AuthContext,
+) -> VeyronActionSpec {
+    if !caller.allows(&crate::api::http_server::web::ApiRole::Admin) {
+        spec.approved = false;
+        spec.auto_approve = false;
+    }
+    spec
 }
 
 #[cfg(feature = "web")]
@@ -1194,4 +1210,37 @@ fn random_suffix() -> String {
             }
         })
         .collect()
+}
+
+#[cfg(all(test, feature = "web"))]
+mod approval_tests {
+    use super::*;
+    use crate::api::auth_context::AuthContext;
+    use crate::api::http_server::web::ApiRole;
+
+    fn spec() -> VeyronActionSpec {
+        VeyronActionSpec {
+            action_type: "restart".into(),
+            vm_ref: Some("vm1".into()),
+            insight_ref: None,
+            description: None,
+            approved: true,
+            auto_approve: true,
+            parameters: Default::default(),
+        }
+    }
+
+    #[test]
+    fn only_admin_can_create_a_pre_approved_action() {
+        let ctx = |role| AuthContext {
+            role,
+            subject: "u".into(),
+        };
+        for role in [ApiRole::ReadOnly, ApiRole::Write] {
+            let s = enforce_action_approval(spec(), &ctx(role));
+            assert!(!s.approved && !s.auto_approve);
+        }
+        let s = enforce_action_approval(spec(), &ctx(ApiRole::Admin));
+        assert!(s.approved && s.auto_approve);
+    }
 }
