@@ -160,6 +160,11 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
+      - name: Explain a GHCR permission failure
+        if: ${{ failure() && steps.push.outcome == 'failure' }}
+        run: |
+          echo "::error title=Image push failed::If the log says permission_denied: write_package, the ghcr.io/${IMAGE_NAME} package does not grant this repository write access. Package settings > Manage Actions access > add ${GITHUB_REPOSITORY} with the Write role. The GitHub Release job does not depend on this job."
+
       - uses: sigstore/cosign-installer@v3
 
       - name: Sign image (keyless)
@@ -167,7 +172,11 @@ jobs:
 
   release:
     name: GitHub Release
-    needs: [build, docker]
+    # Needs only the build (and, through it, test and console) jobs. The image job runs in
+    # parallel and must not gate the release: if the GHCR package grants this repo no write
+    # access the push fails ("denied: permission_denied: write_package"), and the binaries and
+    # SHA256SUMS must still be published for the tag. The release does not use any docker output.
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
