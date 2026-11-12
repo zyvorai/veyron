@@ -1,6 +1,6 @@
 # Veyron Helm chart
 
-> **Image caveat (v0.4.0).** `ghcr.io/zyvorai/veyron:0.4.0` is not published. `image.tag` defaults to `latest`, which is
+> **Image caveat (v0.4.1).** `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are not published. `image.tag` defaults to `latest`, which is
 > the older 2026-10-04 image (before the Kairon rewrite), whatever the chart's `appVersion` says. Build your own image
 > (`scripts/deploy-remote.sh` builds it on a node) and set `--set image.repository=... --set image.tag=...`.
 > Without overrides the chart installs the lab credentials `admin` / `Admin@321` and API key `Admin@321`: always set

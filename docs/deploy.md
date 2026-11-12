@@ -7,18 +7,18 @@ client tarball.
 
 ## Release binaries
 
-Each GitHub release (v0.4.0 is the latest) carries `veyron-linux-amd64`, `veyron-linux-arm64`,
+Each GitHub release (v0.4.1 is the latest) carries `veyron-linux-amd64`, `veyron-linux-arm64`,
 `veyron-darwin-amd64`, `veyron-darwin-arm64` and `SHA256SUMS`. The console is embedded. Linux builds link
-glibc dynamically; the darwin builds are only ad-hoc signed (no Developer ID, not notarized). v0.4.0 has no cosign bundle or SBOM, so
+glibc dynamically; the darwin builds are only ad-hoc signed (no Developer ID, not notarized). v0.4.1 has no cosign bundle or SBOM (nor did v0.4.0), so
 the checksum file is the only integrity check, and it comes from the same release page as the binaries.
 
 ```bash
-V=v0.4.0; A=linux-amd64        # linux-arm64, darwin-amd64 or darwin-arm64
+V=v0.4.1; A=linux-amd64        # linux-arm64, darwin-amd64 or darwin-arm64
 curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/veyron-$A
 curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/SHA256SUMS
 grep " veyron-$A\$" SHA256SUMS | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)   # expect "veyron-$A: OK"
 chmod +x veyron-$A && sudo install -m 0755 veyron-$A /usr/local/bin/veyron
-veyron --version               # veyron 0.4.0
+veyron --version               # veyron 0.4.1
 ```
 
 Run the API and console with `veyron api-serve`:
@@ -57,7 +57,7 @@ Needs a reachable Kubernetes API and, for VM routes, Kairon's CRDs (see [Kairon 
 Only the in-cluster Deployment (sections below) comes with the image-store volume and the relay Secret wired up.
 
 The `veyron` CLI's VM commands (`create`, `list`, `start`, ...) manage KubeVirt `VirtualMachine`s only in
-v0.4.0; they do not manage Kairon Machines.
+v0.4.1; they do not manage Kairon Machines.
 
 ## 1. Remote deploy script (fastest)
 
@@ -134,9 +134,9 @@ cluster; Veyron never switches to it on its own.
 
 ## 2. Helm
 
-> **Image caveat.** `ghcr.io/zyvorai/veyron:0.4.0` is **not published** (the GHCR package refuses writes from the
+> **Image caveat.** `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are **not published** (the GHCR package refuses writes from the
 > release workflow). The chart's `image.tag` defaults to `latest`, which is the older 2026-10-04 image from before
-> the Kairon rewrite, and the chart's `appVersion` (0.4.0) does not change that. Do not pin `image.tag=0.4.0`:
+> the Kairon rewrite, and the chart's `appVersion` (0.4.1) does not change that. Do not pin `image.tag=0.4.0` or `0.4.1`:
 > the pull fails. Use the remote deploy script (it builds the image from source on a node), or build and push
 > the image yourself and set `image.repository` and `image.tag` (`--set image.repository=... --set image.tag=...`).
 

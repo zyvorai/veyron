@@ -135,12 +135,12 @@ An operator that asks first: it reads your cluster with your permissions, invest
 
 On a Kubernetes cluster whose VM hosts run [Kairon](https://github.com/zyvorai/kairon) (a Kairon release with `v1beta1` CRDs; see [docs/deploy.md](docs/deploy.md#kairon-settings)).
 
-**Release binaries (v0.4.0).** One binary per platform (`veyron-linux-amd64`, `-linux-arm64`, `-darwin-amd64`, `-darwin-arm64`; Linux builds are
+**Release binaries (v0.4.1).** One binary per platform (`veyron-linux-amd64`, `-linux-arm64`, `-darwin-amd64`, `-darwin-arm64`; Linux builds are
 dynamically linked against glibc) with the console embedded, plus `SHA256SUMS`. The darwin binaries are only ad-hoc signed (no Developer ID, not notarized; Gatekeeper may need
-`xattr -d com.apple.quarantine`), and v0.4.0 has no cosign signature or SBOM. Verify the checksum before running:
+`xattr -d com.apple.quarantine`), and v0.4.1 has no cosign signature or SBOM (nor did v0.4.0). Verify the checksum before running:
 
 ```bash
-V=v0.4.0; A=linux-amd64        # or linux-arm64, darwin-amd64, darwin-arm64
+V=v0.4.1; A=linux-amd64        # or linux-arm64, darwin-amd64, darwin-arm64
 curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/veyron-$A
 curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/SHA256SUMS
 grep " veyron-$A\$" SHA256SUMS | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)   # must print: veyron-$A: OK
@@ -157,9 +157,8 @@ veyron api-serve --host 127.0.0.1 --port 5151 --tls --tls-cert tls.crt --tls-key
 # console: https://127.0.0.1:5151/console   (omit --tls only behind a TLS-terminating proxy)
 ```
 
-**In the cluster.** The release binaries do not include a container image: `ghcr.io/zyvorai/veyron:0.4.0` is **not
-published** yet. The Helm chart's default tag is `latest`, which is still the older 2026-10-04 image (it predates
-the Kairon rewrite). Until a 0.4.0 image exists, build and deploy from source (this builds the image on the node):
+**In the cluster.** The release binaries do not include a container image: `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are **not published** yet. The Helm chart's default tag is `latest`, which is still the older 2026-10-04 image (it predates
+the Kairon rewrite). Until a 0.4.1 (or later) image exists, build and deploy from source (this builds the image on the node):
 
 ```bash
 git clone https://github.com/zyvorai/veyron.git && cd veyron
@@ -174,7 +173,7 @@ curl -sk -H "X-API-Key: ${VEYRON_API_KEY:-Admin@321}" -H 'Content-Type: applicat
   -d '{"name":"demo","template":"ubuntu-24.04","cpus":2,"memory":"4Gi"}'
 ```
 
-> **CLI scope in v0.4.0.** The VM commands of the CLI (`veyron create`, `list`, `start`, `snapshot-*`, `tui`, and so on) talk to
+> **CLI scope in v0.4.1.** The VM commands of the CLI (`veyron create`, `list`, `start`, `snapshot-*`, `tui`, and so on) talk to
 > the Kubernetes API directly and create, list and change **KubeVirt `VirtualMachine`s**; they do not go through the Kairon
 > backend. To manage Kairon `Machine`s use the console, the API, or the MCP bridge (`veyron mcp`). `veyron api-serve` is what
 > serves the console and API, and honours Kairon.

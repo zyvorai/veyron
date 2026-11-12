@@ -2,8 +2,8 @@ apiVersion: v2
 name: veyron
 description: Veyron — console, API and CLI for VMs on Kubernetes (Kairon engine; KubeVirt is a legacy opt-in)
 type: application
-version: 0.4.0
-appVersion: "0.4.0"
+version: 0.4.1
+appVersion: "0.4.1"
 keywords:
   - veyron
   - kubevirt

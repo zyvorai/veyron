@@ -38,8 +38,8 @@ The remote script syncs the source to a node, builds the images there and applie
 ```
 
 Or use the Helm chart in [`charts/veyron`](../charts/veyron) (see [deploy.md](deploy.md)). Mind the image
-caveat there: `ghcr.io/zyvorai/veyron:0.4.0` is not published, and the chart's default tag `latest` is the older
-2026-10-04 image, so build from source with the script above until a 0.4.0 image exists. The release binaries
+caveat there: `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are not published, and the chart's default tag `latest` is the older
+2026-10-04 image, so build from source with the script above until a 0.4.1 (or later) image exists. The release binaries
 ([deploy.md](deploy.md#release-binaries)) run the API and console outside the cluster.
 
 For the browser console, guest commands and VM-state snapshots, Veyron talks to each node's
@@ -110,7 +110,7 @@ curl -sk -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
 ```
 
 The `veyron` CLI's VM commands (`create`, `list`, `start`, `snapshot-*`, `tui`) work on KubeVirt
-`VirtualMachine`s only in v0.4.0; they do not see Kairon Machines. On Kairon, use the console or the API.
+`VirtualMachine`s only in v0.4.1; they do not see Kairon Machines. On Kairon, use the console or the API.
 
 ## 5. Check the deployment
 
