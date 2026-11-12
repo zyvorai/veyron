@@ -5,11 +5,42 @@
 
 use super::*;
 
+/// Each metrics stream lists every VM and node on a timer, and any key (including read-only)
+/// may open one, so the number of concurrent streams is capped (`VEYRON_WS_METRICS_MAX`).
+const DEFAULT_MAX_METRICS_STREAMS: usize = 64;
+
+static METRICS_SLOTS: once_cell::sync::Lazy<std::sync::Arc<tokio::sync::Semaphore>> =
+    once_cell::sync::Lazy::new(|| {
+        let n = std::env::var("VEYRON_WS_METRICS_MAX")
+            .ok()
+            .and_then(|v| v.parse::<usize>().ok())
+            .filter(|n| *n > 0)
+            .unwrap_or(DEFAULT_MAX_METRICS_STREAMS);
+        std::sync::Arc::new(tokio::sync::Semaphore::new(n))
+    });
+
+fn try_metrics_slot(
+    slots: &std::sync::Arc<tokio::sync::Semaphore>,
+) -> Option<tokio::sync::OwnedSemaphorePermit> {
+    slots.clone().try_acquire_owned().ok()
+}
+
 pub(super) async fn metrics_websocket_handler(
     ws: WebSocketUpgrade,
     State(state): State<SharedState>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| metrics_stream(socket, state))
+    let Some(permit) = try_metrics_slot(&METRICS_SLOTS) else {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "too many metrics streams; close one and retry",
+        )
+            .into_response();
+    };
+    ws.on_upgrade(move |socket| async move {
+        metrics_stream(socket, state).await;
+        drop(permit);
+    })
+    .into_response()
 }
 
 pub(super) async fn metrics_stream(mut socket: WebSocket, state: SharedState) {
@@ -558,3 +589,21 @@ pub(super) async fn kubevirt_subresource_ws_proxy(
 }
 
 // ── VM Security Posture ──────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn metrics_slots_are_limited_and_released() {
+        let slots = std::sync::Arc::new(tokio::sync::Semaphore::new(2));
+        let a = try_metrics_slot(&slots).expect("first");
+        let _b = try_metrics_slot(&slots).expect("second");
+        assert!(try_metrics_slot(&slots).is_none(), "third must be refused");
+        drop(a);
+        assert!(
+            try_metrics_slot(&slots).is_some(),
+            "a closed stream frees its slot"
+        );
+    }
+}
