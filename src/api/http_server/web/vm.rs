@@ -2294,6 +2294,9 @@ pub(super) struct CreateVmGpuSugarReq {
 /// Upper bound for the `gpu.count` shorthand; the loop that expands it allocates per device.
 const MAX_GPUS_PER_VM: u32 = 16;
 
+/// Upper bound for the `cpus` override (matches `config::validate_vm_config`).
+const MAX_VCPUS_PER_VM: u32 = 256;
+
 pub(super) fn default_gpu_count() -> u32 {
     1
 }
@@ -2573,6 +2576,16 @@ pub(super) async fn create_vm_handler(
     let ns = req.namespace.as_deref().unwrap_or("default");
     if let Some(resp) = validate_k8s_params(&[("namespace", ns)]) {
         return resp;
+    }
+    // Same ceiling as `config::validate_vm_config` and VM imports; 0 would silently become 1 vCPU.
+    if let Some(cpus) = req.cpus {
+        if !(1..=MAX_VCPUS_PER_VM).contains(&cpus) {
+            return err_json(
+                400,
+                "INVALID_CPUS",
+                &format!("cpus must be between 1 and {MAX_VCPUS_PER_VM}"),
+            );
+        }
     }
 
     // Start with template or blank config

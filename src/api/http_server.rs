@@ -2055,6 +2055,28 @@ pub mod web {
             assert_eq!(resp.status().as_u16(), 400);
         }
 
+        /// `cpus` is validated before anything touches the cluster: 0 and absurd values are a
+        /// plain 400 even against an unreachable API server.
+        #[tokio::test]
+        async fn out_of_range_cpus_are_rejected() {
+            use axum::body::Body;
+            use tower::ServiceExt;
+            for cpus in ["0", "4000000000", "257"] {
+                let mut st = WebState::for_router_test();
+                st.api_key = Some("k-primary".into());
+                let app = build_router(std::sync::Arc::new(tokio::sync::RwLock::new(st)));
+                let req = axum::http::Request::builder()
+                    .method(Method::POST)
+                    .uri("/api/v1/vms")
+                    .header("x-api-key", "k-primary")
+                    .header("content-type", "application/json")
+                    .body(Body::from(format!(r#"{{"name":"c1","cpus":{cpus}}}"#)))
+                    .expect("request");
+                let resp = app.oneshot(req).await.expect("router never errors");
+                assert_eq!(resp.status().as_u16(), 400, "cpus={cpus}");
+            }
+        }
+
         #[test]
         fn rate_limit_zero_disables_the_limiter() {
             let off = RateLimiterState::new(0, 60);
