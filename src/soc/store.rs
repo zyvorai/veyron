@@ -27,6 +27,25 @@ const DETECTIONS_KEY: &str = "detections.json";
 
 pub const MAX_STORED_EVENTS: usize = 500;
 
+/// A ConfigMap holds at most 1 MiB; stay under it so a write is never rejected.
+const MAX_STORED_BYTES: usize = 900_000;
+
+/// Newest events that fit both the count and the size budget (oldest are dropped first).
+pub fn trim_events(events: &[SecurityEvent]) -> Vec<SecurityEvent> {
+    let start = events.len().saturating_sub(MAX_STORED_EVENTS);
+    let mut used = 2usize; // the surrounding [ ]
+    let mut keep_from = events.len();
+    for (i, e) in events.iter().enumerate().skip(start).rev() {
+        let n = serde_json::to_string(e).map(|s| s.len() + 1).unwrap_or(0);
+        if used + n > MAX_STORED_BYTES {
+            break;
+        }
+        used += n;
+        keep_from = i;
+    }
+    events[keep_from..].to_vec()
+}
+
 fn type_label(value: &str) -> BTreeMap<String, String> {
     let mut m = BTreeMap::new();
     m.insert("veyron.io/type".to_string(), value.to_string());
@@ -40,8 +59,7 @@ pub async fn load_events(client: &kube::Client, namespace: &str) -> Vec<Security
 
 #[cfg(feature = "web")]
 pub async fn save_events(client: &kube::Client, namespace: &str, events: &[SecurityEvent]) {
-    let start = events.len().saturating_sub(MAX_STORED_EVENTS);
-    let trimmed = events[start..].to_vec();
+    let trimmed = trim_events(events);
     write_json_array(
         client,
         namespace,
@@ -166,5 +184,37 @@ async fn write_json_array<T: serde::Serialize + ?Sized>(
         let _ = api.patch(name, &PatchParams::default(), &patch).await;
     } else {
         let _ = api.create(&PostParams::default(), &cm).await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ev(msg: String) -> SecurityEvent {
+        SecurityEvent::new("audit", "low", "veyron", msg)
+    }
+
+    #[test]
+    fn stored_events_stay_under_the_configmap_limit() {
+        // 200 events of ~20 KB each is 4 MB: without a size budget the ConfigMap write is
+        // rejected and the audit log stays frozen on whatever it held before.
+        let events: Vec<_> = (0..200)
+            .map(|i| ev(format!("{i}{}", "x".repeat(20_000))))
+            .collect();
+        let kept = trim_events(&events);
+        let size = serde_json::to_string(&kept).unwrap().len();
+        assert!(size < 1_000_000, "{size}");
+        assert!(!kept.is_empty());
+        // newest survive
+        assert!(kept.last().unwrap().message.starts_with("199x"));
+    }
+
+    #[test]
+    fn small_logs_are_kept_whole_up_to_the_count_cap() {
+        let events: Vec<_> = (0..600).map(|i| ev(format!("e{i}"))).collect();
+        let kept = trim_events(&events);
+        assert_eq!(kept.len(), MAX_STORED_EVENTS);
+        assert_eq!(kept[0].message, "e100");
     }
 }

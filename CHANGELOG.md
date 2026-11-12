@@ -25,8 +25,23 @@ All notable changes to this project are documented here. The format follows
 - **Image-store uploads are capped** (`VEYRON_IMAGE_STORE_MAX_BYTES`, default 64 GiB, `0` = unlimited); larger bodies
   answer `413 UPLOAD_TOO_LARGE` and the partial file is removed.
 
+- **VeyronAction approval and VeyronPolicy changes are Admin.** `POST /crds/actions/:ns/:name/approve` and every
+  non-read request to `/crds/policies*` now need `admin` (they were `write`). `POST /crds/actions` ignores `approved` and
+  `autoApprove` from a caller below `admin`, so a `write` key could neither approve its own action nor delete the
+  `Deny` policy that blocks it.
+- **Audit log can no longer be silenced by a long URL.** The SOC audit entry for a mutating call stored the request
+  path (four times) unbounded; enough long paths pushed the `veyron-soc-events` ConfigMap past 1 MiB and every later
+  write was rejected without notice. Paths are cut at 256 bytes, the actor at 128, and the stored log is trimmed to
+  900 KB, oldest first.
+- **`/ws/metrics` streams are capped** (`VEYRON_WS_METRICS_MAX`, default 64; extra upgrades answer `503`). Each stream
+  lists every VM and node every 5 s and a `readonly` key may open one.
+
 ### Fixed
 
+- **`timeout_seconds` on guest exec was unbounded.** `u64::MAX` overflowed the relay's `+ 15 s` margin (a panic in
+  debug builds, a 14 s HTTP timeout in release). It is capped at 3600 s.
+- **`cpus` on `POST /vms` was not range-checked.** `0` silently became one vCPU and billions went to the backend.
+  Values outside 1-256 answer `400 INVALID_CPUS`.
 - **`veyron api-key-create` / `api-key-delete` / `api-key-list` no longer pretend.** There is no key store; they printed
   success and persisted nothing. They now fail and point at `VEYRON_API_KEY` / `VEYRON_API_KEYS`.
 

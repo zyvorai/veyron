@@ -285,7 +285,7 @@ impl RelayTarget {
 
     /// QEMU guest-agent `guest-exec` (Linux path+args, or Windows PowerShell).
     pub async fn exec(&self, req: &ExecRequest) -> Result<ExecResult> {
-        let secs = req.timeout_seconds.unwrap_or(60) + 15;
+        let secs = req.timeout_seconds.unwrap_or(60).saturating_add(15);
         self.post_json("exec", req, Duration::from_secs(secs)).await
     }
 
@@ -300,7 +300,7 @@ impl RelayTarget {
         self.post_json(
             "agent-exec",
             &body,
-            Duration::from_secs(timeout_seconds + 15),
+            Duration::from_secs(timeout_seconds.saturating_add(15)),
         )
         .await
     }
