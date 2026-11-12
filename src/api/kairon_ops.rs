@@ -346,6 +346,10 @@ async fn relay_for(c: &KubeClient, ns: &str, name: &str) -> Result<(Machine, Rel
     Ok((m, target))
 }
 
+/// Longest guest command the API will wait for. The relay adds a margin to this for its own HTTP
+/// timeout, so an unbounded caller value must not reach that addition.
+const MAX_EXEC_TIMEOUT_SECS: u64 = 3600;
+
 /// Accepts the GuestKit/QGA body (`path` + `arg`), `args`, a `command` string run
 /// through `/bin/sh -c`, or `powershell` for Windows guests.
 pub fn exec_request(params: &serde_json::Value) -> Result<ExecRequest> {
@@ -353,7 +357,8 @@ pub fn exec_request(params: &serde_json::Value) -> Result<ExecRequest> {
         .get("timeout_seconds")
         .or_else(|| params.get("timeoutSeconds"))
         .and_then(|v| v.as_u64())
-        .unwrap_or(60);
+        .unwrap_or(60)
+        .min(MAX_EXEC_TIMEOUT_SECS);
     if let Some(ps) = params.get("powershell").and_then(|v| v.as_str()) {
         return Ok(ExecRequest::powershell(ps, timeout));
     }
@@ -832,6 +837,20 @@ mod tests {
         let r = exec_request(&serde_json::json!({"powershell": "Get-Date"})).unwrap();
         assert_eq!(r.powershell.as_deref(), Some("Get-Date"));
         assert!(exec_request(&serde_json::json!({})).is_err());
+    }
+
+    #[test]
+    fn exec_timeout_is_bounded_so_the_relay_margin_cannot_overflow() {
+        for t in [u64::MAX, u64::MAX - 14, 1 << 40] {
+            let r =
+                exec_request(&serde_json::json!({"command": "id", "timeout_seconds": t})).unwrap();
+            assert_eq!(r.timeout_seconds, Some(MAX_EXEC_TIMEOUT_SECS));
+            // what RelayTarget::exec does with it
+            assert!(r.timeout_seconds.unwrap().checked_add(15).is_some());
+        }
+        let r =
+            exec_request(&serde_json::json!({"path": "/bin/true", "timeoutSeconds": 30})).unwrap();
+        assert_eq!(r.timeout_seconds, Some(30));
     }
 
     #[test]
