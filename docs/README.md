@@ -19,6 +19,11 @@ Kubernetes API.
 | Image catalog, uploads, ISO installs (no CDI) | [api.md § Images on Kairon](api.md#images-on-kairon-no-cdi) |
 | eBPF on every VM: network policy, drops, live-migration conntrack | [ebpf.md](ebpf.md) |
 | Two racks or two sites | [multi-site.md](multi-site.md) |
+| Kairon and FluxVM operations: relay routes, per-VM network access, lifecycle, fleet objects | [kairon-ops.md](kairon-ops.md) |
+| Live-fork a running VM; agent sandboxes | [fork.md](fork.md) |
+| Durable power operations, tenant quotas, namespace authorization | [enterprise-workflows.md](enterprise-workflows.md) |
+| Release binaries, checksums, the missing container image | [deploy.md § Release binaries](deploy.md#release-binaries) · [deploy.md § Container image](deploy.md#container-image) |
+| What changed in each release | [../CHANGELOG.md](../CHANGELOG.md) |
 | Security operations (detections, SIEM export) | [soc.md](soc.md) |
 | AI assistant, MCP, proposals, sandboxes, in-cluster models | [ai.md](ai.md) |
 | Copilot agent: search, plan, approve, execute (API) | [COPILOT_AGENT.md](COPILOT_AGENT.md) |
@@ -29,7 +34,3 @@ Kubernetes API.
 explicit `VEYRON_VM_BACKEND=kubevirt` brings the legacy path back. On Kairon, KubeVirt/CDI-only
 routes return `501 KUBEVIRT_ONLY`. Pages note where a feature still needs the legacy path. The CLI's VM commands (`veyron create`, `list`, ...)
 still work on KubeVirt `VirtualMachine`s only; use the console or the API for Kairon.
-
-## Enterprise workflow center
-
-See [enterprise workflow guide](enterprise-workflows.md) for durable power operations, tenant quota reservations, namespace authorization and readiness assessments.

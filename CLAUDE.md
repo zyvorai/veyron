@@ -28,7 +28,7 @@ make ci
 ## Deployment
 
 ```bash
-# Build image, import into the node runtime, deploy to veyron-system (auto-detects k3s vs kubectl; installs CDI if DataVolume CRD missing — VEYRON_SKIP_CDI=1 to skip; VEYRON_CONTAINER_RUNTIME_IMPORT overrides image import)
+# Build image, import into the node runtime, deploy to veyron-system (auto-detects k3s vs kubectl; installs CDI only with VEYRON_INSTALL_CDI=1, legacy KubeVirt — VEYRON_SKIP_CDI=1 skips it even then; VEYRON_CONTAINER_RUNTIME_IMPORT overrides image import)
 ./scripts/deploy-k8s-remote.sh HOST USER
 
 # Full deployment (builds both API + operator images; parallel builds, layer cache by default)
@@ -111,7 +111,7 @@ Veyron is a dual-mode binary: a **CLI tool** and an **HTTP API + React console**
 
 ### Kubernetes operator (`operator/`)
 
-A separate **Go** service (controller-runtime) runs **inside the cluster**. It watches **`veyron.io/v1alpha1` custom resources** and reconciles real API objects—mainly converting a **`VeyronVM`** spec into a **KubeVirt `VirtualMachine`** (`operator/internal/converter`), then creating/updating that VM, handling **finalizers**, **status**, and optional **config-drive Secrets**. The same manager registers reconcilers for **VeyronBlueprint**, **VeyronPolicy**, **VeyronInsight**, **VeyronAction**, **VMTemplate**, and **VMProfile** (`operator/main.go`). **Template resolution** (`operator/internal/catalog/resolver.go`) expands `template` + `profile` from cluster **VMTemplate** / **VMProfile** CRDs (or embedded fallback) before reconcile; blueprint **`override`** wins last. An optional **`NATS_URL`** connects **`operator/internal/eventbus`** for outbound events. **Rust** `src/operator_crds/` holds serde models of those CRDs for CLI/API use; it does not embed the Go controller. Bootstrap catalog: `./scripts/generate-catalog-crds.sh` then `veyron catalog sync`. See `docs/architecture.md`, `DEVELOPMENT.md` § Operator Architecture, and `charts/veyron-operator`.
+A separate **Go** service (controller-runtime) runs **inside the cluster**. It watches **`veyron.io/v1alpha1` custom resources** and reconciles real API objects—mainly converting a **`VeyronVM`** spec into a **KubeVirt `VirtualMachine`** (`operator/internal/converter`), then creating/updating that VM, handling **finalizers**, **status**, and optional **config-drive Secrets**. The same manager registers reconcilers for **VeyronBlueprint**, **VeyronPolicy**, **VeyronInsight**, **VeyronAction**, **VMTemplate**, and **VMProfile** (`operator/main.go`). **Template resolution** (`operator/internal/catalog/resolver.go`) expands `template` + `profile` from cluster **VMTemplate** / **VMProfile** CRDs (or embedded fallback) before reconcile; blueprint **`override`** wins last. An optional **`NATS_URL`** connects **`operator/internal/eventbus`** for outbound events. **Rust** `src/operator_crds/` holds serde models of those CRDs for CLI/API use; it does not embed the Go controller. Bootstrap catalog: `./scripts/generate-catalog-crds.sh` then `veyron catalog sync`. See `docs/architecture.md` and `charts/veyron-operator` (`DEVELOPMENT.md` no longer exists).
 
 ### Entry points
 
@@ -151,7 +151,7 @@ pub type SharedState = Arc<RwLock<WebState>>;
 
 Each handler module exports `pub fn router(state: SharedState) -> Router` and is merged in `src/api/handlers/mod.rs`.
 
-**Auth**: `X-API-Key` header, `Authorization: Bearer <jwt>` (HMAC-SHA256 or OIDC), or `?token=` query param. Multi-key RBAC via `VEYRON_API_KEYS="name:key:role,..."` — the format is **`name:key:role`** (e.g. `"admin-user:k1:admin,ci:k2:write,viewer:k3:readonly"`); a missing 3rd field defaults to `readonly`, and the single `VEYRON_API_KEY` is always `admin`. Route-level minimum roles in `src/api/auth_context.rs`. VNC/serial WebSocket upgrades accept `POST /api/v1/ws/ticket` one-time tickets (`src/api/ws_ticket.rs`).
+**Auth**: `X-API-Key` header or `Authorization: Bearer <key|jwt>` (HMAC-SHA256 session/own JWT, or OIDC). The legacy `?token=` query param is honoured only on WebSocket upgrades of `/vnc`, `/serial`, `/tunnel` and `/ws/metrics` (`query_token_allowed`); elsewhere it is ignored (401). Multi-key RBAC via `VEYRON_API_KEYS="name:key:role,..."` — the format is **`name:key:role`** (e.g. `"admin-user:k1:admin,ci:k2:write,viewer:k3:readonly"`); a missing or unknown 3rd field defaults to `readonly`, and the single `VEYRON_API_KEY` is always `admin` and **must be set** (unset ⇒ every request 503 `AUTH_NOT_CONFIGURED`). Route-level minimum roles in `src/api/auth_context.rs` (0.4.1: `/vnc` and `/serial` need Write; `/crds/actions/*/approve` and non-read `/crds/policies*` need Admin). VNC/serial/tunnel WebSocket upgrades accept `POST /api/v1/ws/ticket` one-time tickets (`src/api/ws_ticket.rs`, in-process, 60 s). Login JWTs carry `vsess` + `tv` so deleting a user or resetting a password revokes them (`session_token_valid`, 5 s cache); login is rate-limited per peer IP (30/5 min) and per IP+user (10/5 min).
 
 **Netra** (`../netra`, eBPF network observability; replaced the old PacketWolf integration): `src/api/handlers/netra.rs`. Veyron auto-detects the `netra` Service in `netra-system` (`https://netra.netra-system.svc:30870`); `VEYRON_NETRA_URL` overrides. Auth is Netra's single shared bearer: `VEYRON_NETRA_API_KEY` sent as `Authorization: Bearer`, defaulting to Netra's lab default `Admin@321`. Netra serves self-signed TLS, so certificates are accepted unless `VEYRON_NETRA_TLS_VERIFY=1`. Routes: `GET /api/v1/netra/status` (`/healthz` + `/api/v1/status`: version, agents, fast-path mode, flow rate; `api_authorized:false` with a message when the key is rejected), `GET /api/v1/netra/flows/summary`, `GET /api/v1/netra/vms` (proxies Netra's per-VM network view incl. `lockedDown`). Console page `netra` (`NetraPage` in `frontend/src/chapters.jsx`). `bootstrap-integrations.sh` only sets `VEYRON_NETRA_EXTERNAL_URL` (NodePort). See `docs/integrations.md`.
 
@@ -231,9 +231,14 @@ The standalone client tarball can be built as a time-limited 30-day evaluation i
 
 | Variable | Purpose |
 |---|---|
-| `VEYRON_API_KEY` | Single API key for the web server (default `Admin@321`) |
-| `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` | Console password for the bootstrap `admin` user (default `Admin@321`) |
-| `VEYRON_API_KEYS` | Multi-key RBAC, format `name:key:role`: `"admin-user:key1:admin,ci:key2:write,viewer:key3:readonly"` (missing role ⇒ readonly) |
+| `VEYRON_API_KEY` | Single admin API key for the web server. Required: the server has no built-in default (the deploy scripts and Helm chart default it to `Admin@321`) |
+| `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` | Console password for the bootstrap `admin` user (default: the value of `VEYRON_API_KEY`, else `Admin@321`) |
+| `VEYRON_API_KEYS` | Multi-key RBAC, format `name:key:role`: `"admin-user:key1:admin,ci:key2:write,viewer:key3:readonly"` (missing role ⇒ readonly; `read` is an alias of `readonly`) |
+| `VEYRON_PUBLIC_HOST` | Host used by the HTTP-to-HTTPS redirect listener (with `--tls`); unset ⇒ the request's `Host` header, only if well-formed |
+| `VEYRON_IMAGE_STORE_MAX_BYTES` | Cap for one image-store upload/capture (default 64 GiB, `0` = unlimited; `413 UPLOAD_TOO_LARGE`) |
+| `VEYRON_WS_METRICS_MAX` | Concurrent `/ws/metrics` streams (default 64; extra upgrades `503`) |
+| `VEYRON_OIDC_AUDIENCE` | When set, the OIDC token's `aud` must contain it (unset ⇒ not checked) |
+| `VEYRON_KUBEVIRT_WS_INSECURE_TLS` | `1` skips Kubernetes API certificate verification on the legacy KubeVirt VNC/serial proxy (verified against the cluster CA by default) |
 | `VEYRON_NAMESPACE` | Default namespace |
 | `VEYRON_PROMETHEUS_URL` | Optional. Base URL for Prometheus instant queries, e.g. `http://prometheus:9090/api/v1/query`. When set, `GET /api/v1/storage/usage` joins `kubelet_volume_stats_used_bytes` by namespace + PVC. |
 | `VEYRON_SCHEDULER_LEASE_NAMESPACE` | Namespace for the snapshot-scheduler **Lease** (`coordination.k8s.io`); defaults to `VEYRON_NAMESPACE` / API default namespace |
@@ -309,8 +314,8 @@ an `aud` claim (`"account"` by default, unrelated to the client_id), `jsonwebtok
 fails with `InvalidAudience` and the `if let Ok(data) = ...` silently swallows it, falling
 through to the (unconfigured) userinfo fallback and resolving to no role at all — no log line,
 no error surfaced anywhere. Fixed with an explicit `validation.validate_aud = false;` (issuer +
-RS256 signature + expiry are the actual trust boundary for role-mapping here; audience was
-never part of it). Lesson for any future `jsonwebtoken` `Validation` construction against a
+RS256 signature + expiry were the trust boundary for role-mapping at the time; since 0.4.1 an
+optional `VEYRON_OIDC_AUDIENCE` adds an explicit `aud` check, still off when unset). Lesson for any future `jsonwebtoken` `Validation` construction against a
 real IdP: its "secure by default" audience check needs an explicit off-switch or an explicit
 `.aud` set — don't assume `Validation::new(alg)` alone is a complete, working validator.
 

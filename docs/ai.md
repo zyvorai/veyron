@@ -36,9 +36,9 @@ Veyron works with any OpenAI-compatible chat endpoint. The active model is chose
 | `VEYRON_AI_URL` | Base URL, e.g. `https://api.openai.com/v1` or `http://vllm.ai:8000/v1` |
 | `VEYRON_AI_API_KEY` | Bearer key (optional for local servers) |
 | `VEYRON_AI_MODEL` | Model name |
-| `VEYRON_AI_MAX_TOOL_ROUNDS` | Tool-call rounds per question (default 8) |
+| `VEYRON_AI_MAX_TOOL_ROUNDS` | Tool-call rounds per question (default 8 for the `/ai` agent; the [Copilot agent](COPILOT_AGENT.md) reads the same variable with a default of 6) |
 | `VEYRON_AI_TIMEOUT_SECS` | Per-request timeout (default 30 s, or 300 s while an in-cluster model is selected) |
-| `VEYRON_AI_RATE_LIMIT_PER_MIN` | Per-caller chat rate limit |
+| `VEYRON_AI_RATE_LIMIT_PER_MIN` | Limit on LLM-backed requests per minute (default 20; one bucket for the whole API, `429 AI_RATE_LIMITED`) |
 | `VEYRON_AI_NAMESPACE` | Where proposals and investigations are stored (default: API namespace) |
 | `VEYRON_AI_PROPOSAL_TTL_HOURS` | Waiting proposals expire after this many hours (default 72) |
 | `VEYRON_AI_PREDICTIVE=0` | Turn off the forecast tick |
@@ -46,6 +46,10 @@ Veyron works with any OpenAI-compatible chat endpoint. The active model is chose
 
 The model needs tool calling. Every replica re-reads the setting once a minute, so a change in the
 console takes effect cluster-wide without a restart.
+
+The Helm chart always exports `VEYRON_AI_MAX_TOOL_ROUNDS` (`ai.maxToolRounds`, 2) and `VEYRON_AI_TIMEOUT_SECS`
+(`ai.timeoutSecs`, 30), which replaces the code defaults above and the 300 s timeout used for an in-cluster model.
+Raise them, or set them to `0` to leave the variables unset (see [deploy.md](deploy.md#2-helm)).
 
 ## Safety model
 
@@ -78,7 +82,9 @@ call. Tools are filtered by the caller's role.
 ```
 
 For clients that only speak stdio, `veyron mcp --url https://<node-ip>:30151 --api-key <key>
---insecure` bridges stdio to the HTTP endpoint (`--insecure` accepts the self-signed cert).
+--insecure` bridges stdio to the HTTP endpoint (`--insecure` accepts the self-signed cert). `--url` and `--api-key`
+can come from `VEYRON_URL` (default `https://127.0.0.1:5151`) and `VEYRON_API_KEY` instead; the key's role decides
+which tools the client sees. This works from the release binaries too.
 
 Resources: `veyron://cluster/capabilities`, `veyron://proposals`, `veyron://vms/<ns>/<name>`.
 

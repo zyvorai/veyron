@@ -1,8 +1,9 @@
 # Enterprise workflow center
 
-This PR rebuilds enterprise workflow foundations on Veyron main
-`a24f004112f6b64e7cf917a4c883884f217a1e04`. It is a new implementation,
-not a byte-for-byte recovery of the lost draft.
+Enterprise workflow foundations in the Veyron API: durable power operations, tenant quota reservations, opt-in
+namespace authorization and read-only readiness assessments. The tables below say what each piece does and, just as
+important, what it deliberately does not do. Authentication and roles are those of the rest of the API
+([api.md](api.md#roles)).
 
 ## Delivered behavior
 

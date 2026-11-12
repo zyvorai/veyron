@@ -46,7 +46,8 @@ veyron create gpu-vm --template ubuntu-24.04 --gpu 1
 veyron create gpu-vm --template ubuntu-24.04 --gpu nvidia.com/GRID_T4-2Q:2
 ```
 
-- `gpu` takes `{count, resource_name, vgpu_profile}`; `resource_name` defaults to `nvidia.com/gpu`.
+- `gpu` takes `{count, resource_name, vgpu_profile}`; `resource_name` defaults to `nvidia.com/gpu`. `count` is at most
+  16 (`400 INVALID_GPU`), and `cpus` on the same request must be 1-256 (`400 INVALID_CPUS`).
 - If no node advertises the resource, the API returns `422 GPU_RESOURCE_UNAVAILABLE` and lists what
   is available. Pass `"force": true` when a node is about to join.
 - For NVIDIA resources Veyron hides KVM from the guest, which avoids driver Error 43.

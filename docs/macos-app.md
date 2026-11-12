@@ -1,7 +1,8 @@
 # Veyron for macOS
 
-`Veyron.app` is a native macOS window around the Veyron console (`/console`), shipped as a signed,
-notarized DMG. It adds what a browser tab lacks: its own Dock icon and window, a menu bar status item,
+`Veyron.app` is a native macOS window around the Veyron console (`/console`), packaged as a signed,
+notarized DMG by the script below. The DMG is **not** attached to the GitHub releases (v0.4.0 and v0.4.1 carry only the
+four CLI binaries and `SHA256SUMS`); build it with `scripts/package-macos-app.sh` (see below). It adds what a browser tab lacks: its own Dock icon and window, a menu bar status item,
 real file pickers for image/ISO uploads, downloads straight to disk, native `prompt()`/`confirm()` dialogs,
 fullscreen VNC/serial consoles, and certificate pinning for Veyron's self-signed TLS.
 
@@ -10,7 +11,7 @@ Source: `macos/Veyron` (Swift package, macOS 13+, universal arm64 + x86_64). It 
 ## Using it
 
 1. Open the DMG, drag **Veyron** to Applications.
-2. First launch asks for your server, e.g. `80.79.5.173:30151` or `veyron.example.com`. HTTPS is required
+2. First launch asks for your server, e.g. `192.0.2.10:30151` or `veyron.example.com`. HTTPS is required
    (plain `http` only for `localhost`).
 3. A fresh install uses a self-signed certificate. The first connection shows its SHA-256 fingerprint; confirm
    it matches your server and the app pins it (trust on first use). If the certificate later changes you get

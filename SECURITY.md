@@ -98,9 +98,10 @@ Veyron implements the following security measures:
 - **Auth bypass removed**: A previous referer-based dashboard bypass has been removed. The dashboard now sends the API key via the `X-API-Key` header like any other client, ensuring uniform authentication for all API requests.
 
 #### Audit & Secrets
-- **Persistent audit trail** saved to disk for all operations, enabling forensic review
-- The SOC audit log (`veyron-soc-events` ConfigMap) keeps the newest 500 events within 900 KB; request paths are cut at 256 bytes so a caller cannot crowd out or block later entries
-- Approving a `VeyronAction` and changing a `VeyronPolicy` need the `admin` role
+- **API audit trail**: every mutating call on VMs, snapshots, expose routes, the guest agent, `/soc/`, AI proposals and models, and sandboxes is recorded in the SOC event log (`veyron-soc-events` ConfigMap) with the caller's key name, username or token subject, after authentication succeeds. The log keeps the newest 500 events within 900 KB; request paths are cut at 256 bytes and actors at 128 so a caller cannot crowd out or block later entries. It is a rolling buffer, not an archive: export to a SIEM ([docs/soc.md](docs/soc.md)) for retention. `GET /audit/trail` lists Kubernetes Events, not this log
+- The interactive TUI keeps a separate local audit file (`audit_trail.json` in the `veyron` folder of your user data directory); it records what that terminal session did, not API calls
+- Approving a `VeyronAction` and changing a `VeyronPolicy` need the `admin` role (a `write` key cannot, since 0.4.1)
+- Interactive consoles (`/vnc`, `/serial`) and the TCP tunnel need the `write` role; a `readonly` key cannot open them (before 0.4.1 it could open VNC and serial)
 - **Local secrets encryption** with key expansion and integrity tag for at-rest protection
 - Secret values are zeroized on drop, rotate, and revoke using the `zeroize` crate
 - `Secret` type does not implement `Clone` to prevent accidental copies that bypass zeroization
@@ -127,7 +128,8 @@ Veyron implements the following security measures:
 - Security headers on all responses (CSP, X-Frame-Options DENY, HSTS, no-sniff, no-referrer)
 - Image-store uploads are capped (`VEYRON_IMAGE_STORE_MAX_BYTES`, default 64 GiB, `0` = unlimited)
 - The HTTP-to-HTTPS redirect listener uses `VEYRON_PUBLIC_HOST` when set, otherwise only a well-formed `Host` header
-- Global rate limiting (`--rate-limit`, requests per minute, default 60; health, console assets and operator GET polling are exempt)
+- Global rate limiting (`--rate-limit`, requests per minute, default 60, one shared bucket; health, OIDC config/token and operator `GET` polling are exempt, the console shell and assets are not; `0` disables it)
+- JSON request bodies are capped at 10 MiB; `/ws/metrics` streams at `VEYRON_WS_METRICS_MAX` (64); `cpus` at 256, `gpu.count` at 16, guest-exec timeout at 3600 s
 - Kubernetes name validation (RFC 1123) on all VM/snapshot names
 - On Kairon, VNC and serial WebSockets are proxied to the kairon-node relay with its bearer token (`KAIRON_NODE_CONSOLE_TOKEN`); on the legacy KubeVirt backend they go through the Kubernetes API's `subresources.kubevirt.io` WebSocket
 - **VeyronPolicy CRD enforcement**: VM creation evaluates VeyronPolicy CRDs before proceeding. Policies with `Deny` enforcement block creation outright; policies with `Warn` enforcement log warnings but allow the operation to continue.

@@ -3,7 +3,7 @@
 # API
 
 Everything the console does goes through the HTTPS API under `/api/v1`. The OpenAPI document is
-served at `GET /api/openapi.json`.
+served at `GET /api/openapi.json` (it needs a valid key like any other route).
 
 ## Authentication
 
@@ -11,7 +11,7 @@ Send one of:
 
 | Method | How |
 |---|---|
-| API key | `X-API-Key: <key>` (or `Authorization: Bearer <key>`) |
+| API key | `X-API-Key: <key>` (or `Authorization: Bearer <key>`). Role comes from where the key is defined, see [Keys](#keys) |
 | Local account | `POST /api/v1/auth/login` with `{"username","password"}` returns a session token (a JWT, valid 24 h) |
 | JWT | `Authorization: Bearer <jwt>`, HMAC-SHA256 (`VEYRON_JWT_SECRET`, `VEYRON_JWT_ISSUER`, role claim `VEYRON_JWT_ROLE_CLAIM`, default `role`; unknown or missing role means `readonly`) |
 | OIDC | `Authorization: Bearer <access_token>` from your IdP, verified against JWKS ([sso.md](sso.md)) |
@@ -20,7 +20,8 @@ Notes that matter in practice:
 
 - **`VEYRON_API_KEY` must be set.** Without it every request (except the public routes below) answers
   `503 AUTH_NOT_CONFIGURED`, even when `VEYRON_API_KEYS`, JWT or OIDC are configured.
-- The only unauthenticated routes are `GET /api/v1/health`, the console shell and assets, `POST /auth/login`,
+- The only unauthenticated routes are `GET /api/v1/health`, `/` (a small JSON index), the console shell and assets
+  (`/console`, `/console/*`, and the legacy `/dashboard` redirect), `POST /auth/login`,
   `GET /auth/oidc/config`, `POST /auth/oidc/token`, `GET /platform/guestkit/binary` and the image-store blob download
   (the SHA-256 in its path is the credential).
 - Login needs `VEYRON_JWT_SECRET` and `VEYRON_JWT_ISSUER` (otherwise `503`). Logins are rate limited per client: 30
@@ -38,8 +39,11 @@ Notes that matter in practice:
   audience when `VEYRON_OIDC_AUDIENCE` is set (unset: not checked). Without a JWKS URL, tokens are validated by calling `VEYRON_OIDC_USERINFO_URL` when set,
   and rejected otherwise.
 
-Browser console and serial sessions use a one-time ticket from `POST /api/v1/ws/ticket` (needs the `write`
-role, valid 60 s, single use), so long-lived credentials never go in a WebSocket URL.
+Browser console, serial and tunnel sessions use a one-time ticket from `POST /api/v1/ws/ticket` (needs the `write`
+role, valid 60 s, single use, held in the API process's memory), passed as `?ticket=` on
+`/vms/:ns/:name/{vnc,serial,tunnel}`. The ticket carries the role of the caller that requested it, so long-lived
+credentials never go in a WebSocket URL. With more than one API replica the upgrade must reach the replica that
+issued the ticket (session affinity), see [enterprise-workflows.md](enterprise-workflows.md).
 
 ## Roles
 
@@ -48,8 +52,8 @@ Three roles, each including the one below it. The rule is by route and method, f
 
 | Role | Can |
 |---|---|
-| `readonly` | `GET`, `HEAD` and `OPTIONS` on everything except the routes listed below; chat, search, intent and draft AI routes; `POST /mcp` |
-| `write` | Create, change and delete VMs, snapshots, networks, alerts and the rest; also `GET` on `/vms/:ns/:name/{vnc,serial,tunnel}` (the interactive consoles and the TCP tunnel), `/diagnostics/*` and `/network/capture/*` |
+| `readonly` | `GET`, `HEAD` and `OPTIONS` on everything except the routes listed below; chat, search, intent and draft AI routes; `POST /mcp`; the Copilot `ask` and `chat` routes; the side-effect-free enterprise checks (`POST /enterprise/blueprints/validate`, `/enterprise/placement`, `/enterprise/assess/*`) |
+| `write` | Create, change and delete VMs, snapshots, networks, alerts and the rest; also `GET` on `/vms/:ns/:name/{vnc,serial,tunnel}` (the interactive consoles and the TCP tunnel), `/diagnostics/*` and `/network/capture/*`. Since 0.4.1 a `write` key can no longer approve a `VeyronAction` or change a `VeyronPolicy` (both `admin`), and a `readonly` key can no longer open VNC or serial |
 | `admin` | The routes below, and user management |
 
 Admin-only routes:
@@ -77,7 +81,10 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 
 - `VEYRON_API_KEY` is a single key with the `admin` role.
 - `VEYRON_API_KEYS` holds several keys in the form `name:key:role`, comma-separated, for example
-  `ops:k1:admin,ci:k2:write,viewer:k3:readonly`. A missing role means `readonly`.
+  `ops:k1:admin,ci:k2:write,viewer:k3:readonly`. The role is `admin`, `write` or `readonly` (`read` is accepted too);
+  a missing or unknown role means `readonly`. Neither a name nor a key may contain `:` or `,`. The name is what
+  appears as the actor in the audit log. In Helm the extra keys are `auth.additionalKeys`; with `deploy/k8s.yaml` they
+  come from the optional `veyron-rbac-keys` Secret.
 - There is no key store behind the `veyron api-key-*` CLI commands: `api-key-create`, `api-key-delete` and
   `api-key-list` fail with an explanation instead of pretending. Add or revoke keys by editing `VEYRON_API_KEY` /
   `VEYRON_API_KEYS` (Helm: `auth.apiKey`, the `veyron-api-key` Secret) and restarting the API.
@@ -101,9 +108,9 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 | Guest logs | `GET /vms/:ns/:name/logs?tail=` |
 | Fleet | `/nodes`, `/gpus`, `/pods`, `/workloads`, `/capacity/headroom`, `/platform/capabilities` |
 | Operations | `/alerts`, `/events`, `/incidents/timeline`, `/logs`, `/metrics`, `/costs`, `/costs/budgets`, `/recommendations`, `/slo/*`, `/self-healing/*` |
-| Security | `/soc/*`, `/security/{findings,posture}`, `/compliance/*`, `/audit/{trail,stats}`, `/rbac/*`, `/vms/:ns/:name/security` |
+| Security | `/soc/*` ([soc.md](soc.md)), `/security/{findings,posture}`, `/compliance/*`, `/audit/{trail,stats}` (these two list Kubernetes Events; the API's own mutation audit is in `/soc/events`), `/rbac/*`, `/vms/:ns/:name/security` |
 | Platform | `/operators`, `/helm/releases`, `/namespaces`, `/quotas`, `/gitops/*`, `/catalog/*`, `/custom-resources`, `/clusters` |
-| Network | `/networks`, `/cilium/*`, `/network-policies`, `/ingress` |
+| Network | `/network/{interfaces,bandwidth,nads}`, `/cilium/*`, `/network-policies`, `/ingress`, per-VM `/vms/:ns/:name/{network/*,egress*}` (see [kairon-ops.md](kairon-ops.md)) |
 | AI | `GET /ai/{status,tools,forecast,investigations}`, `POST /ai/{chat,chat/stream,search,intent/vm}`, `POST /ai/policies/{draft,preview}`, `POST /ai/investigations/run` |
 | AI proposals | `GET /ai/proposals`, `GET /ai/proposals/:id`, `POST /ai/proposals/:id/{approve,reject}` |
 | AI models | `GET/POST /ai/models`, `DELETE /ai/models/:ns/:name`, `GET/PUT /ai/settings/llm` |
@@ -213,9 +220,26 @@ expressions are accepted unchanged.
 
 Errors come back as JSON with an HTTP status that means something: `400` bad input, `401` no or bad
 credentials, `403` role too low, `404` missing, `409` conflict (for example migrating a GPU
-passthrough VM), `422` failed preflight. Features the current VM engine can't provide return
+passthrough VM), `413` upload over the cap, `422` failed preflight, `429` rate limited, `503` not configured or
+over a concurrency cap. Features the current VM engine can't provide return
 `501 Not Implemented` with a reason, never a fake success; KubeVirt/CDI-only routes use the
-code `KUBEVIRT_ONLY`.
+code `KUBEVIRT_ONLY` (Kairon-only routes on a KubeVirt backend use `KAIRON_REQUIRED`).
+
+### Limits worth knowing
+
+| Limit | Behaviour |
+|---|---|
+| Global rate limit | One fixed 60 s window shared by every client: `--rate-limit` requests per minute (default 60, `0` disables), then `429 RATE_LIMITED`. Exempt: `/api/v1/health`, `/auth/oidc/config`, `/auth/oidc/token`, `/`, and `GET`/`HEAD` polling of the console's read routes (`/vms`, `/nodes`, `/events`, `/alerts`, ...). The console shell and its asset files skip authentication but do count against the limit. Copilot LLM calls have their own limit (`VEYRON_AI_RATE_LIMIT_PER_MIN`, default 20: `429 AI_RATE_LIMITED`) |
+| Login | 30 attempts per 5 minutes per client IP and 10 per IP and username (`429 RATE_LIMITED`) |
+| Request timeout | 30 s for ordinary routes (`VEYRON_HTTP_REQUEST_TIMEOUT_SECS`); the VNC, serial, tunnel and `/ws/metrics` WebSockets, the long-running AI routes (`/ai/chat*`, `/ai/search`, `/ai/investigations/run`, ...), `/mcp`, `/sandboxes*` and the image-store transfer routes are exempt |
+| JSON bodies | 10 MiB. Image-store uploads stream and are not subject to it; they have their own cap, `VEYRON_IMAGE_STORE_MAX_BYTES` (default 64 GiB, `0` = unlimited): `413 UPLOAD_TOO_LARGE`, and the partial file is removed |
+| `POST /vms` | `cpus` must be 1-256 (`400 INVALID_CPUS`); `gpu.count` at most 16 (`400 INVALID_GPU`) |
+| Guest exec | `timeout_seconds` is capped at 3600 |
+| `/ws/metrics` | At most `VEYRON_WS_METRICS_MAX` concurrent streams (default 64); further upgrades answer `503`. A `readonly` key may open one |
+
+Every mutating call on VMs, snapshots, expose routes, guest agent, `/soc/*`, AI proposals and models, and
+sandboxes is recorded in the SOC event log after authentication succeeds, with the key name, username or token
+subject as actor; the path is cut at 256 bytes and the actor at 128. See [soc.md](soc.md).
 
 ## Example
 

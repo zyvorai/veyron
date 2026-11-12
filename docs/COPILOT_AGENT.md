@@ -166,5 +166,6 @@ verbs (`deploy/k8s.yaml`, `charts/veyron/templates/clusterrole.yaml`). Nothing n
 
 ## Not yet implemented
 
-Audit actor in the generic HTTP middleware (still `api`); undo for steps without an inverse
-(restart, heal, snapshot restore, migrate back); unattended auto-execution (deliberately out of scope).
+Undo for steps without an inverse (restart, heal, snapshot restore, migrate back); unattended auto-execution
+(deliberately out of scope). The generic mutating-request audit in the HTTP middleware does name the caller (key name,
+username or token subject; see [soc.md](soc.md)); only requests that fail authentication are not recorded.

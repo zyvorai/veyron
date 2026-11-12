@@ -136,8 +136,11 @@ An operator that asks first: it reads your cluster with your permissions, invest
 On a Kubernetes cluster whose VM hosts run [Kairon](https://github.com/zyvorai/kairon) (a Kairon release with `v1beta1` CRDs; see [docs/deploy.md](docs/deploy.md#kairon-settings)).
 
 **Release binaries (v0.4.1).** One binary per platform (`veyron-linux-amd64`, `-linux-arm64`, `-darwin-amd64`, `-darwin-arm64`; Linux builds are
-dynamically linked against glibc) with the console embedded, plus `SHA256SUMS`. The darwin binaries are only ad-hoc signed (no Developer ID, not notarized; Gatekeeper may need
-`xattr -d com.apple.quarantine`), and v0.4.1 has no cosign signature or SBOM (nor did v0.4.0). Verify the checksum before running:
+dynamically linked against glibc) with the console embedded, plus `SHA256SUMS`. The binaries are built by the tagged CI run and the
+GitHub Release was published by hand (the workflow's Docker job fails, which skips its release job). The macOS binaries are not Developer ID
+signed or notarized (`darwin-arm64` is ad-hoc signed, `darwin-amd64` is unsigned; a browser download may need
+`xattr -d com.apple.quarantine`), and there is no cosign signature or SBOM for v0.4.0 or v0.4.1, so `SHA256SUMS` only catches a corrupted download.
+Verify the checksum before running ([details](docs/deploy.md#release-binaries)):
 
 ```bash
 V=v0.4.1; A=linux-amd64        # or linux-arm64, darwin-amd64, darwin-arm64
@@ -157,7 +160,9 @@ veyron api-serve --host 127.0.0.1 --port 5151 --tls --tls-cert tls.crt --tls-key
 # console: https://127.0.0.1:5151/console   (omit --tls only behind a TLS-terminating proxy)
 ```
 
-**In the cluster.** The release binaries do not include a container image: `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are **not published** yet. The Helm chart's default tag is `latest`, which is still the older 2026-10-04 image (it predates
+**In the cluster.** There is no container image for 0.4.x: `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are **not published**, because the
+`veyron` GHCR package grants this repository no write access (a maintainer fixes it under the package's *Manage Actions access*; see
+[docs/deploy.md](docs/deploy.md#container-image)). The Helm chart's default tag is `latest`, which is still the older 2026-10-04 image (it predates
 the Kairon rewrite). Until a 0.4.1 (or later) image exists, build and deploy from source (this builds the image on the node):
 
 ```bash
@@ -165,7 +170,7 @@ git clone https://github.com/zyvorai/veyron.git && cd veyron
 ./scripts/deploy-remote.sh <node-host> <ssh-user>     # build on the node, deploy to veyron-system
 ```
 
-Open `https://<node-ip>:30151/console` and sign in as `admin` / `Admin@321` (lab default; override with `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` and `VEYRON_API_KEY`, see [Default credentials](docs/getting-started.md#default-credentials)). Then create a VM from the console, the API or the CLI:
+Open `https://<node-ip>:30151/console` and sign in as `admin` / `Admin@321` (lab default; override with `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` and `VEYRON_API_KEY`, see [Default credentials](docs/getting-started.md#default-credentials); change both before anyone else can reach it). Then create a VM from the console, the API or the CLI:
 
 ```bash
 curl -sk -H "X-API-Key: ${VEYRON_API_KEY:-Admin@321}" -H 'Content-Type: application/json' \
@@ -197,6 +202,7 @@ Helm, plain manifests, the production checklist and the standalone client tarbal
 | Kairon engine | Default. KubeVirt is a legacy, explicit opt-in (`VEYRON_VM_BACKEND=kubevirt`) that is still in the tree but not where new work goes |
 | VM import (h2kvm → Kairon) | Stable (verified live, 2026-10-07) |
 | Multi-node live migration on Kairon | API done; hardware matrix needs a second node |
+| Release artifacts (v0.4.1) | Four binaries and `SHA256SUMS` on GitHub, no signatures; no container image yet, see [docs/deploy.md](docs/deploy.md#container-image) |
 
 ---
 
@@ -212,12 +218,20 @@ Helm, plain manifests, the production checklist and the standalone client tarbal
 | Migrate VMs from VMware, Hyper-V, Azure | [docs/migrate.md](docs/migrate.md) |
 | GPU · Windows · multi-site | [docs/gpu.md](docs/gpu.md) · [docs/windows.md](docs/windows.md) · [docs/multi-site.md](docs/multi-site.md) |
 | SOC and integrations | [docs/soc.md](docs/soc.md) · [docs/integrations.md](docs/integrations.md) |
+| Veyron AI, MCP, Copilot agent | [docs/ai.md](docs/ai.md) · [docs/COPILOT_AGENT.md](docs/COPILOT_AGENT.md) |
+| Kairon operations, fork, eBPF | [docs/kairon-ops.md](docs/kairon-ops.md) · [docs/fork.md](docs/fork.md) · [docs/ebpf.md](docs/ebpf.md) |
+| Enterprise workflows (durable power ops, tenant quotas, namespace authorization) | [docs/enterprise-workflows.md](docs/enterprise-workflows.md) |
+| Native macOS app | [docs/macos-app.md](docs/macos-app.md) |
+| Everything, by task | [docs/README.md](docs/README.md) |
+| What changed | [CHANGELOG.md](CHANGELOG.md) |
 
 ## Develop
 
 ```bash
 # needs a checkout of zyvorai/zyvor-guestkit at ./guestkit (the commit pinned as GUESTKIT_REF in .github/workflows/ci.yml)
-make ci                                 # fmt check, clippy, tests (RUST_MIN_STACK is set for you)
+# and a built console (the binary embeds frontend/dist):
+(cd frontend && npm ci && npm run build)
+make ci                                 # fmt check, clippy, script lint, tests (RUST_MIN_STACK is set for you)
 cd frontend && npm install && npm run dev   # console against a local API on :5151
 ```
 
@@ -264,7 +278,3 @@ Talk to us: [sales@zyvor.dev](mailto:sales@zyvor.dev?subject=Veyron) · [zyvor.d
 [![Star on GitHub](https://img.shields.io/github/stars/zyvorai/veyron?style=for-the-badge&logo=github&label=Star&color=2997ff)](https://github.com/zyvorai/veyron)
 
 </div>
-
-## Enterprise workflow center
-
-See [enterprise workflow guide](docs/enterprise-workflows.md) for durable power operations, tenant quota reservations, namespace authorization and readiness assessments.

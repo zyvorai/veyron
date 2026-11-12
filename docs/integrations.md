@@ -148,6 +148,7 @@ For least privilege, create a read-only Paqtra user and set `VEYRON_PAQTRA_USERN
 | `GET /api/v1/paqtra/status` | `/health`, `/api/v1/cilium/status`, `/api/v1/cluster/health` |
 | `GET /api/v1/paqtra/flows?namespace=&verdict=&limit=` | `/api/v1/flows` (`limit` 1–500, default 100) |
 | `GET /api/v1/paqtra/drops` | `/api/v1/modules/rootcause/drops` |
+| `GET /api/v1/paqtra/posture` | `/api/v1/security/posture` |
 
 ## Gryvia: GPU platform
 
@@ -186,4 +187,3 @@ need them on the NVIDIA driver. With the NVIDIA GPU Operator's sandbox workloads
 `container` node are reported with `vm_usable: false` in `GET /api/v1/gpus`, and `POST /vms` with a
 GPU returns `422 GPU_RESERVED_FOR_CONTAINERS` when the requested resource only exists on such nodes.
 Label a node `vm-passthrough` (or `vm-vgpu`) to give its GPUs to VMs. See [gpu.md](gpu.md).
-| `GET /api/v1/paqtra/posture` | `/api/v1/security/posture` |
