@@ -49,6 +49,7 @@ Settings come from the environment (the same variables the manifests set):
 | `VEYRON_KUBEVIRT_WS_INSECURE_TLS` | `1` skips verification of the Kubernetes API certificate on the legacy KubeVirt VNC/serial proxy (verified against the cluster CA by default) |
 | `VEYRON_CORS_ORIGINS` | Comma-separated extra origins. Unset means same-origin only |
 | `VEYRON_VM_BACKEND` | Unset, `auto` or `kairon`: Kairon. `kubevirt`: legacy |
+| `VEYRON_WS_METRICS_MAX` | Concurrent `/ws/metrics` streams (default 64); further upgrades answer `503` |
 | `VEYRON_HTTP_REQUEST_TIMEOUT_SECS` | Per-request timeout for ordinary routes (default 30) |
 | `KUBECONFIG` | Cluster access outside a pod (in a pod the ServiceAccount is used) |
 

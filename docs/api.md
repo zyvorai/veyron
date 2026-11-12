@@ -64,6 +64,8 @@ Admin-only routes:
 - `POST /nodes/:name/{cordon,uncordon,reboot}`, `DELETE /storage/orphans`
 - `DELETE /image-store/:name`, `POST /vms/:ns/:name/capture`
 - changes to a VM's network access (`/vms/:ns/:name/egress*`, `/egress/apply`, `/nodes/:name/egress-defaults`)
+- `POST /crds/actions/:ns/:name/approve` and non-read methods on `/crds/policies*` (a `write` caller's `POST /crds/actions`
+  has `approved` / `autoApprove` cleared)
 - node branches (`/nodes/:name/branches/...`) and agent-session approvals, grants and promotion
 - `/ai/settings/llm` and `/ai/mcp-servers*` for non-read methods (a `GET` of either is `readonly`; neither returns secrets)
 

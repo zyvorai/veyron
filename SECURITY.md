@@ -99,6 +99,8 @@ Veyron implements the following security measures:
 
 #### Audit & Secrets
 - **Persistent audit trail** saved to disk for all operations, enabling forensic review
+- The SOC audit log (`veyron-soc-events` ConfigMap) keeps the newest 500 events within 900 KB; request paths are cut at 256 bytes so a caller cannot crowd out or block later entries
+- Approving a `VeyronAction` and changing a `VeyronPolicy` need the `admin` role
 - **Local secrets encryption** with key expansion and integrity tag for at-rest protection
 - Secret values are zeroized on drop, rotate, and revoke using the `zeroize` crate
 - `Secret` type does not implement `Clone` to prevent accidental copies that bypass zeroization
