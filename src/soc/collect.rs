@@ -70,6 +70,21 @@ async fn collect_finding_events(client: &KubeClient, scope: &str) -> Vec<Securit
     out
 }
 
+const MAX_AUDIT_PATH: usize = 256;
+const MAX_AUDIT_ACTOR: usize = 128;
+
+/// `s` cut to at most `max` bytes on a char boundary, with an ellipsis when it was cut.
+fn clip(s: &str, max: usize) -> String {
+    if s.len() <= max {
+        return s.to_string();
+    }
+    let mut end = max;
+    while !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}…", &s[..end])
+}
+
 /// Record an API mutation for SOC audit (called from middleware).
 #[cfg(feature = "web")]
 pub fn api_audit_event(
@@ -84,6 +99,12 @@ pub fn api_audit_event(
     } else {
         "medium"
     };
+    // The path is whatever the caller sent. Bound it (and the actor) so one request cannot
+    // bloat the stored event log past the ConfigMap size limit and silence all later audit.
+    let path = clip(path, MAX_AUDIT_PATH);
+    let path = path.as_str();
+    let actor = clip(actor, MAX_AUDIT_ACTOR);
+    let actor = actor.as_str();
     let mut ev = SecurityEvent::new(
         "audit",
         severity,
@@ -106,4 +127,27 @@ pub fn api_audit_event(
         }
     }
     ev
+}
+
+#[cfg(all(test, feature = "web"))]
+mod audit_tests {
+    use super::*;
+
+    #[test]
+    fn audit_event_bounds_caller_controlled_text() {
+        let path = format!("/api/v1/vms/{}/b/{}", "n".repeat(5_000), "é".repeat(5_000));
+        let ev = api_audit_event(&"a".repeat(5_000), "POST", &path, "failure", None);
+        let size = serde_json::to_string(&ev).unwrap().len();
+        assert!(size < 2_000, "event is {size} bytes");
+        assert!(ev.target.ends_with('…'));
+        assert!(ev.actor.len() <= 132);
+    }
+
+    #[test]
+    fn short_paths_are_untouched() {
+        let ev = api_audit_event("ops", "DELETE", "/api/v1/vms/ns1/vm1", "success", None);
+        assert_eq!(ev.target, "/api/v1/vms/ns1/vm1");
+        assert_eq!(ev.namespace, "ns1");
+        assert_eq!(ev.vm_name.as_deref(), Some("vm1"));
+    }
 }
