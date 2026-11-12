@@ -25,7 +25,7 @@ flowchart LR
 |---|---|
 | **Console** (`frontend/`) | Vite + React app served at `/console`, embedded in the binary. Light and dark themes in the Zyvor design system. |
 | **API** (`src/api/`) | Axum over TLS. Auth (API keys, local accounts, JWT, OIDC), role checks per route, rate limiting, WebSocket console proxy. |
-| **CLI** (`src/cli/`, `src/handlers/`) | `veyron api-serve` (the API and console), `veyron mcp` (stdio bridge to `/mcp`), and VM commands (`create`, `list`, `start`, `snapshot-*`, `deploy`, `generate`, `tui`) that use your kubeconfig. In v0.4.0 the VM commands act on KubeVirt `VirtualMachine`s directly and do not go through the Kairon backend; the arrow from the CLI to the Kubernetes API in the diagram applies to KubeVirt only. |
+| **CLI** (`src/cli/`, `src/handlers/`) | `veyron api-serve` (the API and console), `veyron mcp` (stdio bridge to `/mcp`), and VM commands (`create`, `list`, `start`, `snapshot-*`, `deploy`, `generate`, `tui`) that use your kubeconfig. In v0.4.1 the VM commands act on KubeVirt `VirtualMachine`s directly and do not go through the Kairon backend; the arrow from the CLI to the Kubernetes API in the diagram applies to KubeVirt only. |
 | **Kairon** | The VM engine. A `Machine` is desired state; `kairon-controller` places it and `kairon-node` runs it on FluxVM. |
 
 ## The console

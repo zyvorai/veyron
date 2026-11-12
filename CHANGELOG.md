@@ -6,6 +6,39 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-12
+
+Security and correctness patch release on top of 0.4.0. Read the upgrade notes before rolling it out.
+
+### Upgrade notes
+
+- **`write` keys can no longer approve actions or change policies.** `POST /crds/actions/:ns/:name/approve` and every
+  non-read request to `/crds/policies*` now need `admin`; `POST /crds/actions` ignores `approved` and `autoApprove` from a
+  caller below `admin`. Automation that approves `VeyronAction`s or edits `VeyronPolicy`s with a `write` key must use an
+  `admin` credential.
+- **Login tokens issued before the upgrade carry no revocation claim.** They keep working until they expire (at most
+  24 h) and are not revoked by user deletion or password reset; tokens minted after the upgrade are. A role change still
+  applies only when the token expires.
+- **The legacy KubeVirt console proxy now verifies the Kubernetes API certificate** against the cluster CA. Clusters with
+  a non-verifiable API certificate must set `VEYRON_KUBEVIRT_WS_INSECURE_TLS=1` to restore the old behaviour.
+- **`veyron api-key-create`, `api-key-delete` and `api-key-list` now fail** with guidance (there is no key store); use
+  `VEYRON_API_KEY` / `VEYRON_API_KEYS`. Scripts that relied on the fake success must change.
+- **New environment variables:** `VEYRON_PUBLIC_HOST` (host used for the HTTP-to-HTTPS redirect; otherwise a malformed
+  `Host` header is rejected), `VEYRON_IMAGE_STORE_MAX_BYTES` (upload cap, default 64 GiB, `0` = unlimited; larger bodies
+  answer `413 UPLOAD_TOO_LARGE`), `VEYRON_WS_METRICS_MAX` (concurrent `/ws/metrics` streams, default 64; extra upgrades
+  answer `503`) and `VEYRON_OIDC_AUDIENCE` (when set, must appear in the token's `aud`; unset keeps the old behaviour).
+- **`?token=` is accepted only on WebSocket upgrade routes** (`/vnc`, `/serial`, `/tunnel`, `/ws/metrics`); other routes
+  ignore it and answer `401`.
+- **Input limits:** `cpus` on `POST /vms` must be 1-256 (`400 INVALID_CPUS`), `gpu.count` at most 16 (`400 INVALID_GPU`),
+  and guest exec `timeout_seconds` is capped at 3600.
+- **Read-only keys can no longer open VNC or serial consoles** (`write` is required); `--rate-limit 0` now disables the
+  limit instead of rejecting everything.
+- **Login rate limiting is per client IP**, keyed on the TCP peer address, so clients behind a reverse proxy share the
+  proxy's budget.
+- **Container image:** `ghcr.io/zyvorai/veyron:0.4.1` is, like 0.4.0, **not published** (the GHCR package refuses writes
+  from this repository's release workflow). The chart default `latest` is still the older 2026-10-04 image; build and
+  push your own image and set `image.repository` / `image.tag`.
+
 ### Security
 
 - **Session tokens are revocable.** Login-minted JWTs now carry a per-user token version; deleting a user or resetting
