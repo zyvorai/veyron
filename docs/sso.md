@@ -24,7 +24,7 @@ the local `admin` account remains as break-glass access.
 
 | Variable | Notes |
 |---|---|
-| `VEYRON_OIDC_ISSUER` | Required. Expected `iss`; Keycloak-style endpoints are derived from it |
+| `VEYRON_OIDC_ISSUER` | Expected `iss`; Keycloak-style endpoints are derived from it. SSO is switched on by `CLIENT_ID` plus either this or `AUTHORIZATION_URL`, but without an issuer the `iss` claim is **not checked**, so always set it |
 | `VEYRON_OIDC_CLIENT_ID` | Required |
 | `VEYRON_OIDC_AUDIENCE` | Optional. When set, the token's `aud` (string or array) must contain it. Unset keeps the old behaviour: not checked |
 | `VEYRON_OIDC_CLIENT_SECRET` | Required for confidential clients (Keycloak's default). Omit for public clients |
@@ -47,6 +47,18 @@ VEYRON_OIDC_CLIENT_SECRET=<secret> ./scripts/deploy-remote.sh <host> <user> --wi
 ```
 
 With Helm, use `oidc.*` values or `oidc.existingSecret`.
+
+`--with-oidc` and the Helm `oidc.*` values do not carry `VEYRON_OIDC_AUDIENCE` or `VEYRON_OIDC_USERINFO_URL`. Add them
+to the Secret yourself and restart the API (`--with-oidc` deletes and recreates `veyron-oidc`, so repeat this after
+each such deploy):
+
+```bash
+kubectl -n veyron-system patch secret veyron-oidc --type merge \
+  -p '{"stringData":{"VEYRON_OIDC_AUDIENCE":"veyron"}}'
+kubectl -n veyron-system rollout restart deploy/veyron-api
+```
+
+With Helm, create your own Secret holding all the `VEYRON_OIDC_*` keys and name it in `oidc.existingSecret`.
 
 ## Keycloak in five steps
 

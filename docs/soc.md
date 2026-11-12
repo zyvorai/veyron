@@ -16,25 +16,40 @@ your SIEM, runs threat hunts, maps the attack surface and fires SOAR webhooks.
 | `privileged-vm-spec` | A privileged VM runtime spec |
 | `burst-failed-scheduling` | A burst of scheduling failures |
 
-Events come from Kubernetes Events, VM security findings and the API's own audit trail (every
-mutating call on VMs, snapshots, expose routes and guest commands). New detections join the event
-stream and can call `VEYRON_SOAR_WEBHOOK_URL`.
+Events come from Kubernetes Events, VM security findings and the API's own audit trail. New detections join the
+event stream and can call `VEYRON_SOAR_WEBHOOK_URL`.
+
+**What the audit trail records.** Every non-`GET` call whose path touches `/vms/`, `/snapshots`, `/expose` (and
+`/rdp-expose`), `/guest-agent`, `/soc/`, `/ai/proposals`, `/ai/models` or `/sandboxes`, written after authentication
+succeeds (a request rejected with `401` or `403` by the role check is not recorded). Each entry carries the method,
+the path, success or failure (any non-2xx answer), and the actor: the API key's name, the local username, or the
+JWT/OIDC `sub` or email. Copilot plan steps are recorded separately with the plan id and prompt
+([COPILOT_AGENT.md](COPILOT_AGENT.md#audit)). The `GET /audit/trail` route is something else: it lists Kubernetes
+Events.
+
+**Bounds (0.4.1).** The log lives in one ConfigMap, and a ConfigMap tops out at 1 MiB. Request paths are cut at 256
+bytes and actors at 128, and the stored log keeps the newest 500 events that fit in 900 KB, dropping the oldest first,
+so a client sending very long URLs can no longer fill the ConfigMap and make later audit writes fail silently.
 
 ## API
 
-| Method | Route | Purpose |
-|---|---|---|
-| GET | `/api/v1/soc/events` | Event stream (`?refresh=true` collects now) |
-| GET | `/api/v1/soc/detections` | Evaluate rules, include acknowledgements |
-| POST | `/api/v1/soc/detections/:id/ack` | Acknowledge (`{"acked_by":"analyst"}`) |
-| GET | `/api/v1/soc/export/status` | Status per SIEM backend |
-| POST | `/api/v1/soc/hunts/run` | Elastic KQL or Splunk SPL hunt |
-| GET | `/api/v1/soc/attack-surface` | VM exposure inventory |
-| GET | `/api/v1/soc/playbooks` | SOAR playbooks |
-| POST | `/api/v1/soc/playbooks/trigger` | Fire a playbook (admin) |
+| Method | Route | Role | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/soc/events` | read | Event stream, newest first (`?refresh=true` collects now, `severity`, `category`, `limit` up to 500, default 200) |
+| POST | `/api/v1/soc/events` | write | Collect now and store the new events |
+| GET | `/api/v1/soc/detections` | read | Evaluate rules, include acknowledgements. Not a pure read: it saves the result, adds open detections to the event log, pushes recent events to the SIEM and fires the SOAR webhook for new ones, whatever the caller's role |
+| GET | `/api/v1/soc/detections/:id` | read | One detection |
+| POST | `/api/v1/soc/detections/:id/ack` | write | Acknowledge (`{"acked_by":"analyst"}`) |
+| GET | `/api/v1/soc/export/status` | read | Status per SIEM backend |
+| GET | `/api/v1/soc/hunts` | read | Saved hunts (ConfigMaps `veyron.io/type=soc-hunt`) |
+| POST | `/api/v1/soc/hunts/run` | write | Hunt: `{"backend":"elastic"\|"splunk","query":"...","time_range":"24h"}` |
+| GET | `/api/v1/soc/attack-surface` | read | VM exposure inventory |
+| GET | `/api/v1/soc/playbooks` | read | SOAR playbooks (ConfigMaps `veyron.io/type=soc-playbook`; the `VEYRON_SOAR_WEBHOOK_URL` one when none exist) |
+| POST | `/api/v1/soc/playbooks/trigger` | admin | Fire a playbook |
 
-State lives in labeled ConfigMaps: `veyron.io/type=soc-events`, a rolling buffer of about 500
-events, and `veyron.io/type=soc-detections`.
+State lives in labeled ConfigMaps in Veyron's own namespace (`VEYRON_NAMESPACE`; Helm `api.namespace`):
+`veyron-soc-events` (`veyron.io/type=soc-events`, the rolling buffer above) and `veyron-soc-detections`
+(`veyron.io/type=soc-detections`). Most routes accept `?namespace=` to scope the cluster scan.
 
 ## SIEM export
 
@@ -42,10 +57,10 @@ When an exporter is configured, a background task pushes recent events every 30 
 
 | Backend | Variables |
 |---|---|
-| Elastic (ECS bulk) | `VEYRON_ELASTIC_URL`, `VEYRON_ELASTIC_API_KEY`, optional `_INDEX`, `_PIPELINE`, `_HUNT_ENABLED` |
-| Splunk (HEC) | `VEYRON_SPLUNK_HEC_URL`, `VEYRON_SPLUNK_HEC_TOKEN`, optional `_INDEX`, `_SOURCETYPE`, `_HUNT_ENABLED` |
-| Microsoft Sentinel | `VEYRON_SENTINEL_DCE_URL`, `_TENANT_ID`, `_CLIENT_ID`, `_CLIENT_SECRET` |
-| QRadar (LEEF over UDP) | `VEYRON_QRADAR_HOST`, optional `VEYRON_QRADAR_PORT` (514) |
+| Elastic (ECS bulk) | `VEYRON_ELASTIC_URL`, `VEYRON_ELASTIC_API_KEY`, optional `_INDEX`, `_PIPELINE`. Hunts also need `VEYRON_ELASTIC_HUNT_ENABLED=true` |
+| Splunk (HEC) | `VEYRON_SPLUNK_HEC_URL`, `VEYRON_SPLUNK_HEC_TOKEN`, optional `_INDEX`, `_SOURCETYPE` (default `veyron:security`). Hunts also need `VEYRON_SPLUNK_REST_URL` (the search endpoint; the same token is used) |
+| Microsoft Sentinel | `VEYRON_SENTINEL_DCE_URL`, `_DCR_RULE`, `_TENANT_ID`, `_CLIENT_ID`, `_CLIENT_SECRET`, optional `_STREAM` (default `Custom-VeyronSecurity`) |
+| QRadar (LEEF over UDP) | `VEYRON_QRADAR_HOST` (alias `_SYSLOG_HOST`), optional `VEYRON_QRADAR_PORT` (514, alias `_SYSLOG_PORT`), `_LEEF_VENDOR` (`Zyvor`), `_LEEF_PRODUCT` (`Veyron`) |
 | SOAR | `VEYRON_SOAR_WEBHOOK_URL` |
 
 Set them on the API Deployment or in the `veyron-integrations` Secret

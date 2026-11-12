@@ -42,12 +42,16 @@ We welcome feature suggestions! Please create an issue with:
 
 4. **Run tests**
    ```bash
-   make ci    # runs fmt-check, clippy, and tests
+   (cd frontend && npm ci && npm run build)   # the binary embeds frontend/dist
+   make ci    # runs fmt-check, clippy, script lint, and tests
    # or manually:
    RUST_MIN_STACK=8388608 cargo test
    cargo fmt --all -- --check
    cargo clippy --all-targets -- -D warnings
    ```
+   The build needs a checkout of `zyvorai/zyvor-guestkit` at `./guestkit` (the commit pinned as `GUESTKIT_REF` in
+   `.github/workflows/ci.yml`). CI also runs the console's `npm run lint` and `npm test`, the Go operator's `go vet` and
+   `go test` (`operator/`), `cargo audit`, and a Kind + KubeVirt integration job on `main`.
 
 5. **Commit your changes**
    ```bash
@@ -283,9 +287,9 @@ Looking for where to start? Check out issues labeled:
 # Install Rust (if not already installed)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Clone repository
+# Clone repository (plus guestkit and a console build, see "Run tests" above)
 git clone git@github.com:zyvorai/veyron.git
-cd Veyron
+cd veyron
 
 # Build and test
 cargo build
@@ -300,22 +304,19 @@ RUST_LOG=debug veyron --verbose list
 
 ### Feature Flags
 
-Veyron uses the `experimental` Cargo feature flag to gate scaffolding-only modules (operator CRDs, experimental handlers, etc.). These modules are excluded from default builds to reduce compile time and attack surface.
+`Cargo.toml` defines these features (there is no `experimental` feature):
 
-When working on experimental modules:
+- `web` (default): the HTTPS API, console and WebSocket proxies. Everything under `src/api/` is gated on it.
+- `kairon` (default): the Kairon `Machine` backend (`src/kairon/`, `src/api/vm_backend.rs`).
+- `trial`: the time-limited evaluation build for the client tarball (`src/trial.rs`, `src/bin/trial-tool.rs`). Never enabled
+  for in-cluster images.
 
 ```bash
-# Build with experimental modules enabled
-cargo build --features experimental
-
-# Test with experimental modules
-RUST_MIN_STACK=8388608 cargo test --features experimental
-
-# Check clippy on experimental code
-cargo clippy --features experimental --all-targets -- -D warnings
+cargo build --no-default-features              # CLI only, no web server
+cargo clippy --features kairon --all-targets -- -D warnings   # what CI also runs
 ```
 
-If you are adding a new module that is not yet production-ready, gate it behind this flag in `Cargo.toml` and `src/lib.rs`.
+Code that is not ready for production should answer `501` with a reason (see above) rather than sit behind a flag.
 
 ### Useful Commands
 
@@ -328,11 +329,11 @@ make release    # Build optimized release binary
 make test       # Run all tests
 make clippy     # Run clippy linter
 make fmt        # Format code
-make lint       # Run fmt-check + clippy
-make ci         # Full CI pipeline locally
+make lint       # Run fmt-check + clippy + script lint
+make ci         # fmt-check, clippy, script lint and tests, as CI does
+make helm-veyron-validate   # helm template for charts/veyron and charts/veyron-operator
 make clean      # Clean build artifacts
 make install    # Install to ~/.cargo/bin
-make tui        # Launch interactive TUI
 ```
 
 Or use cargo directly:
@@ -363,13 +364,29 @@ RUST_LOG=debug cargo run -- command
 
 (For maintainers)
 
-1. Update version in `Cargo.toml`
-2. Update `CHANGELOG.md`
-3. Create release commit
-4. Tag release: `git tag -a v0.2.0 -m "Release v0.2.0"`
-5. Push: `git push origin main --tags`
-6. Create GitHub release
-7. Publish to crates.io: `cargo publish`
+1. Bump `version` in `Cargo.toml` and `Cargo.lock`, `charts/veyron/Chart.yaml` (`version` and `appVersion`), and move the
+   `CHANGELOG.md` entries from `[Unreleased]` under the new version. Merge that through a pull request.
+2. Tag the merge commit and push the tag: `git tag -a v0.4.2 -m "Veyron 0.4.2" && git push origin v0.4.2`. Pushing a `v*`
+   tag starts `.github/workflows/release.yml`.
+3. The workflow builds the console, runs lint and tests, builds the four binaries (`veyron-{linux,darwin}-{amd64,arm64}`),
+   builds and pushes `ghcr.io/zyvorai/veyron:<version>` and `:latest` with an SBOM and a keyless cosign signature, and then
+   (the `release` job) writes `SHA256SUMS`, an SPDX SBOM and a cosign bundle and creates the GitHub Release.
+4. **Known problem (0.4.0, 0.4.1):** the `docker` job fails at the GHCR push because the `veyron` package grants this
+   repository no write access, and `release` needs `docker`, so it is skipped. Permanent fix: package settings, **Manage
+   Actions access**, add `zyvorai/veyron` with the Write role ([docs/deploy.md](docs/deploy.md#container-image)). Until that is
+   done, publish by hand from the workflow run's artifacts:
+
+   ```bash
+   gh run download <run-id> -R zyvorai/veyron -p 'veyron-*' -D dl        # one folder per artifact
+   mkdir rel && find dl -type f -name 'veyron-*' -exec mv {} rel/ \;      # flatten
+   (cd rel && sha256sum veyron-* > SHA256SUMS)
+   gh release create v0.4.2 rel/* -R zyvorai/veyron --title v0.4.2 --notes-file notes.md
+   ```
+
+   State in the notes what is missing (image, cosign bundle, SBOM) and check the checksums against the release page's
+   asset digests (`gh release view v0.4.2 --json assets`). The commands above are the manual equivalent of the workflow's
+   `release` job and were not re-run when this section was written.
+5. Crates.io is not published (the crate depends on a local `guestkit` path), so there is no `cargo publish` step.
 
 ## 🤝 Community
 

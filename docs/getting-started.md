@@ -38,9 +38,10 @@ The remote script syncs the source to a node, builds the images there and applie
 ```
 
 Or use the Helm chart in [`charts/veyron`](../charts/veyron) (see [deploy.md](deploy.md)). Mind the image
-caveat there: `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are not published, and the chart's default tag `latest` is the older
+caveat there: `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are not published (the GHCR package grants the repository no
+write access; [how to fix it](deploy.md#container-image)), and the chart's default tag `latest` is the older
 2026-10-04 image, so build from source with the script above until a 0.4.1 (or later) image exists. The release binaries
-([deploy.md](deploy.md#release-binaries)) run the API and console outside the cluster.
+([deploy.md](deploy.md#release-binaries), checksum-verified, no signatures) run the API and console outside the cluster.
 
 For the browser console, guest commands and VM-state snapshots, Veyron talks to each node's
 kairon-node relay. Give it the address template and token in an optional Secret. Keep `{node_ip}`
@@ -53,6 +54,9 @@ kubectl -n veyron-system create secret generic veyron-kairon \
   --from-literal=KAIRON_NODE_CONSOLE_TOKEN=<kairon-node console token>
 kubectl -n veyron-system rollout restart deploy/veyron-api
 ```
+
+`deploy/k8s.yaml` and the remote script load this Secret when it exists. The Helm chart does not: put the same
+variables in a Secret and name it in `integrations.existingSecret` ([deploy.md](deploy.md#2-helm)).
 
 ## 3. Sign in
 
@@ -79,19 +83,22 @@ scripts and the Helm chart use them unless you override them:
   `VEYRON_JWT_ISSUER`: without them `POST /api/v1/auth/login` answers `503 AUTH_NOT_CONFIGURED`.
 - If `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` is unset, the bootstrap `admin` password is the value of `VEYRON_API_KEY`
   (and `Admin@321` when neither is set). The account is only created when it does not exist yet; set
-  `VEYRON_BOOTSTRAP_ADMIN_SYNC=1` to overwrite its password from the environment on every start, or
-  `VEYRON_BOOTSTRAP_ADMIN=0` to skip the bootstrap.
+  `VEYRON_BOOTSTRAP_ADMIN_SYNC=1` to overwrite its password from the environment on every start (only when one of those
+  two variables is set; the `Admin@321` fallback is never synced), `VEYRON_BOOTSTRAP_ADMIN_USER` to name the account
+  something other than `admin`, or `VEYRON_BOOTSTRAP_ADMIN=0` to skip the bootstrap. The Helm chart sets sync to `1`.
 
 The login screen shows the host you are connecting to ("Connecting to `<host>`"), so you can check
 you are on the right cluster before signing in.
 
 Change the defaults before anyone else can reach the console. Production setups add
-role-scoped keys and SSO ([api.md](api.md), [sso.md](sso.md)).
+role-scoped keys and SSO ([api.md](api.md), [sso.md](sso.md)). Local accounts and their roles are managed under
+**Security → Users & roles** (admin only); deleting an account or resetting its password also ends its signed-in sessions.
 
 ## 4. Create a VM
 
 In the console: **VMs → New VM**, pick a template (Ubuntu, Debian, Fedora, Windows and more), size
-it and start it. Open the console tab for an in-browser VNC session. Click the VM's row for its
+it and start it. Open the console tab for an in-browser VNC session (the VNC and serial consoles need a `write` or `admin` account; a
+`readonly` account sees the VM but cannot open them). Click the VM's row for its
 details panel: guest health, disks, snapshots and migrations. To snapshot it on a schedule, use
 **Storage & Network → Snapshot schedules → New** with a cron such as `0 2 * * *` (UTC).
 

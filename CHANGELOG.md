@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Documentation
+
+- Brought the docs in line with the code and with v0.4.1: the release and install path (checksum verification, which
+  binaries are signed, why there is no container image and how to grant the GHCR package write access), `api-serve`
+  flags and the `--namespace` placement, the Helm chart's gaps (relay Secret, NetworkPolicy, state namespace, AI
+  defaults), the `deploy/k8s.yaml` prerequisites, the SOC audit bounds and routes, the rate-limit exemptions, and the
+  role table. Removed stale text (a PR description in the enterprise guide, a non-existent `experimental` feature flag,
+  a `/networks` route).
+
 ## [0.4.1] - 2026-11-12
 
 Security and correctness patch release on top of 0.4.0. Read the upgrade notes before rolling it out.
@@ -38,6 +47,14 @@ Security and correctness patch release on top of 0.4.0. Read the upgrade notes b
 - **Container image:** `ghcr.io/zyvorai/veyron:0.4.1` is, like 0.4.0, **not published** (the GHCR package refuses writes
   from this repository's release workflow). The chart default `latest` is still the older 2026-10-04 image; build and
   push your own image and set `image.repository` / `image.tag`.
+
+### Known gaps in the v0.4.1 release
+
+The container image `ghcr.io/zyvorai/veyron:0.4.1` was not published (the GHCR package grants this repository no write
+access, so the `Release` workflow's Docker job fails and its release job is skipped). The GitHub Release was published by
+hand with the four `veyron-{linux,darwin}-{amd64,arm64}` binaries from the tagged workflow run and a `SHA256SUMS` file.
+The cosign signature, SBOM and image are absent. The macOS binaries are not Developer ID signed (`arm64` ad-hoc,
+`amd64` unsigned). To publish images: package settings, *Manage Actions access*, add this repository with Write.
 
 ### Security
 
