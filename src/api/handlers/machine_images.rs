@@ -251,15 +251,51 @@ impl std::fmt::Display for StoreError {
     }
 }
 
+/// Default cap on one stored image (64 GiB).
+const DEFAULT_MAX_UPLOAD_BYTES: u64 = 64 * 1024 * 1024 * 1024;
+
+/// Per-image size cap in bytes from `VEYRON_IMAGE_STORE_MAX_BYTES` (default
+/// 64 GiB; `0` disables the cap). Unparseable values fall back to the default.
+pub fn max_upload_bytes() -> Option<u64> {
+    match std::env::var("VEYRON_IMAGE_STORE_MAX_BYTES")
+        .ok()
+        .and_then(|v| v.trim().parse::<u64>().ok())
+    {
+        Some(0) => None,
+        Some(n) => Some(n),
+        None => Some(DEFAULT_MAX_UPLOAD_BYTES),
+    }
+}
+
 /// Stream `body` into the store as upload `name`, hashing as it goes. `want`
-/// rejects the blob when its digest differs.
+/// rejects the blob when its digest differs. The size cap is
+/// [`max_upload_bytes`].
 pub async fn store_stream<S, B, E>(
+    dir: &FsPath,
+    name: &str,
+    format: String,
+    body: S,
+    want: Option<String>,
+    replace: bool,
+) -> Result<StoredImage, StoreError>
+where
+    S: futures_util::Stream<Item = Result<B, E>> + Unpin,
+    B: AsRef<[u8]>,
+    E: std::fmt::Display,
+{
+    store_stream_limited(dir, name, format, body, want, replace, max_upload_bytes()).await
+}
+
+/// [`store_stream`] with an explicit cap (`None` = unlimited). The partial file
+/// is removed and 413 returned as soon as the cap is exceeded.
+pub async fn store_stream_limited<S, B, E>(
     dir: &FsPath,
     name: &str,
     format: String,
     mut body: S,
     want: Option<String>,
     replace: bool,
+    max_bytes: Option<u64>,
 ) -> Result<StoredImage, StoreError>
 where
     S: futures_util::Stream<Item = Result<B, E>> + Unpin,
@@ -298,6 +334,16 @@ where
             let chunk = chunk.as_ref();
             hasher.update(chunk);
             size += chunk.len() as u64;
+            if max_bytes.is_some_and(|m| size > m) {
+                return Err(StoreError::new(
+                    StatusCode::PAYLOAD_TOO_LARGE,
+                    "UPLOAD_TOO_LARGE",
+                    format!(
+                        "image exceeds the {} byte limit (VEYRON_IMAGE_STORE_MAX_BYTES)",
+                        max_bytes.unwrap_or_default()
+                    ),
+                ));
+            }
             file.write_all(chunk).await.map_err(io_err)?;
         }
         file.flush().await.map_err(io_err)?;
@@ -380,6 +426,23 @@ async fn upload(
         })?),
         None => None,
     };
+    if let (Some(max), Some(len)) = (
+        max_upload_bytes(),
+        headers
+            .get(axum::http::header::CONTENT_LENGTH)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<u64>().ok()),
+    ) {
+        if len > max {
+            return Err(fail(
+                StatusCode::PAYLOAD_TOO_LARGE,
+                "UPLOAD_TOO_LARGE",
+                format!(
+                    "Content-Length {len} exceeds the {max} byte limit (VEYRON_IMAGE_STORE_MAX_BYTES)"
+                ),
+            ));
+        }
+    }
     let img = store_stream(
         &store_dir(),
         &name,
@@ -746,6 +809,49 @@ pub fn transfer_router(state: SharedState) -> Router {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn store_stream_enforces_size_cap_and_cleans_up() {
+        let dir = tempfile::tempdir().unwrap();
+        let chunks = || {
+            futures_util::stream::iter(vec![
+                Ok::<_, std::io::Error>(vec![1u8; 600]),
+                Ok(vec![2u8; 600]),
+            ])
+        };
+        let e = store_stream_limited(
+            dir.path(),
+            "big",
+            "raw".into(),
+            chunks(),
+            None,
+            false,
+            Some(1000),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(e.status, StatusCode::PAYLOAD_TOO_LARGE);
+        assert!(read_stored(dir.path(), "big").await.is_none());
+        let leftovers = std::fs::read_dir(dir.path().join("blobs/sha256"))
+            .unwrap()
+            .count();
+        assert_eq!(leftovers, 0, "partial upload removed");
+        let ok = store_stream_limited(
+            dir.path(),
+            "ok",
+            "raw".into(),
+            chunks(),
+            None,
+            false,
+            Some(1200),
+        )
+        .await
+        .unwrap();
+        assert_eq!(ok.size, 1200);
+        let ok = store_stream_limited(dir.path(), "ok2", "raw".into(), chunks(), None, false, None)
+            .await;
+        assert!(ok.is_ok());
+    }
 
     fn stored(format: &str) -> StoredImage {
         StoredImage {

@@ -11,7 +11,7 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{ConnectInfo, Path, State},
     http::StatusCode,
     routing::{delete, get, post},
 };
@@ -102,10 +102,15 @@ pub fn router(state: SharedState) -> Router {
 #[cfg(feature = "web")]
 async fn login(
     State(state): State<SharedState>,
+    peer: Option<ConnectInfo<std::net::SocketAddr>>,
     Json(req): Json<LoginRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let s = state.read().await;
-    if !s.check_login_rate_limit() {
+    // Peer address only: X-Forwarded-For is client-controlled and not trusted.
+    let client = peer
+        .map(|ConnectInfo(a)| a.ip().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+    if !s.check_login_rate_limit(&client, &req.username) {
         return err_json(
             StatusCode::TOO_MANY_REQUESTS,
             "RATE_LIMITED",
@@ -152,11 +157,12 @@ async fn login(
         );
     }
 
-    let token = match state
-        .read()
-        .await
-        .issue_jwt(&user.username, &user.role, LOGIN_TOKEN_TTL_SECS)
-    {
+    let token = match state.read().await.issue_jwt(
+        &user.username,
+        &user.role,
+        LOGIN_TOKEN_TTL_SECS,
+        user.token_version,
+    ) {
         Ok(t) => t,
         Err(e) => {
             log::error!("login: failed to issue session token: {e}");

@@ -500,94 +500,26 @@ pub fn handle_api_spec(format: String, output: Option<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn handle_api_key_list(active_only: bool, output: String) -> Result<()> {
-    use crate::api::ApiKeyManager;
+/// Message shared by the api-key subcommands: the server has no key store.
+const API_KEYS_NOT_PERSISTED: &str = "the API server has no persistent key store; keys are read at \
+startup from VEYRON_API_KEY (admin) and VEYRON_API_KEYS (\"name:key:role,...\" with role \
+admin|write|readonly). To add or revoke a key, edit those variables (Helm: auth.apiKey / the \
+veyron-api-key Secret) and restart the server";
 
-    println!("{}", color::header("API Keys"));
-    println!();
-
-    let manager = ApiKeyManager::new();
-    let keys = if active_only {
-        manager.active_keys()
-    } else {
-        manager.list_keys()
-    };
-
-    println!("  Total keys: {}", keys.len());
-    println!("  Format: {}", output);
-
-    if keys.is_empty() {
-        println!();
-        println!("  {}", color::muted("No API keys found"));
-        println!(
-            "  {}",
-            color::muted("Use 'veyron api-key-create' to create one")
-        );
-    }
-
-    println!();
-    println!("{}", color::success("✓ Keys listed"));
-    Ok(())
+pub fn handle_api_key_list(_active_only: bool, _output: String) -> Result<()> {
+    anyhow::bail!("api-key-list cannot show keys: {API_KEYS_NOT_PERSISTED}")
 }
 
 pub fn handle_api_key_create(
-    name: String,
-    permissions: String,
-    rate_limit: Option<u32>,
+    _name: String,
+    _permissions: String,
+    _rate_limit: Option<u32>,
 ) -> Result<()> {
-    use crate::api::ApiKey;
-    println!("{}", color::header(&format!("Creating API Key: {}", name)));
-    println!();
-
-    let perms: Vec<String> = permissions
-        .split(',')
-        .map(|p| p.trim().to_string())
-        .collect();
-
-    // Generate a cryptographically random API key
-    use rand::Rng;
-    let random_bytes: Vec<u8> = (0..32).map(|_| rand::thread_rng().r#gen::<u8>()).collect();
-    let key_hash: String = random_bytes.iter().map(|b| format!("{:02x}", b)).collect();
-
-    let mut key = ApiKey::new(&name, key_hash.clone()).with_permissions(perms.clone());
-
-    if let Some(limit) = rate_limit {
-        key = key.with_rate_limit(limit);
-    }
-
-    println!("  Name:        {}", color::value(&name));
-    println!("  ID:          {}", color::muted(&key.id));
-    println!("  Permissions: {}", perms.join(", "));
-    if let Some(limit) = rate_limit {
-        println!("  Rate Limit:  {} req/min", limit);
-    }
-    println!();
-    println!("{}", color::success("✓ API key created"));
-    Ok(())
+    anyhow::bail!("api-key-create cannot persist a key: {API_KEYS_NOT_PERSISTED}")
 }
 
-pub fn handle_api_key_delete(key: String, yes: bool) -> Result<()> {
-    println!("{}", color::header(&format!("Deleting API Key: {}", key)));
-    println!();
-
-    if !yes {
-        let confirmed = dialoguer::Confirm::new()
-            .with_prompt("This will permanently revoke the API key. Continue?")
-            .default(false)
-            .interact()
-            .unwrap_or(false);
-        if !confirmed {
-            println!("{}", color::muted("Cancelled"));
-            return Ok(());
-        }
-    }
-
-    println!();
-    println!(
-        "{}",
-        color::success(&format!("✓ API key '{}' deleted", key))
-    );
-    Ok(())
+pub fn handle_api_key_delete(_key: String, _yes: bool) -> Result<()> {
+    anyhow::bail!("api-key-delete cannot revoke a key: {API_KEYS_NOT_PERSISTED}")
 }
 
 pub fn handle_webhook_list(active_only: bool, output: String) -> Result<()> {
@@ -1056,6 +988,14 @@ mod tests {
     fn test_auth_method_fallback() {
         let invalid = AuthMethod::parse("invalid-auth").unwrap_or(AuthMethod::None);
         assert_eq!(invalid, AuthMethod::None);
+    }
+
+    #[test]
+    fn api_key_cli_fails_honestly_instead_of_faking_success() {
+        let e = super::handle_api_key_create("k".into(), "read".into(), None).unwrap_err();
+        assert!(e.to_string().contains("VEYRON_API_KEYS"), "{e}");
+        assert!(super::handle_api_key_delete("k".into(), true).is_err());
+        assert!(super::handle_api_key_list(false, "table".into()).is_err());
     }
 
     #[test]

@@ -110,6 +110,89 @@ pub mod web {
         }
     }
 
+    /// Fixed-window limiter with one counter per key (client IP, IP+username).
+    /// Bounded: when the map is full, expired windows are dropped first and, if it
+    /// is still full, the oldest entry is evicted, so a flood of distinct keys
+    /// cannot grow memory without limit.
+    struct KeyedRateLimiter {
+        inner: std::sync::Mutex<std::collections::HashMap<String, (u64, u64)>>,
+        max_requests: u64,
+        window_secs: u64,
+    }
+
+    const KEYED_LIMITER_MAX_KEYS: usize = 10_000;
+
+    impl KeyedRateLimiter {
+        fn new(max_requests: u64, window_secs: u64) -> Self {
+            Self {
+                inner: std::sync::Mutex::new(std::collections::HashMap::new()),
+                max_requests,
+                window_secs,
+            }
+        }
+
+        fn check(&self, key: &str) -> bool {
+            self.check_at(key, now_secs())
+        }
+
+        fn check_at(&self, key: &str, now: u64) -> bool {
+            if self.max_requests == 0 {
+                return true;
+            }
+            let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+            if map.len() >= KEYED_LIMITER_MAX_KEYS && !map.contains_key(key) {
+                let window = self.window_secs;
+                map.retain(|_, (_, start)| now.saturating_sub(*start) < window);
+                if map.len() >= KEYED_LIMITER_MAX_KEYS {
+                    if let Some(oldest) = map
+                        .iter()
+                        .min_by_key(|(_, (_, s))| *s)
+                        .map(|(k, _)| k.clone())
+                    {
+                        map.remove(&oldest);
+                    }
+                }
+            }
+            let entry = map.entry(key.to_string()).or_insert((0, now));
+            if now.saturating_sub(entry.1) >= self.window_secs {
+                *entry = (0, now);
+            }
+            entry.0 += 1;
+            entry.0 <= self.max_requests
+        }
+    }
+
+    fn now_secs() -> u64 {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    }
+
+    /// Login brute-force guard: a per-client-IP budget plus a tighter budget per
+    /// (IP, username), so one client flooding cannot lock out other clients.
+    struct LoginRateLimiter {
+        per_ip: KeyedRateLimiter,
+        per_ip_user: KeyedRateLimiter,
+    }
+
+    impl LoginRateLimiter {
+        fn new() -> Self {
+            Self {
+                per_ip: KeyedRateLimiter::new(30, 300),
+                per_ip_user: KeyedRateLimiter::new(10, 300),
+            }
+        }
+
+        fn check(&self, ip: &str, username: &str) -> bool {
+            let user = username.trim().to_lowercase();
+            // Evaluate both so every attempt is counted against both budgets.
+            let a = self.per_ip.check(ip);
+            let b = self.per_ip_user.check(&format!("{ip}|{user}"));
+            a && b
+        }
+    }
+
     /// TLS configuration for the API server.
     #[derive(Clone, Debug)]
     pub struct TlsConfig {
@@ -158,7 +241,7 @@ pub mod web {
         pub api_keys: Vec<ApiKeyEntry>,
         rate_limiter: RateLimiterState,
         ai_rate_limiter: RateLimiterState,
-        login_rate_limiter: RateLimiterState,
+        login_rate_limiter: LoginRateLimiter,
     }
 
     impl WebState {
@@ -220,7 +303,7 @@ pub mod web {
                 rate_limiter: RateLimiterState::new(rate_limit_per_minute, 60),
                 ai_rate_limiter: RateLimiterState::new(copilot::ai_rate_limit_per_min(), 60),
                 // Brute-force guard on the public, unauthenticated login endpoint.
-                login_rate_limiter: RateLimiterState::new(30, 300),
+                login_rate_limiter: LoginRateLimiter::new(),
             })
         }
 
@@ -237,7 +320,7 @@ pub mod web {
                 api_keys: Vec::new(),
                 rate_limiter: RateLimiterState::new(60, 60),
                 ai_rate_limiter: RateLimiterState::new(60, 60),
-                login_rate_limiter: RateLimiterState::new(30, 300),
+                login_rate_limiter: LoginRateLimiter::new(),
             }
         }
 
@@ -280,6 +363,30 @@ pub mod web {
         ///
         /// The token signature is verified using HMAC-SHA256 before claims are trusted.
         pub fn authenticate_jwt(&self, token: &str) -> Option<ApiRole> {
+            self.verify_jwt(token).map(|(role, _)| role)
+        }
+
+        /// [`Self::authenticate_jwt`] plus revocation for login-minted session
+        /// tokens: such a token (claim `vsess`) stops working once its user is
+        /// deleted or their password is reset. Tokens from other issuers of the
+        /// shared secret (no `vsess`) are unaffected.
+        pub async fn authenticate_jwt_checked(&self, token: &str) -> Option<ApiRole> {
+            let (role, claims) = self.verify_jwt(token)?;
+            if claims.get("vsess").and_then(|v| v.as_bool()) == Some(true) {
+                let sub = claims.get("sub").and_then(|v| v.as_str())?;
+                let tv = claims.get("tv").and_then(|v| v.as_u64()).unwrap_or(0);
+                if !self
+                    .kube_client
+                    .session_token_valid(&self.namespace, sub, tv)
+                    .await
+                {
+                    return None;
+                }
+            }
+            Some(role)
+        }
+
+        fn verify_jwt(&self, token: &str) -> Option<(ApiRole, serde_json::Value)> {
             let secret = std::env::var("VEYRON_JWT_SECRET").ok()?;
             let expected_issuer = std::env::var("VEYRON_JWT_ISSUER").ok()?;
             if secret.is_empty() || expected_issuer.is_empty() {
@@ -315,15 +422,14 @@ pub mod web {
                 _ => ApiRole::ReadOnly,
             };
 
-            Some(role)
+            Some((role, token_data.claims))
         }
 
-        /// Whether another login attempt is allowed under the shared brute-force
-        /// guard for `POST /api/v1/auth/login`. Global, not per-caller — matches
-        /// the existing `rate_limiter`/`ai_rate_limiter` pattern (no per-IP state
-        /// exists elsewhere in this codebase).
-        pub fn check_login_rate_limit(&self) -> bool {
-            self.login_rate_limiter.check_rate_limit()
+        /// Whether another login attempt from `client` (the peer IP) for
+        /// `username` is allowed: 30 per 5 min per IP and 10 per 5 min per
+        /// (IP, username). One client's flood does not affect other clients.
+        pub fn check_login_rate_limit(&self, client: &str, username: &str) -> bool {
+            self.login_rate_limiter.check(client, username)
         }
 
         /// Mint a signed session token for a successfully authenticated username+
@@ -335,6 +441,7 @@ pub mod web {
             username: &str,
             role: &str,
             ttl_secs: i64,
+            token_version: u64,
         ) -> Result<String, String> {
             let secret = std::env::var("VEYRON_JWT_SECRET")
                 .map_err(|_| "VEYRON_JWT_SECRET is not configured".to_string())?;
@@ -352,6 +459,10 @@ pub mod web {
                 serde_json::Value::String(username.to_string()),
             );
             claims.insert("iss".to_string(), serde_json::Value::String(issuer));
+            // Marks a login-minted session so it can be revoked (user deleted /
+            // password reset): see `authenticate_jwt_checked`.
+            claims.insert("vsess".to_string(), serde_json::Value::Bool(true));
+            claims.insert("tv".to_string(), serde_json::Value::from(token_version));
             claims.insert("iat".to_string(), serde_json::Value::from(now));
             claims.insert("exp".to_string(), serde_json::Value::from(now + ttl_secs));
             claims.insert(role_claim, serde_json::Value::String(role.to_string()));
@@ -488,7 +599,7 @@ pub mod web {
         if let Some(role) = s.authenticate(key) {
             return Some(role.clone());
         }
-        if let Some(role) = s.authenticate_jwt(key) {
+        if let Some(role) = s.authenticate_jwt_checked(key).await {
             return Some(role);
         }
         drop(s);
@@ -606,7 +717,7 @@ pub mod web {
         };
         drop(s);
 
-        // Check X-API-Key header, Authorization: Bearer, ?ticket= (WS consoles), or legacy ?token=
+        // Check X-API-Key header, Authorization: Bearer, ?ticket= (WS consoles), or legacy ?token= (WebSocket upgrades only)
         let ws_ticket = request.uri().query().and_then(|q| {
             q.split('&')
                 .find_map(|p| p.strip_prefix("ticket=").map(percent_decode))
@@ -635,6 +746,13 @@ pub mod web {
                     .and_then(|v| v.strip_prefix("Bearer ").map(|s| s.to_string()))
             })
             .or_else(|| {
+                let is_ws_upgrade = headers
+                    .get(header::UPGRADE)
+                    .and_then(|v| v.to_str().ok())
+                    .is_some_and(|v| v.eq_ignore_ascii_case("websocket"));
+                if !auth_context::query_token_allowed(path, is_ws_upgrade) {
+                    return None;
+                }
                 request.uri().query().and_then(|q| {
                     q.split('&')
                         .find_map(|p| p.strip_prefix("token=").map(percent_decode))
@@ -1251,27 +1369,25 @@ pub mod web {
                     redirect_addr,
                     https_port
                 );
-                let redirect_app =
-                    Router::new().fallback(move |req: axum::extract::Request| async move {
-                        let host = req
-                            .headers()
-                            .get("host")
-                            .and_then(|h| h.to_str().ok())
-                            .unwrap_or("localhost");
-                        // Strip port from host header if present
-                        let hostname = host.split(':').next().unwrap_or(host);
+                let public_host = env_var_first(&["VEYRON_PUBLIC_HOST"]);
+                let redirect_app = Router::new().fallback(move |req: axum::extract::Request| {
+                    let public_host = public_host.clone();
+                    async move {
+                        let host = req.headers().get("host").and_then(|h| h.to_str().ok());
                         let path = req
                             .uri()
                             .path_and_query()
                             .map(|pq| pq.as_str())
                             .unwrap_or("/");
-                        let https_url = if https_port == 443 {
-                            format!("https://{}{}", hostname, path)
-                        } else {
-                            format!("https://{}:{}{}", hostname, https_port, path)
-                        };
-                        axum::response::Redirect::temporary(&https_url).into_response()
-                    });
+                        match https_redirect_target(public_host.as_deref(), host, https_port, path)
+                        {
+                            Some(u) => axum::response::Redirect::temporary(&u).into_response(),
+                            None => {
+                                (StatusCode::BAD_REQUEST, "invalid Host header").into_response()
+                            }
+                        }
+                    }
+                });
                 match tokio::net::TcpListener::bind(&redirect_addr).await {
                     Ok(listener) => {
                         let _ = axum::serve(listener, redirect_app).await;
@@ -1287,15 +1403,73 @@ pub mod web {
             });
 
             axum_server::bind_rustls(tls_addr, rustls_config)
-                .serve(app.into_make_service())
+                .serve(app.into_make_service_with_connect_info::<std::net::SocketAddr>())
                 .await?;
         } else {
             log::info!("Starting HTTP server on {}", addr);
             let listener = tokio::net::TcpListener::bind(&addr).await?;
-            axum::serve(listener, app).await?;
+            axum::serve(
+                listener,
+                app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+            )
+            .await?;
         }
 
         Ok(())
+    }
+
+    /// Whether `h` is a plain DNS name, IPv4 or bracketed IPv6 literal (no
+    /// userinfo, path, whitespace or control characters).
+    fn is_valid_redirect_host(h: &str) -> bool {
+        if h.is_empty() || h.len() > 253 {
+            return false;
+        }
+        if let Some(inner) = h.strip_prefix('[').and_then(|r| r.strip_suffix(']')) {
+            return inner.parse::<std::net::Ipv6Addr>().is_ok();
+        }
+        h.split('.').all(|l| {
+            !l.is_empty()
+                && l.len() <= 63
+                && !l.starts_with('-')
+                && !l.ends_with('-')
+                && l.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+        })
+    }
+
+    /// Target of the HTTP->HTTPS redirect. A configured `VEYRON_PUBLIC_HOST`
+    /// is always used and the request's Host header is ignored; otherwise the
+    /// Host header (port stripped) is used only if it is a well-formed
+    /// hostname/IP. `None` means reject the request.
+    fn https_redirect_target(
+        public_host: Option<&str>,
+        host_header: Option<&str>,
+        https_port: u16,
+        path: &str,
+    ) -> Option<String> {
+        let hostname = match public_host.map(str::trim).filter(|h| !h.is_empty()) {
+            Some(h) => h.to_string(),
+            None => {
+                let raw = host_header?;
+                let h = if raw.starts_with('[') {
+                    raw.split_once("]").map(|(a, _)| format!("{a}]"))?
+                } else {
+                    raw.split(':').next().unwrap_or(raw).to_string()
+                };
+                if !is_valid_redirect_host(&h) {
+                    return None;
+                }
+                h
+            }
+        };
+        if !is_valid_redirect_host(&hostname) {
+            return None;
+        }
+        let path = if path.starts_with('/') { path } else { "/" };
+        Some(if https_port == 443 {
+            format!("https://{hostname}{path}")
+        } else {
+            format!("https://{hostname}:{https_port}{path}")
+        })
     }
 
     async fn root_handler() -> impl IntoResponse {
@@ -1689,6 +1863,55 @@ pub mod web {
 
     #[cfg(test)]
     mod tests {
+        #[test]
+        fn redirect_uses_configured_host_and_validates_host_header() {
+            use super::https_redirect_target as t;
+            assert_eq!(
+                t(Some("veyron.example.com"), Some("evil.com"), 443, "/a?b=1").unwrap(),
+                "https://veyron.example.com/a?b=1"
+            );
+            assert_eq!(
+                t(None, Some("node.lan:8080"), 8443, "/x").unwrap(),
+                "https://node.lan:8443/x"
+            );
+            assert_eq!(
+                t(None, Some("[::1]:80"), 443, "/").unwrap(),
+                "https://[::1]/"
+            );
+            assert!(t(None, Some("evil.com/@x"), 443, "/").is_none());
+            assert!(t(None, Some("a b"), 443, "/").is_none());
+            assert!(t(None, None, 443, "/").is_none());
+            assert!(t(Some("bad host"), None, 443, "/").is_none());
+        }
+
+        #[test]
+        fn login_limiter_is_per_client_not_global() {
+            let l = super::LoginRateLimiter::new();
+            for _ in 0..40 {
+                l.check("10.0.0.1", "admin");
+            }
+            assert!(!l.check("10.0.0.1", "admin"), "flooding client is limited");
+            assert!(l.check("10.0.0.2", "admin"), "other clients are unaffected");
+            // rotating usernames from one IP still hits the per-IP budget
+            let l = super::LoginRateLimiter::new();
+            for i in 0..40 {
+                l.check("10.0.0.1", &format!("u{i}"));
+            }
+            assert!(!l.check("10.0.0.1", "fresh"));
+        }
+
+        #[test]
+        fn keyed_limiter_is_bounded_and_window_resets() {
+            let l = super::KeyedRateLimiter::new(1, 10);
+            assert!(l.check_at("a", 100));
+            assert!(!l.check_at("a", 101));
+            assert!(l.check_at("a", 111));
+            for i in 0..(super::KEYED_LIMITER_MAX_KEYS + 50) {
+                l.check_at(&format!("k{i}"), 200);
+            }
+            assert!(l.inner.lock().unwrap().len() <= super::KEYED_LIMITER_MAX_KEYS);
+        }
+
         use super::*;
         use axum::http::Method;
 

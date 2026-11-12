@@ -310,6 +310,28 @@ fn issuer_matches(payload: &serde_json::Value) -> bool {
         .unwrap_or(false)
 }
 
+/// `VEYRON_OIDC_AUDIENCE` (optional): when set, the token's `aud` claim (string
+/// or array) must contain it. Unset keeps the previous behaviour (not checked).
+#[cfg(feature = "web")]
+fn audience_matches(payload: &serde_json::Value) -> bool {
+    audience_matches_expected(
+        crate::api::integrations::env_var("VEYRON_OIDC_AUDIENCE").as_deref(),
+        payload,
+    )
+}
+
+#[cfg(feature = "web")]
+fn audience_matches_expected(expected: Option<&str>, payload: &serde_json::Value) -> bool {
+    let Some(expected) = expected.map(str::trim).filter(|e| !e.is_empty()) else {
+        return true;
+    };
+    match payload.get("aud") {
+        Some(serde_json::Value::String(a)) => a == expected,
+        Some(serde_json::Value::Array(arr)) => arr.iter().any(|a| a.as_str() == Some(expected)),
+        _ => false,
+    }
+}
+
 #[cfg(feature = "web")]
 fn token_not_expired(payload: &serde_json::Value) -> bool {
     let Some(exp) = payload.get("exp").and_then(|v| v.as_i64()) else {
@@ -323,7 +345,7 @@ fn token_not_expired(payload: &serde_json::Value) -> bool {
 #[cfg(feature = "web")]
 pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
     let payload = decode_jwt_payload(token)?;
-    if !issuer_matches(&payload) || !token_not_expired(&payload) {
+    if !issuer_matches(&payload) || !audience_matches(&payload) || !token_not_expired(&payload) {
         return None;
     }
 
@@ -357,6 +379,14 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
                         // issuer + RS256 signature + expiry; audience isn't part
                         // of our role-mapping trust boundary.
                         validation.validate_aud = false;
+                        // Unless an audience is configured: then enforce it on the
+                        // signature-verified claims too.
+                        if let Some(aud) = crate::api::integrations::env_var("VEYRON_OIDC_AUDIENCE")
+                            .filter(|a| !a.trim().is_empty())
+                        {
+                            validation.set_audience(&[aud.trim()]);
+                            validation.validate_aud = true;
+                        }
                         if let Ok(data) = jsonwebtoken::decode::<serde_json::Value>(
                             token,
                             &decoding_key,
@@ -380,4 +410,21 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
 #[cfg(not(feature = "web"))]
 pub fn oidc_configured() -> bool {
     false
+}
+
+#[cfg(all(test, feature = "web"))]
+mod tests {
+    use super::audience_matches_expected as m;
+    use serde_json::json;
+
+    #[test]
+    fn audience_checked_only_when_configured() {
+        assert!(m(None, &json!({"aud": "account"})));
+        assert!(m(Some(""), &json!({})));
+        assert!(m(Some("veyron"), &json!({"aud": "veyron"})));
+        assert!(m(Some("veyron"), &json!({"aud": ["account", "veyron"]})));
+        assert!(!m(Some("veyron"), &json!({"aud": "account"})));
+        assert!(!m(Some("veyron"), &json!({"aud": ["account"]})));
+        assert!(!m(Some("veyron"), &json!({})));
+    }
 }

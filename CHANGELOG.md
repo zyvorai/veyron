@@ -6,7 +6,29 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Security
+
+- **Session tokens are revocable.** Login-minted JWTs now carry a per-user token version; deleting a user or resetting
+  their password rejects every token issued before (user list cached up to 5 s). A role change still applies only when
+  the token expires. Tokens from older versions expire within 24 h as before.
+- **OIDC audience.** `VEYRON_OIDC_AUDIENCE`, when set, must appear in the token's `aud`; unset keeps the old behaviour.
+- **Login rate limit is per client.** 30 attempts per 5 minutes per client IP and 10 per IP and username, instead of one
+  global budget that a single flood could exhaust for everyone. Keyed on the TCP peer address, so behind a reverse proxy
+  clients share the proxy's budget.
+- **Legacy `?token=` restricted** to WebSocket upgrade routes (`/vnc`, `/serial`, `/tunnel`, `/ws/metrics`); other
+  routes ignore it and answer `401`.
+- **API webhook delivery** passes the secret and headers to curl on stdin instead of its command line, re-validates the
+  URL at delivery time and pins curl to the validated IP (`--resolve`).
+- **HTTP-to-HTTPS redirect** uses `VEYRON_PUBLIC_HOST` when set and otherwise rejects a malformed `Host` header.
+- **KubeVirt console proxy verifies the Kubernetes API certificate** against the cluster CA. Opt out with
+  `VEYRON_KUBEVIRT_WS_INSECURE_TLS=1` (previously it never verified).
+- **Image-store uploads are capped** (`VEYRON_IMAGE_STORE_MAX_BYTES`, default 64 GiB, `0` = unlimited); larger bodies
+  answer `413 UPLOAD_TOO_LARGE` and the partial file is removed.
+
 ### Fixed
+
+- **`veyron api-key-create` / `api-key-delete` / `api-key-list` no longer pretend.** There is no key store; they printed
+  success and persisted nothing. They now fail and point at `VEYRON_API_KEY` / `VEYRON_API_KEYS`.
 
 - **A read-only key could open the interactive VNC and serial consoles.** `GET /vms/:ns/:name/vnc` and `/serial` were
   classified as safe methods, so any `readonly` credential (header or `?token=`) could drive a guest's console, while the

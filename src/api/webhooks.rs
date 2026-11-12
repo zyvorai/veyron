@@ -27,6 +27,15 @@ fn is_private_ip(ip: &std::net::IpAddr) -> bool {
 
 /// Validate that a webhook URL is safe (HTTPS, no internal/private addresses)
 fn validate_webhook_url(url: &str) -> anyhow::Result<()> {
+    validate_webhook_url_pinned(url).map(|_| ())
+}
+
+/// Like [`validate_webhook_url`], but also returns the `(host, port, ip)` a
+/// hostname URL resolved to (all resolved addresses were checked), so delivery
+/// can pin the connection to it. `None` for IP-literal URLs (nothing to pin).
+fn validate_webhook_url_pinned(
+    url: &str,
+) -> anyhow::Result<Option<(String, u16, std::net::IpAddr)>> {
     // Must be HTTPS
     if !url.starts_with("https://") {
         anyhow::bail!("Webhook URL must use HTTPS");
@@ -35,6 +44,11 @@ fn validate_webhook_url(url: &str) -> anyhow::Result<()> {
     // Extract host from URL
     let after_scheme = url.strip_prefix("https://").unwrap_or(url);
     let host_port = after_scheme.split('/').next().unwrap_or("");
+    let explicit_port: Option<u16> = if host_port.starts_with('[') {
+        host_port.split_once("]:").and_then(|(_, p)| p.parse().ok())
+    } else {
+        host_port.split_once(':').and_then(|(_, p)| p.parse().ok())
+    };
     let host = if host_port.starts_with('[') {
         // IPv6 bracket notation: [::1]:8080
         host_port
@@ -62,15 +76,15 @@ fn validate_webhook_url(url: &str) -> anyhow::Result<()> {
         if is_private_ip(&ip) {
             anyhow::bail!("Webhook URL must not point to private/internal IP addresses");
         }
-        return Ok(());
+        return Ok(None);
     }
 
     // Hostname: reject cluster-internal suffixes outright, then resolve and reject
     // if ANY resolved address is private/internal. This closes the SSRF gap where a
     // hostname (e.g. *.svc.cluster.local, or an attacker domain whose A-record is
     // 169.254.169.254) would otherwise bypass the IP-literal check above.
-    // NOTE: this does not fully defeat DNS-rebinding (TOCTOU between validate and
-    // deliver) — for that, delivery should pin the validated IP.
+    // Delivery re-validates and pins the connection to the validated IP (see
+    // `deliver_webhook`), so DNS rebinding after this check cannot redirect it.
     if lower.ends_with(".cluster.local")
         || lower.ends_with(".svc")
         || lower.ends_with(".internal")
@@ -80,7 +94,8 @@ fn validate_webhook_url(url: &str) -> anyhow::Result<()> {
     }
 
     use std::net::ToSocketAddrs;
-    let resolved: Vec<std::net::SocketAddr> = (host, 443u16)
+    let port = explicit_port.unwrap_or(443);
+    let resolved: Vec<std::net::SocketAddr> = (host, port)
         .to_socket_addrs()
         .map_err(|e| anyhow::anyhow!("Webhook host '{host}' did not resolve: {e}"))?
         .collect();
@@ -93,7 +108,7 @@ fn validate_webhook_url(url: &str) -> anyhow::Result<()> {
         }
     }
 
-    Ok(())
+    Ok(Some((host.to_string(), port, resolved[0].ip())))
 }
 
 /// Webhook event types
@@ -362,58 +377,104 @@ impl Default for WebhookManager {
     }
 }
 
-/// Deliver a webhook payload to a URL using curl subprocess.
-///
-/// Returns `Ok(true)` on successful delivery (2xx), `Ok(false)` on HTTP failure.
-pub async fn deliver_webhook(
-    config: &WebhookConfig,
-    payload: &WebhookPayload,
-) -> anyhow::Result<bool> {
-    let payload_json = serde_json::to_string(payload)?;
+/// Quote a value for a curl `--config` file (double-quoted string with escapes).
+fn curl_config_quote(v: &str) -> String {
+    let mut out = String::with_capacity(v.len() + 2);
+    out.push('"');
+    for c in v.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
 
+/// Command-line arguments for curl. Contains nothing secret: every header
+/// (including the webhook secret and operator-supplied headers such as
+/// `Authorization`) goes through [`curl_stdin_config`] instead, so it never
+/// appears in `/proc/<pid>/cmdline` or `ps`.
+fn curl_args(config: &WebhookConfig, pin: Option<&(String, u16, std::net::IpAddr)>) -> Vec<String> {
     let mut args = vec![
         "-s".to_string(),
         "-o".to_string(),
         "/dev/null".to_string(),
         "-w".to_string(),
         "%{http_code}".to_string(),
-        "-X".to_string(),
-        "POST".to_string(),
-        "-H".to_string(),
-        "Content-Type: application/json".to_string(),
+        "--proto".to_string(),
+        "=https".to_string(),
         "--max-time".to_string(),
         config.timeout_secs.to_string(),
+        "--config".to_string(),
+        "-".to_string(),
     ];
+    if let Some((host, port, ip)) = pin {
+        // Pin to the IP that passed validation (no second DNS lookup in curl).
+        args.push("--resolve".to_string());
+        args.push(format!("{host}:{port}:{ip}"));
+    }
+    args
+}
 
+/// curl config text fed on stdin: method, headers (incl. secret), body, URL.
+fn curl_stdin_config(config: &WebhookConfig, payload_json: &str) -> String {
+    let mut c = String::new();
+    c.push_str("request = \"POST\"\n");
+    c.push_str("header = \"Content-Type: application/json\"\n");
     for (key, value) in &config.headers {
-        args.push("-H".to_string());
-        args.push(format!("{}: {}", key, value));
+        c.push_str(&format!(
+            "header = {}\n",
+            curl_config_quote(&format!("{key}: {value}"))
+        ));
     }
-
-    // Pass secret via environment variable to avoid exposure in /proc/cmdline
-    let mut cmd = tokio::process::Command::new("curl");
     if let Some(ref secret) = config.secret {
-        args.push("-H".to_string());
-        args.push("X-Webhook-Secret: __WEBHOOK_SECRET__".to_string());
-        cmd.env("__WEBHOOK_SECRET__", secret);
-        // curl doesn't expand env vars in headers, so we use --header @- approach
-        // For simplicity, we still pass in args but redact in logs
+        c.push_str(&format!(
+            "header = {}\n",
+            curl_config_quote(&format!("X-Webhook-Secret: {secret}"))
+        ));
     }
+    c.push_str(&format!("data = {}\n", curl_config_quote(payload_json)));
+    c.push_str(&format!("url = {}\n", curl_config_quote(&config.url)));
+    c
+}
 
-    args.push("-d".to_string());
-    args.push(payload_json);
-    args.push(config.url.clone());
+/// Deliver a webhook payload to a URL using a curl subprocess.
+///
+/// The URL is re-validated at delivery time and curl is pinned to the validated
+/// IP (`--resolve`), redirects are not followed, and secrets/headers are passed
+/// on stdin, not argv.
+///
+/// Returns `Ok(true)` on successful delivery (2xx), `Ok(false)` on HTTP failure.
+pub async fn deliver_webhook(
+    config: &WebhookConfig,
+    payload: &WebhookPayload,
+) -> anyhow::Result<bool> {
+    use tokio::io::AsyncWriteExt;
 
-    // Replace placeholder with actual secret in args (curl doesn't read env in headers)
-    if let Some(ref secret) = config.secret {
-        for arg in &mut args {
-            if arg.contains("__WEBHOOK_SECRET__") {
-                *arg = format!("X-Webhook-Secret: {}", secret);
-            }
-        }
+    let payload_json = serde_json::to_string(payload)?;
+
+    let url = config.url.clone();
+    let pin = tokio::task::spawn_blocking(move || validate_webhook_url_pinned(&url))
+        .await
+        .map_err(|e| anyhow::anyhow!("webhook validation task failed: {e}"))??;
+
+    let mut child = tokio::process::Command::new("curl")
+        .args(curl_args(config, pin.as_ref()))
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()?;
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(curl_stdin_config(config, &payload_json).as_bytes())
+            .await?;
     }
-
-    let output = cmd.args(&args).output().await?;
+    let output = child.wait_with_output().await?;
 
     let status_code = String::from_utf8_lossy(&output.stdout);
     let success = status_code.starts_with('2');
@@ -516,6 +577,28 @@ mod tests {
         assert!(wh.remove_event(&WebhookEvent::VMCreated));
         assert!(!wh.remove_event(&WebhookEvent::VMCreated));
         assert_eq!(wh.event_count(), 0);
+    }
+
+    #[test]
+    fn delivery_keeps_secrets_off_argv_and_pins_ip() {
+        let mut w = WebhookConfig::new("t", "https://93.184.216.34/hook")
+            .unwrap()
+            .with_secret("s3cr3t-value");
+        w.add_header("Authorization", "Bearer tok-123").unwrap();
+        let pin = (
+            "example.com".to_string(),
+            443u16,
+            "93.184.216.34".parse().unwrap(),
+        );
+        let args = curl_args(&w, Some(&pin)).join(" ");
+        assert!(!args.contains("s3cr3t-value") && !args.contains("tok-123"));
+        assert!(!args.contains("https://"), "url is not on argv");
+        assert!(args.contains("--resolve example.com:443:93.184.216.34"));
+        assert!(args.contains("--proto =https"));
+        let cfg = curl_stdin_config(&w, "{\"a\":\"b\"}");
+        assert!(cfg.contains("X-Webhook-Secret: s3cr3t-value"));
+        assert!(cfg.contains("Authorization: Bearer tok-123"));
+        assert!(cfg.contains("data = \"{\\\"a\\\":\\\"b\\\"}\""), "{cfg}");
     }
 
     #[test]

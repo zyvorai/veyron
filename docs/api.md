@@ -23,14 +23,19 @@ Notes that matter in practice:
 - The only unauthenticated routes are `GET /api/v1/health`, the console shell and assets, `POST /auth/login`,
   `GET /auth/oidc/config`, `POST /auth/oidc/token`, `GET /platform/guestkit/binary` and the image-store blob download
   (the SHA-256 in its path is the credential).
-- Login needs `VEYRON_JWT_SECRET` and `VEYRON_JWT_ISSUER` (otherwise `503`). Logins share one global limiter of 30
-  attempts per 5 minutes (`429 RATE_LIMITED`), not one per caller. Passwords are at least 8 characters, stored as
-  Argon2 hashes in the `veyron-users` Secret. Session tokens are stateless: deleting a user, resetting a password
-  or changing a role does not revoke tokens already issued; they expire after 24 h.
-- A legacy `?token=<key>` query parameter is still accepted on any route. Avoid it: URLs end up in proxy and
-  access logs. Use headers.
-- OIDC bearer tokens are checked for signature (RS256 via `VEYRON_OIDC_JWKS_URL`), issuer and expiry. The `aud`
-  claim is not checked. Without a JWKS URL, tokens are validated by calling `VEYRON_OIDC_USERINFO_URL` when set,
+- Login needs `VEYRON_JWT_SECRET` and `VEYRON_JWT_ISSUER` (otherwise `503`). Logins are rate limited per client: 30
+  attempts per 5 minutes per client IP and 10 per 5 minutes per IP and username (`429 RATE_LIMITED`); one client's
+  flood does not lock out others. The client IP is the TCP peer address (`X-Forwarded-For` is not trusted), so behind
+  a reverse proxy all users share the proxy's address and its budget. Passwords are at least 8 characters, stored as
+  Argon2 hashes in the `veyron-users` Secret. Session tokens last 24 h but are revocable: deleting a user or
+  resetting their password invalidates every token issued before (checked against the user list, cached for up to
+  5 s). Changing a user's role is not applied to tokens already issued (the role is in the token), and tokens issued
+  before this check existed expire on their own within 24 h.
+- The legacy `?token=<key>` query parameter is accepted only on WebSocket upgrade requests (`/vms/:ns/:name/{vnc,serial,tunnel}`
+  and `/ws/metrics`), where browsers cannot set headers. On every other route it is ignored and the request answers
+  `401`. Use headers; consoles should use a ticket.
+- OIDC bearer tokens are checked for signature (RS256 via `VEYRON_OIDC_JWKS_URL`), issuer and expiry, and for
+  audience when `VEYRON_OIDC_AUDIENCE` is set (unset: not checked). Without a JWKS URL, tokens are validated by calling `VEYRON_OIDC_USERINFO_URL` when set,
   and rejected otherwise.
 
 Browser console and serial sessions use a one-time ticket from `POST /api/v1/ws/ticket` (needs the `write`
@@ -44,7 +49,7 @@ Three roles, each including the one below it. The rule is by route and method, f
 | Role | Can |
 |---|---|
 | `readonly` | `GET`, `HEAD` and `OPTIONS` on everything except the routes listed below; chat, search, intent and draft AI routes; `POST /mcp` |
-| `write` | Create, change and delete VMs, snapshots, networks, alerts and the rest; also `GET` on `/vms/:ns/:name/tunnel`, `/diagnostics/*` and `/network/capture/*` |
+| `write` | Create, change and delete VMs, snapshots, networks, alerts and the rest; also `GET` on `/vms/:ns/:name/{vnc,serial,tunnel}` (the interactive consoles and the TCP tunnel), `/diagnostics/*` and `/network/capture/*` |
 | `admin` | The routes below, and user management |
 
 Admin-only routes:
@@ -71,6 +76,9 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 - `VEYRON_API_KEY` is a single key with the `admin` role.
 - `VEYRON_API_KEYS` holds several keys in the form `name:key:role`, comma-separated, for example
   `ops:k1:admin,ci:k2:write,viewer:k3:readonly`. A missing role means `readonly`.
+- There is no key store behind the `veyron api-key-*` CLI commands: `api-key-create`, `api-key-delete` and
+  `api-key-list` fail with an explanation instead of pretending. Add or revoke keys by editing `VEYRON_API_KEY` /
+  `VEYRON_API_KEYS` (Helm: `auth.apiKey`, the `veyron-api-key` Secret) and restarting the API.
 - Local console accounts are managed under **Security → Users & roles** (admin only), or through
   `/api/v1/auth/users`.
 
@@ -81,7 +89,7 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 | VMs | `GET/POST /vms`, `POST /vms/:ns/:name/{start,stop,restart,pause,unpause,migrate}`, `DELETE /vms/:ns/:name` |
 | Compute | `POST /vms/:ns/:name/hotplug`, `PUT /vms/:ns/:name/run-strategy`, `POST /vms/bulk` |
 | Access | `GET/PUT/DELETE /vms/:ns/:name/expose` (SSH), `/rdp-expose` (RDP), `PUT /vms/:ns/:name/network/internet` |
-| Console | `GET /vms/:ns/:name/vnc`, `/serial` (WebSocket, ticket required) |
+| Console | `GET /vms/:ns/:name/vnc`, `/serial` (WebSocket, `write` role, ticket required) |
 | Guests | `GET /vms/:ns/:name/guest/{status,evidence,doctor,fix-plan}`, `/guest-filesystem`, `POST /vms/:ns/:name/guest/patch` |
 | VM disks | `GET /vms/:ns/:name/volumes/status`, `POST …/volumes/{hotplug,hotremove}`, `POST …/storage/data-disk` (+ `/defaults`), `GET …/migrations` |
 | Data | `/snapshots`, `/snapshot-schedules`, `/backups`, `/clones`, `/storage/{usage,pools,orphans}`, `/velero/*`, `/atlas/*` |

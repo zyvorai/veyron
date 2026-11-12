@@ -28,12 +28,12 @@ Run the API and console with `veyron api-serve`:
 | `-p, --port` | Listen port (config default 8080; the in-cluster Deployment uses 5151) |
 | `--host` | Bind address (config default `127.0.0.1`; the Deployment uses `0.0.0.0`) |
 | `--tls`, `--tls-cert`, `--tls-key` | Serve HTTPS from a PEM certificate and key. Both paths are required with `--tls`. Without `--tls` the server speaks plain HTTP, so API keys cross the network in clear text |
-| `--rate-limit` | Global requests per minute (default 60). `0` is documented as "disabled", but in v0.4.0 it makes the limiter reject every non-exempt request with `429`; use a large number instead. Health, console assets and high-frequency operator GET polling are exempt |
+| `--rate-limit` | Global requests per minute (default 60; `0` disables the limit). Health, console assets and high-frequency operator GET polling are exempt |
 | `--auth` | Accepted for compatibility. The HTTP server always requires an API key, JWT or OIDC bearer; this flag does not change that |
 | `--namespace` (global, `VEYRON_NAMESPACE`) | Namespace for Veyron's own state (the `veyron-users` Secret, settings ConfigMaps) |
 
 With `--tls` the server also opens a plain-HTTP redirect listener (port 80 when the HTTPS port is 443, otherwise `port - 1`, for example 5150)
-that sends browsers to HTTPS (it builds the target from the request's `Host` header, so do not expose it where untrusted Host headers matter).
+that sends browsers to HTTPS (the target host is `VEYRON_PUBLIC_HOST` when set; otherwise the request's `Host` header, accepted only if it is a well-formed hostname or IP, else `400`. Set `VEYRON_PUBLIC_HOST` in any deployment reachable by untrusted clients).
 
 Settings come from the environment (the same variables the manifests set):
 
@@ -44,6 +44,9 @@ Settings come from the environment (the same variables the manifests set):
 | `VEYRON_JWT_SECRET`, `VEYRON_JWT_ISSUER`, `VEYRON_JWT_ROLE_CLAIM` | HS256 secret and issuer for session tokens (console sign-in) and for your own JWTs; role claim defaults to `role` |
 | `VEYRON_BOOTSTRAP_ADMIN`, `_USER`, `_PASSWORD`, `_SYNC` | First console account, see [getting-started.md](getting-started.md#default-credentials) |
 | `VEYRON_OIDC_*` | Single sign-on, see [sso.md](sso.md) |
+| `VEYRON_PUBLIC_HOST` | Public hostname used by the HTTP-to-HTTPS redirect listener (with `--tls`); the `Host` header is then ignored |
+| `VEYRON_IMAGE_STORE_MAX_BYTES` | Size cap for one image-store upload or capture (default 64 GiB; `0` disables the cap). Larger uploads answer `413 UPLOAD_TOO_LARGE` |
+| `VEYRON_KUBEVIRT_WS_INSECURE_TLS` | `1` skips verification of the Kubernetes API certificate on the legacy KubeVirt VNC/serial proxy (verified against the cluster CA by default) |
 | `VEYRON_CORS_ORIGINS` | Comma-separated extra origins. Unset means same-origin only |
 | `VEYRON_VM_BACKEND` | Unset, `auto` or `kairon`: Kairon. `kubevirt`: legacy |
 | `VEYRON_HTTP_REQUEST_TIMEOUT_SECS` | Per-request timeout for ordinary routes (default 30) |
