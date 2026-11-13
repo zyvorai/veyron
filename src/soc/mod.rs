@@ -4,6 +4,7 @@
 // Security Operations Center — normalized events, detections, SIEM export, hunts, ASM.
 
 pub mod asm;
+pub mod audit_query;
 pub mod collect;
 pub mod detections;
 pub mod event;

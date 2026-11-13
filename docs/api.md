@@ -112,7 +112,7 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 | Guest logs | `GET /vms/:ns/:name/logs?tail=` |
 | Fleet | `/nodes`, `/gpus`, `/pods`, `/workloads`, `/capacity/headroom`, `/platform/capabilities` |
 | Operations | `/alerts`, `/events`, `/incidents/timeline`, `/logs`, `/metrics`, `/costs`, `/costs/budgets`, `/recommendations`, `/slo/*`, `/self-healing/*` |
-| Security | `/soc/*` ([soc.md](soc.md)), `/security/{findings,posture}`, `/compliance/*`, `/audit/{trail,stats}` (these two list Kubernetes Events; the API's own mutation audit is in `/soc/events`), `/rbac/*`, `/vms/:ns/:name/security` |
+| Security | `/soc/*` ([soc.md](soc.md)), `/security/{findings,posture}`, `/compliance/*`, `/audit/{trail,stats}` (these two list Kubernetes Events; the API's own mutation audit is in `/soc/events`, filterable and exportable at `/soc/audit`), `/rbac/*`, `/vms/:ns/:name/security` |
 | Platform | `/operators`, `/helm/releases`, `/namespaces`, `/quotas`, `/gitops/*`, `/catalog/*`, `/custom-resources`, `/clusters` |
 | Network | `/network/{interfaces,bandwidth,nads}`, `/cilium/*`, `/network-policies`, `/ingress`, per-VM `/vms/:ns/:name/{network/*,egress*}` (see [kairon-ops.md](kairon-ops.md)) |
 | AI | `GET /ai/{status,tools,forecast,investigations}`, `POST /ai/{chat,chat/stream,search,intent/vm}`, `POST /ai/policies/{draft,preview}`, `POST /ai/investigations/run` |

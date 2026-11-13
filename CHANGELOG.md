@@ -18,6 +18,10 @@ All notable changes to this project are documented here. The format follows
   name, role, source and a short SHA-256 fingerprint, as a table, JSON or YAML. It never prints a secret and, because there
   is still no key store, it shows only what the process it runs in has configured. `api-key-create` and `api-key-delete`
   still fail with guidance.
+- `GET /api/v1/soc/audit`: query and export the API audit trail with filters (actor, method, outcome, path, namespace,
+  VM, source, Copilot plan id, RFC 3339 time window), ordering and `format=json|ndjson|csv`. Read-only over the existing
+  SOC event log, same `read` role as `/soc/events`, nothing is recorded differently. CSV output neutralizes spreadsheet
+  formula injection. See [soc.md](docs/soc.md#querying-and-exporting-the-audit-trail).
 
 ### Documentation
 

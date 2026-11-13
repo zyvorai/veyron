@@ -2035,6 +2035,43 @@ pub mod web {
                 .as_u16()
         }
 
+        /// `/soc/audit` is a read-role route: no credential is 401, a read-only key gets past
+        /// authorization (a malformed query is then a plain 400 raised before any cluster access),
+        /// and it is GET-only.
+        #[tokio::test]
+        async fn soc_audit_route_auth_and_validation() {
+            let ok_q = "/api/v1/soc/audit?since=nope";
+            assert_eq!(status_via_router(None, Method::GET, ok_q).await, 401);
+            assert_eq!(
+                status_via_router(Some("wrong"), Method::GET, ok_q).await,
+                401
+            );
+            for key in ["k-ro", "k-rw", "k-admin"] {
+                assert_eq!(
+                    status_via_router(Some(key), Method::GET, ok_q).await,
+                    400,
+                    "{key}"
+                );
+            }
+            for bad in [
+                "since=2026-11-02T00:00:00Z&until=2026-11-01T00:00:00Z",
+                "format=xml",
+                "order=up",
+                "limit=0",
+                "outcome=maybe",
+            ] {
+                let path = format!("/api/v1/soc/audit?{bad}");
+                assert_eq!(
+                    status_via_router(Some("k-ro"), Method::GET, &path).await,
+                    400,
+                    "{bad}"
+                );
+            }
+            // writing to the audit route is not allowed for any role
+            let s = status_via_router(Some("k-admin"), Method::POST, "/api/v1/soc/audit").await;
+            assert_eq!(s, 405);
+        }
+
         /// `gpu.count` is validated before anything touches the cluster, so an absurd value is a
         /// plain 400 even against an unreachable API server (and allocates nothing).
         #[tokio::test]
