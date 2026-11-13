@@ -53,6 +53,7 @@ the monitoring chart).
 | `integrations.*` | empty | Prometheus, OpenCost, Trivy, Loki, Jaeger/Tempo, Alertmanager, Argo CD, Netra, Paqtra URLs and credentials; `integrations.existingSecret` is loaded as `envFrom` |
 | `oidc.*`, `oidc.existingSecret` | empty | Single sign-on ([docs/sso.md](../../docs/sso.md)). Setting `oidc.existingSecret` makes the chart ignore the other `oidc.*` values, so that Secret must hold every `VEYRON_OIDC_*` key. There is no value for `VEYRON_OIDC_AUDIENCE` or `_USERINFO_URL`; put them in a Secret named in `integrations.existingSecret` |
 | `ai.url`, `apiKey`, `model`, `mode`, `maxToolRounds`, `timeoutSecs`, `rateLimitPerMin` | `""`, `""`, `gpt-4o-mini`, `""`, `2`, `30`, `20` | `VEYRON_AI_*`. `maxToolRounds` and `timeoutSecs` replace the code defaults (8 and 6 rounds; 300 s for an in-cluster model) while non-zero; set them to `0` to leave the variables unset |
+| `extraEnv`, `extraEnvFrom` | `[]` | Extra container environment (standard `EnvVar` entries, so `valueFrom` works) and `envFrom` sources (`secretRef` / `configMapRef`), for settings that have no value of their own |
 | `resources`, `nodeSelector`, `tolerations`, `affinity`, `serviceAccount.*` | | Standard |
 
 ## What the chart does not set up
@@ -63,7 +64,8 @@ the monitoring chart).
   consoles, guest exec, logs and VM-state snapshots do not work on Kairon.
 - **Other settings with no value**: `VEYRON_PUBLIC_HOST`, `VEYRON_OIDC_AUDIENCE`, `VEYRON_IMAGE_STORE_MAX_BYTES`,
   `VEYRON_WS_METRICS_MAX`, `VEYRON_CORS_ORIGINS` and the SIEM variables ([docs/soc.md](../../docs/soc.md)) travel the same
-  way (`integrations.existingSecret` or `oidc.existingSecret`).
+  way (`integrations.existingSecret` or `oidc.existingSecret`), or set them one by one with `extraEnv`, for example
+  `--set 'extraEnv[0].name=VEYRON_PUBLIC_HOST' --set 'extraEnv[0].value=veyron.example.com'`.
 - **Egress for those calls.** With the default NetworkPolicy the pod cannot reach the relay (8090), Prometheus, an
   LLM endpoint or Netra. Add a policy for them or set `networkPolicy.enabled=false`.
 - **The HTTP-to-HTTPS redirect listener** (port 5150 in `deploy/k8s.yaml`) is not exposed by the Service.

@@ -252,7 +252,10 @@ spec:
               value: {{ . | quote }}
             {{- end }}
             {{- end }}
-          {{- if or .Values.integrations.existingSecret .Values.oidc.existingSecret }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if or .Values.integrations.existingSecret .Values.oidc.existingSecret .Values.extraEnvFrom }}
           envFrom:
           {{- if .Values.integrations.existingSecret }}
             - secretRef:
@@ -261,6 +264,9 @@ spec:
           {{- if .Values.oidc.existingSecret }}
             - secretRef:
                 name: {{ .Values.oidc.existingSecret }}
+          {{- end }}
+          {{- with .Values.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- end }}
           ports:
