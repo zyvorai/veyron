@@ -38,10 +38,10 @@ The remote script syncs the source to a node, builds the images there and applie
 ```
 
 Or use the Helm chart in [`charts/veyron`](../charts/veyron) (see [deploy.md](deploy.md)). Mind the image
-caveat there: `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are not published (the GHCR package grants the repository no
-write access; [how to fix it](deploy.md#container-image)), and the chart's default tag `latest` is the older
-2026-10-04 image, so build from source with the script above until a 0.4.1 (or later) image exists. The release binaries
-([deploy.md](deploy.md#release-binaries), checksum-verified, no signatures) run the API and console outside the cluster.
+caveat there: `ghcr.io/zyvorai/veyron:0.4.1` (and `latest`) is published, but the GHCR package is private, so the cluster
+needs pull credentials (`imagePullSecrets`; see [Container image](deploy.md#container-image)), or build from source with the
+script above. The release binaries ([deploy.md](deploy.md#release-binaries), checksum-verified and cosign-signed checksums)
+run the API and console outside the cluster.
 
 For the browser console, guest commands and VM-state snapshots, Veyron talks to each node's
 kairon-node relay. Give it the address template and token in an optional Secret. Keep `{node_ip}`

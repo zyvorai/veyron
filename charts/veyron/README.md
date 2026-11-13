@@ -1,9 +1,9 @@
 # Veyron Helm chart
 
-> **Image caveat (v0.4.1).** `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are not published (the GHCR package grants the
-> repository no write access; see [docs/deploy.md](../../docs/deploy.md#container-image)). `image.tag` defaults to `latest`, which is
-> the older 2026-10-04 image (before the Kairon rewrite), whatever the chart's `appVersion` says. Build your own image
-> (`scripts/deploy-remote.sh` builds it on a node) and set `--set image.repository=... --set image.tag=...`.
+> **Image caveat (v0.4.1).** `ghcr.io/zyvorai/veyron:0.4.1` and `:latest` are published, but the GHCR package is private:
+> create a docker-registry Secret and pass it with `--set 'imagePullSecrets[0].name=<secret>'`, or use your own registry
+> (`--set image.repository=...`); see [docs/deploy.md](../../docs/deploy.md#container-image). `image.tag` defaults to
+> `latest`, which moves with each release; pin it (`--set image.tag=0.4.1`) for reproducible installs.
 > Without overrides the chart installs the lab credentials `admin` / `Admin@321` and API key `Admin@321`: always set
 > `auth.apiKey` and `auth.adminPassword`.
 

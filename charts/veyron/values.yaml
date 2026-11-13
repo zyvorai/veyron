@@ -5,9 +5,9 @@ fullnameOverride: "veyron-api"
 
 image:
   repository: ghcr.io/zyvorai/veyron
-  # NOTE: ghcr.io/zyvorai/veyron:0.4.0 and :0.4.1 are NOT published (GHCR refused the release workflow's push). "latest" is the older
-  # 2026-10-04 image (pre-Kairon). Build and push your own image (scripts/deploy-remote.sh builds on a node) and set
-  # image.repository / image.tag, rather than pinning 0.4.0 or 0.4.1. Tags 0.3.x on GHCR are also pre-Kairon images.
+  # NOTE: ghcr.io/zyvorai/veyron:0.4.1 and :latest are published, but the GHCR package is PRIVATE: set imagePullSecrets (below) to a
+  # docker-registry Secret that can read it, or push the image to your own registry and set image.repository. "latest" moves with each
+  # release; pin image.tag (e.g. "0.4.1") for reproducible installs. 0.4.0 was never published as an image; tags 0.3.x are pre-Kairon.
   tag: "latest"
   pullPolicy: IfNotPresent
 

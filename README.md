@@ -136,11 +136,10 @@ An operator that asks first: it reads your cluster with your permissions, invest
 On a Kubernetes cluster whose VM hosts run [Kairon](https://github.com/zyvorai/kairon) (a Kairon release with `v1beta1` CRDs; see [docs/deploy.md](docs/deploy.md#kairon-settings)).
 
 **Release binaries (v0.4.1).** One binary per platform (`veyron-linux-amd64`, `-linux-arm64`, `-darwin-amd64`, `-darwin-arm64`; Linux builds are
-dynamically linked against glibc) with the console embedded, plus `SHA256SUMS`. The binaries are built by the tagged CI run and the
-GitHub Release was published by hand (the workflow's Docker job fails, which skips its release job). The macOS binaries are not Developer ID
-signed or notarized (`darwin-arm64` is ad-hoc signed, `darwin-amd64` is unsigned; a browser download may need
-`xattr -d com.apple.quarantine`), and there is no cosign signature or SBOM for v0.4.0 or v0.4.1, so `SHA256SUMS` only catches a corrupted download.
-Verify the checksum before running ([details](docs/deploy.md#release-binaries)):
+dynamically linked against glibc) with the console embedded, plus `SHA256SUMS`, a keyless cosign bundle for it (`SHA256SUMS.cosign.bundle`) and an
+SPDX SBOM (`veyron.spdx.json`). The macOS binaries are not Developer ID signed or notarized (`darwin-arm64` is ad-hoc signed, `darwin-amd64` is
+unsigned; a browser download may need `xattr -d com.apple.quarantine`). Verify the checksum, and the cosign signature if you have `cosign`, before
+running ([details](docs/deploy.md#release-binaries)):
 
 ```bash
 V=v0.4.1; A=linux-amd64        # or linux-arm64, darwin-amd64, darwin-arm64
@@ -149,6 +148,8 @@ curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/SHA256SUMS
 grep " veyron-$A\$" SHA256SUMS | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)   # must print: veyron-$A: OK
 install -m 0755 veyron-$A /usr/local/bin/veyron && veyron --version
 ```
+
+To also check who signed `SHA256SUMS`, download `SHA256SUMS.cosign.bundle` and see [docs/deploy.md](docs/deploy.md#release-binaries).
 
 The binary reads your kubeconfig (`KUBECONFIG`, `--namespace`/`VEYRON_NAMESPACE`). To run the API and console from it
 on a workstation or VM (the same server the in-cluster Deployment runs, `veyron api-serve`):
@@ -160,10 +161,10 @@ veyron api-serve --host 127.0.0.1 --port 5151 --tls --tls-cert tls.crt --tls-key
 # console: https://127.0.0.1:5151/console   (omit --tls only behind a TLS-terminating proxy)
 ```
 
-**In the cluster.** There is no container image for 0.4.x: `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are **not published**, because the
-`veyron` GHCR package grants this repository no write access (a maintainer fixes it under the package's *Manage Actions access*; see
-[docs/deploy.md](docs/deploy.md#container-image)). The Helm chart's default tag is `latest`, which is still the older 2026-10-04 image (it predates
-the Kairon rewrite). Until a 0.4.1 (or later) image exists, build and deploy from source (this builds the image on the node):
+**In the cluster.** The container image `ghcr.io/zyvorai/veyron:0.4.1` (also tagged `latest`) is published and cosign-signed, but the `veyron` GHCR
+package is **private**, so pulling it needs `docker login ghcr.io` with a token that has `read:packages` (and, in Kubernetes, an `imagePullSecret`; set
+`imagePullSecrets` in the Helm values). `0.4.0` was never published as an image. The Helm chart's default tag is still `latest`, and `latest` now points at
+0.4.1 (the older 2026-10-04 pre-Kairon images are the `0.3.x` tags). To deploy without a registry, build from source (this builds the image on the node):
 
 ```bash
 git clone https://github.com/zyvorai/veyron.git && cd veyron
@@ -202,7 +203,7 @@ Helm, plain manifests, the production checklist and the standalone client tarbal
 | Kairon engine | Default. KubeVirt is a legacy, explicit opt-in (`VEYRON_VM_BACKEND=kubevirt`) that is still in the tree but not where new work goes |
 | VM import (h2kvm → Kairon) | Stable (verified live, 2026-10-07) |
 | Multi-node live migration on Kairon | API done; hardware matrix needs a second node |
-| Release artifacts (v0.4.1) | Four binaries and `SHA256SUMS` on GitHub, no signatures; no container image yet, see [docs/deploy.md](docs/deploy.md#container-image) |
+| Release artifacts (v0.4.1) | Four binaries, `SHA256SUMS` (cosign-signed) and an SBOM on GitHub; macOS binaries not Developer ID signed; container image on a private GHCR package, see [docs/deploy.md](docs/deploy.md#container-image) |
 
 ---
 
