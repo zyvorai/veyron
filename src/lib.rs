@@ -38,6 +38,7 @@ pub mod copilot;
 pub mod kube;
 pub mod network;
 pub mod output;
+pub mod preflight;
 pub mod storage;
 pub mod templates;
 pub mod trial;
@@ -1160,6 +1161,24 @@ pub async fn run(mut cli: Cli) -> Result<()> {
         Commands::Mcp { .. } => anyhow::bail!("`veyron mcp` needs a build with the web feature"),
 
         // ========== DEVELOPER EXPERIENCE & TOOLING ==========
+        Commands::Preflight {
+            output,
+            strict,
+            tls_cert,
+            tls_key,
+        } => {
+            let tls_cert = tls_cert.or(app_config.api.tls_cert.clone());
+            let tls_key = tls_key.or(app_config.api.tls_key.clone());
+            let report = preflight::run(&preflight::Inputs::from_process(tls_cert, tls_key));
+            match output.as_str() {
+                "json" => println!("{}", serde_json::to_string_pretty(&report)?),
+                _ => print!("{}", report.to_text()),
+            }
+            let code = report.exit_code(strict);
+            if code != 0 {
+                std::process::exit(code);
+            }
+        }
         Commands::Completions {
             shell,
             output,

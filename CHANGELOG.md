@@ -22,6 +22,10 @@ All notable changes to this project are documented here. The format follows
   VM, source, Copilot plan id, RFC 3339 time window), ordering and `format=json|ndjson|csv`. Read-only over the existing
   SOC event log, same `read` role as `/soc/events`, nothing is recorded differently. CSV output neutralizes spreadsheet
   formula injection. See [soc.md](docs/soc.md#querying-and-exporting-the-audit-trail).
+- `veyron preflight`: an offline audit of the configuration `api-serve` will read (API keys, `VEYRON_API_KEYS`
+  parsing pitfalls, JWT, OIDC, TLS files, namespace, integration URLs, CORS, risk flags, kubeconfig). `--strict` makes
+  warnings fail, `-o json` is machine-readable, secrets are never printed. New command only; nothing else changes.
+  See [deploy.md](docs/deploy.md#preflight-veyron-preflight).
 
 ### Documentation
 
