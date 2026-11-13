@@ -64,11 +64,7 @@ fn is_linux_vm(vm: &Value) -> bool {
         }
     }
 
-    if vm_has_linux_cloud_init(vm) {
-        return true;
-    }
-
-    false
+    vm_has_linux_cloud_init(vm)
 }
 
 fn is_linux_vmi(vmi: &Value) -> bool {
