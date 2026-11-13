@@ -2483,9 +2483,9 @@ pub enum Commands {
         output: Option<String>,
     },
 
-    /// Manage API keys
+    /// List the API keys configured in this environment (name, role, fingerprint; never the secret)
     ApiKeyList {
-        /// Show only active keys
+        /// Accepted for compatibility; every configured key is active
         #[arg(long)]
         active_only: bool,
 

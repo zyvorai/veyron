@@ -85,9 +85,13 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
   a missing or unknown role means `readonly`. Neither a name nor a key may contain `:` or `,`. The name is what
   appears as the actor in the audit log. In Helm the extra keys are `auth.additionalKeys`; with `deploy/k8s.yaml` they
   come from the optional `veyron-rbac-keys` Secret.
-- There is no key store behind the `veyron api-key-*` CLI commands: `api-key-create`, `api-key-delete` and
-  `api-key-list` fail with an explanation instead of pretending. Add or revoke keys by editing `VEYRON_API_KEY` /
-  `VEYRON_API_KEYS` (Helm: `auth.apiKey`, the `veyron-api-key` Secret) and restarting the API.
+- There is no key store behind the `veyron api-key-*` CLI commands. `api-key-create` and `api-key-delete` fail with an
+  explanation instead of pretending: add or revoke keys by editing `VEYRON_API_KEY` / `VEYRON_API_KEYS` (Helm:
+  `auth.apiKey`, the `veyron-api-key` Secret) and restarting the API.
+- `veyron api-key-list [-o table|json|yaml]` shows the keys configured in the environment where the command runs, parsed
+  the way the server parses them: name, role, source variable and a fingerprint (the first 8 hex characters of the key's
+  SHA-256). The secret is never printed. It cannot see a running server's keys, so run it where the same variables are
+  set (for example `kubectl exec` into the pod); the fingerprint lets you check which key a client holds.
 - Local console accounts are managed under **Security → Users & roles** (admin only), or through
   `/api/v1/auth/users`.
 

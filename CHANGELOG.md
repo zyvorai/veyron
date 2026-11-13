@@ -14,6 +14,10 @@ All notable changes to this project are documented here. The format follows
 - Helm chart: `networkPolicy.extraEgress` appends egress rules to the default NetworkPolicy (DNS and the Kubernetes API
   only), so the relay, Prometheus, an LLM endpoint or Netra can be allowed without disabling the policy. Defaults to
   empty; rendered output is unchanged without it.
+- `veyron api-key-list` now lists the keys configured in the environment (`VEYRON_API_KEY` and `VEYRON_API_KEYS`) with
+  name, role, source and a short SHA-256 fingerprint, as a table, JSON or YAML. It never prints a secret and, because there
+  is still no key store, it shows only what the process it runs in has configured. `api-key-create` and `api-key-delete`
+  still fail with guidance.
 
 ### Documentation
 
