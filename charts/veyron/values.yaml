@@ -96,6 +96,16 @@ podDisruptionBudget:
 
 networkPolicy:
   enabled: true
+  # Extra egress rules (standard NetworkPolicyEgressRule entries) appended to the default DNS and
+  # Kubernetes API rules. The default policy blocks the kairon-node relay (8090), Prometheus, an LLM
+  # endpoint and Netra; allow what you configure under integrations.* / ai.* here, e.g.:
+  #   extraEgress:
+  #     - to:
+  #         - namespaceSelector:
+  #             matchLabels: {kubernetes.io/metadata.name: monitoring}
+  #       ports:
+  #         - {port: 9090, protocol: TCP}
+  extraEgress: []
 
 rbac:
   create: true

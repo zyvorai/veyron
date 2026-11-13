@@ -11,6 +11,9 @@ All notable changes to this project are documented here. The format follows
 - Helm chart: `extraEnv` and `extraEnvFrom` values add container environment variables and `envFrom` sources, so settings
   with no value of their own (`VEYRON_PUBLIC_HOST`, `VEYRON_OIDC_AUDIENCE`, `VEYRON_CORS_ORIGINS`, the SIEM variables, the
   kairon-node relay) no longer need a pre-made Secret. Both default to empty; rendered output is unchanged without them.
+- Helm chart: `networkPolicy.extraEgress` appends egress rules to the default NetworkPolicy (DNS and the Kubernetes API
+  only), so the relay, Prometheus, an LLM endpoint or Netra can be allowed without disabling the policy. Defaults to
+  empty; rendered output is unchanged without it.
 
 ### Documentation
 
