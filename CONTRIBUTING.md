@@ -368,13 +368,18 @@ RUST_LOG=debug cargo run -- command
    `CHANGELOG.md` entries from `[Unreleased]` under the new version. Merge that through a pull request.
 2. Tag the merge commit and push the tag: `git tag -a v0.4.2 -m "Veyron 0.4.2" && git push origin v0.4.2`. Pushing a `v*`
    tag starts `.github/workflows/release.yml`.
-3. The workflow builds the console, runs lint and tests, builds the four binaries (`veyron-{linux,darwin}-{amd64,arm64}`),
-   builds and pushes `ghcr.io/zyvorai/veyron:<version>` and `:latest` with an SBOM and a keyless cosign signature, and then
-   (the `release` job) writes `SHA256SUMS`, an SPDX SBOM and a cosign bundle and creates the GitHub Release.
-4. **Known problem (0.4.0, 0.4.1):** the `docker` job fails at the GHCR push because the `veyron` package grants this
-   repository no write access, and `release` needs `docker`, so it is skipped. Permanent fix: package settings, **Manage
-   Actions access**, add `zyvorai/veyron` with the Write role ([docs/deploy.md](docs/deploy.md#container-image)). Until that is
-   done, publish by hand from the workflow run's artifacts:
+3. The workflow builds the console, runs lint and tests, then runs two jobs in parallel after the tests:
+   `build` produces the four binaries (`veyron-{linux,darwin}-{amd64,arm64}`), and `docker` builds and pushes
+   `ghcr.io/zyvorai/veyron:<version>` and `:latest` with an SBOM and provenance, then signs the digest with keyless cosign.
+   The `release` job needs only `build` (since PR #59): it writes `SHA256SUMS`, an SPDX SBOM and a cosign bundle for
+   `SHA256SUMS`, and creates the GitHub Release with the binaries and those files. The macOS binaries are not signed or notarized.
+4. **If the image push fails** (`permission_denied: write_package`), the GitHub Release is still created, because `release`
+   no longer waits for `docker`. The `veyron` GHCR package must grant `zyvorai/veyron` the Write role (package settings,
+   **Manage Actions access**); then re-run the failed `docker` job ([docs/deploy.md](docs/deploy.md#container-image)).
+   Re-running the whole workflow also re-runs `release`, which re-uploads the release assets (this is how v0.4.1 ended up
+   with the cosign bundle and SBOM after a hand-published first release). The GHCR package is private, so pulling the image
+   needs `docker login ghcr.io`.
+   If the `release` job itself fails, the manual fallback is (not re-run when this section was written):
 
    ```bash
    gh run download <run-id> -R zyvorai/veyron -p 'veyron-*' -D dl        # one folder per artifact
@@ -383,9 +388,8 @@ RUST_LOG=debug cargo run -- command
    gh release create v0.4.2 rel/* -R zyvorai/veyron --title v0.4.2 --notes-file notes.md
    ```
 
-   State in the notes what is missing (image, cosign bundle, SBOM) and check the checksums against the release page's
-   asset digests (`gh release view v0.4.2 --json assets`). The commands above are the manual equivalent of the workflow's
-   `release` job and were not re-run when this section was written.
+   State in the notes what is missing and check the checksums against the release page's asset digests
+   (`gh release view v0.4.2 --json assets`). Hand-written release notes are not updated by a re-run, so check them afterwards.
 5. Crates.io is not published (the crate depends on a local `guestkit` path), so there is no `cargo publish` step.
 
 ## 🤝 Community

@@ -2,7 +2,7 @@
 
 `Veyron.app` is a native macOS window around the Veyron console (`/console`), packaged as a signed,
 notarized DMG by the script below. The DMG is **not** attached to the GitHub releases (v0.4.0 and v0.4.1 carry only the
-four CLI binaries and `SHA256SUMS`); build it with `scripts/package-macos-app.sh` (see below). It adds what a browser tab lacks: its own Dock icon and window, a menu bar status item,
+four CLI binaries, `SHA256SUMS`, its cosign bundle (v0.4.1) and an SBOM (v0.4.1)); build it with `scripts/package-macos-app.sh` (see below). It adds what a browser tab lacks: its own Dock icon and window, a menu bar status item,
 real file pickers for image/ISO uploads, downloads straight to disk, native `prompt()`/`confirm()` dialogs,
 fullscreen VNC/serial consoles, and certificate pinning for Veyron's self-signed TLS.
 

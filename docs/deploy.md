@@ -3,26 +3,30 @@
 # Deploy
 
 Ways to run Veyron: the release binaries, a remote deploy script, Helm, or plain manifests, plus a standalone
-client tarball. **There is no published container image for 0.4.x** ([details](#container-image)): in-cluster installs
-today build the image from source on a node.
+client tarball. The container image `ghcr.io/zyvorai/veyron:0.4.1` (and `:latest`) is published and cosign-signed, but
+the GHCR package is **private**, so pulls need `docker login ghcr.io` ([details](#container-image)).
 
 ## Release binaries
 
 Each GitHub release (v0.4.1 is the latest) carries `veyron-linux-amd64`, `veyron-linux-arm64`,
-`veyron-darwin-amd64`, `veyron-darwin-arm64` and `SHA256SUMS`. The console is embedded. Linux builds link
-glibc dynamically.
+`veyron-darwin-amd64`, `veyron-darwin-arm64`, `SHA256SUMS`, `SHA256SUMS.cosign.bundle` and an SPDX SBOM
+(`veyron.spdx.json`). The console is embedded. Linux builds link glibc dynamically.
 
-What the v0.4.0 and v0.4.1 releases are, exactly:
+How the v0.4.1 release came about, and what it does and does not give you:
 
-- **Built by CI, published by hand.** The four binaries come from the tagged `Release` workflow run (its test and
-  build jobs pass). The same workflow's Docker job fails at the GHCR push, and the GitHub Release job needs the Docker
-  job, so the workflow never creates the release itself. The release page was created manually from the workflow's
-  binaries plus a `SHA256SUMS` file.
-- **No signatures.** There is no cosign bundle for `SHA256SUMS` and no SBOM (the workflow would produce both, but only
-  after the Docker job succeeds), so the checksum file is the only integrity check, and it comes from the same release
-  page as the binaries. It detects a corrupted download, not a tampered release.
-- **macOS binaries are not Developer ID signed or notarized.** Checked on the v0.4.1 assets with `codesign -dv`:
-  `veyron-darwin-arm64` carries only the linker's ad-hoc signature and `veyron-darwin-amd64` is not signed at all.
+- **Built by the `Release` workflow.** The four binaries come from the tagged run (test and build jobs pass). In the
+  first attempt the Docker job failed at the GHCR push, which at the time also skipped the release job, so the release page
+  was first created by hand from the run's binaries plus a `SHA256SUMS` file. After the package access was fixed the
+  workflow run was re-run: the image was pushed and the release assets above (including the cosign bundle and SBOM) were
+  uploaded by the workflow's `release` job. Since PR #59 the `release` job needs only `build`, so a failing image push no
+  longer blocks the GitHub release. (The v0.4.1 release notes text was written before the re-run and still says the cosign
+  signature and SBOM are missing; the asset list is authoritative.)
+- **`SHA256SUMS` is signed keyless with cosign** (GitHub Actions OIDC, via Sigstore). The checksum alone only catches a
+  corrupted download; verifying the bundle also shows the file was produced by this repository's release workflow for
+  that tag. The SBOM is SPDX JSON.
+- **macOS binaries are not Developer ID signed or notarized.** The workflow has no signing step. `veyron-darwin-arm64`
+  carries only the linker's ad-hoc signature and `veyron-darwin-amd64` is not signed at all (checked with `codesign -dv`
+  on the first-uploaded v0.4.1 assets; not re-checked on the re-uploaded ones).
   A binary saved from a browser is quarantined by Gatekeeper; clear it with `xattr -d com.apple.quarantine veyron-darwin-*`
   (`curl` downloads are not quarantined).
 
@@ -39,6 +43,16 @@ The `grep` keeps the check to the one file you downloaded. `shasum -a 256 -c SHA
 notes use) also works, but reports `FAILED open or read` for every binary that is not in the current directory, so use it
 only after downloading all four. `sha256sum` (GNU) and `shasum -a 256` (macOS, and Perl `shasum` on Linux) both read
 the same file format.
+
+Optional signature check (needs [`cosign`](https://docs.sigstore.dev/cosign/); this was run against the v0.4.1 files and
+printed `Verified OK`). Replace the tag in the identity for other releases:
+
+```bash
+curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/SHA256SUMS.cosign.bundle
+cosign verify-blob --bundle SHA256SUMS.cosign.bundle \
+  --certificate-identity "https://github.com/zyvorai/veyron/.github/workflows/release.yml@refs/tags/$V" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com SHA256SUMS
+```
 
 Run the API and console with `veyron api-serve`:
 
@@ -174,11 +188,11 @@ cluster; Veyron never switches to it on its own.
 
 ## 2. Helm
 
-> **Image caveat.** `ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` are **not published** (see [Container image](#container-image)).
-> The chart's `image.tag` defaults to `latest`, which is the older 2026-10-04 image from before
-> the Kairon rewrite, and the chart's `appVersion` (0.4.1) does not change that. Do not pin `image.tag=0.4.0` or `0.4.1`:
-> the pull fails. Build and push the image yourself and set `image.repository` and `image.tag`
-> (`--set image.repository=... --set image.tag=...`), or use the remote deploy script, which builds on a node.
+> **Image caveat.** `ghcr.io/zyvorai/veyron:0.4.1` and `:latest` are published (`0.4.0` was not), but the `veyron` GHCR
+> package is **private**: the cluster needs credentials to pull it (see [Container image](#container-image)). The chart's
+> `image.tag` defaults to `latest`, which now means 0.4.1 and moves with each release; pin `--set image.tag=0.4.1` for
+> reproducible installs. Without pull credentials, or to use your own registry, set `image.repository` / `image.tag`
+> (and `imagePullSecrets`), or use the remote deploy script, which builds on a node.
 
 ```bash
 helm upgrade --install veyron ./charts/veyron -n veyron-system --create-namespace \
@@ -239,23 +253,36 @@ for HTTPS, 30150 for the redirect), and loads these Secrets if present: `veyron-
 
 ## Container image
 
-`ghcr.io/zyvorai/veyron:0.4.0` and `:0.4.1` do not exist. The `Release` workflow (`.github/workflows/release.yml`) builds
-the image in its `docker` job, but pushing to GHCR fails because the `veyron` package grants this repository no write
-access, and the `release` job lists `docker` in `needs`, so it is skipped. (The workflow log shows the failure in the
-"Build and push" step; the exact denial message was not captured here.) The tags `0.3.x` and `latest` on GHCR are
-images from 2026-10-04, before the Kairon rewrite.
+`ghcr.io/zyvorai/veyron:0.4.1` and `:latest` are published (`0.4.0` was never published as an image). The `Release`
+workflow (`.github/workflows/release.yml`) builds the image in its `docker` job with an SBOM and provenance attestation,
+pushes `:<version>` and `:latest`, and signs the digest with keyless cosign. The v0.4.1 image was pushed by re-running
+that job after the first attempt failed at the GHCR push (the `veyron` package did not yet grant this repository write
+access). The `0.3.x` tags on GHCR are images from 2026-10-04, before the Kairon rewrite.
 
-**Fix for maintainers** (needs admin rights on the package):
+**The package is private.** Pulling needs authentication with a token that can read packages:
 
-1. Open the `veyron` package under the `zyvorai` organization on GitHub (Packages, `veyron`, *Package settings*).
-2. Under **Manage Actions access**, add the repository `zyvorai/veyron` with the **Write** role.
-3. Re-run the failed `docker` job of the tag's workflow run, or push a new tag. The workflow logs in with the built-in
-   `GITHUB_TOKEN` (`packages: write` is already granted in the workflow), so no personal access token is needed.
-   Re-running the whole workflow would also run the `release` job against a release page that already exists; check
-   what it does to the hand-published assets first. This path has not been tried.
+```bash
+echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
+docker pull ghcr.io/zyvorai/veyron:0.4.1
+# in Kubernetes: a docker-registry Secret, referenced through the chart's imagePullSecrets
+kubectl -n veyron-system create secret docker-registry ghcr-pull --docker-server=ghcr.io \
+  --docker-username=<github-user> --docker-password="$GHCR_TOKEN"
+helm upgrade --install veyron ./charts/veyron -n veyron-system --set image.tag=0.4.1 \
+  --set 'imagePullSecrets[0].name=ghcr-pull' ...   # plus the auth values from the Helm section
+```
 
-**Until then**, build your own. The first route builds on a node and keeps the image there; the second mirrors the
-workflow and pushes to a registry you choose:
+(These are the standard Docker and Kubernetes forms; they were not run against this package for this page, and the image
+signature was not verified here. The workflow signs `ghcr.io/zyvorai/veyron@<digest>` keyless, so `cosign verify` needs
+the digest, the release workflow identity and the GitHub OIDC issuer.)
+
+**For maintainers.** The workflow logs in with the built-in `GITHUB_TOKEN` (`packages: write` is granted in the
+workflow), which works only while the package grants `zyvorai/veyron` the **Write** role (Packages, `veyron`, *Package
+settings*, **Manage Actions access**). If the push fails with `permission_denied: write_package`, fix that and re-run the
+failed `docker` job. Since PR #59 the GitHub Release job does not depend on the image job, so a failed push no longer
+blocks the release. Making the image public is a separate choice in the same settings page; it has not been done.
+
+**Without GHCR access**, build your own. The first route builds on a node and keeps the image there; the second mirrors
+the workflow and pushes to a registry you choose:
 
 ```bash
 ./scripts/deploy-remote.sh <host> <user>          # builds docker.io/library/veyron:<version> on the node
@@ -283,7 +310,7 @@ ClusterRole for dashboards.
       echoes a client-supplied `Host`.
 - [ ] Turn on SSO ([sso.md](sso.md)) and set `VEYRON_OIDC_AUDIENCE`.
 - [ ] Behind a reverse proxy, remember that the login limiter and rate limiter see the proxy's address.
-- [ ] Use an image you built and pushed, not the Helm default `latest` ([Container image](#container-image)).
+- [ ] Pin `image.tag` (for example `0.4.1`) instead of the moving default `latest`, and give the cluster pull credentials for the private GHCR package, or use your own registry ([Container image](#container-image)).
 - [ ] Keep RDP behind a VPN or gateway. Public RDP NodePorts are refused unless
       `VEYRON_ALLOW_PUBLIC_RDP=1`.
 - [ ] Wire Prometheus and Alertmanager ([integrations.md](integrations.md)).

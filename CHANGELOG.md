@@ -15,6 +15,12 @@ All notable changes to this project are documented here. The format follows
   role table. Removed stale text (a PR description in the enterprise guide, a non-existent `experimental` feature flag,
   a `/networks` route).
 
+- Brought the docs in line with what is now published for v0.4.1: the container image `ghcr.io/zyvorai/veyron:0.4.1` and
+  `:latest` exist (private GHCR package, so pulls need `docker login ghcr.io` or an `imagePullSecret`; cosign-signed), the
+  release carries `SHA256SUMS.cosign.bundle` and an SBOM after the workflow re-run, and the `release` job needs only
+  `build` (#59). Added a cosign verification example and pull-credential instructions; the Helm chart notes and the
+  release process in CONTRIBUTING.md were updated to match.
+
 ## [0.4.1] - 2026-11-12
 
 Security and correctness patch release on top of 0.4.0. Read the upgrade notes before rolling it out.
@@ -49,6 +55,11 @@ Security and correctness patch release on top of 0.4.0. Read the upgrade notes b
   push your own image and set `image.repository` / `image.tag`.
 
 ### Known gaps in the v0.4.1 release
+
+> **Update after release.** The statements below describe the release as first published. Afterwards the access problem
+> was fixed and the workflow run was re-run: `ghcr.io/zyvorai/veyron:0.4.1` and `:latest` are now published (the package
+> is private; the image is cosign-signed), and the release assets now also include `SHA256SUMS.cosign.bundle` and
+> `veyron.spdx.json`. macOS binaries are still not Developer ID signed.
 
 The container image `ghcr.io/zyvorai/veyron:0.4.1` was not published (the GHCR package grants this repository no write
 access, so the `Release` workflow's Docker job fails and its release job is skipped). The GitHub Release was published by
