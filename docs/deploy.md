@@ -317,6 +317,28 @@ ClusterRole for dashboards.
 - [ ] Run `./scripts/customer-readiness.sh <host>`, the full go-live gate.
 - [ ] Hold a commercial license for production use ([LICENSE](../LICENSE)).
 
+### Preflight: `veyron preflight`
+
+`veyron preflight` checks the configuration the API will read, without a cluster and without sending anything over the
+network. Run it where `api-serve` runs (or with the same environment, for example `kubectl exec` into the pod or
+`docker run --env-file`).
+
+```bash
+veyron preflight                       # human-readable; exit 1 on any failure
+veyron preflight --strict              # warnings also exit 1 (CI / pre-deploy gate)
+veyron preflight -o json               # machine-readable findings
+veyron preflight --tls-cert c.pem --tls-key k.pem
+```
+
+It reports: a missing or default/short `VEYRON_API_KEY`; `VEYRON_API_KEYS` entries the server would silently
+mishandle (no key, unknown role that falls back to `readonly`, duplicate names or values, a key containing `:` that is
+cut short); a half-set JWT pair or a short JWT secret; the published default bootstrap admin password; partial OIDC
+settings or a missing audience; TLS files that are absent or not PEM (expiry is not checked); an invalid
+`VEYRON_NAMESPACE`; integration URLs that are not http(s), or plain `http://` to a non-cluster host while a token is
+set; `*` in `VEYRON_CORS_ORIGINS` (it is not a wildcard); an unsigned plan webhook; risk-lowering flags that are on; and
+a missing kubeconfig outside a cluster. Secret values are never printed. It is the configuration counterpart of
+`veyron doctor`, which checks the cluster connection and KubeVirt. Findings are `ok`, `warn` or `fail`.
+
 ## Client tarball
 
 A static linux/amd64 build with install scripts, built on a remote Linux host:

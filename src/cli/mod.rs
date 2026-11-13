@@ -2281,6 +2281,25 @@ pub enum Commands {
     },
 
     // ========== DEVELOPER EXPERIENCE & TOOLING ==========
+    /// Check this machine's configuration for api-serve (offline; complements `doctor`, which checks the cluster)
+    Preflight {
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        output: String,
+
+        /// Exit non-zero on warnings too (for CI / pre-deploy gates)
+        #[arg(long)]
+        strict: bool,
+
+        /// TLS certificate path to check (defaults to the config file's api.tls_cert)
+        #[arg(long)]
+        tls_cert: Option<String>,
+
+        /// TLS key path to check (defaults to the config file's api.tls_key)
+        #[arg(long)]
+        tls_key: Option<String>,
+    },
+
     /// Generate shell completions
     Completions {
         /// Shell type (bash, zsh, fish, powershell, elvish)
