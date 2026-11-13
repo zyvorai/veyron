@@ -56,10 +56,7 @@ fn is_blocked_ip(ip: std::net::IpAddr) -> bool {
             }
             // CGNAT / shared address space (100.64.0.0/10, RFC 6598)
             let octets = v4.octets();
-            if octets[0] == 100 && (octets[1] & 0xC0) == 0x40 {
-                return true;
-            }
-            false
+            octets[0] == 100 && (octets[1] & 0xC0) == 0x40
         }
         std::net::IpAddr::V6(v6) => {
             if v6.is_loopback() || v6.is_unspecified() {
