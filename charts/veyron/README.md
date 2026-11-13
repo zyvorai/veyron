@@ -47,7 +47,7 @@ the monitoring chart).
 | `auth.secretName` | `veyron-api-key` | |
 | `rateLimit.perMinute` | `60` | `--rate-limit`; `0` disables |
 | `imageStore.persistence`, `size`, `storageClass`, `existingClaim` | `true`, `50Gi`, `""`, `""` | Kairon image uploads. Without persistence an `emptyDir` loses uploads on restart |
-| `networkPolicy.enabled` | `true` | Ingress: the API port. Egress: DNS and the Kubernetes API (443, 6443) only. See below |
+| `networkPolicy.enabled`, `networkPolicy.extraEgress` | `true`, `[]` | Ingress: the API port. Egress: DNS and the Kubernetes API (443, 6443) only, plus any `extraEgress` rules (standard `NetworkPolicyEgressRule` entries). See below |
 | `podDisruptionBudget` | enabled, `maxUnavailable: 1` | |
 | `rbac.create`, `rbac.clusterRoleName` | `true`, `veyron` | Keep in step with `deploy/k8s.yaml` |
 | `integrations.*` | empty | Prometheus, OpenCost, Trivy, Loki, Jaeger/Tempo, Alertmanager, Argo CD, Netra, Paqtra URLs and credentials; `integrations.existingSecret` is loaded as `envFrom` |
@@ -67,7 +67,18 @@ the monitoring chart).
   way (`integrations.existingSecret` or `oidc.existingSecret`), or set them one by one with `extraEnv`, for example
   `--set 'extraEnv[0].name=VEYRON_PUBLIC_HOST' --set 'extraEnv[0].value=veyron.example.com'`.
 - **Egress for those calls.** With the default NetworkPolicy the pod cannot reach the relay (8090), Prometheus, an
-  LLM endpoint or Netra. Add a policy for them or set `networkPolicy.enabled=false`.
+  LLM endpoint or Netra. Allow them with `networkPolicy.extraEgress`, add a separate policy, or set
+  `networkPolicy.enabled=false`. Example values file:
+
+  ```yaml
+  networkPolicy:
+    extraEgress:
+      - to:
+          - namespaceSelector:
+              matchLabels: {kubernetes.io/metadata.name: monitoring}
+        ports:
+          - {port: 9090, protocol: TCP}
+  ```
 - **The HTTP-to-HTTPS redirect listener** (port 5150 in `deploy/k8s.yaml`) is not exposed by the Service.
 
 ## Environment

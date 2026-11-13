@@ -31,4 +31,8 @@ spec:
           protocol: TCP
         - port: 6443
           protocol: TCP
+    {{- with .Values.networkPolicy.extraEgress }}
+    # Extra egress rules from networkPolicy.extraEgress
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- end }}
