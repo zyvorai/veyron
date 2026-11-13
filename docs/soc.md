@@ -36,6 +36,7 @@ so a client sending very long URLs can no longer fill the ConfigMap and make lat
 | Method | Route | Role | Purpose |
 |---|---|---|---|
 | GET | `/api/v1/soc/events` | read | Event stream, newest first (`?refresh=true` collects now, `severity`, `category`, `limit` up to 500, default 200) |
+| GET | `/api/v1/soc/audit` | read | Query and export the API audit trail: filter by `actor`, `action` (HTTP method), `outcome`, `path` (substring), `namespace`, `vm`, `source`, `plan_id`, `since` (inclusive) and `until` (exclusive) as RFC 3339, `order=asc\|desc`, `limit` (default 200, max 500), and `format=json\|ndjson\|csv` |
 | POST | `/api/v1/soc/events` | write | Collect now and store the new events |
 | GET | `/api/v1/soc/detections` | read | Evaluate rules, include acknowledgements. Not a pure read: it saves the result, adds open detections to the event log, pushes recent events to the SIEM and fires the SOAR webhook for new ones, whatever the caller's role |
 | GET | `/api/v1/soc/detections/:id` | read | One detection |
@@ -46,6 +47,28 @@ so a client sending very long URLs can no longer fill the ConfigMap and make lat
 | GET | `/api/v1/soc/attack-surface` | read | VM exposure inventory |
 | GET | `/api/v1/soc/playbooks` | read | SOAR playbooks (ConfigMaps `veyron.io/type=soc-playbook`; the `VEYRON_SOAR_WEBHOOK_URL` one when none exist) |
 | POST | `/api/v1/soc/playbooks/trigger` | admin | Fire a playbook |
+
+### Querying and exporting the audit trail
+
+`GET /api/v1/soc/audit` reads the stored log (it never collects or writes) and returns only audit events. Filters
+combine with AND; text filters other than `path` match exactly and ignore case. Bad input answers `400` with an
+`error` message.
+
+```bash
+# Everything one key did to VMs in November, as CSV for a spreadsheet or evidence bundle
+curl -sk -H "Authorization: Bearer $KEY" \
+  "https://veyron:5151/api/v1/soc/audit?actor=ci&path=/vms/&since=2026-11-01T00:00:00Z&until=2026-12-01T00:00:00Z&format=csv" > audit.csv
+
+# Failed calls, newest first, as JSON: {"events": [...], "matched": 12, "returned": 12}
+curl -sk -H "Authorization: Bearer $KEY" "https://veyron:5151/api/v1/soc/audit?outcome=failure"
+```
+
+`format=ndjson` gives one event per line for log shippers; `csv` has the columns `timestamp,id,source,actor,action,outcome,
+target,namespace,vm,plan_id,message`. CSV fields that start with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'`
+so an attacker-chosen path or actor cannot become a spreadsheet formula. `matched` counts every hit; `returned` is
+what fit under `limit`. The window is bounded by the stored log (newest 500 events, see the bounds above), so for
+long retention ship events to a SIEM ([SIEM export](#siem-export)). Here `?namespace=` filters on the event's
+namespace; it does not pick a different log.
 
 State lives in labeled ConfigMaps in Veyron's own namespace (`VEYRON_NAMESPACE`; Helm `api.namespace`):
 `veyron-soc-events` (`veyron.io/type=soc-events`, the rolling buffer above) and `veyron-soc-detections`

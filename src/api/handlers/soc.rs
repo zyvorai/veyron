@@ -62,6 +62,7 @@ pub struct SocExportStatusResponse {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/soc/events", get(list_soc_events).post(sync_soc_events))
+        .route("/soc/audit", get(query_soc_audit))
         .route("/soc/detections", get(list_soc_detections))
         .route("/soc/detections/:id", get(get_soc_detection))
         .route("/soc/detections/:id/ack", post(ack_soc_detection))
@@ -108,6 +109,64 @@ async fn list_soc_events(
     let total = events.len();
     events.truncate(limit);
     Json(SocEventsResponse { events, total })
+}
+
+/// `GET /soc/audit`: filtered, time-bounded query and export of the API audit trail.
+/// Read-only over the stored event log; it never collects or writes.
+#[cfg(feature = "web")]
+async fn query_soc_audit(
+    State(state): State<SharedState>,
+    Query(raw): Query<crate::soc::audit_query::AuditQuery>,
+) -> axum::response::Response {
+    use crate::soc::audit_query::{AuditFilter, Format, to_csv, to_ndjson};
+    use axum::http::header;
+    use axum::response::IntoResponse;
+
+    let filter = match AuditFilter::parse(raw) {
+        Ok(f) => f,
+        Err(msg) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "error": msg })),
+            )
+                .into_response();
+        }
+    };
+    // Audit events are always written to Veyron's own namespace, so that is the only log read;
+    // `?namespace=` here filters on the event's namespace field.
+    let (ns, k8s) = soc_namespace(&state, None).await;
+    let events = store::load_events(&k8s, &ns).await;
+    let (total, page) = filter.apply(&events);
+    match filter.format {
+        Format::Json => Json(serde_json::json!({
+            "events": page,
+            "matched": total,
+            "returned": page.len(),
+        }))
+        .into_response(),
+        Format::Ndjson => (
+            [
+                (header::CONTENT_TYPE, "application/x-ndjson"),
+                (
+                    header::CONTENT_DISPOSITION,
+                    "attachment; filename=\"veyron-audit.ndjson\"",
+                ),
+            ],
+            to_ndjson(&page),
+        )
+            .into_response(),
+        Format::Csv => (
+            [
+                (header::CONTENT_TYPE, "text/csv; charset=utf-8"),
+                (
+                    header::CONTENT_DISPOSITION,
+                    "attachment; filename=\"veyron-audit.csv\"",
+                ),
+            ],
+            to_csv(&page),
+        )
+            .into_response(),
+    }
 }
 
 #[cfg(feature = "web")]
