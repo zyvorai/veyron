@@ -506,8 +506,101 @@ startup from VEYRON_API_KEY (admin) and VEYRON_API_KEYS (\"name:key:role,...\" w
 admin|write|readonly). To add or revoke a key, edit those variables (Helm: auth.apiKey / the \
 veyron-api-key Secret) and restart the server";
 
-pub fn handle_api_key_list(_active_only: bool, _output: String) -> Result<()> {
-    anyhow::bail!("api-key-list cannot show keys: {API_KEYS_NOT_PERSISTED}")
+/// One key configured through the environment, as listed by `api-key-list`.
+/// The secret itself is never part of this; `fingerprint` is a short SHA-256 prefix
+/// that lets an operator tell keys apart (or confirm which one a client holds).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ConfiguredKey {
+    pub name: String,
+    pub role: String,
+    pub source: String,
+    pub fingerprint: String,
+}
+
+fn key_fingerprint(key: &str) -> String {
+    use sha2::{Digest, Sha256};
+    hex::encode(Sha256::digest(key.as_bytes()))[..8].to_string()
+}
+
+/// Mirrors how the API server reads `VEYRON_API_KEY` and `VEYRON_API_KEYS` at startup
+/// (`name:key:role`, comma-separated; an unknown or missing role means `readonly`; entries
+/// without a `:` are ignored). Values are trimmed and an empty variable counts as unset.
+pub fn configured_api_keys(primary: Option<&str>, extra: Option<&str>) -> Vec<ConfiguredKey> {
+    let mut out = Vec::new();
+    let primary = primary.map(str::trim).filter(|v| !v.is_empty());
+    if let Some(key) = primary {
+        out.push(ConfiguredKey {
+            name: "primary".into(),
+            role: "admin".into(),
+            source: "VEYRON_API_KEY".into(),
+            fingerprint: key_fingerprint(key),
+        });
+    }
+    let extra = extra.map(str::trim).filter(|v| !v.is_empty());
+    for entry in extra.unwrap_or("").split(',') {
+        let parts: Vec<&str> = entry.trim().split(':').collect();
+        if parts.len() < 2 {
+            continue;
+        }
+        let role = match parts.get(2).copied() {
+            Some("admin") => "admin",
+            Some("write") => "write",
+            _ => "readonly",
+        };
+        out.push(ConfiguredKey {
+            name: parts[0].to_string(),
+            role: role.into(),
+            source: "VEYRON_API_KEYS".into(),
+            fingerprint: key_fingerprint(parts[1]),
+        });
+    }
+    out
+}
+
+/// `api-key-list`: show the keys configured in this process's environment. There is still
+/// no key store, so this cannot see a running server's keys, only what `VEYRON_API_KEY` /
+/// `VEYRON_API_KEYS` hold where the command runs (for example `kubectl exec`, or a shell that
+/// sourced the same env file). Secrets are never printed.
+pub fn handle_api_key_list(_active_only: bool, output: String) -> Result<()> {
+    let keys = configured_api_keys(
+        std::env::var("VEYRON_API_KEY").ok().as_deref(),
+        std::env::var("VEYRON_API_KEYS").ok().as_deref(),
+    );
+    match output.as_str() {
+        "json" => println!("{}", serde_json::to_string_pretty(&keys)?),
+        "yaml" => println!("{}", serde_yml::to_string(&keys)?),
+        "table" => {
+            println!("{}", color::header("Configured API keys"));
+            println!();
+            if keys.is_empty() {
+                println!(
+                    "  {}",
+                    color::muted("No keys in VEYRON_API_KEY / VEYRON_API_KEYS in this environment")
+                );
+            } else {
+                println!(
+                    "  {:<20} {:<10} {:<10} SOURCE",
+                    "NAME", "ROLE", "FINGERPRINT"
+                );
+                for k in &keys {
+                    println!(
+                        "  {:<20} {:<10} {:<10} {}",
+                        k.name, k.role, k.fingerprint, k.source
+                    );
+                }
+            }
+            println!();
+            println!(
+                "  {}",
+                color::muted(
+                    "Read from this process's environment; the server has no key store. \
+Fingerprint = first 8 hex of SHA-256 of the key."
+                )
+            );
+        }
+        other => anyhow::bail!("unknown output format '{other}' (table, yaml, json)"),
+    }
+    Ok(())
 }
 
 pub fn handle_api_key_create(
@@ -995,7 +1088,63 @@ mod tests {
         let e = super::handle_api_key_create("k".into(), "read".into(), None).unwrap_err();
         assert!(e.to_string().contains("VEYRON_API_KEYS"), "{e}");
         assert!(super::handle_api_key_delete("k".into(), true).is_err());
-        assert!(super::handle_api_key_list(false, "table".into()).is_err());
+    }
+
+    #[test]
+    fn configured_keys_parse_like_the_server() {
+        let keys = super::configured_api_keys(
+            Some(" root-secret "),
+            Some(
+                "ops:k1:admin, ci:k2:write ,viewer:k3:readonly,old:k4:read,odd:k5:bogus,norole:k6,bad",
+            ),
+        );
+        let got: Vec<(&str, &str)> = keys
+            .iter()
+            .map(|k| (k.name.as_str(), k.role.as_str()))
+            .collect();
+        assert_eq!(
+            got,
+            vec![
+                ("primary", "admin"),
+                ("ops", "admin"),
+                ("ci", "write"),
+                ("viewer", "readonly"),
+                ("old", "readonly"),
+                ("odd", "readonly"),
+                ("norole", "readonly"),
+            ]
+        );
+        assert_eq!(keys[0].source, "VEYRON_API_KEY");
+        assert_eq!(keys[1].source, "VEYRON_API_KEYS");
+    }
+
+    #[test]
+    fn configured_keys_never_expose_the_secret() {
+        let keys = super::configured_api_keys(
+            Some("super-secret-primary"),
+            Some("a:super-secret-a:write"),
+        );
+        let rendered = serde_json::to_string(&keys).unwrap();
+        assert!(!rendered.contains("super-secret"), "{rendered}");
+        assert!(keys.iter().all(|k| k.fingerprint.len() == 8));
+        assert_ne!(keys[0].fingerprint, keys[1].fingerprint);
+        // Stable across calls, so it can be compared with what a client holds.
+        assert_eq!(
+            keys[1].fingerprint,
+            super::configured_api_keys(None, Some("x:super-secret-a:admin"))[0].fingerprint
+        );
+    }
+
+    #[test]
+    fn configured_keys_empty_when_unset_or_blank() {
+        assert!(super::configured_api_keys(None, None).is_empty());
+        assert!(super::configured_api_keys(Some("  "), Some("")).is_empty());
+    }
+
+    #[test]
+    fn api_key_list_rejects_unknown_format() {
+        assert!(super::handle_api_key_list(false, "xml".into()).is_err());
+        assert!(super::handle_api_key_list(false, "json".into()).is_ok());
     }
 
     #[test]
