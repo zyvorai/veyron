@@ -70,6 +70,22 @@ imageStore:
   storageClass: ""
   existingClaim: ""
 
+# Extra container environment, appended after the chart's own variables. Use it for settings that
+# have no value of their own, e.g. VEYRON_PUBLIC_HOST or VEYRON_CORS_ORIGINS. Do not repeat a
+# variable the chart already sets: the duplicate is a Kubernetes warning and the result is hard to follow.
+# Standard Kubernetes EnvVar entries, so valueFrom works:
+#   extraEnv:
+#     - name: VEYRON_PUBLIC_HOST
+#       value: veyron.example.com
+#     - name: VEYRON_OIDC_AUDIENCE
+#       valueFrom: {secretKeyRef: {name: my-oidc, key: audience}}
+extraEnv: []
+# Extra envFrom sources (secretRef / configMapRef), loaded after integrations.existingSecret and
+# oidc.existingSecret.
+#   extraEnvFrom:
+#     - configMapRef: {name: veyron-extra}
+extraEnvFrom: []
+
 nodeSelector: {}
 tolerations: []
 affinity: {}
