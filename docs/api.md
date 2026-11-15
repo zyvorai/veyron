@@ -229,6 +229,13 @@ over a concurrency cap. Features the current VM engine can't provide return
 `501 Not Implemented` with a reason, never a fake success; KubeVirt/CDI-only routes use the
 code `KUBEVIRT_ONLY` (Kairon-only routes on a KubeVirt backend use `KAIRON_REQUIRED`).
 
+### Request ids
+
+Every response carries an `X-Request-Id` header, including `401`, `403`, `429` and timeout responses. A request that
+already has one (from an ingress, a service mesh or your own client) keeps it when it is 1-64 characters of
+`A-Z a-z 0-9 . _ -`; anything else is replaced, and a request with none gets a generated `req-<microseconds>-<hex>` id.
+Quote it when reporting a problem so the request can be found in the proxy and server logs.
+
 ### Limits worth knowing
 
 | Limit | Behaviour |

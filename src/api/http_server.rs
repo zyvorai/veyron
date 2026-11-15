@@ -863,6 +863,53 @@ pub mod web {
         response
     }
 
+    // ── Request correlation id ───────────────────────────────────
+
+    /// Header carrying the correlation id of a request.
+    const REQUEST_ID_HEADER: &str = "x-request-id";
+
+    /// A caller-supplied request id is kept only when it is 1-64 characters of `[A-Za-z0-9._-]`;
+    /// anything else (empty, long, spaces, control characters) is replaced so a client cannot
+    /// inject odd text into logs or reflected headers.
+    fn valid_request_id(v: &str) -> bool {
+        (1..=64).contains(&v.len())
+            && v.bytes()
+                .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+    }
+
+    fn generate_request_id() -> String {
+        format!(
+            "req-{}-{:016x}",
+            chrono::Utc::now().timestamp_micros(),
+            rand::random::<u64>()
+        )
+    }
+
+    /// Give every request a correlation id and echo it on the response. A valid inbound
+    /// `X-Request-Id` (for example from an ingress or a service mesh) is propagated, otherwise one
+    /// is generated. The id is also set on the request so inner layers and handlers see the same
+    /// value. This is the outermost layer, so it covers 401, 429 and timeout responses too.
+    async fn request_id_middleware(
+        mut request: axum::extract::Request,
+        next: middleware::Next,
+    ) -> impl IntoResponse {
+        let id = request
+            .headers()
+            .get(REQUEST_ID_HEADER)
+            .and_then(|v| v.to_str().ok())
+            .filter(|v| valid_request_id(v))
+            .map(str::to_owned)
+            .unwrap_or_else(generate_request_id);
+        if let Ok(value) = id.parse::<axum::http::HeaderValue>() {
+            request.headers_mut().insert(REQUEST_ID_HEADER, value.clone());
+            let mut response = next.run(request).await;
+            response.headers_mut().insert(REQUEST_ID_HEADER, value);
+            response
+        } else {
+            next.run(request).await
+        }
+    }
+
     // ── CORS configuration ──────────────────────────────────────
 
     /// Build a CORS layer. If `VEYRON_CORS_ORIGINS` is set (comma-separated
@@ -1229,6 +1276,7 @@ pub mod web {
             .layer(middleware::from_fn_with_state(state, auth_middleware))
             .layer(build_cors_layer())
             .layer(DefaultBodyLimit::max(10 * 1024 * 1024)) // 10 MiB
+            .layer(middleware::from_fn(request_id_middleware))
     }
 
     pub async fn start_server(
@@ -1882,6 +1930,62 @@ pub mod web {
             assert!(t(None, Some("a b"), 443, "/").is_none());
             assert!(t(None, None, 443, "/").is_none());
             assert!(t(Some("bad host"), None, 443, "/").is_none());
+        }
+
+        #[test]
+        fn request_id_validation() {
+            use super::valid_request_id as v;
+            assert!(v("abc-123_X.y"));
+            assert!(v(&"a".repeat(64)));
+            assert!(!v(""));
+            assert!(!v(&"a".repeat(65)));
+            assert!(!v("has space"));
+            assert!(!v("line\nbreak"));
+            assert!(!v("a/b"));
+            assert!(!v("\u{e9}"));
+        }
+
+        async fn health_request_id(inbound: Option<&str>, path: &str) -> (u16, String) {
+            let app = build_router(std::sync::Arc::new(tokio::sync::RwLock::new(
+                WebState::for_router_test(),
+            )));
+            let mut req = axum::http::Request::builder().uri(path);
+            if let Some(id) = inbound {
+                req = req.header("x-request-id", id);
+            }
+            let resp = app
+                .oneshot(req.body(Body::empty()).expect("request"))
+                .await
+                .expect("router never errors");
+            let id = resp
+                .headers()
+                .get("x-request-id")
+                .map(|v| v.to_str().unwrap().to_string())
+                .unwrap_or_default();
+            (resp.status().as_u16(), id)
+        }
+
+        #[tokio::test]
+        async fn request_id_is_propagated_or_generated() {
+            // A valid inbound id is echoed unchanged.
+            let (_, id) = health_request_id(Some("trace-abc.123"), "/api/v1/health").await;
+            assert_eq!(id, "trace-abc.123");
+            // An invalid one is replaced by a generated id.
+            let (_, id) = health_request_id(Some("bad id"), "/api/v1/health").await;
+            assert!(id.starts_with("req-"), "got {id:?}");
+            // With none, an id is generated, and two requests get different ids.
+            let (_, a) = health_request_id(None, "/api/v1/health").await;
+            let (_, b) = health_request_id(None, "/api/v1/health").await;
+            assert!(a.starts_with("req-") && b.starts_with("req-"));
+            assert_ne!(a, b);
+        }
+
+        #[tokio::test]
+        async fn request_id_is_present_on_rejected_requests() {
+            // No credential: 401 from the auth layer still carries the id.
+            let (status, id) = health_request_id(Some("rid-401"), "/api/v1/vms").await;
+            assert_eq!(status, 401);
+            assert_eq!(id, "rid-401");
         }
 
         #[test]

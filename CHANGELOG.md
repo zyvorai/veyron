@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 - `veyron preflight` now checks the global API rate limit (`--rate-limit`, else `api.rate_limit` from the config file): it
   warns when the limit is `0` (disabled), below 10 requests per minute or above 60000. New `--rate-limit` option to check a
   value before passing it to `api-serve`.
+- API: every response now carries an `X-Request-Id` header (also on 401, 403, 429 and timeouts). A valid inbound id
+  (1-64 characters of `A-Za-z0-9._-`) is propagated, otherwise one is generated. See [api.md](docs/api.md#request-ids).
 - Helm chart: `extraEnv` and `extraEnvFrom` values add container environment variables and `envFrom` sources, so settings
   with no value of their own (`VEYRON_PUBLIC_HOST`, `VEYRON_OIDC_AUDIENCE`, `VEYRON_CORS_ORIGINS`, the SIEM variables, the
   kairon-node relay) no longer need a pre-made Secret. Both default to empty; rendered output is unchanged without them.
