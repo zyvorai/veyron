@@ -1950,9 +1950,9 @@ pub mod web {
         async fn health_request_id(inbound: Option<&str>, path: &str) -> (u16, String) {
             use axum::body::Body;
             use tower::ServiceExt;
-            let app = build_router(std::sync::Arc::new(tokio::sync::RwLock::new(
-                WebState::for_router_test(),
-            )));
+            let mut st = WebState::for_router_test();
+            st.api_key = Some("k-primary".into());
+            let app = build_router(std::sync::Arc::new(tokio::sync::RwLock::new(st)));
             let mut req = axum::http::Request::builder().uri(path);
             if let Some(id) = inbound {
                 req = req.header("x-request-id", id);
