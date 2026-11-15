@@ -613,7 +613,10 @@ fn check_rate_limit(inp: &Inputs, o: &mut Out) {
             format!("lower --rate-limit to {HIGH_RATE_LIMIT} or less"),
         );
     } else {
-        o.ok("rate-limit", format!("global rate limit is {n} requests/minute"));
+        o.ok(
+            "rate-limit",
+            format!("global rate limit is {n} requests/minute"),
+        );
     }
 }
 
