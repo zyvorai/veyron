@@ -14,6 +14,10 @@ use std::collections::BTreeMap;
 const DEFAULT_SECRET: &str = "Admin@321";
 const MIN_KEY_LEN: usize = 16;
 const MIN_JWT_SECRET_LEN: usize = 32;
+/// Below this the one global window (shared by every client) is easy to exhaust.
+const LOW_RATE_LIMIT: u32 = 10;
+/// Above this (1000 requests per second) the limiter no longer protects anything.
+const HIGH_RATE_LIMIT: u32 = 60_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -87,11 +91,17 @@ pub struct Inputs {
     pub env: BTreeMap<String, String>,
     pub tls_cert: Option<String>,
     pub tls_key: Option<String>,
+    /// The `--rate-limit` value `api-serve` will use (flag, else config file); `None` when unknown.
+    pub rate_limit: Option<u32>,
     pub probe: Box<dyn Fn(&str) -> FileProbe>,
 }
 
 impl Inputs {
-    pub fn from_process(tls_cert: Option<String>, tls_key: Option<String>) -> Self {
+    pub fn from_process(
+        tls_cert: Option<String>,
+        tls_key: Option<String>,
+        rate_limit: Option<u32>,
+    ) -> Self {
         let env = std::env::vars()
             .filter(|(k, _)| {
                 k.starts_with("VEYRON_") || k == "KUBECONFIG" || k == "KUBERNETES_SERVICE_HOST"
@@ -101,6 +111,7 @@ impl Inputs {
             env,
             tls_cert,
             tls_key,
+            rate_limit,
             probe: Box::new(|p| match std::fs::read_to_string(p) {
                 Ok(s) => FileProbe::Text(s),
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => FileProbe::Missing,
@@ -154,6 +165,7 @@ pub fn run(inp: &Inputs) -> Report {
     check_namespace(inp, &mut o);
     check_urls(inp, &mut o);
     check_cors(inp, &mut o);
+    check_rate_limit(inp, &mut o);
     check_webhook(inp, &mut o);
     check_insecure_flags(inp, &mut o);
     check_kubeconfig(inp, &mut o);
@@ -576,6 +588,35 @@ fn check_cors(inp: &Inputs, o: &mut Out) {
     }
 }
 
+fn check_rate_limit(inp: &Inputs, o: &mut Out) {
+    let Some(n) = inp.rate_limit else {
+        return;
+    };
+    if n == 0 {
+        o.warn(
+            "rate-limit",
+            "the global API rate limit is disabled (0)",
+            "set --rate-limit (or api.rate_limit) to a positive requests-per-minute value",
+        );
+    } else if n < LOW_RATE_LIMIT {
+        o.warn(
+            "rate-limit",
+            format!(
+                "{n} requests/minute is one window shared by every client; the console and a few callers will exhaust it"
+            ),
+            format!("raise --rate-limit to at least {LOW_RATE_LIMIT}"),
+        );
+    } else if n > HIGH_RATE_LIMIT {
+        o.warn(
+            "rate-limit",
+            format!("{n} requests/minute is effectively unlimited"),
+            format!("lower --rate-limit to {HIGH_RATE_LIMIT} or less"),
+        );
+    } else {
+        o.ok("rate-limit", format!("global rate limit is {n} requests/minute"));
+    }
+}
+
 fn check_webhook(inp: &Inputs, o: &mut Out) {
     if inp.get("VEYRON_AI_PLAN_WEBHOOK_URL").is_some()
         && inp.get("VEYRON_AI_PLAN_WEBHOOK_SECRET").is_none()
@@ -680,6 +721,7 @@ mod tests {
                 .collect(),
             tls_cert: None,
             tls_key: None,
+            rate_limit: None,
             probe: Box::new(|_| FileProbe::Missing),
         }
     }
@@ -937,5 +979,39 @@ mod tests {
         let v: serde_json::Value = serde_json::to_value(&r).unwrap();
         assert!(v["findings"][0]["id"].is_string());
         assert_eq!(v["findings"][0]["status"], "fail");
+    }
+
+    #[test]
+    fn rate_limit_is_checked_only_when_known() {
+        let r = run(&inputs(GOOD));
+        assert!(status(&r, "rate-limit").is_empty());
+    }
+
+    #[test]
+    fn rate_limit_bounds() {
+        for (n, want) in [
+            (0, Status::Warn),
+            (1, Status::Warn),
+            (LOW_RATE_LIMIT - 1, Status::Warn),
+            (LOW_RATE_LIMIT, Status::Ok),
+            (60, Status::Ok),
+            (HIGH_RATE_LIMIT, Status::Ok),
+            (HIGH_RATE_LIMIT + 1, Status::Warn),
+            (u32::MAX, Status::Warn),
+        ] {
+            let mut inp = inputs(GOOD);
+            inp.rate_limit = Some(n);
+            let r = run(&inp);
+            assert_eq!(status(&r, "rate-limit"), vec![want], "rate limit {n}");
+        }
+    }
+
+    #[test]
+    fn rate_limit_warning_fails_only_in_strict_mode() {
+        let mut inp = inputs(GOOD);
+        inp.rate_limit = Some(0);
+        let r = run(&inp);
+        assert_eq!(r.exit_code(false), 0);
+        assert_eq!(r.exit_code(true), 1);
     }
 }

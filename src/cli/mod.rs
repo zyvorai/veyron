@@ -2298,6 +2298,10 @@ pub enum Commands {
         /// TLS key path to check (defaults to the config file's api.tls_key)
         #[arg(long)]
         tls_key: Option<String>,
+
+        /// Global API rate limit, requests per minute, to check (defaults to the config file's api.rate_limit)
+        #[arg(long)]
+        rate_limit: Option<u32>,
     },
 
     /// Generate shell completions

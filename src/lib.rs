@@ -1166,10 +1166,16 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             strict,
             tls_cert,
             tls_key,
+            rate_limit,
         } => {
             let tls_cert = tls_cert.or(app_config.api.tls_cert.clone());
             let tls_key = tls_key.or(app_config.api.tls_key.clone());
-            let report = preflight::run(&preflight::Inputs::from_process(tls_cert, tls_key));
+            let rate_limit = rate_limit.unwrap_or(app_config.api.rate_limit);
+            let report = preflight::run(&preflight::Inputs::from_process(
+                tls_cert,
+                tls_key,
+                Some(rate_limit),
+            ));
             match output.as_str() {
                 "json" => println!("{}", serde_json::to_string_pretty(&report)?),
                 _ => print!("{}", report.to_text()),
