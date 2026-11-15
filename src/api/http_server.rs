@@ -901,7 +901,9 @@ pub mod web {
             .map(str::to_owned)
             .unwrap_or_else(generate_request_id);
         if let Ok(value) = id.parse::<axum::http::HeaderValue>() {
-            request.headers_mut().insert(REQUEST_ID_HEADER, value.clone());
+            request
+                .headers_mut()
+                .insert(REQUEST_ID_HEADER, value.clone());
             let mut response = next.run(request).await;
             response.headers_mut().insert(REQUEST_ID_HEADER, value);
             response
