@@ -86,6 +86,14 @@ extraEnv: []
 #     - configMapRef: {name: veyron-extra}
 extraEnvFrom: []
 
+# Extra annotations and labels for the API pod (not the Deployment). Use them for sidecar injectors,
+# log or mesh opt-in/out, cost allocation or policy engines. Chart labels (app.kubernetes.io/*) always
+# win over a podLabels key of the same name, so the Deployment selector cannot be broken.
+#   podAnnotations: {sidecar.istio.io/inject: "false"}
+#   podLabels: {team: platform}
+podAnnotations: {}
+podLabels: {}
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

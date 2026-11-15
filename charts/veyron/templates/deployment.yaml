@@ -13,8 +13,12 @@ spec:
       {{- include "veyron.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        {{- include "veyron.selectorLabels" . | nindent 8 }}
+        {{- toYaml (merge (fromYaml (include "veyron.selectorLabels" .)) (default (dict) .Values.podLabels)) | nindent 8 }}
     spec:
       serviceAccountName: {{ include "veyron.serviceAccountName" . }}
       {{- with .Values.imagePullSecrets }}
