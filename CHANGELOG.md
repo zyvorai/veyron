@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Helm chart: `topologySpreadConstraints` and `priorityClassName` values. A constraint without a `labelSelector` gets the
+  pod's own selector labels, so spreading replicas across nodes or zones needs only `maxSkew`, `topologyKey` and
+  `whenUnsatisfiable`. Both default to empty; rendered output is unchanged without them.
 - Helm chart: `extraEnv` and `extraEnvFrom` values add container environment variables and `envFrom` sources, so settings
   with no value of their own (`VEYRON_PUBLIC_HOST`, `VEYRON_OIDC_AUDIENCE`, `VEYRON_CORS_ORIGINS`, the SIEM variables, the
   kairon-node relay) no longer need a pre-made Secret. Both default to empty; rendered output is unchanged without them.
