@@ -1948,6 +1948,8 @@ pub mod web {
         }
 
         async fn health_request_id(inbound: Option<&str>, path: &str) -> (u16, String) {
+            use axum::body::Body;
+            use tower::ServiceExt;
             let app = build_router(std::sync::Arc::new(tokio::sync::RwLock::new(
                 WebState::for_router_test(),
             )));
