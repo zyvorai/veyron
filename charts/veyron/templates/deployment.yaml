@@ -340,3 +340,16 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- range . }}
+        - {{- if hasKey . "labelSelector" }}
+          {{- toYaml . | nindent 10 }}
+          {{- else }}
+          {{- toYaml (merge (deepCopy .) (dict "labelSelector" (dict "matchLabels" (fromYaml (include "veyron.selectorLabels" $))))) | nindent 10 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}

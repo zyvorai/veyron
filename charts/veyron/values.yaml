@@ -90,6 +90,18 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
+# Standard Kubernetes topologySpreadConstraints. The chart fills in labelSelector with the pod's own
+# selector labels when you leave it out, so a constraint only needs maxSkew, topologyKey and
+# whenUnsatisfiable. Only useful with replicaCount > 1.
+#   topologySpreadConstraints:
+#     - maxSkew: 1
+#       topologyKey: kubernetes.io/hostname
+#       whenUnsatisfiable: ScheduleAnyway
+topologySpreadConstraints: []
+
+# Optional PriorityClass for the API pod (the class itself must already exist).
+priorityClassName: ""
+
 podDisruptionBudget:
   enabled: true
   maxUnavailable: 1
