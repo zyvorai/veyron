@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-17
+
 ### Added
 
 - Helm chart: `topologySpreadConstraints` and `priorityClassName` values. A constraint without a `labelSelector` gets the
