@@ -3,7 +3,7 @@
 > **Image caveat (v0.4.1).** `ghcr.io/zyvorai/veyron:0.4.1` and `:latest` are published, but the GHCR package is private:
 > create a docker-registry Secret and pass it with `--set 'imagePullSecrets[0].name=<secret>'`, or use your own registry
 > (`--set image.repository=...`); see [docs/deploy.md](../../docs/deploy.md#container-image). `image.tag` defaults to
-> `latest`, which moves with each release; pin it (`--set image.tag=0.4.1`) for reproducible installs.
+> `latest`, which moves with each release; pin it (`--set image.tag=0.5.0`) for reproducible installs.
 > Without overrides the chart installs the lab credentials `admin` / `Admin@321` and API key `Admin@321`: always set
 > `auth.apiKey` and `auth.adminPassword`.
 
@@ -12,7 +12,7 @@ Installs the Veyron API and console (HTTPS, `/console`, `/api/v1` and the `/api/
 ```bash
 helm install veyron ./charts/veyron \
   -n veyron-system --create-namespace \
-  --set image.repository=registry.example.com/veyron --set image.tag=0.4.1 \
+  --set image.repository=registry.example.com/veyron --set image.tag=0.5.0 \
   --set auth.apiKey='your-key-here' --set auth.adminPassword='your-console-password'
 ```
 

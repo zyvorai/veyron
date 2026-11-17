@@ -135,14 +135,14 @@ An operator that asks first: it reads your cluster with your permissions, invest
 
 On a Kubernetes cluster whose VM hosts run [Kairon](https://github.com/zyvorai/kairon) (a Kairon release with `v1beta1` CRDs; see [docs/deploy.md](docs/deploy.md#kairon-settings)).
 
-**Release binaries (v0.4.1).** One binary per platform (`veyron-linux-amd64`, `-linux-arm64`, `-darwin-amd64`, `-darwin-arm64`; Linux builds are
+**Release binaries (v0.5.0).** One binary per platform (`veyron-linux-amd64`, `-linux-arm64`, `-darwin-amd64`, `-darwin-arm64`; Linux builds are
 dynamically linked against glibc) with the console embedded, plus `SHA256SUMS`, a keyless cosign bundle for it (`SHA256SUMS.cosign.bundle`) and an
 SPDX SBOM (`veyron.spdx.json`). The macOS binaries are not Developer ID signed or notarized (`darwin-arm64` is ad-hoc signed, `darwin-amd64` is
 unsigned; a browser download may need `xattr -d com.apple.quarantine`). Verify the checksum, and the cosign signature if you have `cosign`, before
 running ([details](docs/deploy.md#release-binaries)):
 
 ```bash
-V=v0.4.1; A=linux-amd64        # or linux-arm64, darwin-amd64, darwin-arm64
+V=v0.5.0; A=linux-amd64        # or linux-arm64, darwin-amd64, darwin-arm64
 curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/veyron-$A
 curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/SHA256SUMS
 grep " veyron-$A\$" SHA256SUMS | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)   # must print: veyron-$A: OK
@@ -179,7 +179,7 @@ curl -sk -H "X-API-Key: ${VEYRON_API_KEY:-Admin@321}" -H 'Content-Type: applicat
   -d '{"name":"demo","template":"ubuntu-24.04","cpus":2,"memory":"4Gi"}'
 ```
 
-> **CLI scope in v0.4.1.** The VM commands of the CLI (`veyron create`, `list`, `start`, `snapshot-*`, `tui`, and so on) talk to
+> **CLI scope in v0.5.0.** The VM commands of the CLI (`veyron create`, `list`, `start`, `snapshot-*`, `tui`, and so on) talk to
 > the Kubernetes API directly and create, list and change **KubeVirt `VirtualMachine`s**; they do not go through the Kairon
 > backend. To manage Kairon `Machine`s use the console, the API, or the MCP bridge (`veyron mcp`). `veyron api-serve` is what
 > serves the console and API, and honours Kairon.

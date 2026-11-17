@@ -8,7 +8,7 @@ the GHCR package is **private**, so pulls need `docker login ghcr.io` ([details]
 
 ## Release binaries
 
-Each GitHub release (v0.4.1 is the latest) carries `veyron-linux-amd64`, `veyron-linux-arm64`,
+Each GitHub release (v0.5.0 is the latest) carries `veyron-linux-amd64`, `veyron-linux-arm64`,
 `veyron-darwin-amd64`, `veyron-darwin-arm64`, `SHA256SUMS`, `SHA256SUMS.cosign.bundle` and an SPDX SBOM
 (`veyron.spdx.json`). The console is embedded. Linux builds link glibc dynamically.
 
@@ -31,12 +31,12 @@ How the v0.4.1 release came about, and what it does and does not give you:
   (`curl` downloads are not quarantined).
 
 ```bash
-V=v0.4.1; A=linux-amd64        # linux-arm64, darwin-amd64 or darwin-arm64
+V=v0.5.0; A=linux-amd64        # linux-arm64, darwin-amd64 or darwin-arm64
 curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/veyron-$A
 curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/SHA256SUMS
 grep " veyron-$A\$" SHA256SUMS | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)   # expect "veyron-$A: OK"
 chmod +x veyron-$A && sudo install -m 0755 veyron-$A /usr/local/bin/veyron
-veyron --version               # veyron 0.4.1
+veyron --version               # veyron 0.5.0
 ```
 
 The `grep` keeps the check to the one file you downloaded. `shasum -a 256 -c SHA256SUMS` on its own (the form the release
@@ -100,7 +100,7 @@ Needs a reachable Kubernetes API and, for VM routes, Kairon's CRDs (see [Kairon 
 Only the in-cluster Deployment (sections below) comes with the image-store volume and the relay Secret wired up.
 
 The `veyron` CLI's VM commands (`create`, `list`, `start`, ...) manage KubeVirt `VirtualMachine`s only in
-v0.4.1; they do not manage Kairon Machines.
+v0.5.0; they do not manage Kairon Machines.
 
 ## 1. Remote deploy script (fastest)
 
@@ -190,13 +190,13 @@ cluster; Veyron never switches to it on its own.
 
 > **Image caveat.** `ghcr.io/zyvorai/veyron:0.4.1` and `:latest` are published (`0.4.0` was not), but the `veyron` GHCR
 > package is **private**: the cluster needs credentials to pull it (see [Container image](#container-image)). The chart's
-> `image.tag` defaults to `latest`, which now means 0.4.1 and moves with each release; pin `--set image.tag=0.4.1` for
+> `image.tag` defaults to `latest`, which now means 0.5.0 and moves with each release; pin `--set image.tag=0.5.0` for
 > reproducible installs. Without pull credentials, or to use your own registry, set `image.repository` / `image.tag`
 > (and `imagePullSecrets`), or use the remote deploy script, which builds on a node.
 
 ```bash
 helm upgrade --install veyron ./charts/veyron -n veyron-system --create-namespace \
-  --set image.repository=registry.example.com/veyron --set image.tag=0.4.1 \
+  --set image.repository=registry.example.com/veyron --set image.tag=0.5.0 \
   --set auth.apiKey="$(openssl rand -hex 24)" \
   --set auth.adminPassword="$(openssl rand -base64 18)"
 ```
@@ -240,7 +240,7 @@ KEY=$(openssl rand -hex 16)
 kubectl -n veyron-system create secret generic veyron-api-key \
   --from-literal=api-key="$KEY" --from-literal=admin-password="$KEY" \
   --from-literal=jwt-secret="$(openssl rand -hex 32)" --from-literal=jwt-issuer=veyron
-sed -e 's#image: docker.io/library/veyron:.*#image: registry.example.com/veyron:0.4.1#' \
+sed -e 's#image: docker.io/library/veyron:.*#image: registry.example.com/veyron:0.5.0#' \
     -e 's#imagePullPolicy: Never#imagePullPolicy: IfNotPresent#' deploy/k8s.yaml | kubectl apply -f -
 ```
 
@@ -263,11 +263,11 @@ access). The `0.3.x` tags on GHCR are images from 2026-10-04, before the Kairon 
 
 ```bash
 echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
-docker pull ghcr.io/zyvorai/veyron:0.4.1
+docker pull ghcr.io/zyvorai/veyron:0.5.0
 # in Kubernetes: a docker-registry Secret, referenced through the chart's imagePullSecrets
 kubectl -n veyron-system create secret docker-registry ghcr-pull --docker-server=ghcr.io \
   --docker-username=<github-user> --docker-password="$GHCR_TOKEN"
-helm upgrade --install veyron ./charts/veyron -n veyron-system --set image.tag=0.4.1 \
+helm upgrade --install veyron ./charts/veyron -n veyron-system --set image.tag=0.5.0 \
   --set 'imagePullSecrets[0].name=ghcr-pull' ...   # plus the auth values from the Helm section
 ```
 
@@ -289,7 +289,7 @@ the workflow and pushes to a registry you choose:
 
 # or, anywhere with Docker (GUESTKIT_REF is pinned in .github/workflows/ci.yml)
 git clone https://github.com/zyvorai/zyvor-guestkit guestkit && git -C guestkit checkout <GUESTKIT_REF>
-docker build -t registry.example.com/veyron:0.4.1 . && docker push registry.example.com/veyron:0.4.1
+docker build -t registry.example.com/veyron:0.5.0 . && docker push registry.example.com/veyron:0.5.0
 ```
 
 (The second route was read from the Dockerfile and the workflow, not run for this page.)
@@ -310,7 +310,7 @@ ClusterRole for dashboards.
       echoes a client-supplied `Host`.
 - [ ] Turn on SSO ([sso.md](sso.md)) and set `VEYRON_OIDC_AUDIENCE`.
 - [ ] Behind a reverse proxy, remember that the login limiter and rate limiter see the proxy's address.
-- [ ] Pin `image.tag` (for example `0.4.1`) instead of the moving default `latest`, and give the cluster pull credentials for the private GHCR package, or use your own registry ([Container image](#container-image)).
+- [ ] Pin `image.tag` (for example `0.5.0`) instead of the moving default `latest`, and give the cluster pull credentials for the private GHCR package, or use your own registry ([Container image](#container-image)).
 - [ ] Keep RDP behind a VPN or gateway. Public RDP NodePorts are refused unless
       `VEYRON_ALLOW_PUBLIC_RDP=1`.
 - [ ] Wire Prometheus and Alertmanager ([integrations.md](integrations.md)).
