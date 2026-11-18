@@ -16,6 +16,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
+use super::import_mappings::{MappingStore, mapping_issues};
 use super::imports::{FORMATS, normalize_digest, valid_name};
 
 /// Request body. Every field is optional so a missing one becomes a reported error rather
@@ -49,12 +50,19 @@ pub struct ValidateRequest {
     /// Ask Veyron to `HEAD` the URL (size estimate, reachability from Veyron, not the node).
     #[serde(default)]
     pub probe: bool,
+    /// Import mapping profile to check `source.network` / `source.datastore` against.
+    #[serde(default)]
+    pub mapping: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ValidateSource {
     #[serde(default)]
     pub vm: Option<String>,
+    #[serde(default)]
+    pub network: Option<String>,
+    #[serde(default)]
+    pub datastore: Option<String>,
 }
 
 /// What Veyron knows about the cluster that the request cannot tell it.
@@ -499,6 +507,33 @@ pub async fn run_validate(
     validate_import(req, facts, outcome.as_ref())
 }
 
+/// [`run_validate`] plus, when the request names a mapping, a check that it exists and
+/// resolves the source network and datastore.
+pub async fn run_validate_with_mapping<M: MappingStore>(
+    req: &ValidateRequest,
+    facts: &ClusterFacts,
+    prober: &dyn ImageProbe,
+    mappings: &M,
+) -> ValidateReport {
+    let mut report = run_validate(req, facts, prober).await;
+    if let Some(name) = req.mapping.as_deref() {
+        let found = mappings.get(name).await;
+        let src = req.source.as_ref();
+        let issues = match &found {
+            Ok(m) => mapping_issues(
+                name,
+                m.as_ref(),
+                src.and_then(|s| s.network.as_deref()),
+                src.and_then(|s| s.datastore.as_deref()),
+            ),
+            Err(e) => vec![issue("mapping", "MAPPING_LOOKUP_FAILED", e.clone())],
+        };
+        report.errors.extend(issues);
+        report.valid = report.errors.is_empty();
+    }
+    report
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -634,6 +669,7 @@ mod tests {
         let mut r = req();
         r.source = Some(ValidateSource {
             vm: Some("dc1/WIN-APP01".into()),
+            ..Default::default()
         });
         assert_eq!(
             codes(&validate_import(&r, &facts(), None).warnings),
@@ -698,6 +734,35 @@ mod tests {
         let v = run_validate(&r, &facts(), &fake).await;
         assert!(v.probe.is_none());
         assert_eq!(codes(&v.errors), ["INVALID_URL"]);
+    }
+
+    #[tokio::test]
+    async fn mapping_is_checked_when_named() {
+        use crate::api::handlers::import_mappings::tests::{FakeMappings, dc1};
+        let maps = FakeMappings::default();
+        maps.0.lock().unwrap().insert("dc1".into(), dc1());
+        let fake = Fake(ProbeOutcome::default());
+        let mut r = req();
+        r.mapping = Some("dc1".into());
+        r.source = Some(ValidateSource {
+            network: Some("DMZ".into()),
+            ..Default::default()
+        });
+        assert!(
+            run_validate_with_mapping(&r, &facts(), &fake, &maps)
+                .await
+                .valid
+        );
+        r.source = Some(ValidateSource {
+            network: Some("Lab".into()),
+            ..Default::default()
+        });
+        let v = run_validate_with_mapping(&r, &facts(), &fake, &maps).await;
+        assert!(!v.valid);
+        assert_eq!(codes(&v.errors), ["UNMAPPED_SOURCE"]);
+        r.mapping = Some("ghost".into());
+        let v = run_validate_with_mapping(&r, &facts(), &fake, &maps).await;
+        assert_eq!(codes(&v.errors), ["MAPPING_NOT_FOUND"]);
     }
 
     #[test]

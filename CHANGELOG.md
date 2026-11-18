@@ -14,6 +14,9 @@ All notable changes to this project are documented here. The format follows
 - `DELETE /api/v1/imports/:ns/:name` and `POST /api/v1/imports/:ns/:name/retry`, plus `import_id`, `phase`, `terminal`,
   `retryable`, `retries` and `message` on every import row. `phase` is derived from the Machine status; retry recreates a
   failed import from its own spec.
+- Import mapping profiles: `GET/POST /api/v1/import-mappings`, `GET/PUT/DELETE /api/v1/import-mappings/:name`. A request
+  with `"mapping": "name"` maps `source.network` to a `tap`/`macvtap` attachment and `source.datastore` to a pool
+  annotation; `POST /imports/validate` checks the mapping too.
 
 ## [0.5.0] - 2026-11-17
 

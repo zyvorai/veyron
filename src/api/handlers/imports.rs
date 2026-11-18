@@ -23,7 +23,11 @@ use super::import_lifecycle::{
     ApiErr, IMPORT_ID_ANNOTATION, ImportPhase, KubeStore, delete_import, import_id, new_import_id,
     phase_of, retries, retry_import,
 };
-use super::import_validate::{ClusterFacts, HttpProbe, ValidateRequest, run_validate};
+use super::import_mappings::{
+    KubeMappingStore, MAPPING_ANNOTATION, MappingStore, SOURCE_DATASTORE_ANNOTATION,
+    SOURCE_NETWORK_ANNOTATION, STORAGE_POOL_ANNOTATION, apply_mapping, resolve as resolve_mapping,
+};
+use super::import_validate::{ClusterFacts, HttpProbe, ValidateRequest, run_validate_with_mapping};
 use crate::api::http_server::web::SharedState;
 use crate::kairon::{
     GuestAgentSpec, ImageSource, Machine, MachineImage, MachineResources, MachineSpec, PortForward,
@@ -44,6 +48,12 @@ pub struct ImportSource {
     /// Tool that converted the disk (default `h2kvm`).
     #[serde(default)]
     pub tool: Option<String>,
+    /// Source network name (vSphere port group, Hyper-V switch); resolved by `mapping`.
+    #[serde(default)]
+    pub network: Option<String>,
+    /// Source datastore name; resolved by `mapping`.
+    #[serde(default)]
+    pub datastore: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -76,6 +86,10 @@ pub struct ImportRequest {
     pub start: bool,
     #[serde(default)]
     pub source: ImportSource,
+    /// Name of an import mapping profile (`/import-mappings`) that turns `source.network` and
+    /// `source.datastore` into a Kairon network attachment and storage pool.
+    #[serde(default)]
+    pub mapping: Option<String>,
 }
 
 fn default_true() -> bool {
@@ -183,7 +197,53 @@ pub fn machine_for_import(req: &ImportRequest, namespace: &str) -> Result<Machin
     if let Some(v) = &req.source.vm {
         ann.insert("veyron.io/import-source-vm".into(), v.clone());
     }
+    if let Some(n) = &req.source.network {
+        ann.insert(SOURCE_NETWORK_ANNOTATION.into(), n.clone());
+    }
+    if let Some(d) = &req.source.datastore {
+        ann.insert(SOURCE_DATASTORE_ANNOTATION.into(), d.clone());
+    }
     m.metadata.annotations = Some(ann);
+    Ok(m)
+}
+
+/// `machine_for_import` plus the named mapping profile, when the request has one.
+pub async fn build_import<M: MappingStore>(
+    mappings: &M,
+    req: &ImportRequest,
+    namespace: &str,
+) -> Result<Machine, ApiErr> {
+    let mut m = machine_for_import(req, namespace).map_err(|e| ApiErr {
+        status: StatusCode::BAD_REQUEST,
+        code: "INVALID_REQUEST",
+        message: e,
+    })?;
+    if let Some(name) = req.mapping.as_deref() {
+        let mapping = mappings
+            .get(name)
+            .await
+            .map_err(|e| ApiErr {
+                status: StatusCode::INTERNAL_SERVER_ERROR,
+                code: "STORE_FAILED",
+                message: e,
+            })?
+            .ok_or_else(|| ApiErr {
+                status: StatusCode::BAD_REQUEST,
+                code: "MAPPING_NOT_FOUND",
+                message: format!("mapping {name:?} does not exist"),
+            })?;
+        let resolved = resolve_mapping(
+            &mapping,
+            req.source.network.as_deref(),
+            req.source.datastore.as_deref(),
+        )
+        .map_err(|e| ApiErr {
+            status: StatusCode::BAD_REQUEST,
+            code: "UNMAPPED_SOURCE",
+            message: e,
+        })?;
+        apply_mapping(&mut m, &resolved);
+    }
     Ok(m)
 }
 
@@ -207,6 +267,11 @@ fn import_json(m: &Machine) -> Value {
         "source_vm": label("veyron.io/import-source-vm"),
         "format": m.spec.image.source.as_ref().and_then(|s| s.format.clone()),
         "digest": m.spec.image.digest,
+        "mapping": label(MAPPING_ANNOTATION),
+        "source_network": label(SOURCE_NETWORK_ANNOTATION),
+        "source_datastore": label(SOURCE_DATASTORE_ANNOTATION),
+        "storage_pool": label(STORAGE_POOL_ANNOTATION),
+        "network": m.spec.network.as_ref().map(|n| json!({"mode": n.mode, "bridge": n.bridge})),
         "created": m.metadata.creation_timestamp.as_ref().map(|t| t.0.to_rfc3339()),
         "conditions": m.status.as_ref().map(|s| &s.conditions),
     })
@@ -240,8 +305,11 @@ async fn create_import(State(state): State<SharedState>, Json(req): Json<ImportR
         (s.client().client(), s.namespace.clone())
     };
     let ns = req.namespace.clone().unwrap_or(default_ns);
-    let m = machine_for_import(&req, &ns)
-        .map_err(|e| fail(StatusCode::BAD_REQUEST, "INVALID_REQUEST", e))?;
+    let mappings = KubeMappingStore {
+        client: client.clone(),
+        namespace: default_ns.clone(),
+    };
+    let m = build_import(&mappings, &req, &ns).await.map_err(api_fail)?;
     match Api::<Machine>::namespaced(client, &ns)
         .create(&PostParams::default(), &m)
         .await
@@ -377,9 +445,20 @@ async fn retry_import_route(
 }
 
 /// `POST /imports/validate`: dry-run preflight; always 200 with a report (see `import_validate`).
-async fn validate_import_route(Json(req): Json<ValidateRequest>) -> Reply {
+async fn validate_import_route(
+    State(state): State<SharedState>,
+    Json(req): Json<ValidateRequest>,
+) -> Reply {
     require_kairon()?;
-    let report = run_validate(&req, &ClusterFacts::from_env(), &HttpProbe).await;
+    let mappings = {
+        let s = state.read().await;
+        KubeMappingStore {
+            client: s.client().client(),
+            namespace: s.namespace.clone(),
+        }
+    };
+    let report =
+        run_validate_with_mapping(&req, &ClusterFacts::from_env(), &HttpProbe, &mappings).await;
     Ok((
         StatusCode::OK,
         Json(json!({"success": true, "data": report})),
@@ -455,6 +534,63 @@ mod tests {
         assert_eq!(v["retryable"], false);
         assert_eq!(v["retries"], 0);
         assert!(v["import_id"].as_str().unwrap().starts_with("imp-"));
+    }
+
+    #[tokio::test]
+    async fn mapping_sets_network_and_records_pool() {
+        use crate::api::handlers::import_mappings::tests::{FakeMappings, dc1};
+        let maps = FakeMappings::default();
+        maps.0.lock().unwrap().insert("dc1".into(), dc1());
+        let mut r = req();
+        r.mapping = Some("dc1".into());
+        r.source.network = Some("DMZ".into());
+        r.source.datastore = Some("ds-ssd".into());
+        r.forwards = vec![PortForward {
+            host_port: 30022,
+            guest_port: 22,
+            protocol: None,
+        }];
+        let m = build_import(&maps, &r, "prod").await.unwrap();
+        let net = m.spec.network.as_ref().unwrap();
+        assert_eq!(net.mode.as_deref(), Some("tap"));
+        assert_eq!(net.bridge.as_deref(), Some("br-dmz"));
+        assert_eq!(net.forwards.len(), 1, "forwards survive the mapping");
+        let v = import_json(&m);
+        assert_eq!(v["mapping"], "dc1");
+        assert_eq!(v["storage_pool"], "fast");
+        assert_eq!(v["source_network"], "DMZ");
+        assert_eq!(v["network"]["bridge"], "br-dmz");
+
+        // no mapping: source names are only recorded
+        let mut plain = req();
+        plain.source.network = Some("DMZ".into());
+        let m = build_import(&maps, &plain, "prod").await.unwrap();
+        assert!(m.spec.network.is_none());
+        assert_eq!(import_json(&m)["source_network"], "DMZ");
+    }
+
+    #[tokio::test]
+    async fn mapping_errors_are_400() {
+        use crate::api::handlers::import_mappings::tests::{FakeMappings, dc1};
+        let maps = FakeMappings::default();
+        let mut r = req();
+        r.mapping = Some("nope".into());
+        let e = build_import(&maps, &r, "prod").await.unwrap_err();
+        assert_eq!(
+            (e.status, e.code),
+            (StatusCode::BAD_REQUEST, "MAPPING_NOT_FOUND")
+        );
+        maps.0.lock().unwrap().insert("dc1".into(), dc1());
+        r.mapping = Some("dc1".into());
+        r.source.network = Some("Lab".into());
+        let e = build_import(&maps, &r, "prod").await.unwrap_err();
+        assert_eq!(e.code, "UNMAPPED_SOURCE");
+        let mut bad = req();
+        bad.name = "Bad".into();
+        assert_eq!(
+            build_import(&maps, &bad, "prod").await.unwrap_err().code,
+            "INVALID_REQUEST"
+        );
     }
 
     #[test]

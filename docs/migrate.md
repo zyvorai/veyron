@@ -91,6 +91,44 @@ With `"probe": true` Veyron sends one `HEAD` (8 s timeout, no redirects, connect
 address) to read `Content-Length`. That shows reachability from Veyron, not from the Kairon node, so an
 unreachable probe is a warning, not an error.
 
+### Network and storage mapping profiles
+
+A VM that sat on vSphere port group `DMZ` should not land on Kairon's user-mode network. A **mapping profile** is
+a named table, stored as a ConfigMap (`import-mapping-<name>`, label `veyron.io/type=import-mapping`, in Veyron's
+namespace), that translates source names to Kairon:
+
+```bash
+curl -sk -X POST "https://$HOST:30151/api/v1/import-mappings" \
+  -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"name":"dc1","description":"DC1 vSphere",
+       "networks":{"VM Network":{"mode":"macvtap","bridge":"eth1"},
+                   "DMZ":{"mode":"tap","bridge":"br-dmz"}},
+       "datastores":{"ds-ssd":"fast"},
+       "default_pool":"bulk"}'
+
+curl -sk -X POST "https://$HOST:30151/api/v1/imports" ... \
+  -d '{"name":"web01","image_url":"...","sha256":"...","mapping":"dc1",
+       "source":{"hypervisor":"vmware","network":"DMZ","datastore":"ds-ssd"}}'
+```
+
+- `networks` maps a source network to `{"mode": "tap" | "macvtap" | "user", "bridge": "..."}`; `tap` and `macvtap`
+  need `bridge` (the host bridge, or the parent interface for macvtap). The result is `spec.network.mode` and
+  `spec.network.bridge` on the Machine. `forwards` still apply.
+- `datastores` maps a source datastore to a pool name. Kairon's `Machine` has no pool field, so the pool is
+  recorded on the Machine as the annotation `veyron.io/import-storage-pool` and returned as `storage_pool`; it does
+  not place the disk by itself.
+- `default_network` and `default_pool` are used for names the profile does not list. With no default, an
+  unlisted `source.network` or `source.datastore` is refused (`400 UNMAPPED_SOURCE`) instead of silently landing
+  on the user-mode network. A request with no `source.network` gets no network change unless the profile has a
+  `default_network`.
+- An unknown profile is `400 MAPPING_NOT_FOUND`. `POST /imports/validate` accepts `mapping` and reports the same
+  two problems as errors.
+- Without `mapping`, `source.network` and `source.datastore` are only recorded as annotations.
+- Import rows return `mapping`, `source_network`, `source_datastore`, `storage_pool` and `network`.
+
+`PUT /import-mappings/:name` replaces a profile (the path name wins), `DELETE` removes it; existing Machines keep
+what was applied. The Veyron ServiceAccount already has ConfigMap write access.
+
 ### Lifecycle: phase, retry, delete
 
 Every import row (`GET /imports`, `GET /imports/:ns/:name`, and the response to `POST /imports`) now carries:
