@@ -46,6 +46,8 @@ pub mod hpa;
 pub mod image_capture;
 pub mod images;
 #[cfg(all(feature = "web", feature = "kairon"))]
+pub mod import_events;
+#[cfg(all(feature = "web", feature = "kairon"))]
 pub mod import_lifecycle;
 #[cfg(all(feature = "web", feature = "kairon"))]
 pub mod import_mappings;

@@ -230,6 +230,18 @@ pub trait MachineStore: Send + Sync {
     fn create(&self, m: &Machine) -> impl Future<Output = Result<Machine, StoreError>> + Send;
     /// Deleting a Machine that is already gone is `Ok`.
     fn delete(&self, ns: &str, name: &str) -> impl Future<Output = Result<(), StoreError>> + Send;
+    /// Set one annotation (merge patch). The default does nothing, for stores that do not
+    /// track annotations.
+    #[allow(clippy::manual_async_fn)]
+    fn annotate(
+        &self,
+        _ns: &str,
+        _name: &str,
+        _key: &str,
+        _value: &str,
+    ) -> impl Future<Output = Result<(), StoreError>> + Send {
+        async { Ok(()) }
+    }
 }
 
 pub struct KubeStore {
@@ -268,6 +280,25 @@ impl MachineStore for KubeStore {
             Err(kube::Error::Api(a)) if a.code == 404 => Ok(()),
             Err(e) => Err(store_err(e)),
         }
+    }
+
+    async fn annotate(
+        &self,
+        ns: &str,
+        name: &str,
+        key: &str,
+        value: &str,
+    ) -> Result<(), StoreError> {
+        let patch = serde_json::json!({"metadata": {"annotations": {key: value}}});
+        Api::<Machine>::namespaced(self.client.clone(), ns)
+            .patch(
+                name,
+                &kube::api::PatchParams::default(),
+                &kube::api::Patch::Merge(&patch),
+            )
+            .await
+            .map(|_| ())
+            .map_err(store_err)
     }
 }
 
@@ -456,6 +487,25 @@ pub(crate) mod tests {
             }
             map.insert(key, m.clone());
             Ok(m.clone())
+        }
+        async fn annotate(
+            &self,
+            ns: &str,
+            name: &str,
+            key: &str,
+            value: &str,
+        ) -> Result<(), StoreError> {
+            let mut map = self.machines.lock().unwrap();
+            match map.get_mut(&(ns.to_string(), name.to_string())) {
+                Some(m) => {
+                    m.metadata
+                        .annotations
+                        .get_or_insert_with(Default::default)
+                        .insert(key.to_string(), value.to_string());
+                    Ok(())
+                }
+                None => Err(StoreError::Other("not found".into())),
+            }
         }
         async fn delete(&self, ns: &str, name: &str) -> Result<(), StoreError> {
             *self.deletes.lock().unwrap() += 1;

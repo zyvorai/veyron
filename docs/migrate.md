@@ -165,6 +165,31 @@ In the console, **Images → New** opens the same import form (name, disk URL, S
 status. They are ordinary VMs afterwards: console, snapshots, backups, stop/start and the rest
 of day-2 operations work on them.
 
+## Events, webhooks and audit
+
+**Phase-change webhook.** Add `import.phase_changed` (or `import.*`, or `*`) to a webhook's `events`
+(`POST /api/v1/webhooks`) to receive one POST per import phase change, signed like every other Veyron webhook:
+
+```json
+{"event": "import.phase_changed", "timestamp": "2026-11-19T10:15:00Z", "source": "veyron",
+ "data": {"import_id": "imp-3f9a1c02", "name": "web01", "namespace": "prod",
+          "phase": "running", "previous_phase": "pending", "message": ""}}
+```
+
+Veyron has no controller loop watching Machines, so a change is noticed when something reads the import:
+`GET /imports`, `GET /imports/:ns/:name` (the console polls these), retry or delete. The last phase an observer saw
+is stored in the annotation `veyron.io/import-last-phase`; a different current phase emits one event and updates it.
+Consequences: nothing fires while nobody is looking, several transitions between two reads arrive as one, and two
+readers racing on the same change can both emit it. Delivery is best effort, in the background, and uses the
+existing webhook URL policy (HTTPS, no private or loopback addresses). Retry sends `failed` to `pending`; delete sends
+`terminating`.
+
+**Audit.** Create, delete, retry and each batch row write an entry to the SOC event log (`/soc/events`,
+`/soc/audit`) with `action` `import.create`, `import.delete`, `import.retry` or `import.batch-create`, the caller as
+`actor`, `target` `namespace/name`, and the label `import_id`, so an audit entry joins to its `GET /imports` row and
+its webhooks. Failures are recorded with `outcome: failure` and the error code in the `detail` label. Dry runs and
+validation are not audited.
+
 ## Batch and wave imports
 
 `POST /api/v1/imports/batch` lands many VMs in one call, in ordered **waves** (database tier first, then app tier, then

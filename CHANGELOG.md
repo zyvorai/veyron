@@ -21,6 +21,9 @@ All notable changes to this project are documented here. The format follows
   creates them wave by wave with a concurrency cap, reports a result per VM, and skips later waves after a failure unless
   `stop_on_failure` is false. `dry_run` validates without creating. `POST /api/v1/imports/csv-to-json` converts a CSV
   plan to JSON.
+- Import phase-change webhook: webhooks subscribed to `import.phase_changed` get one event per import phase change, seen
+  when the import is read, retried or deleted. Import create, delete, retry and batch rows are now written to the SOC
+  audit log, tagged with the `import_id` label.
 
 ## [0.5.0] - 2026-11-17
 

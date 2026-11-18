@@ -127,6 +127,7 @@ pub enum WebhookEvent {
     BackupFailed,
     MigrationStarted,
     MigrationCompleted,
+    ImportPhaseChanged,
     AlertTriggered,
     AlertResolved,
     Custom(String),
@@ -148,6 +149,7 @@ impl std::fmt::Display for WebhookEvent {
             WebhookEvent::BackupFailed => write!(f, "backup.failed"),
             WebhookEvent::MigrationStarted => write!(f, "migration.started"),
             WebhookEvent::MigrationCompleted => write!(f, "migration.completed"),
+            WebhookEvent::ImportPhaseChanged => write!(f, "import.phase_changed"),
             WebhookEvent::AlertTriggered => write!(f, "alert.triggered"),
             WebhookEvent::AlertResolved => write!(f, "alert.resolved"),
             WebhookEvent::Custom(name) => write!(f, "custom.{}", name),
@@ -528,6 +530,10 @@ mod tests {
             "backup.completed"
         );
         assert_eq!(WebhookEvent::AlertTriggered.to_string(), "alert.triggered");
+        assert_eq!(
+            WebhookEvent::ImportPhaseChanged.to_string(),
+            "import.phase_changed"
+        );
         assert_eq!(
             WebhookEvent::Custom("deploy".to_string()).to_string(),
             "custom.deploy"

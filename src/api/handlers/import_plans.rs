@@ -21,6 +21,7 @@ use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
+use super::import_events::{ClusterHooks, audit_batch};
 use super::import_lifecycle::{ApiErr, KubeStore, MachineStore, StoreError, import_id};
 use super::import_mappings::{KubeMappingStore, MappingStore};
 use super::imports::{ImportRequest, build_import};
@@ -489,6 +490,7 @@ fn envelope(r: Result<BatchReport, ApiErr>) -> (StatusCode, Json<Value>) {
 
 async fn batch_route(
     State(state): State<SharedState>,
+    auth: Option<axum::Extension<crate::api::auth_context::AuthContext>>,
     Json(batch): Json<BatchRequest>,
 ) -> (StatusCode, Json<Value>) {
     if !crate::api::vm_backend::is_kairon() {
@@ -509,7 +511,18 @@ async fn batch_route(
         client,
         namespace: ns.clone(),
     };
-    envelope(run_batch(&store, &mappings, &ns, batch).await)
+    let hooks = ClusterHooks {
+        client: store.client.clone(),
+        namespace: ns.clone(),
+    };
+    let actor = auth
+        .map(|axum::Extension(a)| a.subject)
+        .unwrap_or_else(|| "unknown".into());
+    let report = run_batch(&store, &mappings, &ns, batch).await;
+    if let Ok(rep) = &report {
+        audit_batch(&hooks, &actor, rep).await;
+    }
+    envelope(report)
 }
 
 /// `POST /imports/csv-to-json`: CSV in the body, the equivalent JSON plan out. Creates nothing.

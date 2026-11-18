@@ -10,7 +10,7 @@
 use std::collections::BTreeMap;
 
 use axum::{
-    Json, Router,
+    Extension, Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
     routing::{get, post},
@@ -19,15 +19,20 @@ use kube::api::{Api, ListParams, PostParams};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use super::import_events::{
+    AuditRecord, ClusterHooks, ImportHooks, delete_with_hooks, initial_annotations, observe,
+    retry_with_hooks,
+};
 use super::import_lifecycle::{
-    ApiErr, IMPORT_ID_ANNOTATION, ImportPhase, KubeStore, delete_import, import_id, new_import_id,
-    phase_of, retries, retry_import,
+    ApiErr, IMPORT_ID_ANNOTATION, ImportPhase, KubeStore, import_id, new_import_id, phase_of,
+    retries,
 };
 use super::import_mappings::{
     KubeMappingStore, MAPPING_ANNOTATION, MappingStore, SOURCE_DATASTORE_ANNOTATION,
     SOURCE_NETWORK_ANNOTATION, STORAGE_POOL_ANNOTATION, apply_mapping, resolve as resolve_mapping,
 };
 use super::import_validate::{ClusterFacts, HttpProbe, ValidateRequest, run_validate_with_mapping};
+use crate::api::auth_context::AuthContext;
 use crate::api::http_server::web::SharedState;
 use crate::kairon::{
     GuestAgentSpec, ImageSource, Machine, MachineImage, MachineResources, MachineSpec, PortForward,
@@ -203,6 +208,7 @@ pub fn machine_for_import(req: &ImportRequest, namespace: &str) -> Result<Machin
     if let Some(d) = &req.source.datastore {
         ann.insert(SOURCE_DATASTORE_ANNOTATION.into(), d.clone());
     }
+    ann.extend(initial_annotations());
     m.metadata.annotations = Some(ann);
     Ok(m)
 }
@@ -298,36 +304,75 @@ fn require_kairon() -> Result<(), (StatusCode, Json<Value>)> {
     }
 }
 
-async fn create_import(State(state): State<SharedState>, Json(req): Json<ImportRequest>) -> Reply {
+async fn create_import(
+    State(state): State<SharedState>,
+    auth: Option<Extension<AuthContext>>,
+    Json(req): Json<ImportRequest>,
+) -> Reply {
     require_kairon()?;
     let (client, default_ns) = {
         let s = state.read().await;
         (s.client().client(), s.namespace.clone())
     };
-    let ns = req.namespace.clone().unwrap_or(default_ns);
+    let ns = req.namespace.clone().unwrap_or_else(|| default_ns.clone());
+    let hooks = ClusterHooks {
+        client: client.clone(),
+        namespace: default_ns.clone(),
+    };
+    let audit = |outcome: &'static str, id: Option<String>, detail: Option<String>| AuditRecord {
+        actor: actor(&auth),
+        action: "create",
+        namespace: ns.clone(),
+        name: req.name.clone(),
+        import_id: id,
+        outcome,
+        detail,
+    };
     let mappings = KubeMappingStore {
         client: client.clone(),
         namespace: default_ns.clone(),
     };
-    let m = build_import(&mappings, &req, &ns).await.map_err(api_fail)?;
+    let m = match build_import(&mappings, &req, &ns).await {
+        Ok(m) => m,
+        Err(e) => {
+            hooks
+                .audit(audit("failure", None, Some(e.code.into())))
+                .await;
+            return Err(api_fail(e));
+        }
+    };
+    let id = import_id(&m);
     match Api::<Machine>::namespaced(client, &ns)
         .create(&PostParams::default(), &m)
         .await
     {
-        Ok(created) => Ok((
-            StatusCode::CREATED,
-            Json(json!({"success": true, "data": import_json(&created)})),
-        )),
-        Err(kube::Error::Api(e)) if e.code == 409 => Err(fail(
-            StatusCode::CONFLICT,
-            "ALREADY_EXISTS",
-            format!("VM {ns}/{} already exists", req.name),
-        )),
-        Err(e) => Err(fail(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "IMPORT_FAILED",
-            format!("create Machine {ns}/{}: {e}", req.name),
-        )),
+        Ok(created) => {
+            hooks.audit(audit("success", id, None)).await;
+            Ok((
+                StatusCode::CREATED,
+                Json(json!({"success": true, "data": import_json(&created)})),
+            ))
+        }
+        Err(kube::Error::Api(e)) if e.code == 409 => {
+            hooks
+                .audit(audit("failure", None, Some("ALREADY_EXISTS".into())))
+                .await;
+            Err(fail(
+                StatusCode::CONFLICT,
+                "ALREADY_EXISTS",
+                format!("VM {ns}/{} already exists", req.name),
+            ))
+        }
+        Err(e) => {
+            hooks
+                .audit(audit("failure", id, Some("IMPORT_FAILED".into())))
+                .await;
+            Err(fail(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "IMPORT_FAILED",
+                format!("create Machine {ns}/{}: {e}", req.name),
+            ))
+        }
     }
 }
 
@@ -343,6 +388,7 @@ async fn list_imports(State(state): State<SharedState>, Query(q): Query<ListQuer
         let s = state.read().await;
         (s.client().client(), s.namespace.clone())
     };
+    let client_for_observe = client.clone();
     let api = match q.namespace.as_deref() {
         Some("all") => Api::<Machine>::all(client),
         other => Api::<Machine>::namespaced(client, other.unwrap_or(&default_ns)),
@@ -357,6 +403,16 @@ async fn list_imports(State(state): State<SharedState>, Query(q): Query<ListQuer
                 e.to_string(),
             )
         })?;
+    let store = KubeStore {
+        client: client_for_observe,
+    };
+    let hooks = ClusterHooks {
+        client: store.client.clone(),
+        namespace: default_ns.clone(),
+    };
+    for m in &list.items {
+        observe(&store, &hooks, m).await;
+    }
     let items: Vec<Value> = list.items.iter().map(import_json).collect();
     Ok((
         StatusCode::OK,
@@ -369,12 +425,19 @@ async fn get_import(
     Path((ns, name)): Path<(String, String)>,
 ) -> Reply {
     require_kairon()?;
-    let client = state.read().await.client().client();
-    match Api::<Machine>::namespaced(client, &ns).get_opt(&name).await {
-        Ok(Some(m)) => Ok((
-            StatusCode::OK,
-            Json(json!({"success": true, "data": import_json(&m)})),
-        )),
+    let (store, hooks) = runtime(&state).await;
+    match Api::<Machine>::namespaced(store.client.clone(), &ns)
+        .get_opt(&name)
+        .await
+    {
+        Ok(Some(m)) => {
+            // A phase change since the last read fires `import.phase_changed`.
+            observe(&store, &hooks, &m).await;
+            Ok((
+                StatusCode::OK,
+                Json(json!({"success": true, "data": import_json(&m)})),
+            ))
+        }
         Ok(None) => Err(fail(
             StatusCode::NOT_FOUND,
             "NOT_FOUND",
@@ -386,6 +449,27 @@ async fn get_import(
             e.to_string(),
         )),
     }
+}
+
+fn actor(auth: &Option<Extension<AuthContext>>) -> String {
+    auth.as_ref()
+        .map(|Extension(a)| a.subject.clone())
+        .unwrap_or_else(|| "unknown".into())
+}
+
+/// Store and hooks sharing one client; hooks use Veyron's own namespace for webhooks and audit.
+async fn runtime(state: &SharedState) -> (KubeStore, ClusterHooks) {
+    let s = state.read().await;
+    let client = s.client().client();
+    (
+        KubeStore {
+            client: client.clone(),
+        },
+        ClusterHooks {
+            client,
+            namespace: s.namespace.clone(),
+        },
+    )
 }
 
 fn api_fail(e: ApiErr) -> (StatusCode, Json<Value>) {
@@ -401,13 +485,14 @@ struct RetryQuery {
 /// `DELETE /imports/:ns/:name`: delete an imported VM (404 `NOT_AN_IMPORT` for any other VM).
 async fn delete_import_route(
     State(state): State<SharedState>,
+    auth: Option<Extension<AuthContext>>,
     Path((ns, name)): Path<(String, String)>,
 ) -> Reply {
     require_kairon()?;
-    let store = KubeStore {
-        client: state.read().await.client().client(),
-    };
-    let out = delete_import(&store, &ns, &name).await.map_err(api_fail)?;
+    let (store, hooks) = runtime(&state).await;
+    let out = delete_with_hooks(&store, &hooks, &actor(&auth), &ns, &name)
+        .await
+        .map_err(api_fail)?;
     Ok((
         StatusCode::ACCEPTED,
         Json(json!({"success": true, "data": {
@@ -420,15 +505,16 @@ async fn delete_import_route(
 /// `POST /imports/:ns/:name/retry`: recreate a failed import from its own spec.
 async fn retry_import_route(
     State(state): State<SharedState>,
+    auth: Option<Extension<AuthContext>>,
     Path((ns, name)): Path<(String, String)>,
     Query(q): Query<RetryQuery>,
 ) -> Reply {
     require_kairon()?;
-    let store = KubeStore {
-        client: state.read().await.client().client(),
-    };
-    let out = retry_import(
+    let (store, hooks) = runtime(&state).await;
+    let out = retry_with_hooks(
         &store,
+        &hooks,
+        &actor(&auth),
         &ns,
         &name,
         q.force,
@@ -523,6 +609,7 @@ mod tests {
         assert_eq!(ann["veyron.io/import-source-hypervisor"], "vmware");
         assert_eq!(ann["veyron.io/import-source-vm"], "dc1/web01");
         assert!(ann[IMPORT_ID_ANNOTATION].starts_with("imp-"));
+        assert_eq!(ann["veyron.io/import-last-phase"], "pending");
     }
 
     #[test]
