@@ -165,6 +165,60 @@ In the console, **Images → New** opens the same import form (name, disk URL, S
 status. They are ordinary VMs afterwards: console, snapshots, backups, stop/start and the rest
 of day-2 operations work on them.
 
+## Batch and wave imports
+
+`POST /api/v1/imports/batch` lands many VMs in one call, in ordered **waves** (database tier first, then app tier, then
+web tier). Each VM carries the same fields as `POST /imports` plus an optional `wave` (default 1):
+
+```bash
+curl -sk -X POST "https://$HOST:30151/api/v1/imports/batch" \
+  -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"namespace":"prod","mapping":"dc1","concurrency":4,"stop_on_failure":true,
+       "vms":[{"name":"db01","wave":1,"image_url":"https://files.example/db01.qcow2","sha256":"...",
+               "source":{"network":"DMZ","datastore":"ds-ssd"}},
+              {"name":"app01","wave":2,"image_url":"...","sha256":"..."}]}'
+```
+
+| Field | Meaning |
+|---|---|
+| `vms` | Up to 200 import requests, each with an optional `wave` |
+| `csv` | Alternative to `vms`: CSV text, see below |
+| `namespace`, `mapping` | Defaults for rows that do not set their own |
+| `concurrency` | Machines created at once within a wave. Default 4, capped at 16 |
+| `stop_on_failure` | Default `true`: if any VM in a wave fails, later waves are `skipped` |
+| `dry_run` | Validate and build every Machine (including mappings), create nothing |
+
+Waves run in ascending order and a wave starts only after the previous one finished. The gate is **creation**, not
+boot: "created" means Kubernetes accepted the Machine, so watch `GET /imports` for `phase: running` before
+cutting over. Every VM gets its own result; a bad row never hides the others. The response is `200` when every VM
+landed and `207` when the plan ran but some VMs failed or were skipped. A malformed plan as a whole (empty, over
+200 VMs, bad CSV, both `vms` and `csv`) is `400`.
+
+```json
+{"success": false, "data": {
+  "dry_run": false, "total": 3, "succeeded": 1, "failed": 1, "skipped": 1, "concurrency": 4,
+  "waves": [{"wave": 1, "created": 1, "failed": 0, "skipped": 0},
+            {"wave": 2, "created": 0, "failed": 1, "skipped": 0},
+            {"wave": 3, "created": 0, "failed": 0, "skipped": 1}],
+  "results": [
+    {"index": 0, "name": "db01", "namespace": "prod", "wave": 1, "status": "created", "import_id": "imp-3f9a1c02", "error": null},
+    {"index": 1, "name": "app01", "namespace": "prod", "wave": 2, "status": "failed", "import_id": null,
+     "error": {"code": "ALREADY_EXISTS", "message": "VM prod/app01 already exists"}},
+    {"index": 2, "name": "web01", "namespace": "prod", "wave": 3, "status": "skipped", "import_id": null,
+     "error": {"code": "WAVE_BLOCKED", "message": "an earlier wave failed and stop_on_failure is set"}}]}}
+```
+
+`status` is `created`, `valid` (dry run), `failed` or `skipped`. Per-VM error codes: `INVALID_REQUEST`,
+`MAPPING_NOT_FOUND`, `UNMAPPED_SOURCE`, `ALREADY_EXISTS`, `DUPLICATE` (same namespace and name twice in the plan),
+`IMPORT_FAILED`, `WAVE_BLOCKED`.
+
+**CSV.** A header row, then one VM per line. Columns, in any order: `name`, `image_url`, `sha256`, `namespace`,
+`format`, `cpus`, `memory`, `wave`, `mapping`, `repair`, `secure_boot`, `tpm`, `start`, `forwards`
+(`hostPort:guestPort` pairs separated by `;`), and the source fields `hypervisor`, `vm`, `tool`, `network`,
+`datastore`. Empty cells are omitted, fields may be double-quoted, booleans are `true/false/yes/no/1/0`. Pass it as
+`"csv": "..."` in the batch body, or `POST /imports/csv-to-json` with the CSV as the raw request body to get the
+equivalent JSON plan (`{"data": {"vms": [...]}}`) without creating anything.
+
 ## Things to know
 
 - **Stop keeps the disk.** Stopping a Kairon VM powers it off (`Halted`); start boots the same disk.

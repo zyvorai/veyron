@@ -17,6 +17,10 @@ All notable changes to this project are documented here. The format follows
 - Import mapping profiles: `GET/POST /api/v1/import-mappings`, `GET/PUT/DELETE /api/v1/import-mappings/:name`. A request
   with `"mapping": "name"` maps `source.network` to a `tap`/`macvtap` attachment and `source.datastore` to a pool
   annotation; `POST /imports/validate` checks the mapping too.
+- Batch and wave imports: `POST /api/v1/imports/batch` takes a JSON plan (or CSV) of up to 200 VMs with a `wave` each,
+  creates them wave by wave with a concurrency cap, reports a result per VM, and skips later waves after a failure unless
+  `stop_on_failure` is false. `dry_run` validates without creating. `POST /api/v1/imports/csv-to-json` converts a CSV
+  plan to JSON.
 
 ## [0.5.0] - 2026-11-17
 

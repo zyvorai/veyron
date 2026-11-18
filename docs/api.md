@@ -108,7 +108,7 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 | Data | `/snapshots`, `/snapshot-schedules`, `/backups`, `/clones`, `/storage/{usage,pools,orphans}`, `/velero/*`, `/atlas/*` |
 | Images | `/images`, `/images/catalog` (CDI `/images/upload`, `/images/publish` are KubeVirt-only) |
 | Image catalog (Kairon) | `GET/POST /machine-images`, `DELETE /machine-images/:name`, `PUT /image-store/:name` (raw body upload), `GET /image-store`, `DELETE /image-store/:name` |
-| Imports | `GET/POST /imports`, `GET/DELETE /imports/:ns/:name`, `POST /imports/:ns/:name/retry`, `POST /imports/validate` — boot a migrated disk (h2kvm) on Kairon from a URL + SHA-256; see [migrate.md](migrate.md) |
+| Imports | `GET/POST /imports`, `GET/DELETE /imports/:ns/:name`, `POST /imports/:ns/:name/retry`, `POST /imports/validate`, `POST /imports/batch`, `POST /imports/csv-to-json` — boot a migrated disk (h2kvm) on Kairon from a URL + SHA-256; see [migrate.md](migrate.md) |
 | Import mappings | `GET/POST /import-mappings`, `GET/PUT/DELETE /import-mappings/:name` — named source-network/datastore to Kairon network/pool profiles, applied with `"mapping": "name"` on an import |
 | Guest logs | `GET /vms/:ns/:name/logs?tail=` |
 | Fleet | `/nodes`, `/gpus`, `/pods`, `/workloads`, `/capacity/headroom`, `/platform/capabilities` |
