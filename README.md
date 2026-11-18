@@ -2,6 +2,8 @@
 
 # Veyron
 
+[Client overview (PDF)](docs/Veyron-Client-Overview.pdf)
+
 [![CI](https://github.com/zyvorai/veyron/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/veyron/actions/workflows/ci.yml)
 [![License: Zyvor Production 1.0](https://img.shields.io/badge/License-Zyvor_Production_1.0-1d1d1f.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-one_binary-dea584?logo=rust)](Cargo.toml)
