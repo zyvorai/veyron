@@ -91,6 +91,36 @@ With `"probe": true` Veyron sends one `HEAD` (8 s timeout, no redirects, connect
 address) to read `Content-Length`. That shows reachability from Veyron, not from the Kairon node, so an
 unreachable probe is a warning, not an error.
 
+### Lifecycle: phase, retry, delete
+
+Every import row (`GET /imports`, `GET /imports/:ns/:name`, and the response to `POST /imports`) now carries:
+
+| Field | Meaning |
+|---|---|
+| `import_id` | `imp-xxxxxxxx`, assigned at creation and kept across retries. Also the annotation `veyron.io/import-id` |
+| `phase` | `pending`, `downloading`, `converting`, `running`, `stopped`, `failed` or `terminating` |
+| `terminal` | `true` for `running`, `stopped`, `failed`: nothing changes without an operator action |
+| `retryable` | `true` when `phase` is `failed` |
+| `retries` | How many times the import was retried |
+| `message` | Kairon's status message, when there is one |
+
+`status` (Kairon's own phase string) is unchanged. `phase` is derived from it: `Running` is `running`,
+`Halted`/`Stopped`/`Paused` is `stopped`, any phase or condition reason containing `fail` or `error` is `failed`, and a
+set deletion timestamp is `terminating`. Kairon has no dedicated download phase, so `downloading` and `converting`
+are guesses from the status message and only ever refine `pending`.
+
+```bash
+# Recreate a failed import from its own spec (same import_id, retries + 1). 202 with the new row.
+curl -sk -X POST "https://$HOST:30151/api/v1/imports/prod/web01/retry" -H "X-API-Key: $VEYRON_API_KEY"
+# Delete an imported VM. 202; 404 NOT_AN_IMPORT for a VM that was not created by an import.
+curl -sk -X DELETE "https://$HOST:30151/api/v1/imports/prod/web01" -H "X-API-Key: $VEYRON_API_KEY"
+```
+
+Kairon cannot re-run a failed download in place, so retry deletes the Machine, waits up to 15 s for it to
+disappear, and creates it again. It refuses an import that is not `failed` with `409 NOT_RETRYABLE` unless you pass
+`?force=true`, and answers `409 STILL_TERMINATING` if the old Machine is held by a finalizer (the delete was issued;
+call retry again). Delete is idempotent while the VM is already terminating.
+
 In the console, **Images → New** opens the same import form (name, disk URL, SHA-256, format).
 
 `GET /api/v1/imports?namespace=all` lists imported VMs with their source hypervisor, source VM and

@@ -11,6 +11,9 @@ All notable changes to this project are documented here. The format follows
 - `POST /api/v1/imports/validate`: dry-run preflight for VM imports. Reports every error and warning at once (format,
   SHA-256, URL scheme and host policy, Windows secure boot/TPM hints, missing image cache), optionally probes the URL
   for its size. See [migrate.md](docs/migrate.md).
+- `DELETE /api/v1/imports/:ns/:name` and `POST /api/v1/imports/:ns/:name/retry`, plus `import_id`, `phase`, `terminal`,
+  `retryable`, `retries` and `message` on every import row. `phase` is derived from the Machine status; retry recreates a
+  failed import from its own spec.
 
 ## [0.5.0] - 2026-11-17
 

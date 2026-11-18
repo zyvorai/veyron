@@ -19,6 +19,10 @@ use kube::api::{Api, ListParams, PostParams};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use super::import_lifecycle::{
+    ApiErr, IMPORT_ID_ANNOTATION, ImportPhase, KubeStore, delete_import, import_id, new_import_id,
+    phase_of, retries, retry_import,
+};
 use super::import_validate::{ClusterFacts, HttpProbe, ValidateRequest, run_validate};
 use crate::api::http_server::web::SharedState;
 use crate::kairon::{
@@ -169,7 +173,10 @@ pub fn machine_for_import(req: &ImportRequest, namespace: &str) -> Result<Machin
     m.metadata.namespace = Some(namespace.to_string());
     let tool = req.source.tool.clone().unwrap_or_else(|| "h2kvm".into());
     m.metadata.labels = Some(BTreeMap::from([(IMPORTED_BY_LABEL.to_string(), tool)]));
-    let mut ann = BTreeMap::from([("veyron.io/import-image-url".to_string(), url.to_string())]);
+    let mut ann = BTreeMap::from([
+        ("veyron.io/import-image-url".to_string(), url.to_string()),
+        (IMPORT_ID_ANNOTATION.to_string(), new_import_id()),
+    ]);
     if let Some(h) = &req.source.hypervisor {
         ann.insert("veyron.io/import-source-hypervisor".into(), h.clone());
     }
@@ -183,7 +190,14 @@ pub fn machine_for_import(req: &ImportRequest, namespace: &str) -> Result<Machin
 fn import_json(m: &Machine) -> Value {
     let ann = m.metadata.annotations.clone().unwrap_or_default();
     let label = |k: &str| ann.get(k).cloned();
+    let phase = phase_of(m);
     json!({
+        "import_id": import_id(m),
+        "phase": phase,
+        "terminal": phase.is_terminal(),
+        "retryable": phase == ImportPhase::Failed,
+        "retries": retries(m),
+        "message": m.message(),
         "name": m.metadata.name,
         "namespace": m.metadata.namespace,
         "status": m.printable_status(),
@@ -306,6 +320,62 @@ async fn get_import(
     }
 }
 
+fn api_fail(e: ApiErr) -> (StatusCode, Json<Value>) {
+    fail(e.status, e.code, e.message)
+}
+
+#[derive(Debug, Deserialize)]
+struct RetryQuery {
+    #[serde(default)]
+    force: bool,
+}
+
+/// `DELETE /imports/:ns/:name`: delete an imported VM (404 `NOT_AN_IMPORT` for any other VM).
+async fn delete_import_route(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> Reply {
+    require_kairon()?;
+    let store = KubeStore {
+        client: state.read().await.client().client(),
+    };
+    let out = delete_import(&store, &ns, &name).await.map_err(api_fail)?;
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(json!({"success": true, "data": {
+            "name": name, "namespace": ns,
+            "import_id": out.import_id, "phase": out.phase,
+        }})),
+    ))
+}
+
+/// `POST /imports/:ns/:name/retry`: recreate a failed import from its own spec.
+async fn retry_import_route(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Query(q): Query<RetryQuery>,
+) -> Reply {
+    require_kairon()?;
+    let store = KubeStore {
+        client: state.read().await.client().client(),
+    };
+    let out = retry_import(
+        &store,
+        &ns,
+        &name,
+        q.force,
+        std::time::Duration::from_millis(500),
+        30,
+    )
+    .await
+    .map_err(api_fail)?;
+    let data = out.machine.as_ref().map(import_json);
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(json!({"success": true, "data": data})),
+    ))
+}
+
 /// `POST /imports/validate`: dry-run preflight; always 200 with a report (see `import_validate`).
 async fn validate_import_route(Json(req): Json<ValidateRequest>) -> Reply {
     require_kairon()?;
@@ -320,7 +390,11 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/imports", get(list_imports).post(create_import))
         .route("/imports/validate", post(validate_import_route))
-        .route("/imports/:ns/:name", get(get_import))
+        .route(
+            "/imports/:ns/:name",
+            get(get_import).delete(delete_import_route),
+        )
+        .route("/imports/:ns/:name/retry", post(retry_import_route))
         .with_state(state)
 }
 
@@ -369,6 +443,18 @@ mod tests {
         let ann = m.metadata.annotations.unwrap();
         assert_eq!(ann["veyron.io/import-source-hypervisor"], "vmware");
         assert_eq!(ann["veyron.io/import-source-vm"], "dc1/web01");
+        assert!(ann[IMPORT_ID_ANNOTATION].starts_with("imp-"));
+    }
+
+    #[test]
+    fn import_json_carries_phase_fields() {
+        let m = machine_for_import(&req(), "prod").unwrap();
+        let v = import_json(&m);
+        assert_eq!(v["phase"], "pending");
+        assert_eq!(v["terminal"], false);
+        assert_eq!(v["retryable"], false);
+        assert_eq!(v["retries"], 0);
+        assert!(v["import_id"].as_str().unwrap().starts_with("imp-"));
     }
 
     #[test]
