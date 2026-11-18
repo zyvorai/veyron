@@ -61,6 +61,36 @@ curl -sk -X POST "https://$HOST:30151/api/v1/imports" \
 | `forwards` | Node port forwards. Kairon applies them only at creation, so add SSH/RDP here if you need them |
 | `start` | `false` creates the VM stopped |
 
+### Preflight: `POST /api/v1/imports/validate`
+
+Dry-run check of an import request; nothing is created. The body takes the same fields as
+`POST /imports` (all optional here, so a missing field is reported instead of rejected) plus
+`guest_os` (for example `windows-2022`) and `probe`. The response is always `200` with a report:
+
+```json
+{"success": true, "data": {
+  "valid": true,
+  "errors":   [{"field": "sha256", "code": "INVALID_SHA256", "message": "..."}],
+  "warnings": [{"field": "format", "code": "CONVERSION_ON_NODE", "message": "..."}],
+  "normalized": {"name": "web01", "namespace": null, "image_url": "https://...", "sha256": "sha256:ab..",
+                 "format": "qcow2", "cpus": 2, "memory": "4Gi"},
+  "probe": {"reachable": true, "status": 200, "content_length": 490000000, "error": null},
+  "size_bytes": 490000000
+}}
+```
+
+It checks the name, SHA-256 syntax, format, CPUs and memory, and applies a URL policy: only `http(s)`,
+no credentials in the URL, and no loopback, link-local (cloud metadata) or unspecified host. Private
+LAN addresses are allowed, since h2kvm serves from there. Warning codes: `PLAINTEXT_HTTP`, `PRIVATE_HOST`,
+`CONVERSION_ON_NODE`, `WINDOWS_SECURE_BOOT_TPM` (Windows 11 and Server 2022 or later without `secure_boot`
+and `tpm`), `WINDOWS_SECURE_BOOT_TPM_HINT` (the source VM name looks like Windows and `guest_os` is unset),
+`IMAGE_CACHE_UNCONFIRMED` (`KAIRON_IMAGE_CACHE_DIR` is not set in Veyron's environment; Veyron cannot see the
+nodes' own settings), and, with `"probe": true`, `PROBE_UNREACHABLE`, `PROBE_REDIRECT`, `SIZE_UNKNOWN`.
+
+With `"probe": true` Veyron sends one `HEAD` (8 s timeout, no redirects, connection pinned to the resolved
+address) to read `Content-Length`. That shows reachability from Veyron, not from the Kairon node, so an
+unreachable probe is a warning, not an error.
+
 In the console, **Images → New** opens the same import form (name, disk URL, SHA-256, format).
 
 `GET /api/v1/imports?namespace=all` lists imported VMs with their source hypervisor, source VM and

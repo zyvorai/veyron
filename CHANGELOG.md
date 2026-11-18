@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `POST /api/v1/imports/validate`: dry-run preflight for VM imports. Reports every error and warning at once (format,
+  SHA-256, URL scheme and host policy, Windows secure boot/TPM hints, missing image cache), optionally probes the URL
+  for its size. See [migrate.md](docs/migrate.md).
+
 ## [0.5.0] - 2026-11-17
 
 ### Added

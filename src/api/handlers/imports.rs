@@ -13,12 +13,13 @@ use axum::{
     Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::get,
+    routing::{get, post},
 };
 use kube::api::{Api, ListParams, PostParams};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use super::import_validate::{ClusterFacts, HttpProbe, ValidateRequest, run_validate};
 use crate::api::http_server::web::SharedState;
 use crate::kairon::{
     GuestAgentSpec, ImageSource, Machine, MachineImage, MachineResources, MachineSpec, PortForward,
@@ -26,7 +27,7 @@ use crate::kairon::{
 };
 
 pub const IMPORTED_BY_LABEL: &str = "veyron.io/imported-by";
-const FORMATS: [&str; 6] = ["qcow2", "raw", "ova", "vmdk", "vhd", "vhdx"];
+pub(crate) const FORMATS: [&str; 6] = ["qcow2", "raw", "ova", "vmdk", "vhd", "vhdx"];
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ImportSource {
@@ -77,7 +78,7 @@ fn default_true() -> bool {
     true
 }
 
-fn valid_name(name: &str) -> bool {
+pub(crate) fn valid_name(name: &str) -> bool {
     !name.is_empty()
         && name.len() <= 63
         && name
@@ -87,7 +88,7 @@ fn valid_name(name: &str) -> bool {
         && !name.ends_with('-')
 }
 
-fn normalize_digest(raw: &str) -> Option<String> {
+pub(crate) fn normalize_digest(raw: &str) -> Option<String> {
     let hex = raw.trim().strip_prefix("sha256:").unwrap_or(raw.trim());
     (hex.len() == 64 && hex.bytes().all(|b| b.is_ascii_hexdigit()))
         .then(|| format!("sha256:{}", hex.to_ascii_lowercase()))
@@ -305,9 +306,20 @@ async fn get_import(
     }
 }
 
+/// `POST /imports/validate`: dry-run preflight; always 200 with a report (see `import_validate`).
+async fn validate_import_route(Json(req): Json<ValidateRequest>) -> Reply {
+    require_kairon()?;
+    let report = run_validate(&req, &ClusterFacts::from_env(), &HttpProbe).await;
+    Ok((
+        StatusCode::OK,
+        Json(json!({"success": true, "data": report})),
+    ))
+}
+
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/imports", get(list_imports).post(create_import))
+        .route("/imports/validate", post(validate_import_route))
         .route("/imports/:ns/:name", get(get_import))
         .with_state(state)
 }

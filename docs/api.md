@@ -108,7 +108,7 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
 | Data | `/snapshots`, `/snapshot-schedules`, `/backups`, `/clones`, `/storage/{usage,pools,orphans}`, `/velero/*`, `/atlas/*` |
 | Images | `/images`, `/images/catalog` (CDI `/images/upload`, `/images/publish` are KubeVirt-only) |
 | Image catalog (Kairon) | `GET/POST /machine-images`, `DELETE /machine-images/:name`, `PUT /image-store/:name` (raw body upload), `GET /image-store`, `DELETE /image-store/:name` |
-| Imports | `GET/POST /imports`, `GET /imports/:ns/:name` — boot a migrated disk (h2kvm) on Kairon from a URL + SHA-256 |
+| Imports | `GET/POST /imports`, `GET /imports/:ns/:name`, `POST /imports/validate` — boot a migrated disk (h2kvm) on Kairon from a URL + SHA-256; see [migrate.md](migrate.md) |
 | Guest logs | `GET /vms/:ns/:name/logs?tail=` |
 | Fleet | `/nodes`, `/gpus`, `/pods`, `/workloads`, `/capacity/headroom`, `/platform/capabilities` |
 | Operations | `/alerts`, `/events`, `/incidents/timeline`, `/logs`, `/metrics`, `/costs`, `/costs/budgets`, `/recommendations`, `/slo/*`, `/self-healing/*` |
