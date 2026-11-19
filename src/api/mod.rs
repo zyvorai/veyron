@@ -19,12 +19,14 @@ pub mod integrations;
 pub mod kairon_guard;
 #[cfg(feature = "kairon")]
 pub mod kairon_ops;
+pub mod key_store;
 pub mod kryton;
 #[cfg(feature = "web")]
 pub mod loki;
 pub mod middleware;
 #[cfg(feature = "web")]
 pub mod oidc;
+pub mod oidc_roles;
 pub mod openapi;
 #[cfg(feature = "web")]
 pub mod opencost;

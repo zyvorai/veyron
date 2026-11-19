@@ -1,6 +1,7 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
 // SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 
+pub mod api_key_store;
 pub mod converter;
 pub mod gpu_inventory;
 pub mod guest_filesystem;

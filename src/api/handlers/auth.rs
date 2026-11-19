@@ -10,15 +10,21 @@
 
 #[cfg(feature = "web")]
 use axum::{
-    Json, Router,
-    extract::{ConnectInfo, Path, State},
+    Extension, Json, Router,
+    extract::{ConnectInfo, Path, Query, State},
     http::StatusCode,
     routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
+use crate::api::auth_context::AuthContext;
+#[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+#[cfg(feature = "web")]
+use crate::api::key_store::{CreateSpec, KeyError, KeyStore, Pepper};
+#[cfg(feature = "web")]
+use crate::kube::api_key_store::KubeKeyBackend;
 #[cfg(feature = "web")]
 use crate::kube::user_store;
 use crate::kube::user_store::UserAccount;
@@ -93,6 +99,8 @@ pub fn router(state: SharedState) -> Router {
         .route("/auth/users", get(list_users).post(create_user))
         .route("/auth/users/:username", delete(delete_user))
         .route("/auth/users/:username/password", post(set_password))
+        .route("/auth/api-keys", get(list_api_keys).post(create_api_key))
+        .route("/auth/api-keys/:id", delete(revoke_api_key))
         .with_state(state)
 }
 
@@ -274,5 +282,167 @@ async fn set_password(
             Json(serde_json::json!({ "status": "password_updated", "username": username })),
         ),
         Err(e) => err_json(StatusCode::BAD_REQUEST, "UPDATE_FAILED", e.to_string()),
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateApiKeyRequest {
+    pub name: String,
+    #[serde(default = "default_key_role")]
+    pub role: String,
+    /// Namespaces the key may act in; empty or `["*"]` means no restriction.
+    #[serde(default)]
+    pub scopes: Vec<String>,
+    pub expires_in_days: Option<u32>,
+}
+
+fn default_key_role() -> String {
+    "readonly".to_string()
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ListApiKeysQuery {
+    #[serde(default)]
+    pub include_inactive: bool,
+}
+
+#[cfg(feature = "web")]
+fn key_err(e: KeyError) -> (StatusCode, Json<serde_json::Value>) {
+    let (status, code) = match &e {
+        KeyError::Invalid(_) => (StatusCode::BAD_REQUEST, "INVALID_REQUEST"),
+        KeyError::Duplicate(_) | KeyError::Conflict => (StatusCode::CONFLICT, "CONFLICT"),
+        KeyError::Full => (StatusCode::CONFLICT, "KEY_STORE_FULL"),
+        KeyError::NotFound(_) => (StatusCode::NOT_FOUND, "NOT_FOUND"),
+        KeyError::NoPepper => (StatusCode::SERVICE_UNAVAILABLE, "KEY_STORE_NOT_CONFIGURED"),
+        KeyError::Backend(_) => (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL_ERROR"),
+    };
+    // Backend errors can carry cluster detail; log it and return a generic message.
+    let msg = if let KeyError::Backend(d) = &e {
+        log::error!("api key store: {d}");
+        "API key store unavailable".to_string()
+    } else {
+        e.to_string()
+    };
+    err_json(status, code, msg)
+}
+
+/// Audit a key lifecycle event: the key's id and name only, never the token or its hash.
+#[cfg(feature = "web")]
+async fn audit_key_event(
+    client: &crate::kube::KubeClient,
+    namespace: &str,
+    actor: &str,
+    action: &str,
+    key_id: &str,
+    key_name: &str,
+) {
+    log::info!("audit: {actor} {action} api key id={key_id} name={key_name}");
+    let mut ev = crate::soc::event::SecurityEvent::new(
+        "audit",
+        "medium",
+        "veyron",
+        format!("{action} api key {key_name} ({key_id})"),
+    )
+    .with_actor(actor)
+    .with_action(action)
+    .with_target(format!("api-key/{key_id}"))
+    .with_outcome("success");
+    ev.labels.insert("key_name".into(), key_name.into());
+    crate::soc::store::append_events(&client.client(), namespace, vec![ev]).await;
+}
+
+#[cfg(feature = "web")]
+fn key_store_for(client: &crate::kube::KubeClient, namespace: &str) -> KeyStore<KubeKeyBackend> {
+    KeyStore::new(KubeKeyBackend::new(client, namespace), Pepper::from_env())
+}
+
+/// `GET /api/v1/auth/api-keys` — Admin only. Metadata only; never a token, salt or hash.
+#[cfg(feature = "web")]
+async fn list_api_keys(
+    State(state): State<SharedState>,
+    Query(q): Query<ListApiKeysQuery>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let (client, namespace) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    match key_store_for(&client, &namespace)
+        .list(q.include_inactive, chrono::Utc::now())
+        .await
+    {
+        Ok(keys) => (StatusCode::OK, Json(serde_json::json!(keys))),
+        Err(e) => key_err(e),
+    }
+}
+
+/// `POST /api/v1/auth/api-keys` — Admin only. The response carries the plaintext key once;
+/// it cannot be retrieved again.
+#[cfg(feature = "web")]
+async fn create_api_key(
+    State(state): State<SharedState>,
+    Extension(ctx): Extension<AuthContext>,
+    Json(req): Json<CreateApiKeyRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let (client, namespace) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let spec = CreateSpec {
+        name: req.name,
+        role: req.role.trim().to_lowercase(),
+        scopes: req.scopes,
+        expires_in_days: req.expires_in_days,
+    };
+    match key_store_for(&client, &namespace)
+        .create(spec, &ctx.subject, chrono::Utc::now())
+        .await
+    {
+        Ok((summary, token)) => {
+            audit_key_event(
+                &client,
+                &namespace,
+                &ctx.subject,
+                "create",
+                &summary.id,
+                &summary.name,
+            )
+            .await;
+            let mut body = serde_json::json!(summary);
+            body["key"] = serde_json::Value::String(token);
+            body["note"] = "Store this key now; it is not shown again.".into();
+            (StatusCode::CREATED, Json(body))
+        }
+        Err(e) => key_err(e),
+    }
+}
+
+/// `DELETE /api/v1/auth/api-keys/:id` — Admin only. `:id` may also be the key's name.
+#[cfg(feature = "web")]
+async fn revoke_api_key(
+    State(state): State<SharedState>,
+    Extension(ctx): Extension<AuthContext>,
+    Path(id): Path<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let (client, namespace) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    match key_store_for(&client, &namespace)
+        .revoke(&id, &ctx.subject, chrono::Utc::now())
+        .await
+    {
+        Ok(summary) => {
+            audit_key_event(
+                &client,
+                &namespace,
+                &ctx.subject,
+                "revoke",
+                &summary.id,
+                &summary.name,
+            )
+            .await;
+            (StatusCode::OK, Json(serde_json::json!(summary)))
+        }
+        Err(e) => key_err(e),
     }
 }

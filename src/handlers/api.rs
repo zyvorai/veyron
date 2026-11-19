@@ -497,21 +497,35 @@ pub fn handle_api_spec(format: String, output: Option<String>) -> Result<()> {
     Ok(())
 }
 
-/// Message shared by the api-key subcommands: the server has no key store.
-const API_KEYS_NOT_PERSISTED: &str = "the API server has no persistent key store; keys are read at \
-startup from VEYRON_API_KEY (admin) and VEYRON_API_KEYS (\"name:key:role,...\" with role \
-admin|write|readonly). To add or revoke a key, edit those variables (Helm: auth.apiKey / the \
-veyron-api-key Secret) and restart the server";
-
-/// One key configured through the environment, as listed by `api-key-list`.
-/// The secret itself is never part of this; `fingerprint` is a short SHA-256 prefix
-/// that lets an operator tell keys apart (or confirm which one a client holds).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+/// One key as listed by `api-key-list`: configured through the environment, or (with the extra
+/// optional fields) held in the persistent key store.
+/// The secret itself is never part of this; for environment keys `fingerprint` is a short
+/// SHA-256 prefix that lets an operator tell keys apart (or confirm which one a client holds),
+/// for stored keys it is the key id.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
 pub struct ConfiguredKey {
     pub name: String,
     pub role: String,
     pub source: String,
     pub fingerprint: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub scopes: Vec<String>,
+}
+
+fn stored_key_row(k: crate::api::key_store::KeySummary) -> ConfiguredKey {
+    ConfiguredKey {
+        name: k.name,
+        role: k.role,
+        source: "api-key-store".into(),
+        fingerprint: k.id,
+        status: Some(k.status),
+        expires_at: k.expires_at.map(|t| t.to_rfc3339()),
+        scopes: k.scopes,
+    }
 }
 
 fn key_fingerprint(key: &str) -> String {
@@ -531,6 +545,7 @@ pub fn configured_api_keys(primary: Option<&str>, extra: Option<&str>) -> Vec<Co
             role: "admin".into(),
             source: "VEYRON_API_KEY".into(),
             fingerprint: key_fingerprint(key),
+            ..Default::default()
         });
     }
     let extra = extra.map(str::trim).filter(|v| !v.is_empty());
@@ -549,40 +564,84 @@ pub fn configured_api_keys(primary: Option<&str>, extra: Option<&str>) -> Vec<Co
             role: role.into(),
             source: "VEYRON_API_KEYS".into(),
             fingerprint: key_fingerprint(parts[1]),
+            ..Default::default()
         });
     }
     out
 }
 
-/// `api-key-list`: show the keys configured in this process's environment. There is still
-/// no key store, so this cannot see a running server's keys, only what `VEYRON_API_KEY` /
-/// `VEYRON_API_KEYS` hold where the command runs (for example `kubectl exec`, or a shell that
-/// sourced the same env file). Secrets are never printed.
-pub fn handle_api_key_list(_active_only: bool, output: String) -> Result<()> {
-    let keys = configured_api_keys(
+/// `api-key-list` without a cluster: the keys configured in this process's environment
+/// (`VEYRON_API_KEY` / `VEYRON_API_KEYS`). Secrets are never printed.
+pub fn handle_api_key_list(active_only: bool, output: String) -> Result<()> {
+    render_keys(env_keys(), &output, active_only)
+}
+
+fn env_keys() -> Vec<ConfiguredKey> {
+    configured_api_keys(
         std::env::var("VEYRON_API_KEY").ok().as_deref(),
         std::env::var("VEYRON_API_KEYS").ok().as_deref(),
-    );
-    match output.as_str() {
+    )
+}
+
+/// `api-key-list`: environment keys plus the persistent key store. A store that cannot be read
+/// (no cluster access) is reported on stderr and the environment keys are still shown.
+pub async fn handle_api_key_list_all(
+    active_only: bool,
+    output: String,
+    namespace: &str,
+) -> Result<()> {
+    use crate::api::key_store::{KeyStore, Pepper};
+    use crate::kube::{KubeClient, api_key_store::KubeKeyBackend};
+    let mut keys = env_keys();
+    let stored = async {
+        let client = KubeClient::new().await?;
+        let store = KeyStore::new(KubeKeyBackend::new(&client, namespace), Pepper::from_env());
+        anyhow::Ok(store.list(!active_only, chrono::Utc::now()).await?)
+    }
+    .await;
+    match stored {
+        Ok(list) => {
+            if list.iter().any(|k| !k.pepper_matches) {
+                eprintln!(
+                    "warning: some stored keys were created with a different pepper than this \
+environment's VEYRON_API_KEY_PEPPER / VEYRON_API_KEY; they will not validate on a server using this one"
+                );
+            }
+            keys.extend(list.into_iter().map(stored_key_row));
+        }
+        Err(e) => eprintln!("note: stored API keys not shown ({e})"),
+    }
+    render_keys(keys, &output, active_only)
+}
+
+fn render_keys(keys: Vec<ConfiguredKey>, output: &str, _active_only: bool) -> Result<()> {
+    match output {
         "json" => println!("{}", serde_json::to_string_pretty(&keys)?),
         "yaml" => println!("{}", serde_yml::to_string(&keys)?),
         "table" => {
-            println!("{}", color::header("Configured API keys"));
+            println!("{}", color::header("API keys"));
             println!();
             if keys.is_empty() {
-                println!(
-                    "  {}",
-                    color::muted("No keys in VEYRON_API_KEY / VEYRON_API_KEYS in this environment")
-                );
+                println!("  {}", color::muted("No API keys found"));
             } else {
                 println!(
-                    "  {:<20} {:<10} {:<10} SOURCE",
-                    "NAME", "ROLE", "FINGERPRINT"
+                    "  {:<20} {:<10} {:<18} {:<9} {:<26} SOURCE",
+                    "NAME", "ROLE", "ID/FINGERPRINT", "STATUS", "EXPIRES"
                 );
                 for k in &keys {
                     println!(
-                        "  {:<20} {:<10} {:<10} {}",
-                        k.name, k.role, k.fingerprint, k.source
+                        "  {:<20} {:<10} {:<18} {:<9} {:<26} {}{}",
+                        k.name,
+                        k.role,
+                        k.fingerprint,
+                        k.status.as_deref().unwrap_or("active"),
+                        k.expires_at.as_deref().unwrap_or("-"),
+                        k.source,
+                        if k.scopes.is_empty() {
+                            String::new()
+                        } else {
+                            format!(" (namespaces: {})", k.scopes.join(","))
+                        }
                     );
                 }
             }
@@ -590,8 +649,8 @@ pub fn handle_api_key_list(_active_only: bool, output: String) -> Result<()> {
             println!(
                 "  {}",
                 color::muted(
-                    "Read from this process's environment; the server has no key store. \
-Fingerprint = first 8 hex of SHA-256 of the key."
+                    "Environment keys: fingerprint = first 8 hex of SHA-256 of the key. \
+Stored keys: the id shown is what api-key-delete takes (or the name)."
                 )
             );
         }
@@ -600,16 +659,138 @@ Fingerprint = first 8 hex of SHA-256 of the key."
     Ok(())
 }
 
-pub fn handle_api_key_create(
-    _name: String,
-    _permissions: String,
-    _rate_limit: Option<u32>,
-) -> Result<()> {
-    anyhow::bail!("api-key-create cannot persist a key: {API_KEYS_NOT_PERSISTED}")
+/// Highest role named in a `--permissions` list (`read`, `write`, `admin`, comma-separated).
+fn role_from_permissions(permissions: &str) -> Result<String> {
+    let mut best = 0u8;
+    for p in permissions
+        .split(',')
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+    {
+        best = best.max(match p {
+            "read" | "readonly" => 1,
+            "write" => 2,
+            "admin" => 3,
+            other => anyhow::bail!("unknown permission '{other}' (read, write, admin)"),
+        });
+    }
+    Ok(match best {
+        3 => "admin",
+        2 => "write",
+        _ => "readonly",
+    }
+    .to_string())
 }
 
-pub fn handle_api_key_delete(_key: String, _yes: bool) -> Result<()> {
-    anyhow::bail!("api-key-delete cannot revoke a key: {API_KEYS_NOT_PERSISTED}")
+/// `api-key-create`: create a persistent key and print it once. Needs cluster access and the
+/// same `VEYRON_API_KEY_PEPPER` (or `VEYRON_API_KEY`) the server runs with.
+pub async fn handle_api_key_create(
+    name: String,
+    permissions: String,
+    rate_limit: Option<u32>,
+    expires_in_days: Option<u32>,
+    scopes: Option<String>,
+    namespace: &str,
+) -> Result<()> {
+    use crate::api::key_store::{CreateSpec, KeyStore, Pepper};
+    use crate::kube::{KubeClient, api_key_store::KubeKeyBackend};
+    use anyhow::Context;
+    if rate_limit.is_some() {
+        anyhow::bail!("per-key rate limits are not supported; the global --rate-limit applies");
+    }
+    let role = role_from_permissions(&permissions)?;
+    let scopes: Vec<String> = scopes
+        .map(|s| {
+            s.split(',')
+                .map(|x| x.trim().to_string())
+                .filter(|x| !x.is_empty())
+                .collect()
+        })
+        .unwrap_or_default();
+    let client = KubeClient::new().await.context("connect to cluster")?;
+    let store = KeyStore::new(KubeKeyBackend::new(&client, namespace), Pepper::from_env());
+    let actor = format!(
+        "cli:{}",
+        std::env::var("USER").unwrap_or_else(|_| "unknown".into())
+    );
+    let (summary, token) = store
+        .create(
+            CreateSpec {
+                name,
+                role,
+                scopes,
+                expires_in_days,
+            },
+            &actor,
+            chrono::Utc::now(),
+        )
+        .await?;
+    // Same audit trail as the REST path: id and name only.
+    log::info!(
+        "audit: {actor} create api key id={} name={}",
+        summary.id,
+        summary.name
+    );
+    println!("{}", color::success("✓ API key created"));
+    println!("  Name:    {}", summary.name);
+    println!("  ID:      {}", summary.id);
+    println!("  Role:    {}", summary.role);
+    if !summary.scopes.is_empty() {
+        println!("  Scopes:  {}", summary.scopes.join(","));
+    }
+    if let Some(e) = summary.expires_at {
+        println!("  Expires: {}", e.to_rfc3339());
+    }
+    println!();
+    println!("  Key (shown once, store it now): {token}");
+    Ok(())
+}
+
+/// `api-key-delete`: revoke a stored key by id or name. Environment keys cannot be revoked
+/// here; remove them from `VEYRON_API_KEY` / `VEYRON_API_KEYS` and restart the server.
+pub async fn handle_api_key_delete(key: String, yes: bool, namespace: &str) -> Result<()> {
+    use crate::api::key_store::{KeyStore, Pepper};
+    use crate::kube::{KubeClient, api_key_store::KubeKeyBackend};
+    use anyhow::Context;
+    if !yes {
+        let ok = dialoguer::Confirm::new()
+            .with_prompt(format!("Revoke API key '{key}'?"))
+            .default(false)
+            .interact()?;
+        if !ok {
+            println!("Aborted");
+            return Ok(());
+        }
+    }
+    let client = KubeClient::new().await.context("connect to cluster")?;
+    let store = KeyStore::new(KubeKeyBackend::new(&client, namespace), Pepper::from_env());
+    let actor = format!(
+        "cli:{}",
+        std::env::var("USER").unwrap_or_else(|_| "unknown".into())
+    );
+    let summary = store
+        .revoke(&key, &actor, chrono::Utc::now())
+        .await
+        .map_err(|e| match e {
+            crate::api::key_store::KeyError::NotFound(k) => anyhow::anyhow!(
+                "no active stored key '{k}'. Keys from VEYRON_API_KEY / VEYRON_API_KEYS cannot be \
+revoked here: remove them from the environment (Helm: auth.apiKey) and restart the API"
+            ),
+            other => other.into(),
+        })?;
+    log::info!(
+        "audit: {actor} revoke api key id={} name={}",
+        summary.id,
+        summary.name
+    );
+    println!(
+        "{}",
+        color::success(&format!(
+            "✓ Revoked API key {} ({})",
+            summary.name, summary.id
+        ))
+    );
+    Ok(())
 }
 
 pub fn handle_webhook_list(active_only: bool, output: String) -> Result<()> {
@@ -1081,10 +1262,37 @@ mod tests {
     }
 
     #[test]
-    fn api_key_cli_fails_honestly_instead_of_faking_success() {
-        let e = super::handle_api_key_create("k".into(), "read".into(), None).unwrap_err();
-        assert!(e.to_string().contains("VEYRON_API_KEYS"), "{e}");
-        assert!(super::handle_api_key_delete("k".into(), true).is_err());
+    fn permissions_map_to_the_highest_role() {
+        assert_eq!(super::role_from_permissions("read").unwrap(), "readonly");
+        assert_eq!(super::role_from_permissions("read,write").unwrap(), "write");
+        assert_eq!(
+            super::role_from_permissions(" write , admin ").unwrap(),
+            "admin"
+        );
+        assert_eq!(super::role_from_permissions("").unwrap(), "readonly");
+        assert!(super::role_from_permissions("read,root").is_err());
+    }
+
+    #[test]
+    fn stored_rows_expose_metadata_but_no_secret() {
+        use crate::api::key_store::KeySummary;
+        let row = super::stored_key_row(KeySummary {
+            id: "0123456789abcdef".into(),
+            name: "ci".into(),
+            role: "write".into(),
+            scopes: vec!["team-a".into()],
+            status: "active".into(),
+            created_at: chrono::Utc::now(),
+            created_by: "x".into(),
+            expires_at: None,
+            revoked_at: None,
+            pepper_matches: true,
+        });
+        let j = serde_json::to_string(&row).unwrap();
+        assert!(j.contains("api-key-store") && j.contains("team-a"));
+        // Env rows keep their original JSON shape (no extra fields).
+        let env = serde_json::to_value(&super::configured_api_keys(Some("k"), None)[0]).unwrap();
+        assert_eq!(env.as_object().unwrap().len(), 4);
     }
 
     #[test]

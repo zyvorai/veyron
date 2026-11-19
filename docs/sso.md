@@ -35,9 +35,38 @@ the local `admin` account remains as break-glass access.
 | `VEYRON_OIDC_ROLE_CLAIM` | Claim holding groups (default `groups`) |
 | `VEYRON_OIDC_GROUP_ADMIN` | Groups mapped to `admin` (default `veyron-admins,cluster-admins`) |
 | `VEYRON_OIDC_GROUP_WRITE` | Groups mapped to `write` (default `veyron-write,veyron-editors`) |
+| `VEYRON_OIDC_ROLE_MAP` | Optional JSON namespace -> group -> role map with deny by default, see [below](#per-namespace-roles-veyron_oidc_role_map) |
 
 Role mapping: exact group matches come first, case-insensitive. Next, any group containing `admin`
-or `write` maps to that role. Everyone else is `readonly`.
+or `write` maps to that role. Everyone else is `readonly`. This is the default; to deny callers
+that match nothing, or to grant roles per namespace, use the role map below.
+
+## Per-namespace roles (`VEYRON_OIDC_ROLE_MAP`)
+
+A JSON object of namespace -> group -> role. `*` applies to every request:
+
+```json
+{
+  "*":      { "platform-admins": "admin", "auditors": "readonly" },
+  "team-a": { "team-a-devs": "write", "team-a-viewers": "readonly" }
+}
+```
+
+- Roles are `admin`, `write`, `readonly`; group names match exactly, case-insensitive. A caller gets the highest role
+  from `*` plus the request's namespace.
+- **Deny by default.** Once the variable is set, the substring and `readonly` fallbacks no longer apply: a caller whose
+  groups match nothing gets no role (`401`). `VEYRON_OIDC_GROUP_ADMIN` / `_WRITE` exact matches still count as `*`
+  grants, so existing admin groups keep working. Unset, behaviour is exactly as described above.
+- **Invalid JSON, an unknown role or a bad namespace name denies every OIDC caller** (and logs a warning) instead of
+  being half-applied. API keys and local accounts are not affected.
+- A namespace-specific grant applies only to routes that name the namespace in the path
+  (`/api/v1/vms/{ns}/{name}/...`). Cluster-wide routes, and routes where the namespace is a query parameter or body
+  field, are decided by `*` grants only, because a handler may ignore or override those. Route-level role rules
+  (for example `admin`-only routes) still apply on top.
+- It needs signed tokens: set `VEYRON_OIDC_JWKS_URL`. The userinfo fallback cannot carry the map, so with the map set it
+  is not used (a token that fails JWKS validation is denied).
+- Not covered: namespace grants are not a full tenant boundary. For hard tenant isolation also use
+  `VEYRON_TENANT_SCOPES`.
 
 Deploy the settings as a Secret instead of passing them on the command line:
 
@@ -78,6 +107,7 @@ With Helm, create your own Secret holding all the `VEYRON_OIDC_*` keys and name 
 | `invalid_scope` at the IdP | A custom scope such as `groups` was requested; `openid profile email` is enough |
 | `HTTPS required` from Keycloak | The realm requires SSL and Keycloak has no TLS; put TLS in front of it |
 | Token accepted but role is `readonly` | Group names don't match; set `VEYRON_OIDC_GROUP_ADMIN` / `_WRITE` |
+| `401` for a valid token with `VEYRON_OIDC_ROLE_MAP` set | No group matches `*` (or the path's namespace), the map is invalid (see the API log), or `VEYRON_OIDC_JWKS_URL` is not set |
 
 **Console note:** the console currently signs in with local accounts or API keys. OIDC bearer
 tokens work on the API today, and an SSO button in the console is on the roadmap.
