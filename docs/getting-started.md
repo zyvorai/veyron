@@ -117,7 +117,7 @@ curl -sk -H "X-API-Key: $VEYRON_API_KEY" -H 'Content-Type: application/json' \
 ```
 
 The `veyron` CLI's VM commands (`create`, `list`, `start`, `snapshot-*`, `tui`) work on KubeVirt
-`VirtualMachine`s only in v0.5.0; they do not see Kairon Machines. On Kairon, use the console or the API.
+`VirtualMachine`s only in v0.6.0; they do not see Kairon Machines. On Kairon, use the console or the API.
 
 ## 5. Check the deployment
 

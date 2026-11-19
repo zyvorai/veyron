@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-19
+
 ### Added
 
 - `POST /api/v1/imports/validate`: dry-run preflight for VM imports. Reports every error and warning at once (format,
