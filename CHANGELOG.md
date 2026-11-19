@@ -24,6 +24,19 @@ All notable changes to this project are documented here. The format follows
 - Import phase-change webhook: webhooks subscribed to `import.phase_changed` get one event per import phase change, seen
   when the import is read, retried or deleted. Import create, delete, retry and batch rows are now written to the SOC
   audit log, tagged with the `import_id` label.
+- API: persistent API keys. `veyron api-key-create`, `api-key-list` and `api-key-delete` now work, backed by a
+  `veyron-api-keys` Secret, with role, optional namespace scopes and expiry; admin-only REST routes
+  `GET|POST /api/v1/auth/api-keys` and `DELETE /api/v1/auth/api-keys/:id`. The key is returned once and only a salted,
+  peppered SHA-256 is stored (pepper: `VEYRON_API_KEY_PEPPER`, else derived from `VEYRON_API_KEY`); checks are
+  constant-time; creation and revocation are audit-logged without the key. `VEYRON_API_KEY` / `VEYRON_API_KEYS` behave
+  exactly as before. `api-key-create --rate-limit` is rejected (not implemented). See [api.md](docs/api.md#keys).
+- SSO: `VEYRON_OIDC_ROLE_MAP` maps IdP groups to roles per namespace, deny by default. Unset, group mapping is unchanged.
+  See [sso.md](docs/sso.md).
+
+### Not included
+
+- Durable audit export (file/JSONL sink with rotation) is a follow-up. Today audit events go to the SOC event store and
+  can be forwarded with the existing SIEM exporters.
 
 ## [0.5.0] - 2026-11-17
 

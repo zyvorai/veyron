@@ -36,7 +36,12 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     // through to the blanket "safe methods are ReadOnly" rule below.
     // `/api/v1/auth/login` itself is unauthenticated (see dashboard_paths) and
     // never reaches this check.
-    if path.starts_with("/api/v1/auth/users") || path.starts_with("/api/v1/veyron/auth/users") {
+    // Persistent API keys (create/list/revoke) are Admin-only for the same reason.
+    if path.starts_with("/api/v1/auth/users")
+        || path.starts_with("/api/v1/veyron/auth/users")
+        || path.starts_with("/api/v1/auth/api-keys")
+        || path.starts_with("/api/v1/veyron/auth/api-keys")
+    {
         return ApiRole::Admin;
     }
     // GET routes that hand out guest access or sensitive artifacts are not read-only:
@@ -616,6 +621,19 @@ mod tests {
             min_role_for_route(&Method::POST, "/api/v1/veyron/auth/users"),
             ApiRole::Admin
         );
+    }
+
+    #[test]
+    fn admin_required_for_api_key_management_including_get() {
+        for (m, path) in [
+            (Method::GET, "/api/v1/auth/api-keys"),
+            (Method::POST, "/api/v1/auth/api-keys"),
+            (Method::DELETE, "/api/v1/auth/api-keys/0123456789abcdef"),
+            (Method::GET, "/api/v1/veyron/auth/api-keys"),
+            (Method::POST, "/api/v1/veyron/auth/api-keys"),
+        ] {
+            assert_eq!(min_role_for_route(&m, path), ApiRole::Admin, "{m} {path}");
+        }
     }
 
     #[test]

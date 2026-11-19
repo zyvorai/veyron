@@ -586,7 +586,12 @@ pub mod web {
     }
 
     /// Resolve the RBAC role for an authenticated credential.
-    async fn resolve_api_role(state: &SharedState, key: &str, is_primary: bool) -> Option<ApiRole> {
+    async fn resolve_api_role(
+        state: &SharedState,
+        key: &str,
+        is_primary: bool,
+        namespace: Option<&str>,
+    ) -> Option<ApiRole> {
         if is_primary {
             let s = state.read().await;
             if let Some(role) = s.authenticate(key) {
@@ -605,7 +610,7 @@ pub mod web {
         drop(s);
 
         if crate::api::oidc::oidc_configured() {
-            return crate::api::oidc::oidc_role_from_bearer(key)
+            return crate::api::oidc::oidc_role_from_bearer_for(key, namespace)
                 .await
                 .map(|rstr| match rstr.as_str() {
                     "admin" => ApiRole::Admin,
@@ -624,6 +629,34 @@ pub mod web {
             };
         }
         None
+    }
+
+    /// Authenticate a persistent API key (`vk_...`, see `api::key_store`). Reads the key
+    /// Secret through a short cache and fails closed: any error means "not authenticated".
+    /// Returns the role, the audit subject and the key's namespace scopes.
+    async fn resolve_store_key(
+        state: &SharedState,
+        token: &str,
+    ) -> Option<(ApiRole, String, Vec<String>)> {
+        let pepper = crate::api::key_store::Pepper::from_env()?;
+        let (client, namespace) = {
+            let s = state.read().await;
+            (s.kube_client.clone(), s.namespace.clone())
+        };
+        let keys = client
+            .cached_api_keys(&namespace)
+            .await
+            .map_err(|e| log::warn!("api key store unavailable, denying stored key: {e}"))
+            .ok()?;
+        let v =
+            crate::api::key_store::verify_token(&keys, &pepper, token, chrono::Utc::now()).ok()?;
+        let role = match v.role.as_str() {
+            "admin" => ApiRole::Admin,
+            "write" => ApiRole::Write,
+            _ => ApiRole::ReadOnly,
+        };
+        // Prefixed so a stored key's name can never match an env key or a tenant-scope subject.
+        Some((role, format!("key:{}", v.name), v.scopes))
     }
 
     /// Best-effort caller identity for audit and AI proposals. The role was already
@@ -761,9 +794,49 @@ pub mod web {
 
         let method = request.method().clone();
 
+        // Persistent keys: only for `vk_` tokens that no environment key claims, so env keys
+        // behave exactly as before.
+        let mut store_auth = None;
+        if let Some(k) = &provided_key
+            && crate::api::key_store::is_store_token(k)
+            && !constant_time_eq(k.as_bytes(), expected_key.as_bytes())
+        {
+            let env_key = state.read().await.authenticate(k).is_some();
+            if !env_key {
+                store_auth = Some(resolve_store_key(&state, k).await);
+            }
+        }
+        // Namespace named in the path, for namespace-scoped OIDC grants.
+        let path_ns = crate::api::key_store::path_namespace(path).map(str::to_string);
+
         match provided_key {
+            Some(_) if store_auth.is_some() => match store_auth.flatten() {
+                Some((role, subject, scopes)) => {
+                    if !crate::api::key_store::scopes_allow_path(&scopes, path) {
+                        let (status, json) = err_json(
+                            403,
+                            "FORBIDDEN",
+                            "API key is not scoped to this namespace or route",
+                        );
+                        return (status, json).into_response();
+                    }
+                    match authorize_request(role, subject, &method, path) {
+                        Ok(ctx) => {
+                            let mut request = request;
+                            request.extensions_mut().insert(ctx);
+                            next.run(request).await.into_response()
+                        }
+                        Err(resp) => resp.into_response(),
+                    }
+                }
+                None => {
+                    let (status, json) =
+                        err_json(401, "UNAUTHORIZED", "Invalid or missing API key");
+                    (status, json).into_response()
+                }
+            },
             Some(key) if constant_time_eq(key.as_bytes(), expected_key.as_bytes()) => {
-                let role = resolve_api_role(&state, &key, true)
+                let role = resolve_api_role(&state, &key, true, None)
                     .await
                     .unwrap_or(ApiRole::Admin);
                 let subject = resolve_subject(&state, &key, &headers).await;
@@ -776,7 +849,7 @@ pub mod web {
                     Err(resp) => resp.into_response(),
                 }
             }
-            Some(key) => match resolve_api_role(&state, &key, false).await {
+            Some(key) => match resolve_api_role(&state, &key, false, path_ns.as_deref()).await {
                 Some(role) => match authorize_request(
                     role,
                     resolve_subject(&state, &key, &headers).await,
