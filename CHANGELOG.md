@@ -8,6 +8,22 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `POST /api/v1/imports/validate`: dry-run preflight for VM imports. Reports every error and warning at once (format,
+  SHA-256, URL scheme and host policy, Windows secure boot/TPM hints, missing image cache), optionally probes the URL
+  for its size. See [migrate.md](docs/migrate.md).
+- `DELETE /api/v1/imports/:ns/:name` and `POST /api/v1/imports/:ns/:name/retry`, plus `import_id`, `phase`, `terminal`,
+  `retryable`, `retries` and `message` on every import row. `phase` is derived from the Machine status; retry recreates a
+  failed import from its own spec.
+- Import mapping profiles: `GET/POST /api/v1/import-mappings`, `GET/PUT/DELETE /api/v1/import-mappings/:name`. A request
+  with `"mapping": "name"` maps `source.network` to a `tap`/`macvtap` attachment and `source.datastore` to a pool
+  annotation; `POST /imports/validate` checks the mapping too.
+- Batch and wave imports: `POST /api/v1/imports/batch` takes a JSON plan (or CSV) of up to 200 VMs with a `wave` each,
+  creates them wave by wave with a concurrency cap, reports a result per VM, and skips later waves after a failure unless
+  `stop_on_failure` is false. `dry_run` validates without creating. `POST /api/v1/imports/csv-to-json` converts a CSV
+  plan to JSON.
+- Import phase-change webhook: webhooks subscribed to `import.phase_changed` get one event per import phase change, seen
+  when the import is read, retried or deleted. Import create, delete, retry and batch rows are now written to the SOC
+  audit log, tagged with the `import_id` label.
 - API: persistent API keys. `veyron api-key-create`, `api-key-list` and `api-key-delete` now work, backed by a
   `veyron-api-keys` Secret, with role, optional namespace scopes and expiry; admin-only REST routes
   `GET|POST /api/v1/auth/api-keys` and `DELETE /api/v1/auth/api-keys/:id`. The key is returned once and only a salted,

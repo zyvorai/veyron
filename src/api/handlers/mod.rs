@@ -46,6 +46,16 @@ pub mod hpa;
 pub mod image_capture;
 pub mod images;
 #[cfg(all(feature = "web", feature = "kairon"))]
+pub mod import_events;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod import_lifecycle;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod import_mappings;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod import_plans;
+#[cfg(all(feature = "web", feature = "kairon"))]
+pub mod import_validate;
+#[cfg(all(feature = "web", feature = "kairon"))]
 pub mod imports;
 pub mod incidents;
 pub mod ingress;
@@ -220,6 +230,8 @@ pub fn all_routes(
     #[cfg(feature = "kairon")]
     let router = router
         .merge(imports::router(state.clone()))
+        .merge(import_mappings::router(state.clone()))
+        .merge(import_plans::router(state.clone()))
         .merge(machine_images::router(state.clone()))
         .merge(image_capture::router(state.clone()))
         .merge(network_access::router(state.clone()))
