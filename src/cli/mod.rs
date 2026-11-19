@@ -2506,9 +2506,9 @@ pub enum Commands {
         output: Option<String>,
     },
 
-    /// List the API keys configured in this environment (name, role, fingerprint; never the secret)
+    /// List API keys: environment keys and the persistent key store (never the secret)
     ApiKeyList {
-        /// Accepted for compatibility; every configured key is active
+        /// Hide revoked and expired stored keys
         #[arg(long)]
         active_only: bool,
 
@@ -2517,7 +2517,7 @@ pub enum Commands {
         output: String,
     },
 
-    /// Create an API key
+    /// Create a persistent API key (printed once; needs cluster access and the server's pepper)
     ApiKeyCreate {
         /// Key name
         name: String,
@@ -2526,14 +2526,22 @@ pub enum Commands {
         #[arg(short, long, default_value = "read")]
         permissions: String,
 
-        /// Rate limit for this key (requests per minute)
+        /// Not supported; kept for compatibility and rejected if given
         #[arg(long)]
         rate_limit: Option<u32>,
+
+        /// Expire the key after this many days (default: never)
+        #[arg(long)]
+        expires_in_days: Option<u32>,
+
+        /// Restrict the key to these namespaces (comma-separated; default: unrestricted)
+        #[arg(long)]
+        scopes: Option<String>,
     },
 
-    /// Delete an API key
+    /// Revoke a persistent API key
     ApiKeyDelete {
-        /// Key ID or name
+        /// Key ID or name (stored keys only)
         key: String,
 
         /// Skip confirmation

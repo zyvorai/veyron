@@ -252,6 +252,42 @@ fn map_groups_to_role(groups: &[&str]) -> Option<String> {
     }
 }
 
+/// Groups from the role claim (an array of strings, or a single string).
+#[cfg(feature = "web")]
+fn claim_groups(value: &serde_json::Value) -> Vec<String> {
+    let claim = crate::api::integrations::env_var("VEYRON_OIDC_ROLE_CLAIM")
+        .unwrap_or_else(|| "groups".to_string());
+    match value.get(&claim) {
+        Some(serde_json::Value::Array(arr)) => arr
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect(),
+        Some(serde_json::Value::String(s)) => vec![s.clone()],
+        _ => Vec::new(),
+    }
+}
+
+/// Role for verified claims. Without `VEYRON_OIDC_ROLE_MAP` this is the legacy mapping,
+/// unchanged. With it, only the map (plus the exact-match legacy group lists as `*` grants)
+/// applies and a caller that matches nothing gets `None`: no role, denied.
+#[cfg(feature = "web")]
+fn role_for_claims(value: &serde_json::Value, namespace: Option<&str>) -> Option<String> {
+    use crate::api::oidc_roles::{self, Config, Role};
+    let cfg = oidc_roles::parse_config(
+        crate::api::integrations::env_var(oidc_roles::ENV_ROLE_MAP).as_deref(),
+    );
+    if cfg == Config::Unset {
+        return Some(map_role_claim(value));
+    }
+    if let Config::Invalid(e) = &cfg {
+        log::warn!("OIDC role map ignored, denying all OIDC callers: {e}");
+    }
+    let groups = claim_groups(value);
+    let refs: Vec<&str> = groups.iter().map(String::as_str).collect();
+    let legacy = map_groups_to_role(&refs).and_then(|r| Role::parse(&r));
+    oidc_roles::effective_role(&cfg, legacy, &refs, namespace).map(|r| r.as_str().to_string())
+}
+
 #[cfg(feature = "web")]
 fn map_role_claim(value: &serde_json::Value) -> String {
     let claim = crate::api::integrations::env_var("VEYRON_OIDC_ROLE_CLAIM")
@@ -344,6 +380,14 @@ fn token_not_expired(payload: &serde_json::Value) -> bool {
 /// Returns role string: admin | write | readonly.
 #[cfg(feature = "web")]
 pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
+    oidc_role_from_bearer_for(token, None).await
+}
+
+/// Like [`oidc_role_from_bearer`], for a request that names `namespace` in its path (see
+/// `key_store::path_namespace`). `None` means the request is cluster-wide or unnamed, so only
+/// `*` grants in `VEYRON_OIDC_ROLE_MAP` apply.
+#[cfg(feature = "web")]
+pub async fn oidc_role_from_bearer_for(token: &str, namespace: Option<&str>) -> Option<String> {
     let payload = decode_jwt_payload(token)?;
     if !issuer_matches(&payload) || !audience_matches(&payload) || !token_not_expired(&payload) {
         return None;
@@ -392,7 +436,7 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
                             &decoding_key,
                             &validation,
                         ) {
-                            return Some(map_role_claim(&data.claims));
+                            return role_for_claims(&data.claims, namespace);
                         }
                     }
                 }
@@ -400,6 +444,11 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
         }
     }
 
+    // The userinfo fallback only yields a coarse role from substring matching; it cannot honour
+    // a role map, and falling back to it would bypass deny-by-default.
+    if crate::api::integrations::env_var(crate::api::oidc_roles::ENV_ROLE_MAP).is_some() {
+        return None;
+    }
     if let Ok(Some(role)) = crate::api::integrations::oidc_userinfo_role(token).await {
         return Some(role);
     }
@@ -416,6 +465,19 @@ pub fn oidc_configured() -> bool {
 mod tests {
     use super::audience_matches_expected as m;
     use serde_json::json;
+
+    #[test]
+    fn claim_groups_reads_array_and_string() {
+        assert_eq!(
+            super::claim_groups(&json!({"groups": ["a", "b", 3]})),
+            vec!["a".to_string(), "b".to_string()]
+        );
+        assert_eq!(
+            super::claim_groups(&json!({"groups": "a"})),
+            vec!["a".to_string()]
+        );
+        assert!(super::claim_groups(&json!({})).is_empty());
+    }
 
     #[test]
     fn audience_checked_only_when_configured() {

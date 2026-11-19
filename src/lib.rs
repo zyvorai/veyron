@@ -1279,13 +1279,27 @@ pub async fn run(mut cli: Cli) -> Result<()> {
         Commands::ApiKeyList {
             active_only,
             output,
-        } => handlers::api::handle_api_key_list(active_only, output)?,
+        } => handlers::api::handle_api_key_list_all(active_only, output, &cli.namespace).await?,
         Commands::ApiKeyCreate {
             name,
             permissions,
             rate_limit,
-        } => handlers::api::handle_api_key_create(name, permissions, rate_limit)?,
-        Commands::ApiKeyDelete { key, yes } => handlers::api::handle_api_key_delete(key, yes)?,
+            expires_in_days,
+            scopes,
+        } => {
+            handlers::api::handle_api_key_create(
+                name,
+                permissions,
+                rate_limit,
+                expires_in_days,
+                scopes,
+                &cli.namespace,
+            )
+            .await?
+        }
+        Commands::ApiKeyDelete { key, yes } => {
+            handlers::api::handle_api_key_delete(key, yes, &cli.namespace).await?
+        }
         Commands::WebhookList {
             active_only,
             output,

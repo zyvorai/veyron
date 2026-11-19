@@ -58,7 +58,7 @@ Three roles, each including the one below it. The rule is by route and method, f
 
 Admin-only routes:
 
-- `/auth/users*` for every method, including `GET`
+- `/auth/users*` and `/auth/api-keys*` for every method, including `GET`
 - `GET /vms/:ns/:name/{screenshot,diagnostics/.../memory-dump}`, `POST /vms/:ns/:name/input`, and
   `/migrations/.../recovery`
 - any non-read request to a path containing `/restore`
@@ -85,13 +85,40 @@ proposal that needs the step's role to approve. See [ai.md](ai.md).
   a missing or unknown role means `readonly`. Neither a name nor a key may contain `:` or `,`. The name is what
   appears as the actor in the audit log. In Helm the extra keys are `auth.additionalKeys`; with `deploy/k8s.yaml` they
   come from the optional `veyron-rbac-keys` Secret.
-- There is no key store behind the `veyron api-key-*` CLI commands. `api-key-create` and `api-key-delete` fail with an
-  explanation instead of pretending: add or revoke keys by editing `VEYRON_API_KEY` / `VEYRON_API_KEYS` (Helm:
-  `auth.apiKey`, the `veyron-api-key` Secret) and restarting the API.
-- `veyron api-key-list [-o table|json|yaml]` shows the keys configured in the environment where the command runs, parsed
-  the way the server parses them: name, role, source variable and a fingerprint (the first 8 hex characters of the key's
-  SHA-256). The secret is never printed. It cannot see a running server's keys, so run it where the same variables are
-  set (for example `kubectl exec` into the pod); the fingerprint lets you check which key a client holds.
+- **Stored keys** (unreleased): `veyron api-key-create`, `api-key-list` and `api-key-delete`, or the admin-only REST
+  routes below, manage persistent keys with a role, optional namespace scopes and an optional expiry. They live in one
+  Secret (`veyron-api-keys`, key `keys.json`) in the API's namespace. Environment keys are unchanged and always take
+  precedence; stored keys are an addition, not a replacement.
+  - A stored key looks like `vk_<id>_<secret>`. The plaintext is returned **once**, in the create response, and is never
+    stored or logged. The Secret holds only `SHA-256(domain | pepper | salt | key)` with a random per-key salt, plus
+    metadata. Keys are 256-bit random values, so a fast salted hash is enough; the pepper is kept outside the Secret.
+    The pepper is `VEYRON_API_KEY_PEPPER` (16+ characters) if set, otherwise derived from `VEYRON_API_KEY`. Rotating
+    either one invalidates every stored key, and the CLI needs the same value as the server (`api-key-list` warns when
+    it differs). With neither set, the store is disabled.
+  - Verification looks the key up by id, recomputes the hash and compares in constant time. Revoked, expired,
+    unknown and malformed keys all get the same `401`. A stored key's audit subject is `key:<name>`.
+  - Revocation is immediate on the replica that handled it and takes at most 5 seconds on other replicas (read cache).
+    If the Secret cannot be read, stored keys are rejected (fail closed); environment keys keep working.
+  - `scopes` limits a key to namespaces. A scoped key works only on routes that name the namespace in the path
+    (`/api/v1/vms/{ns}/{name}/...`); cluster-wide routes, key management and routes where the namespace is only a
+    query parameter or body field get `403`. Empty scopes or `*` means no restriction. The role still applies on top.
+  - Revoked and expired records stay for audit and are dropped 90 days after they stop working. The store holds at most
+    200 records.
+  - Creation and revocation are written to the audit log (and the SOC event store) with the actor, key id and key name,
+    never the key.
+
+  | Route (Admin only) | Does |
+  |---|---|
+  | `GET /api/v1/auth/api-keys[?include_inactive=true]` | List keys: id, name, role, scopes, status, created/expiry/revoked times. No salt, hash or key |
+  | `POST /api/v1/auth/api-keys` | Body `{"name","role","scopes":[...],"expires_in_days":N}`; `role` is `admin`, `write` or `readonly` (default). Returns `201` with the record plus `key` (shown once) |
+  | `DELETE /api/v1/auth/api-keys/:id` | Revoke by id or name. `404` if no active key matches |
+
+  CLI: `veyron api-key-create NAME -p write --expires-in-days 90 --scopes team-a`, `veyron api-key-list [--active-only]`
+  (environment and stored keys together, same JSON shape as before for environment keys), `veyron api-key-delete ID_OR_NAME`.
+  `--rate-limit` is rejected: per-key rate limits are not implemented. Environment keys cannot be revoked here; remove
+  them from `VEYRON_API_KEY` / `VEYRON_API_KEYS` (Helm: `auth.apiKey`) and restart.
+- `veyron api-key-list` shows an environment key's fingerprint (the first 8 hex characters of its SHA-256), which lets
+  you check which key a client holds without printing it. Stored keys show their id instead.
 - Local console accounts are managed under **Security → Users & roles** (admin only), or through
   `/api/v1/auth/users`.
 
