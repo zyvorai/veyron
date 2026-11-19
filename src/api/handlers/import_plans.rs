@@ -831,7 +831,7 @@ mod tests {
         assert_eq!(rep.succeeded, 10);
         assert_eq!(rep.concurrency, 3);
         let peak = store.peak.load(Ordering::SeqCst);
-        assert!(peak <= 3 && peak >= 2, "peak {peak}");
+        assert!((2..=3).contains(&peak), "peak {peak}");
         assert_eq!(clamp_concurrency(Some(0)), 1);
         assert_eq!(clamp_concurrency(Some(999)), MAX_CONCURRENCY);
         assert_eq!(clamp_concurrency(None), DEFAULT_CONCURRENCY);
