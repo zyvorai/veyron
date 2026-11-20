@@ -1,0 +1,146 @@
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+#[cfg(feature = "web")]
+use axum::{Json, Router, extract::State, routing::get};
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "web")]
+use crate::api::http_server::web::SharedState;
+
+use super::feature_context::VmrogueFeatureContext;
+
+/// Resource heatmap
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceHeatmap {
+    pub veyron_context: VmrogueFeatureContext,
+    pub nodes: Vec<NodeHeatmapEntry>,
+    pub timestamp: String,
+}
+
+/// Node heatmap entry
+///
+/// NOTE: `cpu_utilization`/`memory_utilization` are estimated as
+/// `(capacity - allocatable) / capacity` — Kubernetes' fixed
+/// system/kubelet-reserved fraction of the node, NOT actual VM-driven
+/// resource usage. A heavily-loaded node and an idle one report nearly
+/// identical values here. Wiring in real usage (e.g. from Prometheus,
+/// already queried elsewhere in this codebase — see monitoring.rs) is a
+/// larger change than this field's name implies; left as-is pending that.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NodeHeatmapEntry {
+    pub node_name: String,
+    pub cpu_utilization: f64,
+    pub memory_utilization: f64,
+    pub disk_utilization: f64,
+    pub network_utilization: f64,
+    pub vm_count: u32,
+    pub heat_score: f64,
+}
+
+#[cfg(feature = "web")]
+pub fn router(state: SharedState) -> Router {
+    Router::new()
+        .route("/heatmap/resources", get(get_resource_heatmap))
+        .with_state(state)
+}
+
+#[cfg(feature = "web")]
+async fn get_resource_heatmap(
+    State(state): State<SharedState>,
+) -> Result<Json<ResourceHeatmap>, (axum::http::StatusCode, Json<serde_json::Value>)> {
+    use crate::kube::types::VirtualMachineInstance;
+
+    let kube_client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
+    let nodes = kube_client
+        .list_nodes()
+        .await
+        .map_err(crate::api::handlers::kube_list_error("nodes"))?;
+
+    // Count VMIs per node
+    let mut vmi_per_node: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+    let vmis_api: kube::api::Api<VirtualMachineInstance> =
+        kube::api::Api::all(kube_client.client());
+    if let Ok(vmi_list) = vmis_api.list(&kube::api::ListParams::default()).await {
+        for vmi in &vmi_list.items {
+            if let Some(ref status) = vmi.status {
+                if let Some(ref node) = status.node_name {
+                    *vmi_per_node.entry(node.clone()).or_insert(0) += 1;
+                }
+            }
+        }
+    }
+
+    let entries: Vec<NodeHeatmapEntry> = nodes
+        .iter()
+        .map(|node| {
+            let name = node.metadata.name.clone().unwrap_or_default();
+            let capacity = node.status.as_ref().and_then(|s| s.capacity.as_ref());
+            let allocatable = node.status.as_ref().and_then(|s| s.allocatable.as_ref());
+
+            // Estimate utilization as (capacity - allocatable) / capacity
+            let cpu_cap = capacity
+                .and_then(|c| c.get("cpu"))
+                .and_then(|v| v.0.parse::<f64>().ok())
+                .unwrap_or(1.0);
+            let cpu_alloc = allocatable
+                .and_then(|a| a.get("cpu"))
+                .and_then(|v| v.0.parse::<f64>().ok())
+                .unwrap_or(cpu_cap);
+
+            let mem_cap = capacity
+                .and_then(|c| c.get("memory"))
+                .map(|v| crate::utils::parse_memory_bytes(&v.0))
+                .unwrap_or(1) as f64;
+            let mem_alloc = allocatable
+                .and_then(|a| a.get("memory"))
+                .map(|v| crate::utils::parse_memory_bytes(&v.0))
+                .unwrap_or(mem_cap as u64) as f64;
+
+            let cpu_util = ((cpu_cap - cpu_alloc) / cpu_cap * 100.0).max(0.0);
+            let mem_util = ((mem_cap - mem_alloc) / mem_cap * 100.0).max(0.0);
+            let vm_count = vmi_per_node.get(&name).copied().unwrap_or(0);
+
+            // Disk utilization from ephemeral storage capacity vs allocatable
+            let disk_cap = capacity
+                .and_then(|c| c.get("ephemeral-storage"))
+                .map(|v| crate::utils::parse_memory_bytes(&v.0))
+                .unwrap_or(0) as f64;
+            let disk_alloc = allocatable
+                .and_then(|a| a.get("ephemeral-storage"))
+                .map(|v| crate::utils::parse_memory_bytes(&v.0))
+                .unwrap_or(disk_cap as u64) as f64;
+            let disk_util = if disk_cap > 0.0 {
+                ((disk_cap - disk_alloc) / disk_cap * 100.0).max(0.0)
+            } else {
+                0.0
+            };
+
+            // Network utilization estimated from VM density (each VM ≈ 2% of node bandwidth)
+            let network_util = (vm_count as f64 * 2.0).min(100.0);
+
+            // Heat score: weighted average of all utilization metrics
+            let heat_score =
+                cpu_util * 0.35 + mem_util * 0.35 + disk_util * 0.15 + network_util * 0.15;
+
+            NodeHeatmapEntry {
+                node_name: name,
+                cpu_utilization: (cpu_util * 10.0).round() / 10.0,
+                memory_utilization: (mem_util * 10.0).round() / 10.0,
+                disk_utilization: (disk_util * 10.0).round() / 10.0,
+                network_utilization: (network_util * 10.0).round() / 10.0,
+                vm_count,
+                heat_score: (heat_score * 10.0).round() / 10.0,
+            }
+        })
+        .collect();
+
+    Ok(Json(ResourceHeatmap {
+        veyron_context: VmrogueFeatureContext::heatmap(),
+        nodes: entries,
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    }))
+}

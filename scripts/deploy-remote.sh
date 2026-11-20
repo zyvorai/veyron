@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# ============================================================================
+# deploy-remote.sh — Entry point for full remote K8s deploy (API + operator)
+# ============================================================================
+# Delegates to deploy-all-remote.sh (rsync → build → import → CRDs → rollout).
+#
+# Usage:
+#   ./scripts/deploy-remote.sh [host] [user] [--quick] [--no-preflight]
+#
+# Arguments:
+#   host            SSH target (required, or set $DEPLOY_HOST)
+#   user            SSH user   (required, or set $DEPLOY_USER)
+#   --quick         Skip image build and import (manifests only)
+#   --no-preflight  Skip SSH connectivity check before starting
+#   --with-oidc     Deploy enterprise SSO config from VEYRON_OIDC_* env vars
+#                   (see contrib/veyron-oidc-keycloak.env.example)
+#
+# Environment:
+#   DEPLOY_HOST / DEPLOY_USER     Defaults when host/user omitted
+#   DEPLOY_REMOTE_SKIP_CHECK=1    Skip SSH preflight (same as --no-preflight)
+#   DEPLOY_SSH_TIMEOUT            Seconds for SSH connect (default: 20)
+#   DEPLOY_SSH_PORT                 SSH port (default: 22)
+#   DEPLOY_SSH_PASSWORD             SSH password (uses sshpass; disables BatchMode)
+#   VEYRON_SKIP_CDI, ...         See deploy-all-remote.sh / ensure-cdi-remote.sh
+#   VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip apply of deploy/k8s/bootstrap/cilium-veyron-egress.yaml
+#   VEYRON_REQUIRE_KUBEVIRT=1               deploy-k8s-remote.sh: fail if KubeVirt CRD missing
+#   VEYRON_DEPLOY_NO_CACHE=1                Force clean image rebuild (slow; default uses layer cache)
+#   VEYRON_DEPLOY_DIAGNOSTICS=1             Full cluster pod listing before deploy
+#   VEYRON_SKIP_GUESTKIT_PREP=1             Skip local guestkit rsync when guestkit/ is current
+#
+# Examples:
+#   ./scripts/deploy-remote.sh 192.0.2.1 ubuntu
+#   ./scripts/deploy-remote.sh --quick
+#   DEPLOY_REMOTE_SKIP_CHECK=1 ./scripts/deploy-remote.sh myhost deploy
+#
+# After deploy: ./scripts/verify-veyron-remote.sh <host> [https_node_port]
+# ============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ALL_REMOTE="${SCRIPT_DIR}/deploy-all-remote.sh"
+# shellcheck source=lib/deploy-remote-ui.sh
+source "${SCRIPT_DIR}/lib/deploy-remote-ui.sh"
+# shellcheck source=lib/deploy-ssh.sh
+source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
+
+usage() {
+    cat <<'EOF'
+deploy-remote.sh — full remote K8s deploy (wraps deploy-all-remote.sh)
+
+Usage:
+  ./scripts/deploy-remote.sh [host] [user] [--quick] [--no-preflight]
+
+  host, user    Required (or set DEPLOY_HOST / DEPLOY_USER).
+  --quick       Skip image build/import; re-apply manifests only.
+  --no-preflight
+                Skip SSH connectivity check (large builds still run remotely).
+
+Environment:
+  DEPLOY_REMOTE_SKIP_CHECK=1   Skip SSH preflight (same as --no-preflight)
+  DEPLOY_SSH_TIMEOUT           SSH ConnectTimeout in seconds (default: 20)
+  DEPLOY_SSH_PORT              SSH port (default: 22)
+
+EOF
+    "${ALL_REMOTE}" --help
+}
+
+SKIP_PREFLIGHT=false
+FORWARD=()
+for arg in "$@"; do
+    case "$arg" in
+        --no-preflight) SKIP_PREFLIGHT=true ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *) FORWARD+=("$arg") ;;
+    esac
+done
+
+POSITIONAL=()
+for arg in "${FORWARD[@]}"; do
+    case "$arg" in
+        --quick) ;;
+        *) POSITIONAL+=("$arg") ;;
+    esac
+done
+
+HOST="${POSITIONAL[0]:-${DEPLOY_HOST:-}}"
+USER="${POSITIONAL[1]:-${DEPLOY_USER:-}}"
+if [[ -z "${HOST}" ]]; then
+    usage >&2
+    echo >&2
+    echo "Error: host required (argument or DEPLOY_HOST)" >&2
+    exit 1
+fi
+if [[ -z "${USER}" ]]; then
+    usage >&2
+    echo >&2
+    echo "Error: user required (argument or DEPLOY_USER)" >&2
+    exit 1
+fi
+REMOTE="${USER}@${HOST}"
+
+if [[ "${DEPLOY_REMOTE_SKIP_CHECK:-0}" == "1" ]] || [[ "${SKIP_PREFLIGHT}" == true ]]; then
+    deploy_skip_preflight_note
+    exec "${ALL_REMOTE}" "${FORWARD[@]}"
+fi
+
+deploy_preflight_banner "${REMOTE}" "${DEPLOY_SSH_TIMEOUT}" "${DEPLOY_SSH_PORT}"
+
+SSH_ERR=""
+if ! SSH_ERR=$(deploy_ssh_preflight "${REMOTE}"); then
+    deploy_preflight_fail "${REMOTE}" "${DEPLOY_SSH_TIMEOUT}" "${0##*/} $(printf '%q ' "$@")" "${DEPLOY_SSH_PORT}" "${SSH_ERR}"
+fi
+
+deploy_preflight_ok
+
+exec "${ALL_REMOTE}" "${FORWARD[@]}"

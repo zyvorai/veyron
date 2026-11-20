@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Start path: KubeVirt vs Kairon</title>
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+     1600x900 side-by-side start path. Rendered by ./build.sh to docs/assets/readme-path.jpg.
+     Paths per ../kairon/README.md "Kairon vs KubeVirt"; timings per ../kairon/docs/benchmarks/kairon-vs-kubevirt.md. -->
+<link rel="stylesheet" href="dark.css">
+<style>
+  body { height:900px; }
+  .cols { margin-top:30px; flex:1; display:grid; grid-template-columns:1fr 1fr; gap:48px; }
+  .side { border-radius:26px; padding:24px 28px; display:flex; flex-direction:column; background:rgba(255,255,255,.03); box-shadow:inset 0 0 0 1px var(--edge); }
+  .side.win { background:linear-gradient(180deg, rgba(41,151,255,.10), rgba(255,255,255,.02)); box-shadow:inset 0 0 0 1.5px rgba(41,151,255,.5), 0 30px 80px rgba(0,113,227,.18); }
+  .head { display:flex; align-items:baseline; gap:14px; }
+  .head h2 { margin:0; font-size:34px; letter-spacing:-.025em; }
+  .head span { font-family:var(--mono); font-size:15px; color:var(--soft); }
+  .head .hops { margin-left:auto; font-family:var(--mono); font-size:15px; font-weight:700; padding:5px 12px; border-radius:999px; }
+  .lose .hops { color:var(--red); background:rgba(255,69,58,.12); }
+  .win .hops { color:var(--green); background:rgba(48,209,88,.12); }
+  .steps { margin-top:20px; display:flex; flex-direction:column; gap:0; }
+  .step { display:grid; grid-template-columns:34px 1fr; gap:14px; align-items:center; }
+  .step .n { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-family:var(--mono); font-size:14px; font-weight:700; background:#2c2c2e; color:var(--soft); }
+  .win .step .n { background:var(--blue); color:#fff; }
+  .step .box { padding:9px 16px; border-radius:14px; background:rgba(255,255,255,.05); font-size:19px; font-weight:600; }
+  .step .box small { margin-left:10px; font-family:var(--mono); font-size:13px; color:var(--soft); font-weight:500; }
+  .step.pod .box { box-shadow:inset 0 0 0 1.5px rgba(255,159,10,.6); background:rgba(255,159,10,.08); }
+  .link { height:7px; margin-left:16px; border-left:2px dashed rgba(255,255,255,.18); }
+  .win .link { border-left-color:rgba(41,151,255,.6); }
+  .result { margin-top:auto; padding-top:18px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .result div { padding:14px 16px; border-radius:16px; background:rgba(255,255,255,.04); }
+  .result b { display:block; font-size:40px; font-weight:800; letter-spacing:-.03em; }
+  .result span { font-family:var(--mono); font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); }
+  .gone { margin-top:22px; display:flex; flex-wrap:wrap; gap:10px; }
+  .gone span { font-family:var(--mono); font-size:15px; font-weight:600; padding:7px 13px; border-radius:999px; color:var(--soft); background:rgba(255,255,255,.04); box-shadow:inset 0 0 0 1px var(--edge); text-decoration:line-through; text-decoration-color:var(--red); }
+  .gone span.add { text-decoration:none; color:#fff; box-shadow:inset 0 0 0 1px rgba(48,209,88,.55); }
+  .lose .result b { color:#d1d1d6; } .win .result b { color:#fff; }
+  .win .result b.g { background:linear-gradient(90deg,#fff,var(--sky)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+</style></head><body>
+<div class="grid"></div>
+<div class="wrap">
+  <div class="brand"><img src="zyvor-mark.svg" alt=""><b>Kairon</b><span>vs</span><span>KubeVirt v1.9.0</span><span class="r">Same node &middot; same guest &middot; same QEMU</span></div>
+  <h1>Same KVM at the bottom. <em>Half the stack in between.</em></h1>
+  <div class="cols">
+    <div class="side lose">
+      <div class="head"><h2>KubeVirt</h2><span>a VM is a Pod in disguise</span><span class="hops">8 hops</span></div>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><div class="box">VirtualMachine<small>CR</small></div></div><div class="link"></div>
+        <div class="step"><div class="n">2</div><div class="box">virt-controller<small>creates VMI</small></div></div><div class="link"></div>
+        <div class="step pod"><div class="n">3</div><div class="box">Pod scheduled + pulled<small>containerDisk, init containers</small></div></div><div class="link"></div>
+        <div class="step pod"><div class="n">4</div><div class="box">virt-launcher pod<small>one per VM</small></div></div><div class="link"></div>
+        <div class="step"><div class="n">5</div><div class="box">virt-handler<small>node daemon</small></div></div><div class="link"></div>
+        <div class="step"><div class="n">6</div><div class="box">libvirt / virtqemud<small>domain XML</small></div></div><div class="link"></div>
+        <div class="step"><div class="n">7</div><div class="box">QEMU<small>the only hypervisor</small></div></div><div class="link"></div>
+        <div class="step"><div class="n">8</div><div class="box">KVM</div></div>
+      </div>
+      <div class="result"><div><b>67.6 s</b><span>1 VM to SSH</span></div><div><b>184.7 s</b><span>5 VMs to SSH, p50</span></div></div>
+    </div>
+    <div class="side win">
+      <div class="head"><h2>Kairon</h2><span>a VM stays a VM</span><span class="hops">5 hops</span></div>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><div class="box">Machine<small>CR</small></div></div><div class="link"></div>
+        <div class="step"><div class="n">2</div><div class="box">kairon-controller<small>capacity-aware placement</small></div></div><div class="link"></div>
+        <div class="step"><div class="n">3</div><div class="box">kairon-node<small>per-host agent, eBPF edge</small></div></div><div class="link"></div>
+        <div class="step"><div class="n">4</div><div class="box">FluxVM REST<small>QEMU &middot; Cloud Hypervisor &middot; Firecracker &middot; FluxVM</small></div></div><div class="link"></div>
+        <div class="step"><div class="n">5</div><div class="box">KVM</div></div>
+      </div>
+      <div class="gone"><span>virt-launcher pod</span><span>libvirt</span><span>domain XML</span><span>containerDisk pull</span><span class="add">+ 4 hypervisors</span><span class="add">+ eBPF VM edge</span></div>
+      <div class="result"><div><b class="g">23.7 s</b><span>1 VM to SSH &middot; 2.9x faster</span></div><div><b class="g">24.8 s</b><span>5 VMs to SSH, p50 &middot; 7.4x faster</span></div></div>
+    </div>
+  </div>
+  <div class="foot" style="margin-top:22px"><span><b>Measured 2026-10-04</b> &middot; Xeon E-2336, k3s, Ubuntu 24.04 guest, 1 vCPU / 512 MiB</span><span class="r">github.com/zyvorai/kairon &middot; docs/benchmarks</span></div>
+</div>
+</body></html>

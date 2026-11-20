@@ -1,0 +1,45 @@
+replicaCount: 1
+
+fullnameOverride: "veyron-operator"
+
+image:
+  repository: ghcr.io/zyvorai/veyron-operator
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+
+service:
+  metricsPort: 9280
+  healthPort: 9281
+
+serviceAccount:
+  create: true
+  name: "veyron-operator"
+
+crds:
+  install: true
+
+nats:
+  enabled: false
+  url: "nats://nats.veyron-system.svc:4222"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+leaderElection:
+  # Only useful when replicaCount > 1 (coordinates one active controller among
+  # several). At the default replicaCount: 1 it buys nothing and only adds
+  # fragility — a slow API server response on a busy node can trip the lease
+  # renewal deadline and crash the (only) manager for no reason.
+  enabled: false
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

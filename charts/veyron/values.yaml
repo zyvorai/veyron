@@ -1,0 +1,187 @@
+replicaCount: 1
+
+# Stable resource names (Deployment/Service veyron-api; SA/ClusterRole veyron).
+fullnameOverride: "veyron-api"
+
+image:
+  repository: ghcr.io/zyvorai/veyron
+  # NOTE: ghcr.io/zyvorai/veyron:0.4.1 and :latest are published, but the GHCR package is PRIVATE: set imagePullSecrets (below) to a
+  # docker-registry Secret that can read it, or push the image to your own registry and set image.repository. "latest" moves with each
+  # release; pin image.tag (e.g. "0.4.1") for reproducible installs. 0.4.0 was never published as an image; tags 0.3.x are pre-Kairon.
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+
+serviceAccount:
+  create: true
+  name: "veyron"
+  annotations: {}
+
+service:
+  type: NodePort
+  port: 5151
+  nodePort: 30151
+
+api:
+  host: "0.0.0.0"
+  port: 5151
+  namespace: "default"
+
+tls:
+  enabled: true
+  autoGenerate: true
+  existingSecret: ""
+
+auth:
+  # Empty = lab default Admin@321 on first install (same as Netra), preserved across
+  # upgrades. Set a random value for production.
+  apiKey: ""
+  adminUser: "admin"
+  # Console login password. Empty = lab default Admin@321.
+  adminPassword: ""
+  # Empty = auto-generated (random, 64 chars) on first install, preserved across upgrades.
+  # A hardcoded default here would be a full auth-bypass vector (anyone who reads this
+  # file could forge a valid token) — unlike apiKey/adminPassword, never set a fixed
+  # fallback for this.
+  jwtSecret: ""
+  jwtIssuer: "veyron"
+  bootstrapAdminSync: "1"
+  additionalKeys: ""
+  secretName: "veyron-api-key"
+
+rateLimit:
+  perMinute: 60
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+# Kairon image uploads (PUT /api/v1/image-store/:name), served to kairon-node.
+# Disabled ⇒ emptyDir (uploads are lost when the pod restarts).
+imageStore:
+  persistence: true
+  size: 50Gi
+  storageClass: ""
+  existingClaim: ""
+
+# Extra container environment, appended after the chart's own variables. Use it for settings that
+# have no value of their own, e.g. VEYRON_PUBLIC_HOST or VEYRON_CORS_ORIGINS. Do not repeat a
+# variable the chart already sets: the duplicate is a Kubernetes warning and the result is hard to follow.
+# Standard Kubernetes EnvVar entries, so valueFrom works:
+#   extraEnv:
+#     - name: VEYRON_PUBLIC_HOST
+#       value: veyron.example.com
+#     - name: VEYRON_OIDC_AUDIENCE
+#       valueFrom: {secretKeyRef: {name: my-oidc, key: audience}}
+extraEnv: []
+# Extra envFrom sources (secretRef / configMapRef), loaded after integrations.existingSecret and
+# oidc.existingSecret.
+#   extraEnvFrom:
+#     - configMapRef: {name: veyron-extra}
+extraEnvFrom: []
+
+# Extra annotations and labels for the API pod (not the Deployment). Use them for sidecar injectors,
+# log or mesh opt-in/out, cost allocation or policy engines. Chart labels (app.kubernetes.io/*) always
+# win over a podLabels key of the same name, so the Deployment selector cannot be broken.
+#   podAnnotations: {sidecar.istio.io/inject: "false"}
+#   podLabels: {team: platform}
+podAnnotations: {}
+podLabels: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Standard Kubernetes topologySpreadConstraints. The chart fills in labelSelector with the pod's own
+# selector labels when you leave it out, so a constraint only needs maxSkew, topologyKey and
+# whenUnsatisfiable. Only useful with replicaCount > 1.
+#   topologySpreadConstraints:
+#     - maxSkew: 1
+#       topologyKey: kubernetes.io/hostname
+#       whenUnsatisfiable: ScheduleAnyway
+topologySpreadConstraints: []
+
+# Optional PriorityClass for the API pod (the class itself must already exist).
+priorityClassName: ""
+
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+networkPolicy:
+  enabled: true
+  # Extra egress rules (standard NetworkPolicyEgressRule entries) appended to the default DNS and
+  # Kubernetes API rules. The default policy blocks the kairon-node relay (8090), Prometheus, an LLM
+  # endpoint and Netra; allow what you configure under integrations.* / ai.* here, e.g.:
+  #   extraEgress:
+  #     - to:
+  #         - namespaceSelector:
+  #             matchLabels: {kubernetes.io/metadata.name: monitoring}
+  #       ports:
+  #         - {port: 9090, protocol: TCP}
+  extraEgress: []
+
+rbac:
+  create: true
+  # ClusterRole name (distinct from Deployment veyron-api).
+  clusterRoleName: "veyron"
+
+integrations:
+  prometheusUrl: ""
+  opencostUrl: ""
+  opencostToken: ""
+  trivyUrl: ""
+  lokiUrl: ""
+  jaegerQueryUrl: ""
+  tempoQueryUrl: ""
+  alertmanagerUrl: ""
+  argocdUrl: ""
+  argocdToken: ""
+  # Netra: auto-detected from the netra Service in netra-system; set netraUrl only when it
+  # runs elsewhere. netraApiKey defaults to Netra's lab default (Admin@321).
+  netraUrl: ""
+  netraExternalUrl: ""
+  netraApiKey: ""
+  # Paqtra: auto-detected from the paqtra-api Service in the paqtra namespace. Its admin
+  # credentials are random per install, so by default Veyron reads them from Paqtra's own
+  # paqtra-secret; set paqtraPassword (Paqtra's API_KEY or ADMIN_PASSWORD) to skip that.
+  paqtraUrl: ""
+  paqtraExternalUrl: ""
+  paqtraUsername: ""
+  paqtraPassword: ""
+  existingSecret: ""
+
+oidc:
+  # Enterprise SSO against a real IdP (Keycloak/Auth0/Okta). See
+  # contrib/veyron-oidc-keycloak.env.example for a worked Keycloak example.
+  issuer: ""
+  clientId: ""
+  clientSecret: ""
+  authorizationUrl: ""
+  tokenUrl: ""
+  jwksUrl: ""
+  redirectUri: ""
+  roleClaim: ""
+  ## Comma-separated group names -> admin role (default in code: veyron-admins,cluster-admins)
+  groupAdmin: ""
+  ## Comma-separated group names -> write role (default in code: veyron-write,veyron-editors)
+  groupWrite: ""
+  # Set to source the above from an existing Secret's keys (VEYRON_OIDC_*)
+  # instead of plaintext values.yaml — e.g. the veyron-oidc Secret written by
+  # `deploy-all-remote.sh --with-oidc`.
+  existingSecret: ""
+
+ai:
+  url: ""
+  apiKey: ""
+  model: "gpt-4o-mini"
+  mode: ""
+  maxToolRounds: 2
+  timeoutSecs: 30
+  rateLimitPerMin: 20

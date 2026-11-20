@@ -1,0 +1,93 @@
+Veyron — Cluster setup (Cilium, KubeVirt, CDI)
+===============================================
+
+Run these steps ONCE on a machine that has kubectl and a cluster-admin kubeconfig
+(the same KUBECONFIG you put in veyron.env).
+
+WHAT MUST EXIST FOR VEYRON TO WORK
+----------------------------------
+  1. Kubernetes cluster (k3s, kubeadm, managed K8s, …)
+  2. kubectl access with permissions to manage KubeVirt VMs, CDI, Cilium policies
+  3. KubeVirt installed and phase=Deployed
+  4. CDI (recommended) for disk import / DataVolumes
+  5. Cilium (optional): only if your cluster uses Cilium CNI — then apply egress bootstrap
+  6. Veyron itself, in the cluster (./install-to-kubernetes.sh) or as a standalone
+     client process (./install.sh, then set VEYRON_API_KEY in veyron.env)
+
+ORDER OF OPERATIONS (do not skip)
+---------------------------------
+  Step A  ./install-cluster.sh          # cluster: Cilium + KubeVirt + CDI (+ metrics-server)
+  Step B  ./install-to-kubernetes.sh    # Veyron in the cluster (Helm chart in chart/)
+  Step C  ./apply-cluster-network.sh    # Cilium egress for veyron-system + virt-launcher
+  Step D  ./test-cluster.sh
+  Standalone alternative to Step B: ./install.sh, edit veyron.env, ./veyron api-serve …
+
+STEP A — install-cluster.sh (automated cluster prerequisites)
+-------------------------------------------------------------
+  export KUBECONFIG=/path/to/kubeconfig
+  ./install-cluster.sh
+
+  Default versions are the tested baseline in cluster/versions.env. Check KubeVirt's
+  release notes for supported Kubernetes versions before overriding them.
+
+  SKIP FLAGS (set before ./install-cluster.sh; V9S_* works too):
+    VEYRON_SKIP_CILIUM=1
+    VEYRON_SKIP_CDI=1
+    VEYRON_SKIP_KUBEVIRT=1
+    VEYRON_SKIP_METRICS_SERVER=1
+
+  VERSION OVERRIDES:
+    VEYRON_KUBEVIRT_VERSION=
+    VEYRON_CDI_VERSION=
+    VEYRON_CILIUM_CHART_VERSION=
+
+  OPTIONAL INSTALL (off by default):
+    V9S_INSTALL_MULTUS=1
+    V9S_INSTALL_SNAPSHOT_CONTROLLER=1
+    V9S_INSTALL_METALLB=1
+    V9S_INSTALL_PROMETHEUS=1
+
+  Examples:
+    VEYRON_SKIP_CILIUM=1 ./install-cluster.sh          # already have Calico/Flannel
+    VEYRON_SKIP_CDI=1 ./install-cluster.sh             # air-gapped, no CDI
+
+  CILIUM NOTE: with kube-proxy replacement, Cilium needs socket LB limited to the host
+  namespace (bpf-lb-sock-hostns-only: "true" in cilium-config). Without it, VM guests
+  can't reach cluster DNS and guest agents never connect. install-cluster.sh sets it
+  when it installs Cilium on k3s; on an existing Cilium, set it yourself.
+
+STEP B — install-to-kubernetes.sh (Veyron in the cluster)
+---------------------------------------------------------
+    ./install-to-kubernetes.sh --registry <your-registry>/veyron --push
+
+  Deploy flags:
+    VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1
+
+STEP C — apply-cluster-network.sh (Cilium egress)
+-------------------------------------------------
+  Only when Cilium CRDs exist AND default-deny egress blocks API or VM internet:
+
+    export KUBECONFIG=...
+    ./apply-cluster-network.sh
+
+  Skip:
+    VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1 ./apply-cluster-network.sh
+
+  Applies manifests in cluster/bootstrap/:
+    - veyron-system API egress
+    - virt-launcher clusterwide egress (guest NAT / internet)
+
+STEP D — Test
+-------------
+    ./test-cluster.sh   # cluster readiness
+    ./test-package.sh   # binary + optional API health (standalone client)
+
+TROUBLESHOOTING
+---------------
+  Empty VM list          → KUBECONFIG, RBAC, KubeVirt Deployed
+  VM no internet         → ./apply-cluster-network.sh (Cilium CCNP)
+  Guest agent never up   → Cilium bpf-lb-sock-hostns-only (see CILIUM NOTE)
+  CDI import fails       → install CDI or VEYRON_SKIP_CDI=1 if not using DataVolumes
+  Connection refused     → api-serve --host 0.0.0.0 --port 5151, firewall
+
+See PREREQUISITES.txt for a one-page checklist.

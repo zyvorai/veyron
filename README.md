@@ -1,0 +1,285 @@
+<div align="center">
+
+# Veyron
+
+[Client overview (PDF)](docs/Veyron-Client-Overview.pdf)
+
+[![CI](https://github.com/zyvorai/veyron/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/veyron/actions/workflows/ci.yml)
+[![License: Zyvor Production 1.0](https://img.shields.io/badge/License-Zyvor_Production_1.0-1d1d1f.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-one_binary-dea584?logo=rust)](Cargo.toml)
+[![Engine: Kairon](https://img.shields.io/badge/Engine-Kairon-0071e3)](https://github.com/zyvorai/kairon)
+[![Website](https://img.shields.io/badge/Website-zyvorai.github.io%2Fveyron-2997ff)](https://zyvorai.github.io/veyron/)
+
+[![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=veyron&utm_campaign=readme_hero)
+[![30-day PoC](https://img.shields.io/badge/30--day_PoC-000000?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=veyron&utm_campaign=readme_hero)
+[![Quickstart](https://img.shields.io/badge/Quickstart-0a84ff?style=for-the-badge)](#quickstart)
+
+![Veyron: real VMs, no pods pretending](docs/assets/readme-hero.jpg)
+
+### Real VMs. No pods pretending.
+
+**Veyron is the command center for virtual machines on Kubernetes.** A browser console, an HTTPS API and a CLI in one Rust binary. Underneath, [Kairon](https://github.com/zyvorai/kairon) and [FluxVM](https://github.com/zyvorai/fluxvm) run every VM straight on KVM: no `virt-launcher` pod, no libvirt, no operator zoo.
+
+**0 pods per VM** · **7.4x faster to SSH than KubeVirt** · **4 hypervisors** · **Day-2 ops built in** · **SSO, RBAC and a SOC**
+
+</div>
+
+---
+
+## Why not KubeVirt?
+
+KubeVirt turns every VM into a Pod. That means a scheduler round-trip, an image pull, a `virt-launcher` container, libvirt and domain XML on the path to every boot. Each layer is one more thing to patch, one more log to read and one more process to crash at 2 a.m. We measured what it costs.
+
+<table>
+<tr>
+<td align="center" width="33%"><h2>14x</h2>lighter idle control plane<br><sub>63 MiB vs 905 MiB</sub></td>
+<td align="center" width="33%"><h2>7.4x</h2>faster to SSH, 5 VMs at once<br><sub>24.8 s vs 184.7 s (p50)</sub></td>
+<td align="center" width="33%"><h2>10 / 10</h2>VMs up at N=10<br><sub>KubeVirt: 0 of 10 in 600 s</sub></td>
+</tr>
+</table>
+
+![Kairon vs KubeVirt benchmark: 14x lighter idle control plane, 2.9x faster to SSH for one VM, 7.4x for five, 10 of 10 vs 0 of 10 at ten](docs/assets/readme-benchmark.jpg)
+
+Same node, same Ubuntu 24.04 image, same 1 vCPU / 512 MiB guest, same readiness probe (the guest's SSH banner), one script driving both, run back to back on 2026-10-04 against **KubeVirt v1.9.0**. Method, raw JSON and caveats: [Kairon benchmark](https://github.com/zyvorai/kairon/blob/main/docs/benchmarks/kairon-vs-kubevirt.md).
+
+To be fair about it: **per-VM memory is the same** (both run the same QEMU), and the N=10 run was on a shared lab host, so read it as "the pod-per-VM path breaks first under pressure", not as KubeVirt's density ceiling. The win is the control plane and the start path, and that is exactly the part you wait on.
+
+---
+
+## How it works
+
+![The stack: Veyron on top, the Kubernetes API, Kairon, FluxVM, four hypervisors, and Linux KVM on your hardware](docs/assets/readme-stack.jpg)
+
+| Layer | What it does |
+|---|---|
+| **Veyron** | What you touch. Console, API and CLI; templates, day-2 operations, snapshots, SSO, SOC. Turns "Ubuntu 24.04, medium" into a Kairon `Machine`. Keeps no database. |
+| **Kubernetes** | The source of truth. `Machine` custom resources, RBAC through one ServiceAccount, Veyron settings in labeled ConfigMaps. |
+| **Kairon** | The VM engine. `kairon-controller` places Machines on real allocatable capacity; `kairon-node` on each host runs them and puts an eBPF edge on every VM tap. Go standard library only. |
+| **FluxVM** | The VMM layer on each host. One REST API for four hypervisors, a vsock guest agent instead of SSH, fork and warm pools. No libvirtd, no XML. |
+| **Hypervisor** | Your pick per Machine: **QEMU/KVM** for full VMs and Windows, **Cloud Hypervisor** for lean Linux, **Firecracker** for microVMs, or FluxVM's own in-tree Rust hypervisor. |
+| **KVM** | Linux KVM on your hardware, including GPU passthrough. |
+
+---
+
+## The start path, side by side
+
+![KubeVirt: 8 hops from VirtualMachine to KVM with a pod per VM. Kairon: 5 hops from Machine to KVM, no pods](docs/assets/readme-path.jpg)
+
+| | **Veyron + Kairon** | **KubeVirt** |
+|---|---|---|
+| A VM is | A `Machine`: its own CRD and lifecycle | A Pod in disguise (`virt-launcher`) |
+| Pods per running VM | **0** | 1 |
+| Path to KVM | `kairon-node` → FluxVM REST → KVM | `virt-handler` → `virt-launcher` → libvirt → QEMU |
+| libvirt on the boot path | **No** | Yes |
+| Hypervisors | **QEMU, Cloud Hypervisor, Firecracker, FluxVM** | QEMU |
+| Idle control plane | **63 MiB, 3.5m CPU** | 905 MiB, 30.2m CPU |
+| 1 VM, create to SSH | **23.7 s** | 67.6 s |
+| 5 VMs, create to SSH (p50) | **24.8 s** | 184.7 s |
+| VM networking | eBPF edge per VM: anti-spoof, DNS/SNI policy, flows, pcap | Pod CNI, masquerade, Multus |
+| Console, day-2, SOC | **Veyron, built in** | Bring your own UI |
+
+---
+
+## Network at kernel speed
+
+[![Network at kernel speed: every VM behind a kernel-verified eBPF program on its own interface](docs/assets/readme-ebpf.jpg)](docs/ebpf.md)
+
+Every VM sits behind a kernel-verified eBPF program on its own interface: FluxVM's VM edge, declared on
+the Kairon `Machine`. Policy changes are map writes (about 100-120 ms p50, never an allow-all window).
+Drops come with a reason, and connections survive live migration.
+[Network at kernel speed →](docs/ebpf.md)
+
+## See it
+
+| Mission Control | Virtual machines |
+|---|---|
+| ![Mission Control: live fleet map, health headline, create button](docs/assets/console-mission.png) | ![Virtual machines list](docs/assets/console-vms.png) |
+| **Sign in** | **VM details panel** |
+| ![Sign in](docs/assets/console-login.png) | ![VM details panel](docs/assets/console-dark.png) |
+
+A frosted top nav with mega-menus, a ⌘K palette for everything, a live fleet map, and a details panel that slides in from any row. Dark by default.
+
+---
+
+## What you can do with it
+
+| When this happens… | Veyron gives you… |
+|---|---|
+| Your team needs VMs but nobody wants to hand-write YAML | **Templates and a console.** Ubuntu 26.04, Debian 13, Fedora 44, EL10, Windows Server 2025 and 11: pick, size, boot, then open its screen in the browser. |
+| Day 2 means a pile of scripts | **Day-2 operations as buttons and API calls:** hotplug, bulk actions, node maintenance, guest patching, disk reclaim, self-healing. |
+| A bad upgrade or a deleted disk turns into an outage | **Snapshots, clones, backups and DR failback**, plus Ceph snapshots and off-cluster S3 backups through [Atlas](https://zyvor.dev). |
+| GPU and Windows workloads don't fit generic tooling | **GPU passthrough with a live-migration guard**, and Windows golden images with sysprep, domain join and RDP guardrails. |
+| You need ISOs and golden images without CDI | **An image catalog on Kairon:** upload ISOs and disk images from the console or API, publish versioned `MachineImage`s, install Windows or Linux from an ISO, and keep root disks on a PVC. |
+| Everyone shares one admin password | **Admin, write and read-only roles**, multiple keys, local accounts and OIDC SSO with Keycloak, Okta, Auth0 or Azure AD. |
+| Security finds exposed VMs after the fact | **A built-in SOC:** detections for public RDP and SSH, policy gaps and drift, export to Elastic, Splunk, Sentinel and QRadar. |
+| You're leaving VMware, Hyper-V or Azure | **VM import:** [h2kvm](https://github.com/zyvorai/h2kvm) fixes each guest offline and `--deploy-kairon` boots it as a Kairon `Machine` through `POST /api/v1/imports`. No KubeVirt, no CDI. Or use the console's import form. |
+| You want AI help without giving a bot the keys | **Veyron AI:** an MCP server, incident investigations and forecasts, where every change is a proposal a human approves. |
+
+![Capabilities at a glance: Run, Protect, Observe, Secure, Veyron AI](docs/assets/readme-capabilities.jpg)
+
+Veyron keeps no database: VM state lives in Kubernetes, settings in labeled ConfigMaps, and anything the engine can't do returns `501` with a reason, never a fake success. Details: [docs/architecture.md](docs/architecture.md).
+
+---
+
+## Veyron AI
+
+An operator that asks first: it reads your cluster with your permissions, investigates failures on its own, and turns every change into a proposal a human approves.
+
+![Veyron AI: MCP server, proposals, sandboxes, investigations, forecasts and in-cluster models](docs/assets/readme-ai.jpg)
+
+- **Use it from any agent.** Point Claude, Cursor or your own agent at `https://<node-ip>:30151/mcp` with an API key. Tools are filtered by role, and tools from your other MCP servers can be added too. [Setup](docs/ai.md#mcp-server)
+- **Nothing changes by itself.** Change tools draft proposals with the exact API calls, the role required and whether they can be undone. Approval runs them through the normal API and audit trail. [Safety model](docs/ai.md#safety-model)
+- **Sandboxes and models in your cluster.** Agents run code in disposable VMs with no network by default, and one click serves llama.cpp or vLLM so nothing leaves your network. [Sandboxes](docs/ai.md#agent-sandboxes) · [Models](docs/ai.md#running-a-model-in-the-cluster)
+
+---
+
+## Quickstart
+
+On a Kubernetes cluster whose VM hosts run [Kairon](https://github.com/zyvorai/kairon) (a Kairon release with `v1beta1` CRDs; see [docs/deploy.md](docs/deploy.md#kairon-settings)).
+
+**Release binaries (v0.6.0).** One binary per platform (`veyron-linux-amd64`, `-linux-arm64`, `-darwin-amd64`, `-darwin-arm64`; Linux builds are
+dynamically linked against glibc) with the console embedded, plus `SHA256SUMS`, a keyless cosign bundle for it (`SHA256SUMS.cosign.bundle`) and an
+SPDX SBOM (`veyron.spdx.json`). The macOS binaries are not Developer ID signed or notarized (`darwin-arm64` is ad-hoc signed, `darwin-amd64` is
+unsigned; a browser download may need `xattr -d com.apple.quarantine`). Verify the checksum, and the cosign signature if you have `cosign`, before
+running ([details](docs/deploy.md#release-binaries)):
+
+```bash
+V=v0.6.0; A=linux-amd64        # or linux-arm64, darwin-amd64, darwin-arm64
+curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/veyron-$A
+curl -fsSLO https://github.com/zyvorai/veyron/releases/download/$V/SHA256SUMS
+grep " veyron-$A\$" SHA256SUMS | (sha256sum -c - 2>/dev/null || shasum -a 256 -c -)   # must print: veyron-$A: OK
+install -m 0755 veyron-$A /usr/local/bin/veyron && veyron --version
+```
+
+To also check who signed `SHA256SUMS`, download `SHA256SUMS.cosign.bundle` and see [docs/deploy.md](docs/deploy.md#release-binaries).
+
+The binary reads your kubeconfig (`KUBECONFIG`, `--namespace`/`VEYRON_NAMESPACE`). To run the API and console from it
+on a workstation or VM (the same server the in-cluster Deployment runs, `veyron api-serve`):
+
+```bash
+export VEYRON_API_KEY="$(openssl rand -hex 24)"          # required, or every request answers 503
+export VEYRON_JWT_SECRET="$(openssl rand -hex 32)" VEYRON_JWT_ISSUER=veyron   # needed for console sign-in
+veyron api-serve --host 127.0.0.1 --port 5151 --tls --tls-cert tls.crt --tls-key tls.key
+# console: https://127.0.0.1:5151/console   (omit --tls only behind a TLS-terminating proxy)
+```
+
+**In the cluster.** The container image `ghcr.io/zyvorai/veyron:0.4.1` (also tagged `latest`) is published and cosign-signed, but the `veyron` GHCR
+package is **private**, so pulling it needs `docker login ghcr.io` with a token that has `read:packages` (and, in Kubernetes, an `imagePullSecret`; set
+`imagePullSecrets` in the Helm values). `0.4.0` was never published as an image. The Helm chart's default tag is still `latest`, and `latest` now points at
+0.4.1 (the older 2026-10-04 pre-Kairon images are the `0.3.x` tags). To deploy without a registry, build from source (this builds the image on the node):
+
+```bash
+git clone https://github.com/zyvorai/veyron.git && cd veyron
+./scripts/deploy-remote.sh <node-host> <ssh-user>     # build on the node, deploy to veyron-system
+```
+
+Open `https://<node-ip>:30151/console` and sign in as `admin` / `Admin@321` (lab default; override with `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` and `VEYRON_API_KEY`, see [Default credentials](docs/getting-started.md#default-credentials); change both before anyone else can reach it). Then create a VM from the console, the API or the CLI:
+
+```bash
+curl -sk -H "X-API-Key: ${VEYRON_API_KEY:-Admin@321}" -H 'Content-Type: application/json' \
+  -X POST https://<node-ip>:30151/api/v1/vms \
+  -d '{"name":"demo","template":"ubuntu-24.04","cpus":2,"memory":"4Gi"}'
+```
+
+> **CLI scope in v0.6.0.** The VM commands of the CLI (`veyron create`, `list`, `start`, `snapshot-*`, `tui`, and so on) talk to
+> the Kubernetes API directly and create, list and change **KubeVirt `VirtualMachine`s**; they do not go through the Kairon
+> backend. To manage Kairon `Machine`s use the console, the API, or the MCP bridge (`veyron mcp`). `veyron api-serve` is what
+> serves the console and API, and honours Kairon.
+
+Helm, plain manifests, the production checklist and the standalone client tarball are covered in [docs/deploy.md](docs/deploy.md). The first VM, end to end: [docs/getting-started.md](docs/getting-started.md).
+
+---
+
+## Maturity
+
+| Area | Status |
+|---|---|
+| VM lifecycle, templates, browser console | Stable |
+| Snapshots, clones, backups, Velero | Stable |
+| Day-2 operations (hotplug, bulk, guest patching, self-healing) | Stable |
+| API keys, roles, local accounts | Stable |
+| OIDC SSO | Bearer tokens on the API; no SSO button in the console yet (it signs in with local accounts or API keys) |
+| SOC detections and SIEM export | Stable |
+| GPU passthrough | Phase 1 (whole-GPU); vGPU next |
+| Atlas (Ceph) protection, Kryton lab machines, Netra, Paqtra | Integration, needs those products |
+| Kairon engine | Default. KubeVirt is a legacy, explicit opt-in (`VEYRON_VM_BACKEND=kubevirt`) that is still in the tree but not where new work goes |
+| VM import (h2kvm → Kairon) | Stable (verified live, 2026-10-07) |
+| Multi-node live migration on Kairon | API done; hardware matrix needs a second node |
+| Release artifacts (v0.4.1) | Four binaries, `SHA256SUMS` (cosign-signed) and an SBOM on GitHub; macOS binaries not Developer ID signed; container image on a private GHCR package, see [docs/deploy.md](docs/deploy.md#container-image) |
+
+---
+
+## Docs
+
+| Goal | Document |
+|---|---|
+| Getting started | [docs/getting-started.md](docs/getting-started.md) |
+| Architecture | [docs/architecture.md](docs/architecture.md) |
+| Deploy and production checklist | [docs/deploy.md](docs/deploy.md) |
+| API, roles and keys | [docs/api.md](docs/api.md) |
+| Single sign-on | [docs/sso.md](docs/sso.md) |
+| Migrate VMs from VMware, Hyper-V, Azure | [docs/migrate.md](docs/migrate.md) |
+| GPU · Windows · multi-site | [docs/gpu.md](docs/gpu.md) · [docs/windows.md](docs/windows.md) · [docs/multi-site.md](docs/multi-site.md) |
+| SOC and integrations | [docs/soc.md](docs/soc.md) · [docs/integrations.md](docs/integrations.md) |
+| Veyron AI, MCP, Copilot agent | [docs/ai.md](docs/ai.md) · [docs/COPILOT_AGENT.md](docs/COPILOT_AGENT.md) |
+| Kairon operations, fork, eBPF | [docs/kairon-ops.md](docs/kairon-ops.md) · [docs/fork.md](docs/fork.md) · [docs/ebpf.md](docs/ebpf.md) |
+| Enterprise workflows (durable power ops, tenant quotas, namespace authorization) | [docs/enterprise-workflows.md](docs/enterprise-workflows.md) |
+| Native macOS app | [docs/macos-app.md](docs/macos-app.md) |
+| Everything, by task | [docs/README.md](docs/README.md) |
+| What changed | [CHANGELOG.md](CHANGELOG.md) |
+
+## Develop
+
+```bash
+# needs a checkout of zyvorai/zyvor-guestkit at ./guestkit (the commit pinned as GUESTKIT_REF in .github/workflows/ci.yml)
+# and a built console (the binary embeds frontend/dist):
+(cd frontend && npm ci && npm run build)
+make ci                                 # fmt check, clippy, script lint, tests (RUST_MIN_STACK is set for you)
+cd frontend && npm install && npm run dev   # console against a local API on :5151
+```
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately to **security@zyvor.dev**; see [SECURITY.md](SECURITY.md).
+
+---
+
+## Part of the Zyvor stack
+
+| Product | Role next to Veyron |
+|---|---|
+| **Veyron** | The console, API and CLI for VMs on Kubernetes |
+| **[Kairon](https://github.com/zyvorai/kairon)** | The VM engine: `Machine`s on FluxVM and KVM, without KubeVirt |
+| **[h2kvm](https://github.com/zyvorai/h2kvm)** | Offline guest repair and conversion from vSphere, ESXi, Azure and disk files, landing on Kairon via Veyron |
+| **[FluxVM](https://github.com/zyvorai/fluxvm)** | The VMM layer under Kairon: QEMU, Cloud Hypervisor, Firecracker and its own hypervisor behind one REST API |
+| **[Kryton](https://github.com/zyvorai/zyvor-kryton)** | Machine API for lab and edge Windows/Linux hosts (dockur, libvirt), plus checksum-pinned golden images |
+| **[Atlas](https://github.com/zyvorai/zyvor-atlas)** | Storage control plane: Ceph snapshots, clones and S3 backups for VM disks |
+| **[Netra](https://github.com/zyvorai/netra)** | eBPF network observability: flows, drops, VM lockdown |
+| **[Paqtra](https://github.com/zyvorai/zyvor-paqtra)** | Cilium flow history, explained drops, policy posture |
+| **[GuestKit](https://github.com/zyvorai/zyvor-guestkit)** | In-guest agent: evidence, diagnosis and repair |
+
+→ [zyvor.dev](https://zyvor.dev)
+
+---
+
+## License
+
+Veyron is source-available under the **[Zyvor Production License v1.0](LICENSE)** (SPDX `LicenseRef-Zyvor-Production-1.0`, also in [LICENSES/](LICENSES/LicenseRef-Zyvor-Production-1.0.txt); see [NOTICE](NOTICE)).
+
+- **Free for 30 days** per organization, for evaluation, development, testing, proofs of concept, research and education. After that a commercial license is required.
+- **Production use needs a commercial license** from Zyvor AI Labs: INR 67,999 per node per year including 18% GST in India, or USD 686 per node per year excluding tax elsewhere; a node is one server with up to 2 sockets. A 30-day trial key is available for production evaluation. That covers production clusters, customer workloads, SaaS, managed services, OEM and redistribution, with support options to match.
+
+Buy / get a quote: [zyvor.dev/buy](https://zyvor.dev/buy) · [sales@zyvor.dev](mailto:sales@zyvor.dev?subject=Veyron). Prices: INR incl. 18% GST in India; US dollars excl. tax elsewhere (VAT, GST or sales tax added where applicable). Pay online by UPI, card or netbanking where a buy page exists; international cards work (charged in rupees); or request a US-dollar invoice by bank transfer. Custom pricing: contact [sales@zyvor.dev](mailto:sales@zyvor.dev).
+
+Talk to us: [zyvor.dev](https://zyvor.dev). Bugs and feature requests: [GitHub Issues](https://github.com/zyvorai/veyron/issues).
+
+---
+
+<div align="center">
+
+### Run your VM fleet from one place.
+
+[![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=veyron&utm_campaign=readme_footer)
+[![30-day PoC](https://img.shields.io/badge/Start_a_30--day_PoC-000000?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=veyron&utm_campaign=readme_footer)
+[![Contact sales](https://img.shields.io/badge/Contact_sales-0a84ff?style=for-the-badge)](mailto:sales@zyvor.dev?subject=Veyron)
+[![Star on GitHub](https://img.shields.io/github/stars/zyvorai/veyron?style=for-the-badge&logo=github&label=Star&color=2997ff)](https://github.com/zyvorai/veyron)
+
+</div>

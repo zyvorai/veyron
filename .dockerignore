@@ -1,0 +1,11 @@
+target/
+.git/
+.github/
+docs/
+deploy/
+scripts/
+*.md
+LICENSE-*
+.dockerignore
+.gitignore
+.claude/

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Veyron — automatic client install (run inside extracted tarball directory).
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+export PKG_INSTALL_ROOT="${ROOT}"
+# shellcheck source=/dev/null
+[[ -f "${ROOT}/.package-lib/package-ui.sh" ]] && source "${ROOT}/.package-lib/package-ui.sh"
+
+pkg_parse_install_args "$@"
+
+_PKG_SESSION_START=${SECONDS}
+pkg_counters_reset
+pkg_install_welcome "Veyron"
+pkg_bundle_sanity_check || true
+pkg_banner "Veyron" "Kubernetes VM management · client bundle"
+pkg_step_init 5
+
+pkg_step "System dependencies"
+if [[ -x ./install-client-deps.sh ]]; then
+  ./install-client-deps.sh && pkg_step_done || { pkg_warn "install-client-deps.sh had issues"; pkg_step_done; }
+else
+  pkg_skip "install-client-deps.sh not found"
+  pkg_step_done
+fi
+
+pkg_step "Configuration, admin login & Kubernetes access"
+pkg_k8s_env_configure veyron.env.example veyron.env "Veyron"
+pkg_step_done
+
+pkg_step "Verify binaries"
+if [[ -x ./veyron ]] && ./veyron --help >/dev/null 2>&1; then
+  pkg_ok "veyron ($(./veyron --version 2>/dev/null | head -1 || echo ready))"
+else
+  pkg_fail "./veyron missing or not executable"
+  exit 1
+fi
+[[ -x ./virtctl ]] && pkg_ok "virtctl included (optional)"
+pkg_step_done
+
+pkg_step "Cluster smoke test (optional)"
+if [[ -f veyron.env ]]; then
+  pkg_load_env_file veyron.env 2>/dev/null || true
+fi
+if [[ -n "${KUBECONFIG:-}" ]] && [[ -f "${KUBECONFIG}" ]] && [[ -x ./test-cluster.sh ]]; then
+  ./test-cluster.sh && pkg_ok "test-cluster.sh" || pkg_warn "test-cluster.sh — see CLUSTER_SETUP.txt"
+else
+  pkg_skip "test-cluster.sh (needs KUBECONFIG in veyron.env)"
+fi
+pkg_step_done
+
+pkg_step "Package smoke test"
+[[ -x ./test-package.sh ]] && ./test-package.sh || pkg_warn "test-package.sh reported issues"
+pkg_step_done
+
+pkg_install_finish "Veyron" http 5151 "/console" \
+  "Cluster (once): ./install-cluster.sh → deploy Veyron in cluster" \
+  "Start API: set -a && source veyron.env && set +a && ./veyron api-serve --host 0.0.0.0 --port 5151" \
+  "Help: cat HELP.txt · ./install.sh --help" \
+  "Override kubeconfig: ./install.sh --kubeconfig /path/to/config" \
+  "Docs: CLUSTER_SETUP.txt · PREREQUISITES.txt"

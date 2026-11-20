@@ -1,0 +1,57 @@
+# Cilium clusters that enforce default-egress via allow-dns + allow-intra-namespace
+# need an explicit policy so Veyron API/operator/NATS can reach kube-apiserver and
+# other in-cluster endpoints. Applied by deploy-all-remote.sh / deploy-k8s-remote.sh
+# when the CiliumNetworkPolicy CRD is present.
+#
+# This policy's job is ONLY to unblock egress — it must never become an implicit
+# ingress lockdown. Selecting an endpoint with an egress-only CiliumNetworkPolicy
+# can flip that endpoint's Cilium identity into default-deny on ingress too
+# (observed live: kubelet's readiness/liveness HTTP probes got silently
+# TCP-black-holed — connect() never even completed — for every freshly-scheduled
+# veyron-api/veyron-operator pod, while long-lived pods whose identity predated
+# this were unaffected; a Cilium agent restart alone did not fix it, confirming
+# it's this policy's enforcement state, not transient agent state). The explicit
+# `ingress: allow all` below mirrors the existing egress rule and neutralizes
+# that side effect, restoring the "egress-only, no ingress restriction" behavior
+# this file's own comment already promises.
+#
+# Per-VM internet egress is managed separately by Veyron (CiliumNetworkPolicy or
+# Kubernetes NetworkPolicy on kubevirt.io/vm=<vm>) via the API and dashboard.
+#
+# Namespace is substituted at apply time (__VEYRON_APP_NAMESPACE__ or veyron-system).
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-veyron-system-egress-chart
+  namespace: __VEYRON_APP_NAMESPACE__
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - veyron
+          - nats
+  ingress:
+    - fromEntities:
+        - all
+  egress:
+    - toEntities:
+        - all
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-veyron-system-egress-api-legacy
+  namespace: __VEYRON_APP_NAMESPACE__
+spec:
+  endpointSelector:
+    matchLabels:
+      app: veyron-api
+  ingress:
+    - fromEntities:
+        - all
+  egress:
+    - toEntities:
+        - all

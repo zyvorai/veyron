@@ -1,0 +1,45 @@
+{{- if and .Values.kps.enabled .Values.veyron.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-veyron-api
+  namespace: {{ .Values.veyron.namespace }}
+  labels:
+    {{- include "veyron-monitoring.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: veyron
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.veyron.namespace | quote }}
+  endpoints:
+    - port: https
+      path: /api/v1/health
+      interval: 30s
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-veyron-operator
+  namespace: {{ .Values.veyron.namespace }}
+  labels:
+    {{- include "veyron-monitoring.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: veyron-operator
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.veyron.namespace | quote }}
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+{{- end }}

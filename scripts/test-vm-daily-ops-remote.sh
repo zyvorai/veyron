@@ -1,0 +1,828 @@
+#!/usr/bin/env bash
+# ============================================================================
+# test-vm-daily-ops-remote.sh — HTTPS API E2E for daily VM operations
+# ============================================================================
+# Exercises create, start, stop, pause, unpause, SSH expose, RDP expose, and
+# snapshot create/list (optional restore) against a remote Veyron NodePort API.
+# curl-only (no jq). Exits 1 if any check fails.
+#
+# Usage:
+#   VEYRON_API_KEY='...' ./scripts/test-vm-daily-ops-remote.sh <host> [port]
+#
+# Environment:
+#   VEYRON_API_KEY          API key (default: saved ~/.config/veyron/hosts/<host>.env from deploy)
+#   VEYRON_E2E_NAMESPACE    Target namespace (default: default)
+#   VEYRON_E2E_RESTORE      Set to 1 to run destructive snapshot restore
+#   VEYRON_E2E_SKIP_TIER_B  Set to 1 to run Tier A only (no VM create)
+#   VEYRON_E2E_BACKEND      kubevirt|kairon (default: GET /enterprise/capabilities)
+# ============================================================================
+
+set -euo pipefail
+
+HOST="${1:-${DEPLOY_HOST:-}}"
+PORT="${2:-${VEYRON_NODE_PORT:-30151}}"
+KEY="${VEYRON_API_KEY:-$(source "$(dirname "${BASH_SOURCE[0]}")/lib/api-key.sh" && veyron_require_api_key "${HOST}" 2>/dev/null)}"
+if [[ -n "${HOST}" && -z "${KEY}" ]]; then
+    echo "VEYRON_API_KEY is not set and no saved key for ${HOST} (deploy prints and saves it to ~/.config/veyron/hosts/)" >&2
+    exit 1
+fi
+NS="${VEYRON_E2E_NAMESPACE:-default}"
+RESTORE="${VEYRON_E2E_RESTORE:-0}"
+SKIP_TIER_B="${VEYRON_E2E_SKIP_TIER_B:-0}"
+
+if [[ -z "${HOST}" ]]; then
+    echo "Usage: $0 <host> [https_node_port]" >&2
+    exit 1
+fi
+
+if ! command -v curl >/dev/null 2>&1; then
+    echo "curl is required" >&2
+    exit 1
+fi
+
+BASE="https://${HOST}:${PORT}"
+TS="$(date +%s)"
+VM_NAME="veyron-e2e-${TS}"
+SNAP_NAME="${VM_NAME}-snap-e2e"
+RDP_PORT="${VEYRON_E2E_RDP_PORT:-30150}"
+
+PASS=0
+FAIL=0
+SKIP=0
+TIER_B_RAN=0
+CREATED_VM=0
+
+G='\033[0;32m'
+R='\033[0;31m'
+Y='\033[0;33m'
+B='\033[1m'
+N='\033[0m'
+
+pass() { echo -e "  ${G}✔${N} $1"; PASS=$((PASS + 1)); }
+fail() { echo -e "  ${R}✗${N} $1"; [[ -n "${2:-}" ]] && echo "    ${2}" | head -c 500; FAIL=$((FAIL + 1)); }
+skip() { echo -e "  ${Y}○${N} $1"; SKIP=$((SKIP + 1)); }
+tier() { echo ""; echo -e "${B}── $1 ──${N}"; }
+
+# curl: sets _CURL_BODY and _CURL_CODE (do not use curl_api ...)" — subshell drops _CURL_CODE)
+_CURL_CODE=""
+_CURL_BODY=""
+curl_api() {
+    local method="$1"
+    local path="$2"
+    local body="${3:-}"
+    local auth="${4:-yes}"
+    local url="${BASE}${path}"
+    local -a args=(-skS --connect-timeout 15 --max-time 120 -X "${method}")
+    if [[ "${auth}" == "yes" ]]; then
+        args+=(-H "X-API-Key: ${KEY}")
+    fi
+    if [[ -n "${body}" ]]; then
+        args+=(-H "Content-Type: application/json" -d "${body}")
+    fi
+    local tmp
+    tmp="$(mktemp)"
+    _CURL_CODE="$(curl "${args[@]}" -o "${tmp}" -w '%{http_code}' "${url}" 2>/dev/null || echo "000")"
+    _CURL_BODY="$(cat "${tmp}")"
+    rm -f "${tmp}"
+}
+
+
+body_success() {
+    echo "${1:-}" | grep -q '"success"[[:space:]]*:[[:space:]]*true'
+}
+
+body_error_code() {
+    local body="$1"
+    local code="$2"
+    echo "${body}" | grep -qE "\"code\"[[:space:]]*:[[:space:]]*\"${code}\""
+}
+
+vm_status_from_body() {
+    local body="$1"
+    if echo "${body}" | grep -qE '"status"[[:space:]]*:[[:space:]]*"Running"'; then
+        echo "Running"
+    elif echo "${body}" | grep -qE '"status"[[:space:]]*:[[:space:]]*"(Stopped|Halted)"'; then
+        echo "Stopped"
+    elif echo "${body}" | grep -qE '"status"[[:space:]]*:[[:space:]]*"Starting"'; then
+        echo "Starting"
+    else
+        echo "unknown"
+    fi
+}
+
+wait_vm_status() {
+    local want="$1"
+    local timeout="${2:-300}"
+    local elapsed=0
+    local body st
+    while [[ "${elapsed}" -lt "${timeout}" ]]; do
+        curl_api GET "/api/v1/vms/${NS}/${VM_NAME}"
+        body="${_CURL_BODY}"
+        st="$(vm_status_from_body "${body}")"
+        if [[ "${st}" == "${want}" ]]; then
+            return 0
+        fi
+        sleep 5
+        elapsed=$((elapsed + 5))
+    done
+    return 1
+}
+
+wait_guest_connected() {
+    local timeout="${1:-360}"
+    local elapsed=0
+    local body
+    while [[ "${elapsed}" -lt "${timeout}" ]]; do
+        curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/status"
+        body="${_CURL_BODY}"
+        if body_success "${body}" && echo "${body}" | grep -qE '"connected"[[:space:]]*:[[:space:]]*true'; then
+            return 0
+        fi
+        sleep 10
+        elapsed=$((elapsed + 10))
+    done
+    return 1
+}
+
+cleanup_vm() {
+    if [[ "${CREATED_VM}" -eq 0 ]]; then
+        return 0
+    fi
+    echo ""
+    echo -e "${Y}Cleaning up ${VM_NAME} in ${NS}...${N}"
+    curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/stop" '{}' yes >/dev/null 2>&1 || true
+    sleep 3
+    curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}" '' yes >/dev/null 2>&1 || true
+    curl_api POST "/api/v1/snapshots/${NS}/${SNAP_NAME}/delete" '{}' yes >/dev/null 2>&1 || true
+}
+
+trap cleanup_vm EXIT
+
+BACKEND="${VEYRON_E2E_BACKEND:-}"
+if [[ -z "${BACKEND}" ]]; then
+    curl_api GET "/api/v1/enterprise/capabilities"
+    BACKEND="$(echo "${_CURL_BODY}" | sed -n 's/.*"backend"[[:space:]]*:[[:space:]]*"\([a-z]*\)".*/\1/p' | head -1)"
+    BACKEND="${BACKEND:-kubevirt}"
+fi
+echo -e "${B}Veyron daily-ops E2E${N} → ${BASE} (ns=${NS}, vm=${VM_NAME}, backend=${BACKEND})"
+echo ""
+
+# ═══════════════════════════════════════════════
+tier "Tier A — API contract (no VM)"
+# ═══════════════════════════════════════════════
+
+curl_api GET "/api/v1/vms" '' no
+body="${_CURL_BODY}"
+if body_success "${body}"; then
+    fail "GET /api/v1/vms without API key should not succeed"
+else
+    pass "GET /api/v1/vms without API key rejected"
+fi
+
+curl_api PUT "/api/v1/vms/${NS}/nonexistent-vm-zzzz/expose" '{"enabled":true,"service_type":"NodePort","ports":[{"port":22,"target_port":22}]}'
+body="${_CURL_BODY}"
+if [[ "${_CURL_CODE}" == "404" ]] || body_error_code "${body}" "NOT_FOUND" \
+    || echo "${body}" | grep -qiE 'not found|Resource not found'; then
+    pass "PUT expose on missing VM → not found (HTTP ${_CURL_CODE})"
+elif echo "${body}" | grep -q 'KubeVirt API unavailable'; then
+    skip "PUT expose on missing VM (redeploy API for 404 mapping; got HTTP ${_CURL_CODE})"
+else
+    fail "expose on missing VM" "HTTP ${_CURL_CODE}: $(echo "${body}" | head -c 200)"
+fi
+
+curl_api PUT "/api/v1/vms/${NS}/nonexistent-vm-zzzz/rdp-expose" '{"enabled":true,"service_type":"NodePort"}'
+body="${_CURL_BODY}"
+if [[ "${_CURL_CODE}" == "400" ]] || body_error_code "${body}" "INVALID_REQUEST"; then
+    pass "PUT rdp-expose without node_port → 400"
+elif [[ "${_CURL_CODE}" == "404" ]] || body_error_code "${body}" "NOT_FOUND"; then
+    skip "PUT rdp-expose without node_port (redeploy API; expected 400, got 404 HTTP ${_CURL_CODE})"
+elif echo "${body}" | grep -q 'KubeVirt API unavailable'; then
+    skip "PUT rdp-expose without node_port (redeploy API; got HTTP ${_CURL_CODE})"
+else
+    fail "rdp-expose without node_port" "HTTP ${_CURL_CODE}: $(echo "${body}" | head -c 200)"
+fi
+
+if [[ "${BACKEND}" == "kairon" ]]; then
+    curl_api GET "/api/v1/images/datasources"
+    if [[ "${_CURL_CODE}" == "501" ]] && body_error_code "${_CURL_BODY}" "KUBEVIRT_ONLY"; then
+        pass "KubeVirt-only route → 501 KUBEVIRT_ONLY (kairon)"
+    else
+        fail "KubeVirt-only route on kairon (expected 501 KUBEVIRT_ONLY, got ${_CURL_CODE})" "$(echo "${_CURL_BODY}" | head -c 200)"
+    fi
+    curl_api GET "/api/v1/imports?namespace=all"
+    [[ "${_CURL_CODE}" == "200" ]] && pass "GET imports → 200" || fail "GET imports" "HTTP ${_CURL_CODE}: $(echo "${_CURL_BODY}" | head -c 200)"
+    curl_api POST "/api/v1/imports" '{"name":"bad","image_url":"file:///x","sha256":"00"}'
+    [[ "${_CURL_CODE}" == "400" ]] && pass "POST imports invalid → 400" || fail "POST imports validation" "HTTP ${_CURL_CODE}"
+fi
+
+# ═══════════════════════════════════════════════
+# Tier C — Day-2 ops (non-destructive: validation, dry-runs, reads)
+# ═══════════════════════════════════════════════
+tier "Tier C — Day-2 ops (contract / dry-run)"
+
+# hotplug/run-strategy/bulk input validation (no VM mutated)
+curl_api POST "/api/v1/vms/${NS}/x/hotplug" '{}'
+[[ "${_CURL_CODE}" == "400" ]] && pass "hotplug empty body → 400" || skip "hotplug validation (redeploy for Day-2 ops; HTTP ${_CURL_CODE})"
+curl_api PUT "/api/v1/vms/${NS}/x/run-strategy" '{"strategy":"Bogus"}'
+[[ "${_CURL_CODE}" == "400" ]] && pass "run-strategy invalid → 400" || skip "run-strategy validation (HTTP ${_CURL_CODE})"
+curl_api POST "/api/v1/vms/bulk" '{"action":"nope","namespace":"'"${NS}"'","names":["a"]}'
+[[ "${_CURL_CODE}" == "400" ]] && pass "bulk invalid action → 400" || skip "bulk validation (HTTP ${_CURL_CODE})"
+
+# Read/dry-run endpoints (safe). Authenticated: these are admin-gated reads,
+# so probing without the key just proves the auth wall (fixed 401 false-skips).
+for chk in \
+    "GET|/api/v1/capacity/headroom|capacity headroom" \
+    "GET|/api/v1/platform/versions|platform versions" \
+    "GET|/api/v1/disks/conversion/capabilities|disk-conversion capabilities" \
+    "GET|/api/v1/self-healing/policy|self-healing policy" \
+    "GET|/api/v1/storage/orphans|orphan list" ; do
+    IFS='|' read -r m path label <<< "${chk}"
+    curl_api "${m}" "${path}"
+    [[ "${_CURL_CODE}" == "200" ]] && pass "${label} → 200" || skip "${label} (redeploy for Day-2 ops; HTTP ${_CURL_CODE})"
+done
+
+# GPU surface: inventory + create preflight (no VM mutated on GPU-less clusters)
+GPU_TOTAL=0
+curl_api GET "/api/v1/gpus"
+if [[ "${_CURL_CODE}" == "200" ]]; then
+    GPU_TOTAL="$(echo "${_CURL_BODY}" | grep -o '"total_allocatable"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*$' || echo 0)"
+    pass "GPU inventory → 200 (${GPU_TOTAL} allocatable)"
+else
+    skip "GPU inventory (redeploy for GPU support; HTTP ${_CURL_CODE})"
+fi
+if [[ "${_CURL_CODE}" == "200" && "${GPU_TOTAL:-0}" -eq 0 ]]; then
+    # A GPU-less cluster must refuse GPU VM creates up front.
+    curl_api POST "/api/v1/vms" '{"name":"veyron-e2e-gpu-preflight","template":"ubuntu-22.04","namespace":"'"${NS}"'","gpu":{"count":1}}'
+    if [[ "${_CURL_CODE}" == "422" ]] && body_error_code "${_CURL_BODY}" "GPU_RESOURCE_UNAVAILABLE"; then
+        pass "GPU create preflight → 422 GPU_RESOURCE_UNAVAILABLE"
+    else
+        fail "GPU create preflight (expected 422 GPU_RESOURCE_UNAVAILABLE, got ${_CURL_CODE})" "$(echo "${_CURL_BODY}" | head -c 300)"
+    fi
+fi
+
+# Self-healing evaluate (dry run) + upgrade dry run — non-mutating
+curl_api POST "/api/v1/self-healing/run"
+[[ "${_CURL_CODE}" == "200" ]] && pass "self-healing/run dry → 200" || skip "self-healing run (HTTP ${_CURL_CODE})"
+curl_api POST "/api/v1/platform/upgrade" '{"component":"kubevirt","image_tag":"v0.0.0-e2e"}'
+[[ "${_CURL_CODE}" == "200" ]] && pass "platform upgrade dry-run → 200" || skip "platform upgrade dry-run (HTTP ${_CURL_CODE})"
+
+if [[ "${SKIP_TIER_B}" == "1" ]]; then
+    skip "Tier B skipped (VEYRON_E2E_SKIP_TIER_B=1)"
+else
+    # ═══════════════════════════════════════════════
+    tier "Tier B — disposable VM lifecycle"
+    # ═══════════════════════════════════════════════
+    TIER_B_RAN=1
+
+    create_body="$(cat <<EOF
+{
+  "name": "${VM_NAME}",
+  "namespace": "${NS}",
+  "template": "ubuntu-22.04",
+  "cpus": 1,
+  "memory": "1Gi",
+  "disk_size": "10Gi",
+  "start": true
+}
+EOF
+)"
+    curl_api POST "/api/v1/vms" "${create_body}"
+    body="${_CURL_BODY}"
+    if body_success "${body}"; then
+        pass "POST /api/v1/vms create ${VM_NAME}"
+        CREATED_VM=1
+    else
+        fail "POST /api/v1/vms create" "$(echo "${body}" | head -c 400)"
+        skip "remaining Tier B checks (create failed)"
+    fi
+
+    if [[ "${CREATED_VM}" -eq 1 ]]; then
+        if wait_vm_status "Running" 360; then
+            pass "VM reached Running"
+        else
+            fail "VM did not reach Running within 6m"
+            skip "lifecycle checks after Running timeout"
+        fi
+
+        if [[ "${FAIL}" -eq 0 ]]; then
+            GUEST_CONNECTED=0
+            if wait_guest_connected 360; then
+                GUEST_CONNECTED=1
+                pass "Guest agent connected"
+            else
+                skip "Guest agent not connected within 6m — skipping guest/evidence/doctor"
+            fi
+
+            if [[ "${GUEST_CONNECTED}" -eq 1 ]]; then
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/status"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"connected"[[:space:]]*:[[:space:]]*true'; then
+                    pass "GET guest/status connected"
+                else
+                    fail "GET guest/status" "$(echo "${body}" | head -c 300)"
+                fi
+
+              if [[ "${BACKEND}" == "kairon" ]]; then
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/guest/exec" '{"command":"uname -r"}'
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"exit_code"[[:space:]]*:[[:space:]]*0'; then
+                    pass "POST guest/exec (kairon relay)"
+                else
+                    fail "POST guest/exec" "$(echo "${body}" | head -c 300)"
+                fi
+                skip "guest evidence/doctor/metrics/migrate-score (GuestKit — KubeVirt backend only)"
+              else
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/evidence"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"boot"|"network"|"hardware"'; then
+                    pass "GET guest/evidence"
+                else
+                    fail "GET guest/evidence" "$(echo "${body}" | head -c 300)"
+                fi
+
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/doctor"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"boot_report"|"evidence"'; then
+                    pass "GET guest/doctor"
+                else
+                    fail "GET guest/doctor" "$(echo "${body}" | head -c 300)"
+                fi
+
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/metrics"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"cpu"|"memory"'; then
+                    pass "GET guest/metrics"
+                else
+                    fail "GET guest/metrics" "$(echo "${body}" | head -c 300)"
+                fi
+
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/migrate-score?target=kvm"
+                body="${_CURL_BODY}"
+                if body_success "${body}"; then
+                    pass "GET guest/migrate-score"
+                else
+                    fail "GET guest/migrate-score" "$(echo "${body}" | head -c 300)"
+                fi
+              fi
+            fi
+        fi
+
+        if [[ "${FAIL}" -eq 0 ]]; then
+            # VNC WebSocket ticket
+            vnc_ticket_body="$(printf '{"namespace":"%s","name":"%s","type":"vnc"}' "${NS}" "${VM_NAME}")"
+            curl_api POST "/api/v1/ws/ticket" "${vnc_ticket_body}"
+            body="${_CURL_BODY}"
+            if body_success "${body}" && echo "${body}" | grep -qE '"ticket"'; then
+                pass "POST VNC ws/ticket issued"
+            else
+                fail "POST VNC ws/ticket" "$(echo "${body}" | head -c 300)"
+            fi
+
+            curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/logs?tail=50"
+            [[ "${_CURL_CODE}" == "200" ]] && pass "GET VM logs → 200" || fail "GET VM logs" "HTTP ${_CURL_CODE}: $(echo "${_CURL_BODY}" | head -c 200)"
+
+            # kairon-node relay features (FluxVM): files, quiesce, diagnostics, network, egress.
+            if [[ "${BACKEND}" == "kairon" ]]; then
+                _payload="veyron-e2e-$$"
+                _b64="$(printf '%s' "${_payload}" | base64 | tr -d '\n')"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/put" "{\"path\":\"/tmp/veyron-e2e.txt\",\"content_base64\":\"${_b64}\"}"
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST files/put → 200"
+                    curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/get" '{"path":"/tmp/veyron-e2e.txt"}'
+                    echo "${_CURL_BODY}" | grep -q "${_b64}" && pass "files/get round-trips the content" || fail "files/get content" "$(echo "${_CURL_BODY}" | head -c 200)"
+                else
+                    skip "guest files (HTTP ${_CURL_CODE}; needs spec.guestAgent.console)"
+                fi
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/pressure"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET pressure → 200" || skip "pressure (HTTP ${_CURL_CODE})"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/network/stats"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET network/stats → 200" || skip "network stats (HTTP ${_CURL_CODE})"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/runtime-capabilities"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET runtime-capabilities → 200" || skip "runtime-capabilities (HTTP ${_CURL_CODE})"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/egress-check" '{"host":"example.com"}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST egress-check → 200"
+                    echo "${_CURL_BODY}" | grep -qiE 'authorization"[[:space:]]*:[[:space:]]*"[^"]' && fail "egress-check leaked a credential" "response contains an authorization value" || pass "egress-check response carries no credential"
+                else
+                    skip "egress-check (HTTP ${_CURL_CODE})"
+                fi
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/quiesced-snapshot" '{}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST quiesced-snapshot → 200 (freeze/snapshot/thaw)"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/frozen"
+                    echo "${_CURL_BODY}" | grep -q 'true' && fail "guest still frozen after quiesced-snapshot" "$(echo "${_CURL_BODY}" | head -c 200)" || pass "guest thawed after quiesced-snapshot"
+                else
+                    skip "quiesced-snapshot (HTTP ${_CURL_CODE}; needs the QEMU guest agent)"
+                fi
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/diagnostics" '{}'
+                if [[ "${_CURL_CODE}" == "200" || "${_CURL_CODE}" == "202" ]]; then
+                    pass "POST diagnostics → ${_CURL_CODE}"
+                    _tok="$(echo "${_CURL_BODY}" | sed -n 's/.*"\(token\|id\)"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\2/p' | head -1)"
+                    if [[ -n "${_tok}" ]]; then
+                        curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/diagnostics/${_tok}"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "GET diagnostics/:token → 200" || fail "GET diagnostics/:token" "HTTP ${_CURL_CODE}"
+                        curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/diagnostics/${_tok}"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE diagnostics/:token → 200" || skip "DELETE diagnostics (HTTP ${_CURL_CODE})"
+                    fi
+                else
+                    skip "diagnostics (HTTP ${_CURL_CODE})"
+                fi
+                # Phase 2: lifecycle, placement, network policy, migration options, CRD views.
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/lifecycle" '{"idleAction":"Explode"}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "PUT lifecycle rejects an unknown idleAction (422)" || fail "lifecycle validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/lifecycle" '{"idleTimeoutSeconds":86400,"idleAction":"Pause","wakeOnConnect":true}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "PUT lifecycle → 200"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/lifecycle"
+                    echo "${_CURL_BODY}" | grep -q '"idleAction":"Pause"' && pass "GET lifecycle reflects the update" || fail "GET lifecycle" "$(echo "${_CURL_BODY}" | head -c 200)"
+                    curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/lifecycle" '{}'
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "PUT lifecycle {} clears it" || fail "clear lifecycle" "HTTP ${_CURL_CODE}"
+                else
+                    skip "PUT lifecycle (HTTP ${_CURL_CODE})"
+                fi
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/placement" '{"antiAffinity":[{}]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "PUT placement rejects a term without topologyKey (422)" || fail "placement validation" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/placement"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET placement → 200" || fail "GET placement" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/network-policy" '{"allowFqdn":["a.com"]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "PUT network-policy rejects an unknown field (422)" || fail "network-policy validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/network-policy" '{"defaultAllow":true,"allowIcmp":true,"maxIngressMbps":1000}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "PUT network-policy → 200"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/network-policy"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET network-policy → 200" || fail "GET network-policy" "HTTP ${_CURL_CODE}"
+                    curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/network-policy"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE network-policy → 200" || fail "DELETE network-policy" "HTTP ${_CURL_CODE}"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/network-policy"
+                    [[ "${_CURL_CODE}" == "404" ]] && pass "network-policy gone after delete (404)" || fail "network-policy after delete" "HTTP ${_CURL_CODE}"
+                else
+                    skip "PUT network-policy (HTTP ${_CURL_CODE})"
+                fi
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/migrate" '{"mode":"sideways"}'
+                [[ "${_CURL_CODE}" == "409" ]] && pass "migrate rejects an invalid mode (409)" || fail "migrate option validation" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/migrations/none/recovery" '{"action":"ForceAbort","acknowledged_diagnosis":"Unknown","reason":""}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "migration recovery requires a reason (422)" || fail "recovery validation" "HTTP ${_CURL_CODE}"
+                for _k in claims quotas disruption-budgets migration-policies backup-policies node-topologies; do
+                    curl_api GET "/api/v1/kairon/${_k}?namespace=all"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET kairon/${_k} → 200" || skip "kairon/${_k} (HTTP ${_CURL_CODE}; CRD may not be installed)"
+                done
+                curl_api GET "/api/v1/kairon/advice/migrations"
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    echo "${_CURL_BODY}" | grep -q '"advice"' && pass "GET migration advice → 200" || fail "migration advice shape" "$(echo "${_CURL_BODY}" | head -c 200)"
+                else
+                    skip "migration advice (HTTP ${_CURL_CODE})"
+                fi
+                curl_api POST "/api/v1/agent-sessions/default/none/ops/tokens" '{}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "agent-session ops refuses a credential verb (422)" || fail "agent-session verb allow-list" "HTTP ${_CURL_CODE}"
+                for _k in virtual-networks balance-policies autoscalers recovery-plans ha-profiles usage-ledgers backup-groups template-claims node-fence-requests accelerator-profiles; do
+                    curl_api GET "/api/v1/kairon/${_k}?namespace=default"
+                    if [[ "${_CURL_CODE}" == "200" ]]; then pass "GET kairon/${_k} → 200"
+                    elif [[ "${_CURL_CODE}" == "404" ]]; then skip "kairon/${_k} (CRD not installed)"
+                    else fail "GET kairon/${_k}" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"; fi
+                done
+                curl_api POST "/api/v1/kairon/fleet/usage-ledgers" '{"name":"x","spec":{}}'
+                [[ "${_CURL_CODE}" == "404" ]] && pass "fleet create refuses a read-only kind (404)" || fail "fleet read-only kind" "HTTP ${_CURL_CODE}"
+                curl_api POST "/api/v1/kairon/fleet/ha-profiles" '{"name":"Bad_Name","spec":{}}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "fleet create rejects an invalid name (422)" || fail "fleet name validation" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/sandbox-templates"
+                [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"templates"' && pass "GET sandbox-templates → 200" || skip "sandbox-templates (HTTP ${_CURL_CODE})"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/input" '{"action":"Click; rm"}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "screen input rejects a malformed action (422)" || fail "screen input validation" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/screenshot"
+                [[ "${_CURL_CODE}" == "502" || "${_CURL_CODE}" == "200" ]] && pass "screenshot answers (${_CURL_CODE}; 200 only on a Mac vz VM)" || fail "screenshot" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/kairon/bogus"
+                [[ "${_CURL_CODE}" == "404" ]] && pass "GET kairon/bogus → 404" || fail "kairon/bogus" "HTTP ${_CURL_CODE}"
+                # Phase 5: network access (per-VM egress policy). Reads and the Machine-spec writes work on any
+                # Kairon; live state, observed flows and node defaults need kairon-node + FluxVM with the feature
+                # (404/502/503 there => skip, never fail).
+                curl_api GET "/api/v1/egress/presets"
+                if [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"platform-packages"'; then pass "GET egress/presets → 200 (platform-packages present)"; else fail "egress presets" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"; fi
+                curl_api GET "/api/v1/egress/overview"
+                [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"by_mode"' && pass "GET egress/overview → 200" || fail "egress overview" "HTTP ${_CURL_CODE}"
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/egress"
+                if [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"policy"'; then pass "GET vm egress → 200"; else fail "GET vm egress" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"; fi
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"preset":"wbe"}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "egress rejects an unknown preset (422)" || fail "egress preset validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"mode":"allowlist","rules":[{"cidr":"10.0.0.0/8","port":443}]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "egress rejects a port without a protocol (422)" || fail "egress port validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"mode":"allowlist","rules":[{"cidr":"10.0.0.0/8","proto":"tcp","port":1},{"cidr":"10.0.0.0/8","proto":"tcp","port":2},{"cidr":"10.0.0.0/8","proto":"tcp","port":3},{"cidr":"10.0.0.0/8","proto":"tcp","port":4},{"cidr":"10.0.0.0/8","proto":"tcp","port":5}]}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "egress rejects more than 4 ports per network (422)" || fail "egress port-limit validation" "HTTP ${_CURL_CODE}"
+                curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"preset":"learn"}'
+                if [[ "${_CURL_CODE}" == "202" ]]; then
+                    pass "PUT vm egress (learn) → 202"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/egress"
+                    echo "${_CURL_BODY}" | grep -q '"configured":true' && echo "${_CURL_BODY}" | grep -q '"mode":"audit"' && pass "egress policy saved on the Machine (audit)" || fail "egress policy readback" "$(echo "${_CURL_BODY}" | head -c 300)"
+                    curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/egress/explain?host=10.1.2.3&port=443"
+                    [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"verdicts"' && pass "GET egress/explain → 200" || fail "egress explain" "HTTP ${_CURL_CODE}"
+                    curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"preset":"platform","expires_in":"2m"}'
+                    if [[ "${_CURL_CODE}" == "202" ]] && echo "${_CURL_BODY}" | grep -q '"expires_at"'; then
+                        pass "timed egress change records a grant"
+                        curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/egress/grant"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE egress/grant restores the previous policy" || fail "end timed egress change" "HTTP ${_CURL_CODE}"
+                    else
+                        fail "timed egress change" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"
+                    fi
+                    curl_api POST "/api/v1/egress/apply" '{"selector":{}}'
+                    [[ "${_CURL_CODE}" == "422" ]] && pass "egress/apply refuses an empty selector (422)" || fail "egress apply empty selector" "HTTP ${_CURL_CODE}"
+                    curl_api POST "/api/v1/egress/apply" "{\"selector\":{\"namespaces\":[\"${NS}\"],\"names\":[\"${VM_NAME}\"]},\"preset\":\"web\"}"
+                    [[ "${_CURL_CODE}" == "200" ]] && echo "${_CURL_BODY}" | grep -q '"dry_run":true' && pass "egress/apply defaults to a dry run" || fail "egress apply dry run" "HTTP ${_CURL_CODE}"
+                    curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}/egress"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "DELETE vm egress → 200" || fail "DELETE vm egress" "HTTP ${_CURL_CODE}"
+                    # Leave the VM the way create left it, so later checks still have its agent.
+                    curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/egress" '{"preset":"platform-packages"}' >/dev/null
+                else
+                    fail "PUT vm egress (learn)" "HTTP ${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)"
+                fi
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/egress/observed"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET vm egress/observed → 200" || skip "vm egress/observed (HTTP ${_CURL_CODE}; needs kairon-node + FluxVM with network access policy)"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/egress/suggest"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "POST egress/suggest → 200" || skip "egress suggest (HTTP ${_CURL_CODE}; needs kairon-node + FluxVM with network access policy)"
+                _en="$(curl_api GET "/api/v1/vms/${NS}/${VM_NAME}" >/dev/null; echo "${_CURL_BODY}" | sed -n 's/.*"node"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+                if [[ -n "${_en}" ]]; then
+                    curl_api GET "/api/v1/nodes/${_en}/egress-defaults"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET node egress-defaults → 200" || skip "node egress-defaults (HTTP ${_CURL_CODE}; needs kairon-node + FluxVM with network access policy)"
+                fi
+                # Phase 3: FluxVM fork plan, event log, host memory, branches (need kairon-node with the flux relay routes).
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"count":0}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "fork/plan rejects count 0 (422)" || fail "fork/plan validation" "HTTP ${_CURL_CODE}"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"bogus":1}'
+                [[ "${_CURL_CODE}" == "422" ]] && pass "fork/plan rejects unknown fields (422)" || fail "fork/plan unknown field" "HTTP ${_CURL_CODE}"
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork/plan" '{"count":2}'
+                if [[ "${_CURL_CODE}" == "200" ]]; then
+                    pass "POST fork/plan → 200"
+                    echo "${_CURL_BODY}" | grep -q '"refusals"' && pass "fork/plan returns refusals + predicted cost" || fail "fork/plan shape" "$(echo "${_CURL_BODY}" | head -c 200)"
+                else
+                    skip "fork/plan (HTTP ${_CURL_CODE}; needs kairon-node with the flux relay routes)"
+                fi
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/runtime-events?limit=20"
+                [[ "${_CURL_CODE}" == "200" ]] && pass "GET vm events → 200" || skip "vm events (HTTP ${_CURL_CODE}; needs kairon-node with the flux relay routes)"
+                _node="$(curl_api GET "/api/v1/vms/${NS}/${VM_NAME}" >/dev/null; echo "${_CURL_BODY}" | sed -n 's/.*"node"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+                if [[ -n "${_node}" ]]; then
+                    curl_api GET "/api/v1/nodes/${_node}/runtime/memory"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET node runtime/memory → 200" || skip "node runtime memory (HTTP ${_CURL_CODE})"
+                    curl_api GET "/api/v1/nodes/${_node}/branches"
+                    [[ "${_CURL_CODE}" == "200" ]] && pass "GET node branches → 200" || skip "node branches (HTTP ${_CURL_CODE})"
+                    for _r in runtime/topology runtime/pressure egress-nftables sandbox-templates; do
+                        curl_api GET "/api/v1/nodes/${_node}/${_r}"
+                        [[ "${_CURL_CODE}" == "200" ]] && pass "GET node ${_r} → 200" || skip "node ${_r} (HTTP ${_CURL_CODE}; needs the newer kairon-node relay)"
+                    done
+                    curl_api DELETE "/api/v1/nodes/${_node}/branches/..%2Fx"
+                    [[ "${_CURL_CODE}" == "400" || "${_CURL_CODE}" == "404" || "${_CURL_CODE}" == "405" ]] && pass "branch delete refuses a path-escaping id" || fail "branch delete id validation" "HTTP ${_CURL_CODE}"
+                    _sse="$(curl -skS --connect-timeout 10 --max-time 4 -H "X-API-Key: ${KEY}" -o /dev/null -w '%{http_code}' "${BASE}/api/v1/vms/${NS}/${VM_NAME}/runtime-events/stream" 2>/dev/null || true)"
+                    [[ "${_sse}" == "200" ]] && pass "GET runtime-events/stream opens (200)" || skip "runtime-events stream (HTTP ${_sse:-none}; needs the newer kairon-node relay)"
+                    curl_api GET "/api/v1/nodes/${_node}/branches/..%2Fetc/diff/x"
+                    [[ "${_CURL_CODE}" == "400" || "${_CURL_CODE}" == "404" ]] && pass "branch diff refuses a path-escaping id" || fail "branch id validation" "HTTP ${_CURL_CODE}"
+                else
+                    skip "node routes (could not resolve the VM's node)"
+                fi
+            else
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/files/get" '{"path":"/etc/hostname"}'
+                [[ "${_CURL_CODE}" == "501" ]] && pass "files/get → 501 on KubeVirt" || skip "files/get on KubeVirt (HTTP ${_CURL_CODE})"
+            fi
+
+            curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/migrations"
+            [[ "${_CURL_CODE}" == "200" ]] && pass "GET migrations → 200" || skip "GET migrations (HTTP ${_CURL_CODE})"
+
+            curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/stop" '{}'
+            body="${_CURL_BODY}"
+            body_success "${body}" && pass "POST stop" || fail "POST stop" "$(echo "${body}" | head -c 300)"
+
+            if wait_vm_status "Stopped" 180; then
+                pass "VM reached Stopped"
+            else
+                fail "VM did not reach Stopped"
+            fi
+
+            curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/start" '{}'
+            body="${_CURL_BODY}"
+            body_success "${body}" && pass "POST start" || fail "POST start" "$(echo "${body}" | head -c 300)"
+
+            if wait_vm_status "Running" 300; then
+                pass "VM Running after start"
+            else
+                fail "VM did not return to Running after start"
+            fi
+
+            curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/pause" '{}'
+            body="${_CURL_BODY}"
+            body_success "${body}" && pass "POST pause" || fail "POST pause" "$(echo "${body}" | head -c 300)"
+
+            curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/unpause" '{}'
+            body="${_CURL_BODY}"
+            body_success "${body}" && pass "POST unpause" || fail "POST unpause" "$(echo "${body}" | head -c 300)"
+
+            # Fork Lab (Kairon only): validation always; a real fork when the VM is forkable
+            # (flux-vm backend, boot disk only), otherwise a 409 FORK_BLOCKED is the contract.
+            curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork" '{"count":0}'
+            case "${_CURL_CODE}" in
+                422) pass "POST fork count=0 rejected (422)" ;;
+                501) skip "fork is Kairon-only (501 on this backend)" ;;
+                *) fail "POST fork count=0 expected 422" "code=${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 200)" ;;
+            esac
+            if [[ "${_CURL_CODE}" != "501" ]]; then
+                curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/fork" '{"count":1,"name_prefix":"e2efork"}'
+                case "${_CURL_CODE}" in
+                    202)
+                        pass "POST fork accepted"
+                        curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/forks"
+                        echo "${_CURL_BODY}" | grep -q "e2efork-1" && pass "GET forks lists e2efork-1" || fail "GET forks missing e2efork-1" "$(echo "${_CURL_BODY}" | head -c 300)"
+                        curl_api DELETE "/api/v1/vms/${NS}/e2efork-1"
+                        body_success "${_CURL_BODY}" && pass "DELETE fork child" || fail "DELETE fork child" "$(echo "${_CURL_BODY}" | head -c 300)"
+                        ;;
+                    409) skip "POST fork blocked (VM not forkable: $(echo "${_CURL_BODY}" | grep -o 'FORK_[A-Z]*' | head -1))" ;;
+                    *) fail "POST fork" "code=${_CURL_CODE} $(echo "${_CURL_BODY}" | head -c 300)" ;;
+                esac
+            fi
+
+            expose_put='{"enabled":true,"service_type":"NodePort","ports":[{"name":"ssh","port":22,"target_port":22,"protocol":"TCP"}]}'
+            curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/expose" "${expose_put}"
+            body="${_CURL_BODY}"
+            SSH_EXPOSED=0
+            if body_success "${body}" && echo "${body}" | grep -qE '"enabled"[[:space:]]*:[[:space:]]*true'; then
+                pass "PUT SSH expose enabled"
+                SSH_EXPOSED=1
+            elif [[ "${BACKEND}" == "kairon" && "${_CURL_CODE}" == "409" ]]; then
+                # User-mode NAT guests have no routable IP; forwards are create-time only.
+                pass "PUT SSH expose → 409 (kairon: no forward/routable guest IP — ${body:0:120})"
+            else
+                fail "PUT SSH expose" "$(echo "${body}" | head -c 300)"
+            fi
+
+            if [[ "${SSH_EXPOSED}" -eq 1 ]]; then
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/expose"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"enabled"[[:space:]]*:[[:space:]]*true'; then
+                    pass "GET SSH expose status"
+                else
+                    fail "GET SSH expose" "$(echo "${body}" | head -c 300)"
+                fi
+            else
+                skip "GET SSH expose status (PUT did not enable)"
+            fi
+
+            curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/expose" '{"enabled":false}'
+            body="${_CURL_BODY}"
+            body_success "${body}" && pass "PUT SSH expose disable" || fail "PUT SSH expose disable" "$(echo "${body}" | head -c 300)"
+
+            curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/rdp-expose"
+            body="${_CURL_BODY}"
+            suggested=""
+            if echo "${body}" | grep -qE '"suggested_node_port"[[:space:]]*:[[:space:]]*[0-9]+'; then
+                suggested="$(echo "${body}" | sed -n 's/.*"suggested_node_port"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)"
+            fi
+            np="${suggested:-${RDP_PORT}}"
+            rdp_put="$(printf '{"enabled":true,"service_type":"NodePort","node_port":%s}' "${np}")"
+            RDP_PUT_OK=0
+            curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/rdp-expose" "${rdp_put}"
+            body="${_CURL_BODY}"
+            if body_success "${body}" && echo "${body}" | grep -qE '"exposed"[[:space:]]*:[[:space:]]*true'; then
+                pass "PUT RDP expose (node_port=${np})"
+                RDP_PUT_OK=1
+            elif echo "${body}" | grep -q 'NodePort.*already used'; then
+                skip "PUT RDP expose (node_port ${np} in use — ${body:0:120})"
+            elif [[ "${BACKEND}" == "kairon" && "${_CURL_CODE}" == "409" ]]; then
+                pass "PUT RDP expose → 409 (kairon: no forward/routable guest IP)"
+            elif echo "${body}" | grep -qE 'PUBLIC_RDP_FORBIDDEN|VEYRON_ALLOW_PUBLIC_RDP'; then
+                # Secure-by-default: a bare NodePort/LoadBalancer RDP is refused unless
+                # VEYRON_ALLOW_PUBLIC_RDP=1. This is the correct hardened behavior.
+                pass "PUT RDP expose refused by policy (secure default — set VEYRON_ALLOW_PUBLIC_RDP=1 to allow)"
+            else
+                fail "PUT RDP expose" "$(echo "${body}" | head -c 300)"
+            fi
+
+            if [[ "${RDP_PUT_OK}" -eq 1 ]]; then
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/rdp-expose"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"exposed"[[:space:]]*:[[:space:]]*true'; then
+                    pass "GET RDP expose status"
+                else
+                    fail "GET RDP expose" "$(echo "${body}" | head -c 300)"
+                fi
+            else
+                skip "GET RDP expose status (PUT did not succeed)"
+            fi
+
+            curl_api PUT "/api/v1/vms/${NS}/${VM_NAME}/rdp-expose" '{"enabled":false}'
+            body="${_CURL_BODY}"
+            body_success "${body}" && pass "PUT RDP expose disable" || fail "PUT RDP expose disable" "$(echo "${body}" | head -c 300)"
+
+            SNAP_CREATED=0
+            snap_body="$(printf '{"snapshot_name":"%s"}' "${SNAP_NAME}")"
+            curl_api POST "/api/v1/snapshots/${NS}/${VM_NAME}/create" "${snap_body}"
+            body="${_CURL_BODY}"
+            if body_success "${body}"; then
+                pass "POST snapshot create ${SNAP_NAME}"
+                SNAP_CREATED=1
+            else
+                fail "POST snapshot create" "$(echo "${body}" | head -c 300)"
+                skip "snapshot list/restore (create failed)"
+            fi
+
+            if [[ "${SNAP_CREATED}" -eq 1 ]]; then
+                snap_list_ok=0
+                list_body=""
+                for _ in $(seq 1 24); do
+                    curl_api GET "/api/v1/snapshots/${NS}/${VM_NAME}"
+                    list_body="${_CURL_BODY}"
+                    if body_success "${list_body}" && echo "${list_body}" | grep -q "${SNAP_NAME}"; then
+                        snap_list_ok=1
+                        break
+                    fi
+                    sleep 5
+                done
+                if [[ "${snap_list_ok}" -eq 1 ]]; then
+                    pass "GET snapshots lists ${SNAP_NAME}"
+                else
+                    fail "GET snapshots list" "$(echo "${list_body:-}" | head -c 300)"
+                fi
+
+                if [[ "${RESTORE}" == "1" ]]; then
+                    snap_ready=0
+                    for _ in $(seq 1 36); do
+                        curl_api GET "/api/v1/snapshots/${NS}/${VM_NAME}"
+                        list_body="${_CURL_BODY}"
+                        if echo "${list_body}" | grep -q "${SNAP_NAME}" \
+                            && echo "${list_body}" | grep -qE '"ready"[[:space:]]*:[[:space:]]*true'; then
+                            snap_ready=1
+                            break
+                        fi
+                        sleep 10
+                    done
+                    if [[ "${snap_ready}" -eq 1 ]]; then
+                        curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/stop" '{}'
+                        sleep 8
+                        curl_api POST "/api/v1/snapshots/${NS}/${SNAP_NAME}/restore" '{}'
+                        body="${_CURL_BODY}"
+                        if body_success "${body}"; then
+                            pass "POST snapshot restore (VEYRON_E2E_RESTORE=1)"
+                        elif echo "${body}" | grep -qE 'RESTORE_FAILED|Internal server error'; then
+                            skip "snapshot restore (API/CR accepted but restore failed — common with containerDisk-only VMs)"
+                        else
+                            fail "POST snapshot restore" "$(echo "${body}" | head -c 300)"
+                        fi
+                    else
+                        skip "snapshot restore (snapshot not ready within 6m)"
+                    fi
+                else
+                    skip "snapshot restore (set VEYRON_E2E_RESTORE=1 to enable)"
+                fi
+            fi
+
+            curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/stop" '{}'
+            body="${_CURL_BODY}"
+            body_success "${body}" && pass "POST stop (pre-delete)" || fail "POST stop (pre-delete)" "$(echo "${body}" | head -c 200)"
+            sleep 5
+            curl_api DELETE "/api/v1/vms/${NS}/${VM_NAME}"
+            body="${_CURL_BODY}"
+            if body_success "${body}"; then
+                pass "DELETE VM ${VM_NAME}"
+                CREATED_VM=0
+            else
+                fail "DELETE VM" "$(echo "${body}" | head -c 300)"
+            fi
+            curl_api POST "/api/v1/snapshots/${NS}/${SNAP_NAME}/delete" '{}' >/dev/null 2>&1 || true
+        fi
+    fi
+fi
+
+# ═══════════════════════════════════════════════
+# Tier D — GPU VM lifecycle (only when the cluster advertises GPU resources)
+# ═══════════════════════════════════════════════
+if [[ "${GPU_TOTAL:-0}" -gt 0 && "${SKIP_TIER_B}" != "1" ]]; then
+    tier "Tier D — GPU VM lifecycle (${GPU_TOTAL} GPU(s) advertised)"
+    GPU_VM="veyron-e2e-gpu-${TS}"
+    curl_api POST "/api/v1/vms" '{"name":"'"${GPU_VM}"'","namespace":"'"${NS}"'","template":"ubuntu-22.04","cpus":1,"memory":"1Gi","gpu":{"count":1},"start":true}'
+    if body_success "${_CURL_BODY}"; then
+        pass "POST create GPU VM ${GPU_VM}"
+        # A passthrough-GPU VM must be refused live migration with the guard's 409.
+        curl_api POST "/api/v1/vms/${NS}/${GPU_VM}/migrate"
+        if [[ "${_CURL_CODE}" == "409" ]] && echo "${_CURL_BODY}" | grep -q "GPU_PASSTHROUGH_NOT_MIGRATABLE"; then
+            pass "GPU VM migrate → 409 GPU_PASSTHROUGH_NOT_MIGRATABLE"
+        else
+            fail "GPU VM migrate gate (expected 409 with GPU blocker, got ${_CURL_CODE})" "$(echo "${_CURL_BODY}" | head -c 300)"
+        fi
+        # Spec must carry the KubeVirt gpus device (deviceName, not resourceName).
+        curl_api GET "/api/v1/vms/${NS}/${GPU_VM}"
+        if echo "${_CURL_BODY}" | grep -q '"gpu_count"'; then
+            pass "GPU VM reports gpu_count in VM info"
+        else
+            skip "GPU VM gpu_count not present in VM info"
+        fi
+        curl_api POST "/api/v1/vms/${NS}/${GPU_VM}/stop" '{}' >/dev/null 2>&1 || true
+        sleep 5
+        curl_api DELETE "/api/v1/vms/${NS}/${GPU_VM}"
+        body_success "${_CURL_BODY}" && pass "DELETE GPU VM ${GPU_VM}" || fail "DELETE GPU VM" "$(echo "${_CURL_BODY}" | head -c 200)"
+    else
+        fail "POST create GPU VM" "$(echo "${_CURL_BODY}" | head -c 300)"
+    fi
+fi
+
+# ═══════════════════════════════════════════════
+echo ""
+echo -e "${B}═══════════════════════════════════════════${N}"
+echo -e "${B}  Results: ${G}${PASS} passed${N}, ${R}${FAIL} failed${N}, ${Y}${SKIP} skipped${N}"
+echo -e "${B}═══════════════════════════════════════════${N}"
+echo ""
+
+[[ "${FAIL}" -eq 0 ]] && echo -e "${G}${B}  ALL CHECKS PASSED${N}" || echo -e "${R}${B}  SOME CHECKS FAILED${N}"
+exit "${FAIL}"

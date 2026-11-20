@@ -1,0 +1,690 @@
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+//! Request auth context and route-level RBAC rules.
+
+use axum::http::Method;
+
+use crate::api::http_server::web::ApiRole;
+
+/// Authenticated caller attached to each authorized request.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AuthContext {
+    pub role: ApiRole,
+    /// Who is calling: API key name, local username, JWT/OIDC `sub`, or `ws-ticket`.
+    pub subject: String,
+}
+
+impl AuthContext {
+    pub fn allows(&self, required: &ApiRole) -> bool {
+        role_rank(&self.role) >= role_rank(required)
+    }
+}
+
+pub fn role_rank(role: &ApiRole) -> u8 {
+    match role {
+        ApiRole::ReadOnly => 0,
+        ApiRole::Write => 1,
+        ApiRole::Admin => 2,
+    }
+}
+
+/// Minimum role required for a route. Safe methods always require ReadOnly.
+pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
+    // User-account management (list/create/delete/reset password) is Admin-only
+    // even for GET — usernames+roles are sensitive and this must NOT fall
+    // through to the blanket "safe methods are ReadOnly" rule below.
+    // `/api/v1/auth/login` itself is unauthenticated (see dashboard_paths) and
+    // never reaches this check.
+    // Persistent API keys (create/list/revoke) are Admin-only for the same reason.
+    if path.starts_with("/api/v1/auth/users")
+        || path.starts_with("/api/v1/veyron/auth/users")
+        || path.starts_with("/api/v1/auth/api-keys")
+        || path.starts_with("/api/v1/veyron/auth/api-keys")
+    {
+        return ApiRole::Admin;
+    }
+    // GET routes that hand out guest access or sensitive artifacts are not read-only:
+    // the TCP tunnel, diagnostics bundles (memory dumps need Admin) and packet captures.
+    if path.contains("/vms/") {
+        if path.ends_with("/diagnostics/memory-dump") || path.ends_with("/memory-dump") {
+            return ApiRole::Admin;
+        }
+        // Overrides an ambiguous live-migration commit point; operator decision.
+        if path.ends_with("/recovery") && path.contains("/migrations/") {
+            return ApiRole::Admin;
+        }
+        // The display shows whatever the guest shows; FluxVM itself makes both Admin-only.
+        if path.ends_with("/screenshot") || path.ends_with("/input") {
+            return ApiRole::Admin;
+        }
+        // VNC and serial are interactive guest consoles (keyboard input, logged-in sessions),
+        // the same access as the TCP tunnel, so a read-only key must not open them.
+        if path.ends_with("/vnc")
+            || (path.ends_with("/serial") && !path.ends_with("/console/serial"))
+            || path.ends_with("/tunnel")
+            || path.contains("/diagnostics/")
+            || path.contains("/network/capture/")
+        {
+            return ApiRole::Write;
+        }
+    }
+    if matches!(method, &Method::GET | &Method::HEAD | &Method::OPTIONS) {
+        return ApiRole::ReadOnly;
+    }
+
+    // The `/api/v1/veyron/*` product alias (`http_server.rs`) re-mounts the entire
+    // handler set under a second prefix. Canonicalize it back to `/api/v1/*` before
+    // evaluating the admin gates below — otherwise a Write-scoped key could reach
+    // admin-only mutations (tenants, dr, gitops/catalog sync, cluster activate) via
+    // the alias, which the canonical-prefix checks would not catch.
+    let canonical: std::borrow::Cow<'_, str> = match path.strip_prefix("/api/v1/veyron/") {
+        Some(rest) => std::borrow::Cow::Owned(format!("/api/v1/{rest}")),
+        None => std::borrow::Cow::Borrowed(path),
+    };
+    let path: &str = &canonical;
+
+    if path.starts_with("/api/v1/enterprise/assess/")
+        || path == "/api/v1/enterprise/placement"
+        || path == "/api/v1/enterprise/blueprints/validate"
+    {
+        return ApiRole::ReadOnly;
+    }
+
+    // AI requests that only read or draft. Anything they want to change becomes a
+    // proposal that a Write/Admin caller must approve, and MCP tools check roles per tool.
+    if matches!(
+        path,
+        "/api/v1/ai/chat/stream"
+            | "/api/v1/ai/chat"
+            | "/api/v1/ai/search"
+            | "/api/v1/ai/intent/vm"
+            | "/api/v1/ai/policies/draft"
+            | "/mcp"
+    ) {
+        return ApiRole::ReadOnly;
+    }
+    if path == "/api/v1/ai/settings/llm" || path.starts_with("/api/v1/ai/mcp-servers") {
+        return ApiRole::Admin;
+    }
+
+    if path.starts_with("/api/v1/clusters/") && path.ends_with("/activate") {
+        return ApiRole::Admin;
+    }
+    if path.contains("/restore") {
+        return ApiRole::Admin;
+    }
+    // Fleet objects (HA, balancing, autoscaling, recovery, templates, networks) steer the whole cluster.
+    if path.starts_with("/api/v1/kairon/fleet/") {
+        return ApiRole::Admin;
+    }
+    // Network access decides what a VM may reach: changing it (or a node's default, or many VMs
+    // at once) is an Admin decision. Suggesting and explaining only read, so they stay Write.
+    if is_egress_policy_write(path) {
+        return ApiRole::Admin;
+    }
+    // Starting a VM from, or deleting, a saved FluxVM branch.
+    if path.contains("/nodes/") && path.contains("/branches/") {
+        return ApiRole::Admin;
+    }
+    // Agent sessions: approving an action or promoting a session widens what the agent may do.
+    if path.contains("/agent-sessions/")
+        && (path.contains("/ops/approvals")
+            || path.contains("/ops/grants")
+            || path.ends_with("/ops/promote"))
+    {
+        return ApiRole::Admin;
+    }
+    // VeyronPolicy rules (enforcement `Deny`) are checked on VM create for everyone; a caller
+    // bound by one must not be able to delete or rewrite it.
+    if path == "/api/v1/crds/policies" || path.starts_with("/api/v1/crds/policies/") {
+        return ApiRole::Admin;
+    }
+    // Approving a VeyronAction releases it to the operator: not the same role that may draft one.
+    if path.starts_with("/api/v1/crds/actions/") && path.ends_with("/approve") {
+        return ApiRole::Admin;
+    }
+    if path == "/api/v1/gitops/sync" || path == "/api/v1/catalog/sync" {
+        return ApiRole::Admin;
+    }
+    if path.starts_with("/api/v1/tenants") {
+        return ApiRole::Admin;
+    }
+    if path.starts_with("/api/v1/dr/") {
+        return ApiRole::Admin;
+    }
+    // Node maintenance (cordon/uncordon/drain/reboot) affects cluster-wide scheduling.
+    if path.starts_with("/api/v1/nodes/")
+        && (path.ends_with("/cordon") || path.ends_with("/uncordon") || path.ends_with("/reboot"))
+    {
+        return ApiRole::Admin;
+    }
+    // Destructive orphan-volume reclaim (DELETE deletes PVCs).
+    if path == "/api/v1/storage/orphans" {
+        return ApiRole::Admin;
+    }
+    if path.starts_with("/api/v1/soc/playbooks/") {
+        return ApiRole::Admin;
+    }
+    // Publishing a golden image repoints the DataSource every future VM clones from —
+    // a bad image silently propagates to the whole fleet's next builds.
+    if path == "/api/v1/images/publish" {
+        return ApiRole::Admin;
+    }
+    // Kairon's MachineImage catalog is cluster-scoped and shared by every
+    // namespace; removing an upload can break images that still point at it.
+    if path.starts_with("/api/v1/machine-images")
+        || (method == Method::DELETE && path.starts_with("/api/v1/image-store/"))
+        || (path.starts_with("/api/v1/vms/") && path.ends_with("/capture"))
+    {
+        return ApiRole::Admin;
+    }
+    if path.starts_with("/api/v1/platform/") && path != "/api/v1/platform/guestkit/binary" {
+        return ApiRole::Admin;
+    }
+
+    // Copilot ask/chat only run read-only advisor tools (mutations will go through an
+    // explicit plan + execute step with its own role check), so a ReadOnly key may use them.
+    if path == "/api/v1/experience/copilot/ask" || path == "/api/v1/experience/copilot/chat" {
+        return ApiRole::ReadOnly;
+    }
+
+    ApiRole::Write
+}
+
+/// Mutating network-access routes: a VM's policy (and its timed-change grant), a node's default
+/// policy, and the fleet apply. `…/egress/suggest`, `…/egress/explain` and `…/egress-check` only
+/// read, so they are not matched.
+fn is_egress_policy_write(path: &str) -> bool {
+    if path == "/api/v1/egress/apply" {
+        return true;
+    }
+    if path.starts_with("/api/v1/nodes/") && path.ends_with("/egress-defaults") {
+        return true;
+    }
+    path.starts_with("/api/v1/vms/")
+        && (path.ends_with("/egress") || path.ends_with("/egress/grant"))
+}
+
+pub fn is_ws_console_path(path: &str) -> bool {
+    path.ends_with("/vnc") || path.ends_with("/serial") || path.ends_with("/tunnel")
+}
+
+/// Whether the legacy `?token=<key>` query credential is accepted. Browsers
+/// cannot set headers on a WebSocket upgrade, so it is allowed only on the
+/// WebSocket routes (consoles and the metrics stream) and only for an actual
+/// upgrade request; every other route must use a header.
+pub fn query_token_allowed(path: &str, is_ws_upgrade: bool) -> bool {
+    is_ws_upgrade && (is_ws_console_path(path) || path == "/api/v1/ws/metrics")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn enterprise_assessments_are_readonly_but_power_is_write() {
+        for prefix in ["/api/v1", "/api/v1/veyron"] {
+            assert_eq!(
+                min_role_for_route(
+                    &Method::POST,
+                    &format!("{prefix}/enterprise/assess/recovery")
+                ),
+                ApiRole::ReadOnly
+            );
+            assert_eq!(
+                min_role_for_route(&Method::POST, &format!("{prefix}/enterprise/operations")),
+                ApiRole::Write
+            );
+        }
+    }
+
+    #[test]
+    fn changing_a_veyron_policy_is_admin_but_reading_is_not() {
+        for prefix in ["/api/v1", "/api/v1/veyron"] {
+            let p = format!("{prefix}/crds/policies");
+            assert_eq!(min_role_for_route(&Method::POST, &p), ApiRole::Admin);
+            assert_eq!(
+                min_role_for_route(&Method::DELETE, &format!("{p}/ns/max-cpu")),
+                ApiRole::Admin
+            );
+            assert_eq!(min_role_for_route(&Method::GET, &p), ApiRole::ReadOnly);
+            assert_eq!(
+                min_role_for_route(&Method::POST, &format!("{prefix}/crds/blueprints")),
+                ApiRole::Write
+            );
+        }
+    }
+
+    #[test]
+    fn approving_a_veyron_action_is_admin_but_drafting_one_is_write() {
+        for prefix in ["/api/v1", "/api/v1/veyron"] {
+            assert_eq!(
+                min_role_for_route(
+                    &Method::POST,
+                    &format!("{prefix}/crds/actions/ns/act-1/approve")
+                ),
+                ApiRole::Admin
+            );
+            assert_eq!(
+                min_role_for_route(&Method::POST, &format!("{prefix}/crds/actions")),
+                ApiRole::Write
+            );
+        }
+    }
+
+    #[test]
+    fn network_access_changes_are_admin_but_reads_and_suggestions_are_not() {
+        let r = |m: Method, p: &str| min_role_for_route(&m, p);
+        assert_eq!(r(Method::PUT, "/api/v1/vms/ns/vm/egress"), ApiRole::Admin);
+        assert_eq!(
+            r(Method::DELETE, "/api/v1/vms/ns/vm/egress"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            r(Method::DELETE, "/api/v1/vms/ns/vm/egress/grant"),
+            ApiRole::Admin
+        );
+        assert_eq!(r(Method::POST, "/api/v1/egress/apply"), ApiRole::Admin);
+        assert_eq!(
+            r(Method::PUT, "/api/v1/nodes/n1/egress-defaults"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            r(Method::PUT, "/api/v1/veyron/vms/ns/vm/egress"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            r(Method::GET, "/api/v1/vms/ns/vm/egress"),
+            ApiRole::ReadOnly
+        );
+        assert_eq!(r(Method::GET, "/api/v1/egress/presets"), ApiRole::ReadOnly);
+        assert_eq!(r(Method::GET, "/api/v1/egress/overview"), ApiRole::ReadOnly);
+        assert_eq!(
+            r(Method::GET, "/api/v1/nodes/n1/egress-defaults"),
+            ApiRole::ReadOnly
+        );
+        assert_eq!(
+            r(Method::POST, "/api/v1/vms/ns/vm/egress/suggest"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            r(Method::POST, "/api/v1/vms/ns/vm/egress/explain"),
+            ApiRole::Write
+        );
+        // The pre-existing node egress check keeps its role.
+        assert_eq!(
+            r(Method::POST, "/api/v1/vms/ns/vm/egress-check"),
+            ApiRole::Write
+        );
+    }
+
+    #[test]
+    fn screen_access_is_admin_even_for_get() {
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/vms/ns/vm/screenshot"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/vms/ns/vm/input"),
+            ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn fleet_writes_need_admin_but_reads_do_not() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/kairon/fleet/ha-profiles"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::DELETE, "/api/v1/kairon/fleet/ha-profiles/ns/x"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/kairon/ha-profiles"),
+            ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn branch_start_and_delete_need_admin() {
+        let p = "/api/v1/nodes/n1/branches/abc";
+        assert_eq!(min_role_for_route(&Method::DELETE, p), ApiRole::Admin);
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/start")),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/nodes/n1/branches"),
+            ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn agent_session_approvals_and_promote_need_admin() {
+        let p = "/api/v1/agent-sessions/ns/s1/ops";
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/approvals/x/approve")),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/promote")),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{p}/exec")),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, &format!("{p}/trajectory")),
+            ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn tunnel_and_artifacts_are_not_readonly() {
+        let get = |p: &str| min_role_for_route(&Method::GET, p);
+        assert_eq!(get("/api/v1/vms/ns/vm/tunnel"), ApiRole::Write);
+        assert_eq!(
+            get("/api/v1/vms/ns/vm/diagnostics/tok/bundle"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            get("/api/v1/vms/ns/vm/diagnostics/tok/memory-dump"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            get("/api/v1/veyron/vms/ns/vm/network/capture/t"),
+            ApiRole::Write
+        );
+        assert_eq!(get("/api/v1/vms/ns/vm/network/flows"), ApiRole::ReadOnly);
+    }
+
+    #[test]
+    fn interactive_consoles_are_not_readonly() {
+        for p in [
+            "/api/v1/vms/ns/vm/vnc",
+            "/api/v1/vms/ns/vm/serial",
+            "/api/v1/veyron/vms/ns/vm/vnc",
+        ] {
+            assert_eq!(min_role_for_route(&Method::GET, p), ApiRole::Write, "{p}");
+        }
+        // The read-only serial-console hint stays readable.
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/vms/ns/vm/console/serial"),
+            ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn readonly_can_get_vms() {
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/vms"),
+            ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn readonly_can_chat_with_copilot_including_alias() {
+        for p in [
+            "/api/v1/experience/copilot/chat",
+            "/api/v1/experience/copilot/ask",
+            "/api/v1/veyron/experience/copilot/chat",
+        ] {
+            assert_eq!(
+                min_role_for_route(&Method::POST, p),
+                ApiRole::ReadOnly,
+                "{p}"
+            );
+        }
+        // Other copilot POSTs (blueprint save, gitops export) stay Write.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/experience/copilot/blueprint/save"),
+            ApiRole::Write
+        );
+    }
+
+    #[test]
+    fn plan_execute_and_cancel_require_write_and_get_is_readonly() {
+        let base = "/api/v1/experience/copilot/plans/p-1a2b";
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{base}/execute")),
+            ApiRole::Write
+        );
+        assert_eq!(min_role_for_route(&Method::DELETE, base), ApiRole::Write);
+        assert_eq!(min_role_for_route(&Method::GET, base), ApiRole::ReadOnly);
+        // Four-eyes: approving needs Write (the creator/role rules are enforced per plan);
+        // listing plans is a read.
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{base}/approve")),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, &format!("{base}/undo")),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(
+                &Method::GET,
+                "/api/v1/experience/copilot/plans?status=pending"
+            ),
+            ApiRole::ReadOnly
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/experience/copilot/plans"),
+            ApiRole::ReadOnly
+        );
+    }
+
+    #[test]
+    fn write_can_create_vm() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/vms"),
+            ApiRole::Write
+        );
+    }
+
+    #[test]
+    fn admin_required_for_cluster_activate() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/clusters/prod/activate"),
+            ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn write_required_for_snapshot_create() {
+        // The documented `POST /snapshots` create route: Write, not open to readonly.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/snapshots"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/snapshots/default/my-vm/create"),
+            ApiRole::Write
+        );
+    }
+
+    #[test]
+    fn admin_required_for_snapshot_restore() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/snapshots/default/my-snap/restore"),
+            ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn kairon_image_catalog_roles() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/machine-images"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::DELETE, "/api/v1/veyron/machine-images/win"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::DELETE, "/api/v1/image-store/win.iso"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::PUT, "/api/v1/image-store/win.iso"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/machine-images"),
+            ApiRole::ReadOnly
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/vms/default/web/capture"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/image-captures"),
+            ApiRole::ReadOnly
+        );
+        assert_eq!(
+            min_role_for_route(
+                &Method::POST,
+                "/api/v1/vms/default/web/cdroms/install/eject"
+            ),
+            ApiRole::Write
+        );
+    }
+
+    #[test]
+    fn admin_required_for_golden_image_publish() {
+        // Fleet-wide blast radius: repoints the DataSource every future clone uses.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/images/publish"),
+            ApiRole::Admin
+        );
+        // ...including via the product alias prefix.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/images/publish"),
+            ApiRole::Admin
+        );
+        // Uploading/importing an image is only Write — it publishes nothing.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/images/upload"),
+            ApiRole::Write
+        );
+    }
+
+    #[test]
+    fn admin_required_for_node_cordon() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/nodes/node01/cordon"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/nodes/node01/uncordon"),
+            ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn write_required_for_hotplug_and_bulk() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/vms/default/web/hotplug"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/vms/bulk"),
+            ApiRole::Write
+        );
+    }
+
+    #[test]
+    fn admin_required_for_tenant_create() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/tenants"),
+            ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn admin_required_for_user_management_including_get() {
+        assert_eq!(
+            min_role_for_route(&Method::GET, "/api/v1/auth/users"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/auth/users"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::DELETE, "/api/v1/auth/users/alice"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/auth/users"),
+            ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn admin_required_for_api_key_management_including_get() {
+        for (m, path) in [
+            (Method::GET, "/api/v1/auth/api-keys"),
+            (Method::POST, "/api/v1/auth/api-keys"),
+            (Method::DELETE, "/api/v1/auth/api-keys/0123456789abcdef"),
+            (Method::GET, "/api/v1/veyron/auth/api-keys"),
+            (Method::POST, "/api/v1/veyron/auth/api-keys"),
+        ] {
+            assert_eq!(min_role_for_route(&m, path), ApiRole::Admin, "{m} {path}");
+        }
+    }
+
+    #[test]
+    fn admin_gates_apply_through_veyron_alias() {
+        // The /api/v1/veyron/* alias must not bypass admin-only gates.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/tenants"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/dr/failover"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/gitops/sync"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/clusters/prod/activate"),
+            ApiRole::Admin
+        );
+        // Non-admin alias routes still resolve to their normal role.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/vms"),
+            ApiRole::Write
+        );
+    }
+
+    #[test]
+    fn write_blocked_from_admin_route() {
+        let ctx = AuthContext {
+            role: ApiRole::Write,
+            subject: "ci".into(),
+        };
+        assert!(!ctx.allows(&ApiRole::Admin));
+        assert!(ctx.allows(&ApiRole::Write));
+    }
+
+    #[test]
+    fn ws_console_paths_detected() {
+        assert!(is_ws_console_path("/api/v1/vms/ns/vm/vnc"));
+        assert!(is_ws_console_path("/api/v1/vms/ns/vm/serial"));
+        assert!(!is_ws_console_path("/api/v1/vms/ns/vm/start"));
+    }
+
+    #[test]
+    fn legacy_query_token_only_on_websocket_upgrades() {
+        assert!(query_token_allowed("/api/v1/vms/ns/vm/vnc", true));
+        assert!(query_token_allowed("/api/v1/ws/metrics", true));
+        assert!(!query_token_allowed("/api/v1/vms/ns/vm/vnc", false));
+        assert!(!query_token_allowed("/api/v1/vms", true));
+        assert!(!query_token_allowed("/api/v1/vms/ns/vm/delete", false));
+    }
+}

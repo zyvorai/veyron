@@ -1,0 +1,218 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_MIN_STACK: 8388608
+  REGISTRY: ghcr.io
+  IMAGE_NAME: zyvorai/veyron
+  CHARTS_REPO: ghcr.io/zyvorai/charts
+  GUESTKIT_REPO: zyvorai/zyvor-guestkit
+  # Pinned (same commit as ci.yml): a release must not build against whatever guestkit main is that day.
+  GUESTKIT_REF: 7736c26de254e81576503ff1d71530206716b4ae
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  frontend:
+    name: Console build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci && npm run lint && npm test && npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: console-dist
+          path: frontend/dist
+
+  test:
+    name: Test
+    needs: [frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GUESTKIT_REPO }}
+          ref: ${{ env.GUESTKIT_REF }}
+          path: guestkit
+      - uses: actions/download-artifact@v4
+        with:
+          name: console-dist
+          path: frontend/dist
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Lint
+        run: cargo fmt --all -- --check && cargo clippy --all-targets -- -D warnings
+      - name: Test
+        run: cargo test
+
+  build:
+    name: Build (${{ matrix.target }})
+    needs: [test]
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact: veyron-linux-amd64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact: veyron-linux-arm64
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            artifact: veyron-darwin-amd64
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            artifact: veyron-darwin-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GUESTKIT_REPO }}
+          ref: ${{ env.GUESTKIT_REF }}
+          path: guestkit
+      - uses: actions/download-artifact@v4
+        with:
+          name: console-dist
+          path: frontend/dist
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compiler (Linux ARM64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
+
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          cp target/${{ matrix.target }}/release/veyron dist/${{ matrix.artifact }}
+          chmod +x dist/${{ matrix.artifact }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
+
+  docker:
+    name: Docker Image
+    needs: [test]
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GUESTKIT_REPO }}
+          ref: ${{ env.GUESTKIT_REF }}
+          path: guestkit
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          # The built-in token has packages: write (see permissions above); no personal access token to expire or go missing.
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract versions
+        id: version
+        run: |
+          source scripts/cluster/versions.env
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          echo "kubevirt=${KUBEVIRT_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: VIRTCTL_VERSION=${{ steps.version.outputs.kubevirt }}
+          sbom: true
+          provenance: mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Explain a GHCR permission failure
+        if: ${{ failure() && steps.push.outcome == 'failure' }}
+        run: |
+          echo "::error title=Image push failed::If the log says permission_denied: write_package, the ghcr.io/${IMAGE_NAME} package does not grant this repository write access. Package settings > Manage Actions access > add ${GITHUB_REPOSITORY} with the Write role. The GitHub Release job does not depend on this job."
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Sign image (keyless)
+        run: cosign sign --yes "${REGISTRY}/${IMAGE_NAME}@${{ steps.push.outputs.digest }}"
+
+  release:
+    name: GitHub Release
+    # Needs only the build (and, through it, test and console) jobs. The image job runs in
+    # parallel and must not gate the release: if the GHCR package grants this repo no write
+    # access the push fails ("denied: permission_denied: write_package"), and the binaries and
+    # SHA256SUMS must still be published for the tag. The release does not use any docker output.
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: veyron-*
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: artifacts
+        run: sha256sum veyron-* > SHA256SUMS
+
+      - uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: artifacts/veyron.spdx.json
+          upload-artifact: false
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Sign checksums (keyless)
+        working-directory: artifacts
+        run: cosign sign-blob --yes --bundle SHA256SUMS.cosign.bundle SHA256SUMS
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/veyron-linux-amd64
+            artifacts/veyron-linux-arm64
+            artifacts/veyron-darwin-amd64
+            artifacts/veyron-darwin-arm64
+            artifacts/SHA256SUMS
+            artifacts/SHA256SUMS.cosign.bundle
+            artifacts/veyron.spdx.json

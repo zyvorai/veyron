@@ -1,0 +1,362 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Build & Development Commands
+
+```bash
+# Build
+cargo build                          # debug
+cargo build --release                # optimized (LTO, single-codegen, stripped)
+cargo build --features web           # explicit web feature (default)
+cargo build --no-default-features    # CLI only, no web server
+
+# Test — RUST_MIN_STACK is required; KubeVirt type conversion recurses deeply
+RUST_MIN_STACK=8388608 cargo test               # all tests
+RUST_MIN_STACK=8388608 cargo test --lib         # unit tests only
+RUST_MIN_STACK=8388608 cargo test --test integration_tests  # integration only
+RUST_MIN_STACK=8388608 cargo test <test_name> -- --nocapture  # single test
+
+# Lint
+cargo fmt --all -- --check
+cargo clippy --all-targets -- -D warnings
+
+# Full CI (fmt-check + clippy + test)
+make ci
+```
+
+## Deployment
+
+```bash
+# Build image, import into the node runtime, deploy to veyron-system (auto-detects k3s vs kubectl; installs CDI only with VEYRON_INSTALL_CDI=1, legacy KubeVirt — VEYRON_SKIP_CDI=1 skips it even then; VEYRON_CONTAINER_RUNTIME_IMPORT overrides image import)
+./scripts/deploy-k8s-remote.sh HOST USER
+
+# Full deployment (builds both API + operator images; parallel builds, layer cache by default)
+./scripts/deploy-remote.sh HOST USER
+
+# Deploy speed (default: fast incremental builds)
+#   VEYRON_DEPLOY_NO_CACHE=1        Force clean image rebuild (slow)
+#   VEYRON_DEPLOY_DIAGNOSTICS=1     Full cluster pod listing before rsync
+#   VEYRON_SKIP_GUESTKIT_PREP=1     Skip local guestkit rsync when guestkit/ is current
+# deploy-k8s-remote.sh builds with `cargo --profile deploy` (thin LTO, codegen-units 16), streams
+# cargo/npm/podman output, and prints per-step timings. The console (frontend/dist) is built on
+# the host when it has npm, otherwise locally before rsync.
+#   VEYRON_DEPLOY_FULL_LTO=1        Use the full `release` profile (slow link, smallest/fastest binary)
+#   VEYRON_DEPLOY_BUILD_TIMEOUT=N   Abort the remote cargo build after N seconds (default 3600)
+#   VEYRON_DEPLOY_FEATURES=kairon   Extra cargo features for the remote build
+
+# Post-deploy HTTPS API smoke test (NodePort health, templates, VM list — uses VEYRON_API_KEY)
+./scripts/verify-veyron-remote.sh HOST [30151]
+
+# Daily VM ops E2E via HTTPS API (create, start/stop, pause/unpause, SSH/RDP expose, snapshots; ~10–15 min)
+VEYRON_API_KEY='...' ./scripts/test-vm-daily-ops-remote.sh HOST [30151]
+# Optional: VEYRON_E2E_RESTORE=1 for destructive snapshot restore; VEYRON_E2E_SKIP_TIER_B=1 for contract checks only
+
+# Headless audit of the React console: every page in the NAV menu (read from frontend/src/resources.js),
+# JS errors, API 5xx, empty pages, horizontal overflow, offscreen/clipped controls, content under the nav.
+# Exits non-zero on any finding (playwright-core + local Chrome; ~2 min per width).
+VEYRON_API_KEY='...' ./scripts/console-audit.sh --host HOST [--width 1280,1920] [--pages vms,ai]
+
+# Client deliverable: static linux/amd64 tarball (remote podman build, no cluster deploy)
+./scripts/package-binary-remote.sh HOST USER --fetch   # → dist/veyron-<ver>-linux-amd64.tar.gz
+# See docs/deploy.md
+# same as:
+./scripts/deploy-all-remote.sh HOST USER [--quick]
+
+# --quick skips image builds and only re-applies manifests
+./scripts/deploy-all-remote.sh HOST USER --quick
+
+# Optional Prometheus + Grafana + Alertmanager (Helm umbrella chart over kube-prometheus-stack)
+./scripts/install-veyron-monitoring.sh monitoring
+make helm-monitoring-validate   # CI: helm dependency build + helm template only
+```
+
+The deployed pod serves HTTPS on `hostPort: 5151` with a self-signed cert. On the `deploy-k8s-remote.sh` path it lives in the `veyron-tls` Secret (created once, 10-year, SAN includes the host; delete the Secret to rotate), so browsers only warn once; the other manifests (`deploy/k8s.yaml`, Helm) still generate one per pod start with an init container. NodePort 30151 also exposes the service. Default credentials (same as Netra): console login **`admin` / `Admin@321`**, API key **`Admin@321`**. Deploy scripts use `VEYRON_API_KEY` / `VEYRON_BOOTSTRAP_ADMIN_PASSWORD`, else the existing `veyron-api-key` Secret, else those defaults, and save the result to `~/.config/veyron/hosts/<host>.env` (test scripts read it, then fall back to the default; `scripts/lib/api-key.sh`). The Helm chart and the bootstrap admin user (`src/kube/user_store.rs` `DEFAULT_ADMIN_PASSWORD`) default the same way; the JWT secret is always random. The console login (`frontend/src/pages.jsx` `Login`) is Netra's single-card sign-in (`../netra/web/src/components/Login.tsx`). Override both for production.
+
+### API service account and RBAC (KubeVirt, CDI, Cilium, storage, chaos)
+
+The in-cluster API runs as ServiceAccount **`veyron`** with **`ClusterRole` `veyron`**. Keep these in sync when you add new kube API usage:
+
+- **`deploy/k8s.yaml`** — canonical manifest for `./scripts/deploy-k8s.sh` and `./scripts/deploy-all-remote.sh`
+- **`charts/veyron/templates/clusterrole.yaml`** — Helm chart (same rule set when `rbac.create` is true)
+- **`scripts/deploy-k8s-remote.sh`** — embeds an equivalent `ClusterRole` for the “rsync + build on host” API-only path
+
+The **operator** uses **`operator/config/rbac/role.yaml`** (and **`charts/veyron-operator/templates/rbac.yaml`**): KubeVirt + Veyron CRDs, VM subresources (VNC, start/stop/restart/migrate), snapshots/restores, **read-only** CDI / upload / instancetype / CSI `VolumeSnapshot` / Multus NADs, secrets, events, namespaces, pods, leases.
+
+**API `ClusterRole` (broad “platform admin” for the dashboard)** includes among others: KubeVirt (including **`subresources.kubevirt.io`** start/stop/restart/migrate, pause, and **`virtualmachineinstances/guest-exec`** + **`guest-exec-status`** for in-guest RDP), **CDI** (`cdi.kubevirt.io/*`, `upload.cdi.kubevirt.io/*` full verbs), **CSI / snapshots** (`snapshot.storage.k8s.io`, `volumeattachments`, `CSIStorageCapacity`), **instancetype.kubevirt.io/***, **Multus** (`k8s.cni.cncf.io/network-attachment-definitions`), **Gateway API** (`gateway.networking.k8s.io/*`), **Chaos Mesh / Litmus** (`chaos-mesh.org`, `litmuschaos.io` — get/list/watch only), **Cilium** (`cilium.io/*` full verbs), **Kubernetes** NetworkPolicies and Ingresses (full verbs), **`pods/exec`**, **`pods/attach`**, **`pods/portforward`**, metrics, migration policies, HPAs, namespace create (budget bootstrap), leases, Veyron CRDs, and RBAC read-only for visualization.
+
+**Security:** this is intentionally powerful so one API key can drive GitOps-style CDI, Cilium, and CSI workflows. For locked-down clusters, trim rules (especially `cilium.io/*`, `gateway.networking.k8s.io/*`, and CDI `*`) and use a separate restricted `ClusterRole` + `ClusterRoleBinding` for read-only dashboards.
+
+**`/api/v1/custom-resources` instance counts:** still require **per–API group** `list` permission; CRDs in groups not covered above may return **0 instances** until you add rules for that group (deliberately **not** granting `apiGroups: ["*"]` `resources: ["*"]` list on core secrets).
+
+**Cilium default-deny egress:** when the `ciliumnetworkpolicies.cilium.io` CRD exists, `./scripts/deploy-all-remote.sh` and **`./scripts/deploy-k8s-remote.sh`** apply **`deploy/k8s/bootstrap/cilium-veyron-egress.yaml`** (API/operator/NATS in `veyron-system`). When **`ciliumclusterwidenetworkpolicies.cilium.io`** exists, they also apply **`deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml`** so **virt-launcher** pods can reach the internet (guest NAT). Skip both with `VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1`. Per-VM egress: **`PUT /api/v1/vms/:ns/:name/network/internet`**. **`deploy-k8s-remote.sh`**: SSH preflight (`DEPLOY_SSH_TIMEOUT`), `VEYRON_REMOTE_SKIP_SSH_CHECK=1`, `VEYRON_REQUIRE_KUBEVIRT=1`, `--help`.
+
+**Windows RDP NodePort:** **`GET/PUT/DELETE /api/v1/vms/:ns/:name/rdp-expose`** creates a `Service` with selector **`kubevirt.io/vm`** (virt-launcher), port **3389**, and a **required** `node_port` per VM (suggested range **30100–30199** (Kubernetes **30000–32767**)). **`POST /api/v1/vms/:ns/:name/guest-agent/enable-rdp`** and **`…/disable-rdp`** toggle Remote Desktop inside a running Windows guest via QEMU **guest-exec** (`src/kube/kubevirt_subresources.rs`, `src/kube/windows_rdp.rs`); requires **AgentConnected** and ClusterRole verbs on **`virtualmachineinstances/guest-exec`** and **`guest-exec-status`**. SSH-style expose at **`/expose`** uses **`kubevirt.io/domain`** and port **22**. On create, Windows templates get masquerade port **3389** and optional userdata to enable Remote Desktop. Connect with **Microsoft RDP** or **`sdl-freerdp`** on macOS — see `docs/windows.md`.
+
+**Windows domain join:** `windows.domainJoinSecretRef` (JSON: `domain`/`ou`/`username`/`password`) is rendered into a Windows unattend **`<Identification>`** block in an operator-managed Secret `<vm>-veyron-sysprep`, mounted as sysprep media (`operator/internal/catalog/secrets.go` `BuildDomainJoinUnattend`; `converter.EffectiveSysprepSecret`). It is **not** cloud-init material — the old `Add-Computer` PowerShell path leaked the domain password into `cloudbase-init.log` inside the guest. A caller-supplied `sysprepSecretRef` is **merged** (`MergeDomainJoinIntoUnattend`), not replaced. Use a least-privilege delegated join account.
+
+**Instance-type inference (golden-image auto-sizing):** `POST /images/publish` stamps `instancetype.kubevirt.io/default-instancetype` + `default-preference` labels on the golden PVC + DataSource (Windows ⇒ `windows-medium`/`windows-server`; override via `instancetype`/`preference`/`os`). `POST /vms` with `image` and no explicit `profile`/`cpus`/`memory` sets `inferFromVolume` on the root disk so the VM auto-sizes from those labels (`VmMatcherRef.infer_from_volume` → `InstancetypeMatcher.inferFromVolume`, `failurePolicy: Ignore`). Windows templates keep a **blank** root by design (same template serves ISO-install and clone); the image supplies the disk, inference supplies the size. CRs: `deploy/k8s/bootstrap/windows-instancetypes.yaml`.
+
+**Golden images (Windows):** `POST /api/v1/images/upload` (CDI `UploadTokenRequest` → ISO/QCOW2 upload), `POST /api/v1/images/publish` (**Admin**; promotes a `Succeeded` DataVolume to a versioned golden PVC + repoints a CDI **`DataSource`**), `GET /api/v1/images/datasources`. Create a VM from the catalog with `POST /api/v1/vms` `{"image":{"name","namespace","from_pvc","storage_class"},"sysprep_secret":…}`. The `DiskSource::GoldenImage` variant (`src/config/types.rs`) emits **`dataVolumeTemplates`** (`src/kube/types.rs`, `src/kube/converter.rs`; Go: `operator/internal/converter/kubevirt.go` `buildDataVolumeTemplates`, CRD disk type **`dataSource`**) so each VM CDI-clones its **own** disk — `pvc`/`dataVolume` disk types only *reference* a volume and must never be shared. `sysprep_secret` mounts `autounattend.xml` as a **CD-ROM** (`sysprep` volume); the operator now **fails the reconcile** if the Secret lacks that key instead of silently dropping it. Cross-namespace cloning needs `deploy/k8s/bootstrap/cdi-golden-image-cloner.yaml` (`datavolumes/source` create). Instance types/preferences: `deploy/k8s/bootstrap/windows-instancetypes.yaml`. See `docs/windows.md`.
+
+**Cluster baseline & gates:** **`scripts/cluster/versions.env`** is the single source of version truth (k3s `v1.35.6+k3s1`, KubeVirt `v1.9.0`, CDI `v1.66.0`, Cilium chart `1.20.0`, virtio-win pinned **by digest**) — sourced by `install-cluster-prereqs.sh`, `ensure-cdi-remote.sh`, `deploy-k8s-remote.sh`. Do not hardcode versions elsewhere. k3s is deliberately **not** latest — check KubeVirt's own release notes for the Kubernetes versions it's tested against before bumping `K3S_VERSION` independently of `KUBEVIRT_VERSION`. KubeVirt/CDI were bumped from v1.8.4/v1.65.0 after a full `customer-readiness.sh` go-live gate (P0-P7) plus repeated VM-lifecycle E2E runs passed cleanly against v1.9.0/v1.66.0 on 2026-09-10. `GET /api/v1/platform/capabilities` probes **real objects** (StorageClasses + which is default + whether it is node-local, VolumeSnapshotClass *objects*, `vmStateStorageClass`, node count, `devices.kubevirt.io/kvm`) and exposes `live_migration` / `windows_golden_images` / `persistent_tpm_efi`. `scripts/preflight-veyron-remote.sh` grades it pass/fail and **exits non-zero**; `scripts/cluster/preflight-node.sh` checks the host (`/dev/kvm`, `virt-host-validate`, swap); `scripts/cluster/adapt-existing-cluster.sh` (dry-run default, `--apply`) fixes an existing cluster in place.
+
+**GPU passthrough & multi-site (Phase 1):** GPU VMs via KubeVirt `domain.devices.gpus` — `POST /vms` `{"gpu":{count,resource_name,vgpu_profile}}` (422 preflight when no node advertises the resource; `force` overrides), `GET /api/v1/gpus` (per-node inventory, passthrough/MIG/vGPU classification), capabilities gain `day2_ops.gpu_passthrough`/`vgpu` + a `gpus` section. **Passthrough VMs never live-migrate** — all three migrate entry points consult `src/kube/migration_guard.rs` and return **409** with `blockers[]` + cold-move suggestion (`force: true` bypasses). Node prep: `scripts/cluster/prepare-gpu-node.sh` (IOMMU/vfio-pci, dry-run default), `preflight-node.sh --gpu` (opt-in section; plain output unchanged), `scripts/cluster/enable-gpu-passthrough.sh` (feature gates + `permittedHostDevices` merge; `V9S_INSTALL_GPU_PASSTHROUGH=1` hook in `install-cluster-prereqs.sh`). CLI: `veyron create --gpu <count|resource|resource:count>` and `veyron vrvm-create --gpu …`; **`VMProfile.spec.gpus`** lets a catalog profile grant GPUs (the VM's explicit `gpus` win). E2E: `test-vm-daily-ops-remote.sh` asserts the 422 preflight on GPU-less clusters and runs a conditional Tier D GPU-VM lifecycle (create → migrate must 409 → delete) when GPUs are advertised. Two-rack mesh: `scripts/cluster/join-remote-worker.sh` (`--init-server` + worker join over WireGuard, zone labels; `V9S_MESH_*` in `versions.env`; `V9S_SKIP_PREFLIGHT=1` for VM-based rehearsals — flow verified end-to-end 2026-07-18, incl. the guest-k3s CIDR-collision caveat in the doc). Docs: `docs/gpu.md`, `docs/multi-site.md`. vGPU live migration stays gated on `VEYRON_VGPU_LIVE_MIGRATION` attestation + mdev presence — never assume mdev migration support. The broader GPU platform roadmap (GPU Operator node prep, Kueue job admission, tenants/metering, GPU reset) lives in **Gryvia** (`../gravia`, `zyvorai/gryvia`), not in Veyron. Operator: `VeyronVM.spec.gpus`/`hostDevices` (CRD yaml is hand-maintained — new spec fields must be added to `operator/config/crd/bases/veyron.io_veyronvms.yaml` or they are pruned; **both deploy paths apply all `operator/config/crd/bases/*.yaml`**).
+
+**Template catalog CRDs:** cluster-scoped **`VMTemplate`** and **`VMProfile`** (`operator/config/crd/bases/`). Operator resolves `template` + `profile` on **VeyronVM** / **VeyronBlueprint**; CLI **`veyron deploy`** still expands Rust templates offline. **`VMProfile.spec.gpus`** grants GPUs from a profile (resolver merge in `operator/internal/catalog/resolver.go`; the VM's own `gpus` win). Export/sync: **`veyron catalog export`**, **`veyron catalog sync`**, **`./scripts/generate-catalog-crds.sh`**. API: **`GET /api/v1/crds/templates`**, **`GET /api/v1/crds/profiles`**. Windows GitOps secrets: **`cloudInit.userDataSecretRef`**, **`windows.sysprepSecretRef`**, **`windows.domainJoinSecretRef`** — see `examples/windows-domain-join/`. Drift: operator sets **`status.driftDetected`** on **VeyronVM**; API **`GET /api/v1/vms/:ns/:name/drift`** (VeyronVM CR name).
+
+## Architecture
+
+Veyron is a dual-mode binary: a **CLI tool** and an **HTTP API + React console** for managing VMs on Kubernetes. The VM engine is **Kairon** (`Machine` CRDs) by default; KubeVirt is a legacy path only behind an explicit `VEYRON_VM_BACKEND=kubevirt` (most KubeVirt-era sections below describe that path).
+
+### Kubernetes operator (`operator/`)
+
+A separate **Go** service (controller-runtime) runs **inside the cluster**. It watches **`veyron.io/v1alpha1` custom resources** and reconciles real API objects—mainly converting a **`VeyronVM`** spec into a **KubeVirt `VirtualMachine`** (`operator/internal/converter`), then creating/updating that VM, handling **finalizers**, **status**, and optional **config-drive Secrets**. The same manager registers reconcilers for **VeyronBlueprint**, **VeyronPolicy**, **VeyronInsight**, **VeyronAction**, **VMTemplate**, and **VMProfile** (`operator/main.go`). **Template resolution** (`operator/internal/catalog/resolver.go`) expands `template` + `profile` from cluster **VMTemplate** / **VMProfile** CRDs (or embedded fallback) before reconcile; blueprint **`override`** wins last. An optional **`NATS_URL`** connects **`operator/internal/eventbus`** for outbound events. **Rust** `src/operator_crds/` holds serde models of those CRDs for CLI/API use; it does not embed the Go controller. Bootstrap catalog: `./scripts/generate-catalog-crds.sh` then `veyron catalog sync`. See `docs/architecture.md` and `charts/veyron-operator` (`DEVELOPMENT.md` no longer exists).
+
+### Entry points
+
+- `src/main.rs` — parses CLI via clap, calls `veyron::run(cli)`
+- `src/lib.rs` — 186-arm match dispatches CLI commands to handler functions, loads `AppConfig`
+- `src/cli/mod.rs` — full clap command tree definitions
+
+### Web API (feature = "web")
+
+- `src/api/http_server.rs` — Axum server, TLS, auth middleware, rate limiting, CORS, router; handlers it mounts directly live in `src/api/http_server/web/{vm,resources,ws,tls}.rs` (child modules, `pub(super)` items). VM routes: **`/network/internet`** (per-VM egress), **`/expose`** (SSH via `kubevirt.io/domain`), **`/rdp-expose`** (RDP via `kubevirt.io/vm` + NodePort).
+- `src/api/handlers/` — handler modules per API domain (`vmis`, `pods`, `metrics`, `costs`, `snapshots`, `compliance`, `soc`, etc.)
+
+**Day-2 operations** (ongoing fleet maintenance; mutations ⇒ Write, cluster-wide/destructive ⇒ Admin in `auth_context.rs`; several are **dry-run by default**):
+  - **Compute** (`handlers/compute.rs`): `POST /vms/:ns/:name/hotplug` (live CPU/mem via KubeVirt `maxSockets`/`maxGuest`), `PUT /vms/:ns/:name/run-strategy` (Always|Manual|Halted|RerunOnFailure), `POST /vms/bulk` (start|stop|restart|migrate|delete over many), `POST /vms/:ns/:name/drift/remediate` (kick operator re-reconcile).
+  - **Node maintenance** (`handlers/nodes.rs`, mounted in `http_server.rs`): `POST /nodes/:name/{cordon,uncordon}` — patches `spec.unschedulable` (needs `nodes: patch` RBAC).
+  - **Guest** (`handlers/guest_ops.rs`, via GuestKit `guest-exec`): `POST /vms/:ns/:name/guest/patch` (distro-detecting OS update + optional pre-snapshot), `POST /vms/:ns/:name/disks/reclaim` (`fstrim`).
+  - **Self-healing** (`handlers/self_healing.rs`): `POST /self-healing/run` (dry-run unless `?heal=true`), `GET/POST /self-healing/policy` (ConfigMap `veyron.io/type=self-healing`); a lease-guarded `self_healing_tick` in the scheduler loop restarts Failed/Unknown VMIs when enabled (per-VM cooldown).
+  - **Data/DR**: `POST /dr/failback` (`handlers/dr.rs`); `app_consistent` flag on `POST /snapshots`; `GET`/`DELETE /storage/orphans` (reclaim, dry-run unless `?confirm=true`); `POST /velero/{backups,restores}` (`handlers/velero.rs`, `VELERO_NAMESPACE`); `POST /vms/:ns/:name/disks/:volume/migrate` (storage-class migration via KubeVirt `updateVolumesStrategy: Migration`, dry-run default).
+  - **Platform** (`handlers/operators.rs`): `GET /platform/versions` (KubeVirt/CDI installed versions), `POST /platform/upgrade` (patch CR `imageTag`, dry-run default, needs `kubevirts: patch` RBAC); `GET /capacity/headroom` (`handlers/capacity.rs`), `GET /disks/conversion/capabilities`.
+
+### React console (`frontend/`)
+
+Vite + React + JSX app served at **`GET /console`** (+ `/console/assets/*`), embedded via `include_dir!("frontend/dist")` in `http_server.rs`. Auth-exempt shell; API calls use `X-API-Key` from `localStorage['veyron_api_key']`.
+
+- Resource-registry UI: Mission Control, ConsoleHub, VMs, Hosts, Images, Pods, Workloads, Templates, Storage, Snapshots, Snapshot schedules, Orphan volumes, Backups, Networks, Policies & ingress, Alerts, Security, Findings, Audit trail, Recommendations, Incidents, Events, Operators, Helm, Namespaces & quotas, Custom resources, Settings. Lists outside the core set are in `LAZY_KEYS` (`useResources.js`) so they load only while their page is open.
+- Dashboards in `frontend/src/insights.jsx` (`INSIGHT_PAGES` in `resources.js`): Costs (+budgets), SLOs, Logs, Compliance, Threat hunting, Users & roles, GitOps & catalog, Clusters, Storage health, Cilium. VM inspector tabs: Info (+security checks), Events, Guest (`VmExtras.jsx`: doctor/evidence/metrics/migrate-score/filesystems, only queried when the guest agent is connected), Ops (+disks, data-disk, volume hotplug, per-VM migrations).
+- Snapshot schedule cron accepts standard 5-field expressions (`normalize_cron` prepends seconds for the `cron` crate).
+- Build: `cd frontend && npm install && npm run build` before local `cargo build --features web` (Dockerfile `frontend-builder` stage does this)
+- Dev: `cd frontend && npm run dev` (proxies `/api` to `https://127.0.0.1:5151`)
+
+**SharedState pattern** used by every handler:
+```rust
+pub type SharedState = Arc<RwLock<WebState>>;
+// WebState holds: KubeClient, namespace, API key table, rate limiter
+// All handlers: State(state): State<SharedState>
+```
+
+Each handler module exports `pub fn router(state: SharedState) -> Router` and is merged in `src/api/handlers/mod.rs`.
+
+**Auth**: `X-API-Key` header or `Authorization: Bearer <key|jwt>` (HMAC-SHA256 session/own JWT, or OIDC). The legacy `?token=` query param is honoured only on WebSocket upgrades of `/vnc`, `/serial`, `/tunnel` and `/ws/metrics` (`query_token_allowed`); elsewhere it is ignored (401). Multi-key RBAC via `VEYRON_API_KEYS="name:key:role,..."` — the format is **`name:key:role`** (e.g. `"admin-user:k1:admin,ci:k2:write,viewer:k3:readonly"`); a missing or unknown 3rd field defaults to `readonly`, and the single `VEYRON_API_KEY` is always `admin` and **must be set** (unset ⇒ every request 503 `AUTH_NOT_CONFIGURED`). Route-level minimum roles in `src/api/auth_context.rs` (0.4.1: `/vnc` and `/serial` need Write; `/crds/actions/*/approve` and non-read `/crds/policies*` need Admin). VNC/serial/tunnel WebSocket upgrades accept `POST /api/v1/ws/ticket` one-time tickets (`src/api/ws_ticket.rs`, in-process, 60 s). Login JWTs carry `vsess` + `tv` so deleting a user or resetting a password revokes them (`session_token_valid`, 5 s cache); login is rate-limited per peer IP (30/5 min) and per IP+user (10/5 min).
+
+**Netra** (`../netra`, eBPF network observability; replaced the old PacketWolf integration): `src/api/handlers/netra.rs`. Veyron auto-detects the `netra` Service in `netra-system` (`https://netra.netra-system.svc:30870`); `VEYRON_NETRA_URL` overrides. Auth is Netra's single shared bearer: `VEYRON_NETRA_API_KEY` sent as `Authorization: Bearer`, defaulting to Netra's lab default `Admin@321`. Netra serves self-signed TLS, so certificates are accepted unless `VEYRON_NETRA_TLS_VERIFY=1`. Routes: `GET /api/v1/netra/status` (`/healthz` + `/api/v1/status`: version, agents, fast-path mode, flow rate; `api_authorized:false` with a message when the key is rejected), `GET /api/v1/netra/flows/summary`, `GET /api/v1/netra/vms` (proxies Netra's per-VM network view incl. `lockedDown`). Console page `netra` (`NetraPage` in `frontend/src/chapters.jsx`). `bootstrap-integrations.sh` only sets `VEYRON_NETRA_EXTERNAL_URL` (NodePort). See `docs/integrations.md`.
+
+**Paqtra** (`../paqtra`, Cilium-native Hubble flow store + drop explanation): `src/api/handlers/paqtra.rs`. Auto-detects Service `paqtra-api` in namespace `paqtra` (`http://paqtra-api.paqtra.svc:9191`); `VEYRON_PAQTRA_URL` overrides. Auth is JWT: `POST /api/v1/auth/login` → 24h bearer, cached and re-issued on 401. Paqtra's admin credentials are **random per install**, so unless `VEYRON_PAQTRA_PASSWORD` is set Veyron reads `ADMIN_USERNAME` + `API_KEY` (fallback `ADMIN_PASSWORD`) from Paqtra's `paqtra/paqtra-secret` — Paqtra accepts its `API_KEY` as the admin password. Routes: `GET /api/v1/paqtra/status` (unauth `/health` for version/Hubble ingest, then `/api/v1/cilium/status` + `/api/v1/cluster/health`), `/paqtra/flows` (`namespace`, `verdict`, `limit` 1–500), `/paqtra/drops` (rootcause), `/paqtra/posture`. Console page `paqtra` (`PaqtraPage`). `bootstrap-integrations.sh` only sets `VEYRON_PAQTRA_EXTERNAL_URL` (`paqtra-ui` NodePort, https). Netra and Paqtra are siblings, not replacements (`../paqtra/docs/suite-placement.md`). The Netra/Paqtra handler modules are `#[cfg(feature = "web")]`.
+
+**Gryvia (GPU platform)**: Gryvia (`../gravia`, `zyvorai/gryvia`) runs containerized GPU training/inference (job admission, tenants, quotas, GPU-hour metering); Veyron runs GPU VMs. `src/api/handlers/gryvia.rs` auto-detects the `gryvia-api-gateway` Service in `gryvia-system` (HTTPS, self-signed) and reads the bearer from Secret `gryvia-api-key` (`GRYVIA_API_KEY`); `VEYRON_GRYVIA_URL` / `_API_KEY` / `_EXTERNAL_URL` / `_TLS_VERIFY` override. Read-only routes: `GET /api/v1/gryvia/{status,nodes,tenants,quotas,usage}`; console page `gryvia` (`GryviaPage` in `frontend/src/chapters.jsx`). GPU coexistence: `kube::gpu_inventory::gpus_reserved_for_containers` honors the NVIDIA GPU Operator label `nvidia.com/gpu.workload.config=container` — `GET /gpus` reports `vm_usable:false`, and `POST /vms` returns `422 GPU_RESERVED_FOR_CONTAINERS` when the requested GPU exists only on container nodes (no node affinity is added). Verified live against Gryvia on 212.8.248.187 (no GPUs there, so stats are zero).
+
+**Atlas (Ceph-backed VM disk protection)**: Atlas (`../atlas`) is the Zyvor **storage control plane** — it fronts Ceph (RBD/CephFS/RGW), NFS, and ZFS behind a stable REST/gRPC API. When `VEYRON_ATLAS_URL` is set, Veyron drives **Ceph-backed** VM disk snapshot / clone / restore and off-cluster backups (RBD `export-diff` → RGW/S3) through Atlas jobs instead of re-implementing Ceph. This is **additive** — it never replaces the native KubeVirt `VolumeSnapshot` flow under `/api/v1/snapshots`. Client: `src/api/atlas.rs` (`AtlasClient`, HTTP REST v1, env-based config). Handlers: `src/api/handlers/atlas.rs` — `GET /api/v1/atlas/status` (probe + ceph capability summary), `GET …/atlas/volumes`, `GET …/atlas/vms/:ns/:name/volumes` (maps each VM PVC/DataVolume → its Atlas RBD volume by `(namespace, pvc_name)`), `POST …/atlas/vms/:ns/:name/ceph-snapshot`, `POST …/atlas/vms/:ns/:name/ceph-backup` (needs a bound Atlas RGW `bucket_id`), `POST …/atlas/snapshots/:id/{restore,clone}`, `DELETE …/atlas/snapshots/:id`, `GET …/atlas/{snapshots,backups,jobs/:id}`. Write routes return `202` with Atlas `job_id`s to poll. Provisioned volumes carry an `owner:{product:"veyron",resource_type:"virtual_machine"}` binding. Route roles follow the usual gates (GET⇒readonly, `/restore`⇒admin, other writes⇒write). Live contract test: `VEYRON_ATLAS_URL=http://127.0.0.1:5110 cargo test --features web atlas_live` against a fake gateway (`ATLAS_CEPH_DRIVER_MODE=fake cargo run -p atlas-gateway` in `../atlas`).
+
+### Kubernetes integration
+
+- `src/kube/mod.rs` — `KubeClient` wrapper; kubeconfig resolved once and the `kube::Client` cached (`get_client()` honors `--kubeconfig`); CLI handlers should use it rather than `Client::try_default()`
+- `src/kube/types.rs` — KubeVirt CRD types: `VirtualMachine`, `VirtualMachineInstance` (spec uses `BTreeMap<String, serde_json::Value>` flatten), `VirtualMachineInstanceMigration`
+- `src/kube/converter.rs` — `VMConfig → KubeVirt VirtualMachine` manifest
+- `src/kube/status.rs` — VM status queries and resource summaries
+
+**Note on `VmiSpec`**: The VMI spec is a flattened BTreeMap (`pub extra: BTreeMap<String, serde_json::Value>`). To access nested fields use `.extra.get("domain").and_then(|d| d.get("cpu"))...`, not struct field access.
+
+### Other major modules
+
+| Module | Purpose |
+|---|---|
+| `src/config/` | `VMConfig` schema, `VMConfigBuilder` fluent API, `AppConfig` (~/.config/veyron/config.toml) |
+| `src/templates/mod.rs` | 25 templates aligned with the Kryton catalog (Ubuntu 26.04/24.04/22.04, Debian 13/12, Fedora 44, CentOS Stream 10/9, AlmaLinux 10/9, Rocky 10/9, openSUSE Leap 16, Windows Server 2025/2022/2019, Windows 11); bare family names alias the newest release. EOL releases are retired. Rocky clones the Kryton golden DataSource `kryton-images/rocky-*` (its containerdisk is auth-gated) |
+| `src/api/kryton.rs`, `src/api/handlers/kryton.rs` | Kryton machine-API integration under `/api/v1/kryton/*` (`VEYRON_KRYTON_URL`, `VEYRON_KRYTON_TOKEN`, `VEYRON_KRYTON_PROJECT`) |
+| `docs/windows.md` | Windows golden images, Cloudbase-Init/Sysprep, Packer → QCOW2 → GitOps pipeline |
+| `examples/windows-kubevirt-gitops/` | Reference manifests + `patch_kubevirt_configdrive.py` for Windows `cloudInitConfigDrive` |
+| `src/monitoring/` | `MetricsCollector` (collect VM CPU/memory/disk/network), `PerformanceAnalyzer`, `MonitoringReporter` |
+| `src/snapshots/` | `SnapshotManager`, `RestoreManager`, `RetentionEnforcer`, KubeVirt snapshot CRD types |
+| `src/backup/` | Full/incremental/delta backup types, backup orchestration |
+| `src/tui/` | Full ratatui-based TUI; `AppState` (VMs, namespaces, selection), `interactive_app.rs`, theming |
+| `src/handlers/` | CLI command implementations (vm, backup, cost, gitops, crds, infra…) |
+| `src/operator_crds/` | Veyron CRD types under `veyron.io/v1alpha1` |
+| `src/ai/` | Veyron AI: tool `registry.rs` (Read/Change/Sandbox/External kinds; Change tools only create **proposals** — `{method,path,body,summary,min_role}` steps replayed through the API router by `exec::call` on approval), `agent.rs` (tool-calling loop), `incidents.rs` (investigations), `predictive.rs` (forecasts), `intent.rs`/`search.rs`/`policy.rs`, `models.rs` (in-cluster llama.cpp/vLLM model VMs + `veyron-ai-llm` ConfigMap/Secret setting, re-read every minute by `refresh_override`). Routes in `ai/api.rs`; read/draft AI routes are ReadOnly, `/ai/settings/llm` + `/ai/mcp-servers*` Admin. See `docs/ai.md`. |
+| `src/mcp/` | `server.rs` = `POST /mcp` (Streamable HTTP, role-filtered tools); `client.rs` = external MCP servers (`veyron-ai-mcp-servers` CM + `veyron-ai-mcp-tokens` Secret, tools as `ext.<server>.<tool>` / OpenAI-safe `ext__a__b`, write tools ⇒ admin proposals, `x-veyron-mcp-client` hop header prevents loops); `bridge.rs` = `veyron mcp` stdio bridge. |
+| `src/sandbox/` | Agent sandboxes: warm pool of Ubuntu VMs in `veyron-sandboxes` (deny-all egress NetworkPolicy, exec/files over guest agent), owner + TTL, `VEYRON_SANDBOX_*`; Kairon backend behind `--features kairon`. |
+| `src/soc/` | Security operations: `SecurityEvent`, ConfigMap event/detection store, collectors, detection rules, SIEM export (`export/elastic`, `splunk`, `sentinel`, `qradar`), hunts, ASM, SOAR webhooks — API `handlers/soc.rs`. See `docs/soc.md`. |
+| `src/trial.rs`, `src/bin/trial-tool.rs` | 30-day evaluation licensing for the standalone client tarball, feature-gated (`trial`) so it never affects in-cluster/production builds. See `docs/deploy.md`. |
+
+**Windows templates in code** (`windows*` in `src/templates/mod.rs`): Hyper-V feature set, `windows_clock()`, UEFI, virtio driver CDROM, blank SATA disk, virtio NIC, RNG, USB tablet, IO threads, TPM on 2022/11. **No** embedded Cloudbase-Init config or `cloudInitConfigDrive` userData (guest image / your YAML). See `docs/windows.md` (includes **automation**: Packer/CDI/GitOps; `cloud_init` in `converter.rs` emits **NoCloud** only—patch YAML or extend schema for Windows config-drive).
+
+### Feature flags
+
+- `default = ["web", "kairon"]` — enables axum, rustls, TLS, dashboard, WebSockets, and the Kairon backend
+- `kairon` (on by default) — compiles `src/kairon/` (`kairon.zyvor.dev` Machine CRDs on FluxVM) and the Kairon arm of `VmBackend` (`src/api/vm_backend.rs`) + `src/api/kairon_ops.rs`. **Backend selection** (`VEYRON_VM_BACKEND`): **Kairon is the only default** — unset, `auto`, `kairon` and unknown values all select it, and Veyron never falls back to KubeVirt on its own (`vm_backend::resolve`, called from `start_server`, only logs/warns when the Machine CRD is missing). `kubevirt` is an explicit legacy opt-in. Under Kairon, `src/api/kairon_guard.rs` middleware returns **501 `KUBEVIRT_ONLY`** for KubeVirt/CDI/operator-only routes (CDI image import/upload/publish/datasources, `/vmis`, `/kubevirt/*`, `/dr/*`, `/disks/expand`, volume migrate, drift, cluster-wide `/migrations`, `/crds/veyronvms|blueprints`, `/clones`, top-level KubeVirt snapshot restore/delete, `/platform/upgrade`); readiness reports the active backend. **VM import (h2kvm → Kairon):** `POST /api/v1/imports` `{name, namespace, image_url, sha256, format (qcow2|raw|ova|vmdk|vhd|vhdx), repair, cpus, memory, secure_boot, tpm, forwards, start, source{hypervisor,vm,tool}}` creates a Machine booting `spec.image.source.httpURL` pinned by digest (label `veyron.io/imported-by`), `GET /api/v1/imports[?namespace=all]`, `GET /api/v1/imports/:ns/:name` (`src/api/handlers/imports.rs`); h2kvm's `--deploy-kairon` drives it, and the console's Images "new" sheet is an import form. **Node prerequisite:** image-booted Machines (OCI template disks *and* imports) need kairon-node's image cache — `KAIRON_IMAGE_CACHE_DIR` (e.g. `/var/lib/fluxvm/images/cache`, owned by the `kairon` user and in the unit's `ReadWritePaths`); without it the Machine goes `Error` with "no image cache configured". Veyron pins template `repo:tag` OCI refs to a digest at create (`kairon::oci::resolve_digest`), since Kairon requires `spec.image.digest`. SSH/RDP expose by guest IP only works for bridged (`tap`/`macvtap`) guests with a non-link-local address; user-mode guests (`10.0.2.15`) need a create-time forward. Windows RDP enable/disable runs the same PowerShell through the relay. CDI is no longer installed by the deploy scripts unless `VEYRON_INSTALL_CDI=1`. Under Kairon the whole VM surface is served from Machines: CRUD, start/stop/restart, pause/unpause, clone (image-booted Machines only), run-strategy, hotplug (grow-only, bounded by `maxCpu`/`maxMemory`), migrate + per-VM migrations list/cancel (`MachineMigration`, `spec.cancel`; 409 `MIGRATION_BLOCKED` for stopped/passthrough VMs unless cold/force), snapshots (`MachineSnapshot` for PVC-backed Machines; otherwise a FluxVM VM-state checkpoint via the relay, tracked in a `veyron.io/type=kairon-vm-checkpoint` ConfigMap — restore is in place, node-side data can't be deleted), restore of disk snapshots (**creates a new Machine** `<vm>-restored-<stamp>` from `MachineSnapshotRestore` PVCs), backups (`MachineBackup`/`MachineBackupRestore`, restore needs the Machine `Halted`), guest exec/status/patch/reclaim and `GET /vms/:ns/:name/logs` via the kairon-node relay, VNC/serial WebSockets via relay `/console` + `/text-console`, and SSH/RDP expose (a create-time `spec.network.forwards` entry wins; else a selector-less Service + EndpointSlice `<svc>-guest` to a routable guest IP; user-mode NAT `169.254.x` guests ⇒ 409). **Stop** = power state `Halted` when the Machine has a runtime (keeps an image-booted disk), `Stopped` (tear down) otherwise. Relay config: `VEYRON_KAIRON_NODE_URL` + `KAIRON_NODE_CONSOLE_TOKEN` (`VEYRON_KAIRON_NODE_TLS_INSECURE=1` for self-signed), delivered via the optional `veyron-kairon` Secret (`envFrom` in `deploy/k8s.yaml`). **The relay port carries guest exec, files, console and the TCP tunnel behind one bearer token — never expose it to the internet:** `scripts/cluster/restrict-kairon-relay.sh` limits it to loopback, the node itself and the pod range, and pin the port with kairon-node `--console-port` (otherwise it moves on redeploy). RBAC for `kairon.zyvor.dev` and `discovery.k8s.io/endpointslices` is in all three ClusterRoles. **Images without CDI (Kairon):** `src/api/handlers/machine_images.rs` — content-addressed upload store at `VEYRON_IMAGE_STORE_DIR` (default `/var/lib/veyron/image-store`, `blobs/sha256/<hex>` + `names/<name>.json`; `veyron-image-store` PVC in `deploy/k8s.yaml`, `deploy-k8s-remote.sh` and Helm `imageStore.*`), `PUT /api/v1/image-store/:name` (Write; raw body, optional `X-Image-Digest`, `?replace=true`) and `GET /api/v1/image-store/blobs/:hex` live in the **untimed** `transfer_router` with `DefaultBodyLimit::disable()`; the blob path is auth-exempt (`dashboard_paths::is_image_blob_path`; the digest is the capability, nodes verify it). Catalog: `GET/POST /api/v1/machine-images`, `DELETE …/:name` (Admin) over the cluster-scoped Kairon **`MachineImage`** CRD — Rust type **`CatalogImage`** in `src/kairon/types.rs` because `MachineImage` already names `spec.image`. Publishing an upload writes `https://{VEYRON_API_NODE_HOST}:{VEYRON_API_NODE_PORT}/api/v1/image-store/blobs/<hex>` + `insecureSkipTLSVerify` (or `VEYRON_IMAGE_STORE_PUBLIC_URL`). `POST /vms` on Kairon: `image.name` ⇒ `spec.image.imageRef` (no CDI size lookup; root size `"0"` unless explicit so a template size can't shrink the image — FluxVM refuses to shrink anyway), `iso` ⇒ blank root + `spec.cdroms` (`install`, plus `drivers` = `driver_iso` or `virtio-win` for `windows*` templates when that MachineImage exists), `root_volume` ⇒ annotation `veyron.io/root-volume` ⇒ `spec.volumes[0]` that Kairon seeds (`kairon::converter`). These need current Kairon `main` (MachineImage, `spec.cdroms`) and FluxVM `main` (`CreateVmRequest.cdroms`); on KubeVirt the routes answer 501 `KAIRON_REQUIRED`. **Capture:** `POST /api/v1/vms/:ns/:name/capture` (Admin, `src/api/handlers/image_capture.rs`) spawns a job — `MachineBackup` `<vm>-capture-<stamp>` → poll `status.disk.name`/`status.nodeName` → `RelayTarget::for_node(..).backup_root()` (relay `GET /backup-root/{name}`, no overall timeout) streamed through `machine_images::store_stream` → publish `MachineImage` kind disk → delete the backup (its finalizer removes the FluxVM files). State: ConfigMap `image-capture-<image>` (`veyron.io/type=image-capture`, key `job.json`) in the API namespace; `GET /api/v1/image-captures`, `DELETE …/:image`. Console: VM action "Capture image"; unfinished jobs show in Images → Uploads. **Eject:** `POST /api/v1/vms/:ns/:name/cdroms/:cdrom/eject` (Write, `src/api/handlers/vm_media.rs`) removes the entry from `spec.cdroms` via a `resourceVersion`-pinned merge patch (409 `CONFLICT`, 404 `CDROM_NOT_FOUND`, 422 `EJECT_REJECTED` from an older Kairon webhook); the Kairon agent then calls FluxVM eject on the live guest. `VmInfo.cdroms` carries remaining drive names; console action "Eject media" shows only when non-empty. Verified live on 175 (2026-10-08, FluxVM `14b8d0b`, Kairon `bbd411a`): eject on a running ISO VM empties the FluxVM drive path in place, and after a full stop/start QEMU comes up with a bare `ide-cd` and no ISO on its cmdline. Not covered there: live migration after eject (single node, node-local disk — FluxVM's shared-storage check fires before the cdrom check) and the remove-only rule (175 runs without Kairon's Machine admission webhook, so re-adding media isn't rejected; kairon-node just doesn't attach it).
+- `trial` — 30-day evaluation build for the standalone client tarball only (`scripts/package-binary-remote.sh --trial`); pulls in `web` + `ring` for Ed25519 token verification. **Never** enabled for in-cluster Helm/`deploy-remote.sh` images — see `docs/deploy.md`.
+- Build CLI-only: `cargo build --no-default-features`
+
+All web-only code is gated with `#[cfg(feature = "web")]`.
+
+### Trial licensing (`src/trial.rs`)
+
+The standalone client tarball can be built as a time-limited 30-day evaluation instead of the normal unrestricted binary — signed Ed25519/EdDSA tokens (`jsonwebtoken` + `ring`, both already dependencies), not a locally-writable timestamp file, so deleting local state can't reset or extend a trial. `veyron::run()` calls `trial::enforce_trial()` as its very first action (before config load, before any command dispatch); with the `trial` feature off it's a no-op, so ordinary builds are never time-limited.
+
+- **Enforcement** (`src/trial.rs`, `#[cfg(feature = "trial")]`): looks for a token via `VEYRON_TRIAL_TOKEN` env var, then `trial.token` next to the running binary (how the tarball ships it), then `~/.config/veyron/trial.token`. Verifies the EdDSA signature against the embedded `TRIAL_PUBLIC_KEY_B64` constant, checks `exp`. Missing/invalid/expired → hard block (`std::process::exit(1)`) with a message pointing to **sales@zyvor.dev**; valid with ≤7 days left → a one-line stderr countdown; otherwise silent. `trial_status_json()` (always compiled, `{"trial":false}` when the feature is off) returns the same status as JSON — not currently wired to an API route, available for a future dashboard status check.
+- **Issuance** (`src/bin/trial-tool.rs`, requires `--features trial` to build/run — `required-features` in `Cargo.toml` so a plain `cargo build`/CI never touches it): `keygen` generates the Ed25519 keypair (private key never committed — `secrets/`, `*.pkcs8*`, `trial.token` are all gitignored); `issue --who <licensee> --days 30 -o trial.token` mints a signed token. The private key is ZyvorAI-internal only — rotating it invalidates every previously issued token, so any trial still active needs reissuing after a rotation.
+- **Packaging**: `./scripts/package-binary-remote.sh <host> <user> --trial --fetch` builds with `--features trial` (Dockerfile `VEYRON_EXTRA_FEATURES` build arg) and bundles a pre-minted `trial.token` next to the binary, under a distinct `veyron-<ver>-trial-linux-amd64.tar.gz` name that never collides with the regular customer tarball.
+
+## Key conventions
+
+- **Handler stubs**: when a K8s API cannot provide a value (e.g. filesystem-level disk usage), return a derived estimate or `"N/A"` with a comment — never silently return `0` or `None` where real data is expected.
+- **ConfigMaps as persistence**: alert rules, notification read-state, webhook configs, gitops sync state, and budgets are all stored as labeled ConfigMaps (`veyron.io/type=<kind>`).
+- **Namespace scoping**: handlers accept `?namespace=all` to query cluster-wide, or a specific namespace. API clients typically use `?namespace=all`.
+- **Cluster-wide pod lists**: use `KubeClient::map_pods(scope, |pod| …)`, which pages 500 at a time and maps each page down to the fields you need. Never `Api::<Pod>::all(..).list(&ListParams::default())` without a label selector: on the reference cluster (~12.6k mostly dead pods) a single unpaged list took the API from 4Mi to ~650Mi and two concurrent ones OOMKilled it at the 1Gi limit. `list_pods`/`list_all_pods` page too and strip `managedFields`, but still hold every pod.
+- **Async in handlers**: closures inside `.map()` on iterators cannot be async. Pre-fetch async data (e.g. VM counts per namespace) before the `.map()` call.
+- **virt-launcher pod selectors**: always select by **`vm.kubevirt.io/name`** (`kube::VM_NAME_LABEL`) — KubeVirt 1.8 launchers do NOT carry the old `kubevirt.io/domain` label (Services selecting on it get zero endpoints; this bit SSH expose, logs-by-VM, OpenCost, and guest Prometheus). `kubevirt.io/domain` (`VM_NAME_LABEL_LEGACY`) is acceptable only as a read fallback when mapping pods→VMs. RDP expose historically uses `kubevirt.io/vm`, which 1.8 still sets.
+- **Guest DNS needs Cilium `socketLB.hostNamespaceOnly: true`** (`bpf-lb-sock-hostns-only: "true"` in `cilium-config`, set in `scripts/cluster/cilium-k3s-values.yaml`). With kube-proxy replacement and full socket-LB coverage, KubeVirt guests' NAT-forwarded traffic to ClusterIPs (kube-dns, GuestKit download, model endpoints) is never translated — no VM ever reaches `AgentConnected`, sandboxes never become ready. Found and fixed on 175.110.122.71 on 2026-10-06; check `cilium-dbg status --verbose` → `Socket LB Coverage: Hostns-only`.
+- **Fork Lab** (`src/api/handlers/vm_fork.rs`, `docs/fork.md`): `POST /vms/:ns/:name/fork` `{count,name_prefix}` creates Machines annotated `kairon.zyvor.dev/fork-from` (label `…/forked-from`), pinned to the parent's node; `GET …/forks` lists them. Needs a Running `flux-vm`-backend parent with boot disk only — qemu Machines answer 409 `FORK_BLOCKED`. `VEYRON_FORK_MAX` (default 10). AI tool `fork_vm`, console action "Fork live".
+- **Kairon relay + CRD ops** (`docs/kairon-ops.md`): `handlers/relay_ops.rs` (files, diagnostics, quiesce, pressure, network observability, egress-check, capabilities, TCP tunnel, fork/plan, runtime-events, node memory/branches), `handlers/kairon_ext.rs` (lifecycle, placement, network-policy, migration recovery, read-only `/kairon/:kind` CRD views), `handlers/containers.rs` (OCI container Machines — macOS FluxVM hosts only), `agent_sessions.rs` `/ops/*rest` proxy, `kairon/advisor.rs` (`GET /kairon/advice/migrations`), `kairon/defaults.rs` (tenant/env lifecycle defaults on create). `/kairon/:kind` carries the API group/version/scope **per kind** (`KindInfo` in `kairon_ext.rs`): the enterprise fleet kinds are `fleet.kairon.zyvor.dev/v1alpha1`, `accelerator-profiles`/`node-topologies` are cluster-scoped — a kind queried under the wrong group 404s, so look the kind up in Kairon's `deploy/crd.yaml` / `deploy/fleet-crds.yaml` before adding it; Admin `POST /kairon/fleet/:kind` writes policy-style fleet objects. `GET /vms/:ns/:name/screenshot` + `POST …/input` (Admin) are FluxVM `vz` (Mac) display only — FluxVM has no resize/USB endpoints. Sandboxes take `template` (`GET /sandbox-templates`): the Machine gets `spec.sandbox.templateName`, runs on `flux-vm` with the vsock agent, and exec/files go through `agent-exec`/`put_file` instead of QGA. YAML is `serde_norway` renamed to `serde_yml` in `Cargo.toml` (the original crate is unsound/unmaintained). Node-level relay routes (`capabilities`, `egress-check`, `events`, `host-memory`, `branches`) use `RelayTarget::call_node`; per-VM routes append the runtime id. A new route must not collide with an existing one (axum panics at startup): `full_router_builds_without_overlapping_routes` guards this — e.g. `GET /vms/:ns/:name/events` is the Kubernetes events route, VM runtime events are `…/runtime-events`.
+- **Network access / egress** (`docs/kairon-ops.md` § Network access): user-mode (slirp) guests are governed by FluxVM's `fluxvm_qemu_egress` eBPF hook on the VM's cgroup — it used to allow loopback only, so such guests reached nothing (no agent, no mirrors, no Veyron). Policy is `spec.network.egress {mode loopback|allowlist|audit|open, rules[{cidr,proto,port,note}]}` on the Machine (`kairon/egress.rs`: validation identical to the node, folded-prefix 4-port limit, explain, presets, diagnostics; `handlers/network_access.rs`: routes). **The Machine spec is the source of truth** (kairon-node reconciles it over FluxVM): Veyron writes by `resourceVersion`-pinned merge patch and only reads live state/observed/suggest through the relay (`vm-egress`, `vm-egress-observed`, `vm-egress-suggest`, node `egress-defaults`). Cilium socket-LB rewrites ClusterIP/NodePort to the **pod IP:5151 before the filter**, so platform rules cover the pod CIDR (`VEYRON_POD_CIDR` / `POD_IP` /16 — `POD_IP` is a downward-API env in all three manifests) not just the node IP. New Linux VMs on user-mode networking get the default preset (`VEYRON_VM_DEFAULT_EGRESS_PRESET`, ns annotation `veyron.io/default-egress-preset`); mutations are Admin; timed changes are `veyron.io/type=egress-grant` ConfigMaps ended by the scheduler tick.
+- **Agent Lab** (`src/sandbox/agent.rs`, `docs/fork.md`): Kairon-backend sandboxes get `…/fork|pick|checkpoints|undo|pin|ledger|egress` (pre-exec VM-state checkpoint ring, ConfigMap run ledger `veyron.io/type=sandbox-run`, egress via `MachineNetworkPolicy`), idle suspend via `spec.lifecycle` (`VEYRON_SANDBOX_IDLE_SECS`), pool claims via `MachineClaim` (`VEYRON_SANDBOX_KAIRON_POOL`), and `/agent-sessions` CRUD (AgentSession needs a Mac FluxVM node; unverified on Linux). Checkpoint/ledger failures never block exec.
+- **Replacing machina-cni with Cilium leaves `machina-bpfd` service-LB programs attached.** The old `mn_cni_connect4/6`, `sendmsg4/6`, `recvmsg4/6` cgroup links (and tc `mn_cni_nodeport`) stay ahead of Cilium and translate ClusterIPs (e.g. kube-dns `10.43.0.10`) to stale pod IPs, so cluster DNS fails. Detach them with `bpftool link detach id <n>` (list via `bpftool link show`); `systemctl restart machina-bpfd` re-attaches them. Found on 80.79.5.173, 2026-10-15. Verified live there the same day: kairon v0.10.0-3-g2b7659c, fluxvm origin/main 09aff9b5, `test-vm-daily-ops-remote.sh` 36 passed / 0 failed / 5 skipped. Under Kairon `verify-veyron-remote.sh` expects 501 on `drift`, `dr/export`, `crds/blueprints`, and `preflight-veyron-remote.sh` is KubeVirt-centric and fails by design.
+- **Custom cloud-init on Linux templates is merged, not replaced** (`templates::merge_cloud_init`, `VMConfigBuilder::merge_cloud_init`): list keys (`packages`, `write_files`, `runcmd`, `bootcmd`, `ssh_authorized_keys`, `users`, `mounts`) append, other keys override, `#!` scripts become a `write_files` + `runcmd` entry — so GuestKit bootstrap survives user cloud-init.
+- **NoCloud user-data over 2048 bytes goes to a Secret**: KubeVirt's webhook rejects larger inline `cloudInitNoCloud.userData`, so the converter emits a Secret ref (`<vm>-veyron-cfgdrv`, same Secret as config-drive) and `KubeClient::create_vm` creates it (`kube::nocloud_userdata_needs_secret`). Paths that call `vm_config_to_kubevirt` and `create` directly (sandboxes) must keep user-data small or create that Secret themselves. KubeVirt's wire name for it is **`secretRef`** (Go field `UserDataSecretRef`); `userDataSecretRef` is silently pruned.
+
+## Environment variables
+
+| Variable | Purpose |
+|---|---|
+| `VEYRON_API_KEY` | Single admin API key for the web server. Required: the server has no built-in default (the deploy scripts and Helm chart default it to `Admin@321`) |
+| `VEYRON_BOOTSTRAP_ADMIN_PASSWORD` | Console password for the bootstrap `admin` user (default: the value of `VEYRON_API_KEY`, else `Admin@321`) |
+| `VEYRON_API_KEYS` | Multi-key RBAC, format `name:key:role`: `"admin-user:key1:admin,ci:key2:write,viewer:key3:readonly"` (missing role ⇒ readonly; `read` is an alias of `readonly`) |
+| `VEYRON_PUBLIC_HOST` | Host used by the HTTP-to-HTTPS redirect listener (with `--tls`); unset ⇒ the request's `Host` header, only if well-formed |
+| `VEYRON_IMAGE_STORE_MAX_BYTES` | Cap for one image-store upload/capture (default 64 GiB, `0` = unlimited; `413 UPLOAD_TOO_LARGE`) |
+| `VEYRON_WS_METRICS_MAX` | Concurrent `/ws/metrics` streams (default 64; extra upgrades `503`) |
+| `VEYRON_OIDC_AUDIENCE` | When set, the OIDC token's `aud` must contain it (unset ⇒ not checked) |
+| `VEYRON_KUBEVIRT_WS_INSECURE_TLS` | `1` skips Kubernetes API certificate verification on the legacy KubeVirt VNC/serial proxy (verified against the cluster CA by default) |
+| `VEYRON_NAMESPACE` | Default namespace |
+| `VEYRON_PROMETHEUS_URL` | Optional. Base URL for Prometheus instant queries, e.g. `http://prometheus:9090/api/v1/query`. When set, `GET /api/v1/storage/usage` joins `kubelet_volume_stats_used_bytes` by namespace + PVC. |
+| `VEYRON_SCHEDULER_LEASE_NAMESPACE` | Namespace for the snapshot-scheduler **Lease** (`coordination.k8s.io`); defaults to `VEYRON_NAMESPACE` / API default namespace |
+| `VEYRON_SCHEDULER_LEASE_DISABLED` | Set to `1` or `true` to skip Lease acquisition so every API replica runs the snapshot tick — **only for single-replica/dev** (duplicate snapshots if scaled) |
+| `KUBECONFIG` | Kubeconfig path (also `--kubeconfig` flag) |
+| `RUST_MIN_STACK` | Set to `8388608` when running tests |
+| `RUST_LOG` | Log level: error/warn/info/debug/trace |
+| `VEYRON_HTTP_REQUEST_TIMEOUT_SECS` | Optional. HTTP request timeout in seconds for non-WebSocket routes (default `30`). VNC, serial, and `/api/v1/ws/metrics` are **not** subject to this layer. |
+| `VEYRON_ELASTIC_*`, `VEYRON_SPLUNK_*`, `VEYRON_SENTINEL_*`, `VEYRON_QRADAR_*` | SOC SIEM push and hunt backends — see `docs/soc.md` |
+| `VEYRON_SOAR_WEBHOOK_URL` | POST JSON when a new SOC detection fires |
+| `VEYRON_GUESTKIT_BINARY_URL` | Override URL cloud-init uses to download GuestKit (default: cluster Service FQDN + fallbacks) |
+| `VEYRON_API_NODE_HOST` | Node IP for NodePort bootstrap URL (set automatically via `status.hostIP` in deploy manifests) |
+| `VEYRON_API_NODE_PORT` | NodePort for GuestKit binary download (default `30151`) |
+| `VEYRON_CLUSTER_DNS` | Cluster DNS IP injected into Linux cloud-init resolv.conf (default `10.43.0.10`) |
+| `VEYRON_GUEST_RUNTIME` | Guest runtime mode: `auto` (default), `guestkit`, or `qga` |
+| `VEYRON_NETRA_URL`, `VEYRON_NETRA_API_KEY`, `VEYRON_NETRA_EXTERNAL_URL`, `VEYRON_NETRA_TLS_VERIFY` | Optional. Netra integration — URL auto-detected from `netra-system/netra`, key defaults to `Admin@321`, self-signed TLS accepted unless `VEYRON_NETRA_TLS_VERIFY=1`. |
+| `VEYRON_PAQTRA_URL`, `VEYRON_PAQTRA_USERNAME`, `VEYRON_PAQTRA_PASSWORD`, `VEYRON_PAQTRA_EXTERNAL_URL`, `VEYRON_PAQTRA_TLS_VERIFY` | Optional. Paqtra integration — URL auto-detected from `paqtra/paqtra-api`, credentials read from `paqtra/paqtra-secret` unless `VEYRON_PAQTRA_PASSWORD` is set. |
+| `VEYRON_AI_MODE` | Copilot mode: `off` / `paraphrase` / `routing` / `agent`. `agent` enables the multi-turn tool loop and plan drafting — see `docs/COPILOT_AGENT.md` |
+| `VEYRON_AI_MAX_TOOL_ROUNDS` | Max LLM↔tool rounds per Copilot turn (default `6`) |
+| `VEYRON_AI_PLAN_TTL_SECS` | Lifetime of agent-drafted action plans before they expire (default `900`) |
+| `VEYRON_AI_PLAN_COOLDOWN_SECS` | Per-VM/node cooldown between agent plan steps (default `60`, `0` disables) |
+| `VEYRON_AI_PLAN_WEBHOOK_URL`, `VEYRON_AI_PLAN_WEBHOOK_EVENTS`, `VEYRON_AI_PLAN_WEBHOOK_SECRET` | Agent plan notifications: JSON POST (`text`/`content` for chat tools plus a structured `plan`) on `created`, `approved`, `executed`, `failed`, `cancelled` (events filterable; best effort, one retry on 5xx, URL never logged; `…_SECRET` adds an HMAC-SHA256 `X-Veyron-Signature` over `<timestamp>.<body>`). Finished plans can be reversed with `POST /experience/copilot/plans/:id/undo` (start/stop, pause/unpause, cordon/uncordon only) — see `docs/COPILOT_AGENT.md` |
+| `VEYRON_AI_FOUR_EYES` | Agent plans needing a second approver: comma list of `destructive` / `admin` / `all` (unset = off). The creator can never approve their own plan; `execute` is refused until another user approves via `POST /experience/copilot/plans/:id/approve` |
+| `VEYRON_AI_BULK_CONFIRM_THRESHOLD` | Agent plans touching more targets than this (default `5`) require `confirm_count` (the count typed back) to execute |
+| `VEYRON_AI_PROVIDER`, `VEYRON_AI_MAX_TOKENS` | Copilot agent LLM wire format: `anthropic` uses Anthropic's native Messages API (default URL `https://api.anthropic.com`, model `claude-sonnet-5-5`, key `VEYRON_AI_API_KEY`/`ANTHROPIC_API_KEY`; auto-selected by an `sk-ant-` key or anthropic.com URL); unset keeps OpenAI-compatible. `MAX_TOKENS` (default 2048) is the per-request cap Anthropic requires. |
+| `VEYRON_ATLAS_URL` | Optional. Atlas storage control-plane gateway base URL (e.g. `http://atlas-gateway.zyvor:5110`). When set, the **Atlas** integration enables Ceph-backed VM disk snapshot/backup/restore. Unset ⇒ routes report `configured:false`. |
+| `VEYRON_ATLAS_TOKEN` | Optional HS256 JWT bearer for Atlas (required when Atlas runs with `ATLAS_AUTH_REQUIRED=1`) |
+| `VEYRON_ATLAS_TENANT` | Optional tenant id recorded on Atlas-provisioned volumes/backups (default `global`) |
+| `VEYRON_GRYVIA_URL`, `VEYRON_GRYVIA_API_KEY` | Optional. Gryvia api-gateway URL/bearer; default auto-detect `gryvia-system/gryvia-api-gateway` + Secret `gryvia-api-key`. `VEYRON_GRYVIA_TLS_VERIFY=1` verifies its cert. |
+| `VEYRON_KRYTON_URL` | Optional. Kryton machine-API base URL. Enables `/api/v1/kryton/*` (machines, catalog, golden-image bootstrap into `kryton-images/<id>`). Unset ⇒ `/kryton/status` reports `configured:false`, other routes 503. |
+| `VEYRON_KRYTON_TOKEN` / `VEYRON_KRYTON_PROJECT` | Kryton bearer API key / optional project (`?project=`) |
+| `VEYRON_VGPU_LIVE_MIGRATION` | Set to `1` ONLY after verifying the licensed NVIDIA vGPU host stack + KubeVirt actually live-migrate mdev VMIs (Phase 2 attestation). Relaxes the migration gate for vGPU-only VMs and enables `day2_ops.vgpu_live_migration` (when mdev resources are present). Upstream KubeVirt ≤1.8 does NOT support this — never set on plain passthrough clusters. |
+| `VEYRON_AI_URL`, `VEYRON_AI_API_KEY`, `VEYRON_AI_MODEL` | Bring-your-own OpenAI-compatible LLM for Veyron AI (fallback when no model is chosen in Settings / `veyron-ai-llm` ConfigMap). Also `VEYRON_AI_MAX_TOOL_ROUNDS`, `VEYRON_AI_TIMEOUT_SECS`, `VEYRON_AI_RATE_LIMIT_PER_MIN`, `VEYRON_AI_NAMESPACE`, `VEYRON_AI_PREDICTIVE=0`, `VEYRON_AI_INVESTIGATOR=0`, `VEYRON_AI_PROPOSAL_TTL_HOURS` (waiting proposals expire, default 72). See `docs/ai.md`. |
+| `VEYRON_MCP_ALLOW_SELF_APPROVE` | `1` lets `write`-role MCP callers approve proposals over MCP (default: admin only). |
+| `VEYRON_SANDBOX_*` | `NAMESPACE` (`veyron-sandboxes`), `POOL_SIZE` (1), `MAX_PER_OWNER` (3), `MAX_TTL_MINUTES` (1440), `TEMPLATE` (`ubuntu-24.04`), `MEMORY` (`1Gi`), `WAIT_SECS` (240). |
+| `VEYRON_ALLOW_PUBLIC_RDP` | Set to `1` to permit `PUT /rdp-expose` with `service_type: NodePort`/`LoadBalancer`. **Default: refused with 403** — a bare 3389 NodePort puts Windows auth on the network with no gateway/MFA/TLS. Prefer `ClusterIP` + VPN/zero-trust gateway or `kubectl port-forward`. |
+| `VEYRON_VM_BACKEND` | Kairon by default (unset/`auto`/`kairon`/anything else); `kubevirt` is an explicit legacy opt-in. Selects which platform backs the VM API (see Feature flags → `kairon`). |
+| `VEYRON_INSTALL_CDI` | Set to `1` to let the deploy scripts install CDI (legacy KubeVirt only; Kairon needs none). |
+| `VEYRON_KAIRON_NODE_URL` / `KAIRON_NODE_CONSOLE_TOKEN` | kairon-node relay base URL (e.g. `http://{node_ip}:8092`) and bearer token, used for Kairon console, guest exec, logs and VM-state checkpoints. Ship them in the optional `veyron-kairon` Secret. |
+| `VEYRON_VM_DEFAULT_IDLE_SECS` / `VEYRON_VM_DEFAULT_IDLE_ACTION` / `VEYRON_VM_DEFAULT_MAX_LIFETIME_SECS` | Kairon only. Default `spec.lifecycle` for new VMs when the namespace has no `veyron.io/default-idle-seconds` / `-idle-action` / `-max-lifetime-seconds` annotation (minimum 60 s; an idle timeout alone pauses). A lifecycle set on the VM wins. |
+| `VEYRON_VM_DEFAULT_EGRESS_PRESET` / `VEYRON_SANDBOX_EGRESS_PRESET` / `VEYRON_POD_CIDR` / `POD_IP` | Kairon only. Default network-access preset for new Linux VMs on user-mode networking (`platform-packages`; `none` = inherit the node default; namespace annotation `veyron.io/default-egress-preset` wins) and for sandboxes (`platform-packages` with internet, else `platform`). `VEYRON_POD_CIDR` (else `POD_IP`'s /16, else `10.0.0.0/8`) is the pod network the egress filter sees after Cilium's socket-LB rewrite. |
+| `VEYRON_TRIAL_TOKEN` | Only read on `--features trial` builds (the evaluation client tarball). Overrides the `trial.token` file lookup (next to the binary, then `~/.config/veyron/trial.token`) — set to the token's contents. See `docs/deploy.md`. |
+| `VEYRON_OIDC_ISSUER`, `VEYRON_OIDC_CLIENT_ID`, `VEYRON_OIDC_CLIENT_SECRET`, `VEYRON_OIDC_AUTHORIZATION_URL`, `VEYRON_OIDC_TOKEN_URL`, `VEYRON_OIDC_JWKS_URL`, `VEYRON_OIDC_REDIRECT_URI`, `VEYRON_OIDC_ROLE_CLAIM` | Enterprise SSO against a real IdP (Keycloak/Auth0/Okta) — `src/api/oidc.rs`. `oidc_configured()` requires `CLIENT_ID` + (`AUTHORIZATION_URL` or `ISSUER`). Clients that implement OIDC use PKCE + authorization-code redirect; the backend only exchanges the code (`POST /api/v1/auth/oidc/token`, no server-side OAuth `redirect_uri` route) and validates bearer JWTs via JWKS RS256 (falls back to `VEYRON_OIDC_JWKS_URL`-less userinfo lookup) — see `oidc_role_from_bearer`. |
+| `VEYRON_OIDC_GROUP_ADMIN` / `VEYRON_OIDC_GROUP_WRITE` | Comma-separated, case-insensitive IdP group names mapped to `admin`/`write` roles (exact match, checked before the substring-based `admin`/`write` heuristic in `normalize_role`). Defaults: `veyron-admins,cluster-admins` / `veyron-write,veyron-editors`. Deploy without leaking secrets through `--set`/CLI history: `./scripts/deploy-remote.sh HOST USER --with-oidc` (writes a `veyron-oidc` Secret from `VEYRON_OIDC_*` env vars, wired into `deploy/k8s.yaml` via `envFrom` `optional: true` — absent unless that Secret exists; Helm chart equivalent: `oidc.*` values or `oidc.existingSecret`). See `contrib/veyron-oidc-keycloak.env.example` for a worked Keycloak example. |
+
+### Real OIDC IdP wiring: confidential clients need `client_secret` at the token endpoint
+
+Verified end-to-end live against a real Keycloak realm on 203.0.113.10 (2026-08-24, realm
+`veyron` at `198.51.100.20:30180`): a real bug surfaced that a code review wouldn't have
+caught, only a live PKCE round-trip against a confidential client did. `exchange_oidc_authorization_code`
+(`src/api/oidc.rs`) built the `POST {token_url}` form with `code` + `code_verifier` but never
+included `client_secret` — fine for a *public* client (PKCE alone is sufficient there), but
+Keycloak's default `publicClient: false` (and most real-world confidential-client setups)
+reject the exchange with `{"error":"unauthorized_client","error_description":"Invalid client
+or Invalid client credentials"}` even with a valid PKCE verifier, because confidential clients
+must authenticate themselves at the token endpoint too. Fixed by appending `client_secret` to
+the form whenever `VEYRON_OIDC_CLIENT_SECRET` is set (a public client just omits it and the
+request goes through unchanged). This class of bug is easy to miss because the failure is
+*silent* end-to-end from the browser's perspective in Chrome automation specifically — the
+Keycloak login and redirect-back both complete looking successful, and the frontend's
+`catch`-and-`toast` in `handleOidcCallback` doesn't `console.error`, so nothing shows up in
+page console or DOM inspection; confirming it required driving the full authorization_code +
+PKCE flow by hand (`urllib` against Keycloak directly, then `POST /api/v1/auth/oidc/token`) to
+see the raw 400 from the IdP. Reusable for future IdP-wiring sessions: this hand-rolled
+verification script is the reliable way to test the token exchange in isolation.
+
+A **second**, independent bug surfaced right after the first fix: the token exchange started
+succeeding (200, valid `access_token` with the right `groups` claim), but every subsequent API
+call with that bearer token still got `401 Invalid or missing API key`. Root cause in
+`oidc_role_from_bearer` (`src/api/oidc.rs`): `jsonwebtoken::Validation::new(RS256)` defaults
+`validate_aud: true` with no `validation.aud` configured — since Keycloak access tokens carry
+an `aud` claim (`"account"` by default, unrelated to the client_id), `jsonwebtoken::decode()`
+fails with `InvalidAudience` and the `if let Ok(data) = ...` silently swallows it, falling
+through to the (unconfigured) userinfo fallback and resolving to no role at all — no log line,
+no error surfaced anywhere. Fixed with an explicit `validation.validate_aud = false;` (issuer +
+RS256 signature + expiry were the trust boundary for role-mapping at the time; since 0.4.1 an
+optional `VEYRON_OIDC_AUDIENCE` adds an explicit `aud` check, still off when unset). Lesson for any future `jsonwebtoken` `Validation` construction against a
+real IdP: its "secure by default" audience check needs an explicit off-switch or an explicit
+`.aud` set — don't assume `Validation::new(alg)` alone is a complete, working validator.
+
+A **third** bug — the actual blocker for every browser-driven SSO attempt, found only after the
+first two backend fixes still left real Chrome logins failing while a hand-rolled curl script
+of the identical flow succeeded — was in `the retired dashboard's very first inline `<script>`
+(before line 20). It's a synchronous cache-busting redirect: if `location.search` doesn't
+already contain `dash=<rev>`, it unconditionally did
+`location.replace(location.pathname + '?' + revParam + location.hash)` — **discarding the
+entire existing query string**, including a fresh OIDC redirect's `?code=&state=&session_state=`,
+before any application JS (`handleOidcCallback`) ever ran. Every login attempt landing back on
+`/dashboard?code=...` got its authorization code silently vaporized on the very first line of
+page load. Fixed by preserving `location.search` and appending the rev param instead of
+replacing wholesale (same fix applied to the analogous rev-bump reload later in the file, `window.__VEYRON_DASH_REV`).
+This is the class of bug that automated Chrome testing looked "successful" for at every
+individual step (Keycloak login rendered, credentials submitted, browser redirected back to
+the right URL, `200 OK`) while still failing end-to-end — worth remembering: a redirect landing
+on the right URL with a `200` is not proof the app actually consumed the query string it
+arrived with. Any future full-page-reload OAuth/SSO callback route needs to be checked against
+this same "does something upstream of app boot rewrite the URL" question, not just "did the
+redirect happen."
+
+### GuestKit (Linux guest runtime)
+
+- Linux templates bootstrap **GuestKit** via cloud-init (`src/templates/mod.rs`); Windows keeps QEMU Guest Agent.
+- API routes: `GET /api/v1/vms/:ns/:name/guest/status`, `/guest/evidence`, `/guest/doctor`, `/guest/fix-plan` (aliases under `/guest-agent/*` for RDP).
+- Unauthenticated binary endpoint for cloud-init: `GET /api/v1/platform/guestkit/binary`.
+- Host RPC uses virt-launcher pod exec → `virsh qemu-agent-command` with QGA commands (`guestkit-get-evidence`, etc.).
+
+
+
+- **Linux templates** (`src/templates/mod.rs`): `.interactive_console_defaults()` enables **USB tablet**, **disables virtio-balloon**, and sets **`ioThreadsPolicy: shared`** for smoother browser consoles. Windows templates already set the same levers explicitly.
+- **KubeVirt virtio video (optional):** set `kubevirt_video_type` on `VMConfig` (builder: `.kubevirt_video_type("virtio")`) to emit `domain.devices.video`. This requires the cluster KubeVirt **`VideoConfig` alpha feature gate**; without it the API may reject or ignore the field depending on version.
+
+## Verification (deployed cluster)
+
+| Script | Covers |
+|---|---|
+| `./scripts/verify-veyron-remote.sh HOST` | API smoke (incl. AI + MCP section) |
+| `VEYRON_API_KEY=… ./scripts/test-ai-remote.sh HOST` | AI E2E: MCP, sandbox exec/files, intent → proposal → approve → VM → investigation, policy draft, search, forecast, MCP client loopback; opt-in `VEYRON_E2E_LLM=1`, `VEYRON_E2E_MODEL=1` |
+| `./scripts/test-vm-daily-ops-remote.sh HOST` | Create/start/stop/pause, VNC ticket, SSH/RDP expose, snapshots |
+| `./scripts/customer-readiness.sh HOST [--ssh-user U] [--full]` | Full go-live gate |
+
+RDP **NodePort**/`LoadBalancer` is refused unless `VEYRON_ALLOW_PUBLIC_RDP=1`; prefer **ClusterIP** + VPN/gateway.

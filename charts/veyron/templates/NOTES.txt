@@ -1,0 +1,9 @@
+Veyron is installed in namespace {{ .Release.Namespace }}.
+
+Console login defaults to {{ .Values.auth.adminUser }} / Admin@321 and the API key to Admin@321
+unless auth.adminPassword / auth.apiKey were set. Change both for production.
+
+API key:
+  kubectl -n {{ .Release.Namespace }} get secret {{ include "veyron.apiKeySecretName" . }} -o jsonpath='{.data.api-key}' | base64 -d; echo
+
+Console: https://<node>:<port>/console

@@ -1,0 +1,109 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: veyron-operator
+rules:
+  # Veyron CRDs - full control
+  - apiGroups: ["veyron.io"]
+    resources:
+      - veyronvms
+      - veyronvms/status
+      - veyronvms/finalizers
+      - veyronblueprints
+      - veyronblueprints/status
+      - veyronblueprints/finalizers
+      - veyronpolicies
+      - veyronpolicies/status
+      - veyroninsights
+      - veyroninsights/status
+      - veyronactions
+      - veyronactions/status
+      - veyronactions/finalizers
+      - vmtemplates
+      - vmtemplates/status
+      - vmprofiles
+      - vmprofiles/status
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # KubeVirt VirtualMachines - create and manage
+  - apiGroups: ["kubevirt.io"]
+    resources:
+      - virtualmachines
+      - virtualmachineinstances
+      - virtualmachineinstancemigrations
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # KubeVirt VM subresources
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - virtualmachineinstances/vnc
+      - virtualmachineinstances/console
+      - virtualmachines/start
+      - virtualmachines/stop
+      - virtualmachines/restart
+      - virtualmachines/migrate
+    verbs: ["get", "update"]
+
+  # KubeVirt Snapshots - for action controller
+  - apiGroups: ["snapshot.kubevirt.io"]
+    resources:
+      - virtualmachinesnapshots
+      - virtualmachinerestores
+    verbs: ["get", "list", "watch", "create", "delete"]
+
+  # CDI / upload / CSI snapshots / instance types / Multus (VM specs and storage workflows)
+  #
+  # Write verbs are required for golden-image cloning: a VeyronVM with a
+  # `dataSource` disk emits `dataVolumeTemplates`, and the clone is admitted only
+  # if the creating ServiceAccount may `create` on `datavolumes/source` in the
+  # image's source namespace. `resources: ["*"]` already covers that subresource;
+  # if you ever tighten this to explicit names, you must list `datavolumes`,
+  # `datavolumes/source`, `datasources`, and `dataimportcrons` separately.
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["upload.cdi.kubevirt.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["instancetype.kubevirt.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["k8s.cni.cncf.io"]
+    resources: ["network-attachment-definitions"]
+    verbs: ["get", "list", "watch"]
+
+  # Secrets (config-drive userdata for Windows / Cloudbase-Init)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Core Kubernetes resources
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # VeyronPolicy facts: RDP Services and snapshot-schedule ConfigMaps
+  - apiGroups: [""]
+    resources: ["services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+
+  # Per-VM internet egress (CiliumNetworkPolicy or NetworkPolicy)
+  - apiGroups: ["cilium.io"]
+    resources: ["ciliumnetworkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

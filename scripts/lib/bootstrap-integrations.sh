@@ -1,0 +1,276 @@
+#!/usr/bin/env bash
+# Apply veyron-integrations Secret when observability / GitOps services exist on the cluster.
+# Sourced or invoked from deploy-all-remote.sh with K8S_CMD and NAMESPACE set.
+set -euo pipefail
+
+# Obtain Argo CD session token via cluster Service ClusterIP (reachable from the deploy node on k3s).
+bootstrap_argocd_credentials() {
+    local k8s="${1:?kubectl}"
+    local argocd_ns="" argocd_svc="" argocd_url="" argocd_token="" argocd_default_app=""
+
+    for cand in argocd argo-cd; do
+        if ${k8s} get ns "${cand}" &>/dev/null; then
+            argocd_ns="${cand}"
+            break
+        fi
+    done
+    if [[ -z "${argocd_ns}" ]]; then
+        return 0
+    fi
+
+    argocd_svc=$(${k8s} get svc -n "${argocd_ns}" -o name 2>/dev/null | grep -E 'argocd-server|/server$' | head -1 | sed 's|service/||' || true)
+    if [[ -z "${argocd_svc}" ]]; then
+        argocd_svc="argocd-server"
+    fi
+    if ! ${k8s} get svc "${argocd_svc}" -n "${argocd_ns}" &>/dev/null; then
+        echo "Argo CD namespace ${argocd_ns} found but no server Service — skip Argo wiring"
+        return 0
+    fi
+
+    local port cluster_ip session_base
+    port=$(${k8s} get svc "${argocd_svc}" -n "${argocd_ns}" -o jsonpath='{.spec.ports[?(@.name=="https")].port}' 2>/dev/null || true)
+    if [[ -z "${port}" ]]; then
+        port=$(${k8s} get svc "${argocd_svc}" -n "${argocd_ns}" -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || true)
+    fi
+    [[ -z "${port}" ]] && port=443
+    cluster_ip=$(${k8s} get svc "${argocd_svc}" -n "${argocd_ns}" -o jsonpath='{.spec.clusterIP}' 2>/dev/null || true)
+    argocd_url="https://${argocd_svc}.${argocd_ns}.svc:${port}"
+    if [[ -n "${cluster_ip}" && "${cluster_ip}" != "None" ]]; then
+        session_base="https://${cluster_ip}:${port}"
+    else
+        session_base="${argocd_url}"
+    fi
+
+    if [[ "${VEYRON_SKIP_ARGOCD_TOKEN_BOOTSTRAP:-}" != "1" && "${VEYRON_SKIP_ARGOCD_TOKEN_BOOTSTRAP:-}" != "true" ]]; then
+        if ${k8s} get secret argocd-initial-admin-secret -n "${argocd_ns}" &>/dev/null; then
+            local pw_b64 pw body
+            pw_b64=$(${k8s} get secret argocd-initial-admin-secret -n "${argocd_ns}" -o jsonpath='{.data.password}' 2>/dev/null || true)
+            if [[ -n "${pw_b64}" ]]; then
+                pw=$(printf '%s' "${pw_b64}" | base64 -d 2>/dev/null || true)
+                if [[ -n "${pw}" ]]; then
+                    if command -v jq &>/dev/null; then
+                        body=$(jq -n --arg p "${pw}" '{username:"admin",password:$p}')
+                        argocd_token=$(curl -skS --connect-timeout 12 --max-time 25 -X POST "${session_base}/api/v1/session" \
+                            -H "Content-Type: application/json" \
+                            -d "${body}" 2>/dev/null | jq -r '.token // empty' || true)
+                    else
+                        argocd_token=$(curl -skS --connect-timeout 12 --max-time 25 -X POST "${session_base}/api/v1/session" \
+                            -H "Content-Type: application/json" \
+                            -d "{\"username\":\"admin\",\"password\":\"${pw//\"/\\\"}\"}" 2>/dev/null \
+                            | sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)
+                    fi
+                    if [[ -n "${argocd_token}" ]]; then
+                        echo "Argo CD session token obtained for ${argocd_ns}"
+                    else
+                        echo "Argo CD: could not obtain session token (set VEYRON_ARGOCD_TOKEN manually)"
+                    fi
+                fi
+            fi
+        else
+            echo "Argo CD: argocd-initial-admin-secret not found — URL only; add VEYRON_ARGOCD_TOKEN manually"
+        fi
+    fi
+
+    argocd_default_app=$(${k8s} get applications.argoproj.io -A -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+
+    printf '%s\n%s\n%s\n%s' "${argocd_url}" "${argocd_token}" "${argocd_default_app}" "${argocd_ns}"
+}
+
+bootstrap_ready_node_ip() {
+    local k8s="${1:?kubectl}"
+    local ip=""
+    ip=$(${k8s} get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="ExternalIP")].address}{"\n"}{end}' 2>/dev/null | grep -v '^$' | head -1 || true)
+    if [[ -z "${ip}" ]]; then
+        ip=$(${k8s} get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}' 2>/dev/null | grep -v '^$' | head -1 || true)
+    fi
+    printf '%s' "${ip}"
+}
+
+bootstrap_nodeport_external_url() {
+    local k8s="${1:?kubectl}" ns="${2:?namespace}" svc="${3:?service}" scheme="${4:-http}"
+    local node_ip="" np=""
+    [[ -z "${svc}" ]] && return 0
+    node_ip=$(bootstrap_ready_node_ip "${k8s}")
+    [[ -z "${node_ip}" ]] && return 0
+    np=$(${k8s} get svc "${svc}" -n "${ns}" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || true)
+    if [[ -n "${np}" && "${np}" != "null" && "${np}" != "0" ]]; then
+        printf '%s://%s:%s' "${scheme}" "${node_ip}" "${np}"
+    fi
+}
+
+bootstrap_veyron_integrations() {
+    local k8s="${1:?kubectl command}"
+    local ns="${2:-veyron-system}"
+
+    if [[ "${VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP:-}" == "1" || "${VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP:-}" == "true" ]]; then
+        echo "Skipping veyron-integrations bootstrap (VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP=1)"
+        return 0
+    fi
+
+    local prom_url="" am_url="" loki_url="" opencost_url="" trivy_url="" jaeger_url="" grafana_url=""
+    local grafana_ext="" prom_ext="" am_ext="" jaeger_ext="" netra_ext="" paqtra_ext=""
+    local atlas_url="" atlas_ns="" atlas_svc="" atlas_entry=""
+    local argocd_url="" argocd_token="" argocd_default_app=""
+    local prom_svc="" am_svc="" loki_svc="" opencost_svc="" trivy_svc="" jaeger_svc="" grafana_svc=""
+
+    if ${k8s} get ns monitoring &>/dev/null; then
+        prom_svc=$(${k8s} get svc -n monitoring -l app.kubernetes.io/name=prometheus -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
+            | grep -viE 'grafana|node-exporter|operated$' | grep -E 'prometheus' | head -1 || true)
+        if [[ -z "${prom_svc}" ]]; then
+            prom_svc=$(${k8s} get svc -n monitoring -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
+                | grep -i prometheus | grep -viE 'grafana|node-exporter|operator|alertmanager|operated' | head -1 || true)
+        fi
+        if [[ -n "${prom_svc}" ]]; then
+            prom_url="http://${prom_svc}.monitoring.svc:9090/api/v1/query"
+        fi
+        am_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i alertmanager | grep -vi operated | head -1 | sed 's|service/||' || true)
+        if [[ -n "${am_svc}" ]]; then
+            am_url="http://${am_svc}.monitoring.svc:9093"
+        fi
+        grafana_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i grafana | grep -v headless | head -1 | sed 's|service/||' || true)
+        if [[ -n "${grafana_svc}" ]]; then
+            grafana_port=$(${k8s} get svc "${grafana_svc}" -n monitoring -o jsonpath='{.spec.ports[?(@.name=="service")].port}' 2>/dev/null || true)
+            [[ -z "${grafana_port}" ]] && grafana_port=$(${k8s} get svc "${grafana_svc}" -n monitoring -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || true)
+            [[ -z "${grafana_port}" ]] && grafana_port=3000
+            grafana_url="http://${grafana_svc}.monitoring.svc:${grafana_port}"
+            grafana_ext=$(bootstrap_nodeport_external_url "${k8s}" monitoring "${grafana_svc}" http || true)
+        fi
+        if [[ -n "${prom_svc}" ]]; then
+            prom_ext=$(bootstrap_nodeport_external_url "${k8s}" monitoring "${prom_svc}" http || true)
+        fi
+        if [[ -n "${am_svc}" ]]; then
+            am_ext=$(bootstrap_nodeport_external_url "${k8s}" monitoring "${am_svc}" http || true)
+        fi
+    fi
+
+    if ${k8s} get ns loki &>/dev/null; then
+        loki_svc=$(${k8s} get svc -n loki -o name 2>/dev/null | grep -E 'loki(-gateway)?$|/loki$' | head -1 | sed 's|service/||' || true)
+        if [[ -z "${loki_svc}" ]]; then
+            loki_svc=$(${k8s} get svc -n loki -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+        fi
+        if [[ -n "${loki_svc}" ]]; then
+            loki_url="http://${loki_svc}.loki.svc:3100"
+        fi
+    fi
+
+    if ${k8s} get ns opencost &>/dev/null; then
+        opencost_svc=$(${k8s} get svc -n opencost -o jsonpath='{.items[?(@.metadata.name=="opencost")].metadata.name}' 2>/dev/null || true)
+        if [[ -z "${opencost_svc}" ]]; then
+            opencost_svc=$(${k8s} get svc -n opencost -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+        fi
+        if [[ -n "${opencost_svc}" ]]; then
+            opencost_url="http://${opencost_svc}.opencost.svc:9003"
+        fi
+    fi
+
+    for tns in trivy-system trivy; do
+        if ${k8s} get ns "${tns}" &>/dev/null; then
+            trivy_svc=$(${k8s} get svc -n "${tns}" -o name 2>/dev/null | grep -i trivy | head -1 | sed 's|service/||' || true)
+            if [[ -n "${trivy_svc}" ]]; then
+                trivy_url="http://${trivy_svc}.${tns}.svc:4954"
+                break
+            fi
+        fi
+    done
+
+    if ${k8s} get ns monitoring &>/dev/null; then
+        jaeger_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i jaeger | grep -i query | head -1 | sed 's|service/||' || true)
+        if [[ -n "${jaeger_svc}" ]]; then
+            jaeger_url="http://${jaeger_svc}.monitoring.svc:16686/api/traces"
+            jaeger_ext=$(bootstrap_nodeport_external_url "${k8s}" monitoring "${jaeger_svc}" http || true)
+        fi
+    fi
+
+    if ${k8s} get crd backups.velero.io &>/dev/null; then
+        echo "Velero CRDs detected — cluster backups available in dashboard Backups page"
+    fi
+
+    # Veyron finds Netra's in-cluster Service on its own; only the browser link needs wiring.
+    if ${k8s} get svc netra -n netra-system &>/dev/null; then
+        netra_ext=$(bootstrap_nodeport_external_url "${k8s}" netra-system netra https || true)
+        echo "Netra detected in netra-system${netra_ext:+: ${netra_ext}}"
+    fi
+
+    # Paqtra: Veyron finds the API Service and reads its credentials from paqtra-secret.
+    if ${k8s} get svc paqtra-api -n paqtra &>/dev/null; then
+        paqtra_ext=$(bootstrap_nodeport_external_url "${k8s}" paqtra paqtra-ui https || true)
+        echo "Paqtra detected in paqtra${paqtra_ext:+: ${paqtra_ext}}"
+    fi
+
+    # Gryvia: Veyron finds the api-gateway Service and reads its key from gryvia-api-key.
+    if ${k8s} get svc gryvia-api-gateway -n gryvia-system &>/dev/null; then
+        gryvia_ext=$(bootstrap_nodeport_external_url "${k8s}" gryvia-system gryvia-ui https || true)
+        echo "Gryvia detected in gryvia-system${gryvia_ext:+: ${gryvia_ext}}"
+    fi
+
+    # Atlas storage control plane — enables Ceph-backed VM disk snapshot/backup/
+    # restore. Prefer the real-Ceph gateway (rook-ceph) over the fake/zyvor-system one.
+    for atlas_entry in "rook-ceph:atlas-gateway-ceph" "zyvor-system:atlas-gateway" "atlas:atlas-gateway"; do
+        atlas_ns="${atlas_entry%%:*}"; atlas_svc="${atlas_entry##*:}"
+        if ${k8s} get svc "${atlas_svc}" -n "${atlas_ns}" &>/dev/null; then
+            atlas_url="http://${atlas_svc}.${atlas_ns}.svc:5110"
+            echo "Atlas storage control plane detected in ${atlas_ns}: ${atlas_url}"
+            break
+        fi
+    done
+
+    local argo_lines argo_ns_discovered=""
+    argo_lines=$(bootstrap_argocd_credentials "${k8s}" || true)
+    if [[ -n "${argo_lines}" ]]; then
+        argocd_url=$(echo "${argo_lines}" | sed -n '1p')
+        argocd_token=$(echo "${argo_lines}" | sed -n '2p')
+        argocd_default_app=$(echo "${argo_lines}" | sed -n '3p')
+        argo_ns_discovered=$(echo "${argo_lines}" | sed -n '4p')
+        if [[ -n "${argocd_url}" ]]; then
+            echo "Argo CD API URL: ${argocd_url} (namespace ${argo_ns_discovered})"
+        fi
+    fi
+
+    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${grafana_url}" && -z "${argocd_url}" && -z "${netra_ext}" && -z "${paqtra_ext}" && -z "${atlas_url}" ]]; then
+        echo "No integration services detected — skip veyron-integrations Secret"
+        return 0
+    fi
+
+    echo "Applying veyron-integrations Secret in ${ns}…"
+    ${k8s} create namespace "${ns}" --dry-run=client -o yaml | ${k8s} apply -f - >/dev/null 2>&1 || true
+
+    local tmp
+    tmp=$(mktemp)
+    cat >"${tmp}" <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: veyron-integrations
+  namespace: ${ns}
+  labels:
+    app.kubernetes.io/name: veyron
+    app.kubernetes.io/component: api
+type: Opaque
+stringData:
+EOF
+    [[ -n "${prom_url}" ]] && echo "  VEYRON_PROMETHEUS_URL: \"${prom_url}\"" >>"${tmp}"
+    [[ -n "${am_url}" ]] && echo "  VEYRON_ALERTMANAGER_URL: \"${am_url}\"" >>"${tmp}"
+    [[ -n "${loki_url}" ]] && echo "  VEYRON_LOKI_URL: \"${loki_url}\"" >>"${tmp}"
+    [[ -n "${opencost_url}" ]] && echo "  VEYRON_OPENCOST_URL: \"${opencost_url}\"" >>"${tmp}"
+    [[ -n "${trivy_url}" ]] && echo "  VEYRON_TRIVY_URL: \"${trivy_url}\"" >>"${tmp}"
+    [[ -n "${jaeger_url}" ]] && echo "  VEYRON_JAEGER_QUERY_URL: \"${jaeger_url}\"" >>"${tmp}"
+    [[ -n "${grafana_url}" ]] && echo "  VEYRON_GRAFANA_URL: \"${grafana_url}\"" >>"${tmp}"
+    [[ -n "${grafana_ext}" ]] && echo "  VEYRON_GRAFANA_EXTERNAL_URL: \"${grafana_ext}\"" >>"${tmp}"
+    [[ -n "${prom_ext}" ]] && echo "  VEYRON_PROMETHEUS_EXTERNAL_URL: \"${prom_ext}\"" >>"${tmp}"
+    [[ -n "${am_ext}" ]] && echo "  VEYRON_ALERTMANAGER_EXTERNAL_URL: \"${am_ext}\"" >>"${tmp}"
+    [[ -n "${jaeger_ext}" ]] && echo "  VEYRON_JAEGER_EXTERNAL_URL: \"${jaeger_ext}\"" >>"${tmp}"
+    [[ -n "${atlas_url}" ]] && echo "  VEYRON_ATLAS_URL: \"${atlas_url}\"" >>"${tmp}"
+    [[ -n "${netra_ext}" ]] && echo "  VEYRON_NETRA_EXTERNAL_URL: \"${netra_ext}\"" >>"${tmp}"
+    [[ -n "${paqtra_ext}" ]] && echo "  VEYRON_PAQTRA_EXTERNAL_URL: \"${paqtra_ext}\"" >>"${tmp}"
+    [[ -n "${argocd_url}" ]] && echo "  VEYRON_ARGOCD_URL: \"${argocd_url}\"" >>"${tmp}"
+    [[ -n "${argocd_token}" ]] && echo "  VEYRON_ARGOCD_TOKEN: \"${argocd_token}\"" >>"${tmp}"
+    [[ -n "${argocd_default_app}" ]] && echo "  VEYRON_ARGOCD_DEFAULT_APP: \"${argocd_default_app}\"" >>"${tmp}"
+
+    ${k8s} apply -f "${tmp}"
+    rm -f "${tmp}"
+    echo "veyron-integrations applied (restart veyron-api to pick up env if already running)"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    bootstrap_veyron_integrations "${1:?kubectl}" "${2:-veyron-system}"
+fi

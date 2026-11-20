@@ -1,0 +1,17 @@
+apiVersion: v2
+name: veyron-operator
+description: Veyron Kubernetes Operator for KubeVirt VM lifecycle (veyron.io CRDs)
+type: application
+version: 0.3.0
+appVersion: "0.3.0"
+keywords:
+  - veyron
+  - kubevirt
+  - operator
+  - virtual-machine
+home: https://github.com/zyvorai/veyron
+sources:
+  - https://github.com/zyvorai/veyron
+maintainers:
+  - name: ZyvorAI Labs Private Limited
+    url: https://github.com/zyvorai

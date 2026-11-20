@@ -1,0 +1,406 @@
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+package controller
+
+import (
+	"context"
+	"fmt"
+	"strconv"
+	"time"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	veyronv1alpha1 "github.com/zyvorai/veyron/operator/api/v1alpha1"
+	"github.com/zyvorai/veyron/operator/internal/eventbus"
+	vmmetrics "github.com/zyvorai/veyron/operator/internal/metrics"
+)
+
+const restartPhaseAnnotation = "veyron.io/restart-phase"
+
+// VeyronActionReconciler reconciles a VeyronAction object.
+type VeyronActionReconciler struct {
+	client.Client
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
+	EventBus *eventbus.EventBus
+}
+
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronactions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronactions/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronactions/finalizers,verbs=update
+
+func (r *VeyronActionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	var action veyronv1alpha1.VeyronAction
+	if err := r.Get(ctx, req.NamespacedName, &action); err != nil {
+		if errors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	// Skip if already completed or failed
+	if action.Status.Phase == veyronv1alpha1.ActionPhaseCompleted ||
+		action.Status.Phase == veyronv1alpha1.ActionPhaseFailed ||
+		action.Status.Phase == veyronv1alpha1.ActionPhaseRejected {
+		return ctrl.Result{}, nil
+	}
+
+	// Auto-approve via status (do not mutate spec.Approved)
+	if action.Spec.AutoApprove && action.Status.Phase == veyronv1alpha1.ActionPhasePending {
+		now := metav1.Now()
+		action.Status.Phase = veyronv1alpha1.ActionPhaseApproved
+		setCondition(&action.Status.Conditions, metav1.Condition{
+			Type:               "Approved",
+			Status:             metav1.ConditionTrue,
+			Reason:             "AutoApproved",
+			Message:            "Action auto-approved",
+			LastTransitionTime: now,
+		})
+		if err := r.Status().Update(ctx, &action); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	approved := action.Spec.Approved ||
+		action.Status.Phase == veyronv1alpha1.ActionPhaseApproved ||
+		action.Status.Phase == veyronv1alpha1.ActionPhaseExecuting
+
+	// If not approved, set status to Pending
+	if !approved {
+		if action.Status.Phase != veyronv1alpha1.ActionPhasePending {
+			action.Status.Phase = veyronv1alpha1.ActionPhasePending
+			now := metav1.Now()
+			setCondition(&action.Status.Conditions, metav1.Condition{
+				Type:               "Approved",
+				Status:             metav1.ConditionFalse,
+				Reason:             "AwaitingApproval",
+				Message:            "Action requires approval before execution",
+				LastTransitionTime: now,
+			})
+			_ = r.Status().Update(ctx, &action)
+		}
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
+	if action.Spec.ActionType == "RestartVM" {
+		return r.reconcileRestartVM(ctx, &action)
+	}
+
+	// Execute the action
+	logger.Info("executing action", "type", action.Spec.ActionType, "vm", action.Spec.VMRef)
+
+	if action.Status.Phase != veyronv1alpha1.ActionPhaseExecuting {
+		now := metav1.Now()
+		action.Status.Phase = veyronv1alpha1.ActionPhaseExecuting
+		action.Status.StartedAt = &now
+		setCondition(&action.Status.Conditions, metav1.Condition{
+			Type:               "Approved",
+			Status:             metav1.ConditionTrue,
+			Reason:             "Approved",
+			Message:            "Action has been approved",
+			LastTransitionTime: now,
+		})
+		if err := r.Status().Update(ctx, &action); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	err := r.executeAction(ctx, &action)
+
+	completedAt := metav1.Now()
+	action.Status.CompletedAt = &completedAt
+
+	if err != nil {
+		logger.Error(err, "action execution failed")
+		action.Status.Phase = veyronv1alpha1.ActionPhaseFailed
+		action.Status.Message = fmt.Sprintf("Execution failed: %v", err)
+		r.Recorder.Eventf(&action, "Warning", "ExecutionFailed", "Action %s failed: %v", action.Spec.ActionType, err)
+		r.publishActionEvent(eventbus.SubjectActionFailed, &action)
+		vmmetrics.ActionExecutions.WithLabelValues(action.Spec.ActionType, "failed").Inc()
+	} else {
+		action.Status.Phase = veyronv1alpha1.ActionPhaseCompleted
+		action.Status.Message = "Action completed successfully"
+		r.Recorder.Eventf(&action, "Normal", "Executed", "Action %s completed for VM %s", action.Spec.ActionType, action.Spec.VMRef)
+		r.publishActionEvent(eventbus.SubjectActionExecuted, &action)
+		vmmetrics.ActionExecutions.WithLabelValues(action.Spec.ActionType, "success").Inc()
+	}
+
+	setCondition(&action.Status.Conditions, metav1.Condition{
+		Type:               "Executed",
+		Status:             conditionBool(err == nil),
+		Reason:             string(action.Status.Phase),
+		Message:            action.Status.Message,
+		LastTransitionTime: completedAt,
+	})
+
+	if updateErr := r.Status().Update(ctx, &action); updateErr != nil {
+		return ctrl.Result{}, updateErr
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (r *VeyronActionReconciler) reconcileRestartVM(ctx context.Context, action *veyronv1alpha1.VeyronAction) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	namespace := action.Spec.Namespace
+	if namespace == "" {
+		namespace = action.Namespace
+	}
+	if action.Spec.VMRef == "" {
+		return r.failRestart(ctx, action, fmt.Errorf("RestartVM requires vmRef"))
+	}
+
+	ann := action.GetAnnotations()
+	if ann == nil {
+		ann = map[string]string{}
+	}
+	phase := ann[restartPhaseAnnotation]
+
+	switch phase {
+	case "":
+		now := metav1.Now()
+		if action.Status.Phase != veyronv1alpha1.ActionPhaseExecuting {
+			action.Status.Phase = veyronv1alpha1.ActionPhaseExecuting
+			action.Status.StartedAt = &now
+			action.Status.Message = "Restart: stopping VM"
+			if err := r.Status().Update(ctx, action); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		if err := r.patchVMRunning(ctx, namespace, action.Spec.VMRef, false); err != nil {
+			return r.failRestart(ctx, action, fmt.Errorf("stop phase: %w", err))
+		}
+		ann[restartPhaseAnnotation] = "wait-stop"
+		action.SetAnnotations(ann)
+		if err := r.Update(ctx, action); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+
+	case "wait-stop":
+		vmi := &unstructured.Unstructured{}
+		vmi.SetGroupVersionKind(schema.GroupVersionKind{Group: "kubevirt.io", Version: "v1", Kind: "VirtualMachineInstance"})
+		err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: action.Spec.VMRef}, vmi)
+		if err == nil {
+			action.Status.Message = "Restart: waiting for VM to stop"
+			_ = r.Status().Update(ctx, action)
+			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+		}
+		if !errors.IsNotFound(err) {
+			return r.failRestart(ctx, action, err)
+		}
+		if err := r.patchVMRunning(ctx, namespace, action.Spec.VMRef, true); err != nil {
+			return r.failRestart(ctx, action, fmt.Errorf("start phase: %w", err))
+		}
+		delete(ann, restartPhaseAnnotation)
+		action.SetAnnotations(ann)
+		if err := r.Update(ctx, action); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		completedAt := metav1.Now()
+		action.Status.Phase = veyronv1alpha1.ActionPhaseCompleted
+		action.Status.CompletedAt = &completedAt
+		action.Status.Message = "Restart completed successfully"
+		setCondition(&action.Status.Conditions, metav1.Condition{
+			Type:               "Executed",
+			Status:             metav1.ConditionTrue,
+			Reason:             string(veyronv1alpha1.ActionPhaseCompleted),
+			Message:            action.Status.Message,
+			LastTransitionTime: completedAt,
+		})
+		if err := r.Status().Update(ctx, action); err != nil {
+			return ctrl.Result{}, err
+		}
+		r.Recorder.Eventf(action, "Normal", "Executed", "RestartVM completed for VM %s", action.Spec.VMRef)
+		r.publishActionEvent(eventbus.SubjectActionExecuted, action)
+		vmmetrics.ActionExecutions.WithLabelValues("RestartVM", "success").Inc()
+		logger.Info("RestartVM completed", "vm", action.Spec.VMRef)
+		return ctrl.Result{}, nil
+
+	default:
+		return r.failRestart(ctx, action, fmt.Errorf("unknown restart phase %q", phase))
+	}
+}
+
+func (r *VeyronActionReconciler) failRestart(ctx context.Context, action *veyronv1alpha1.VeyronAction, err error) (ctrl.Result, error) {
+	completedAt := metav1.Now()
+	action.Status.Phase = veyronv1alpha1.ActionPhaseFailed
+	action.Status.CompletedAt = &completedAt
+	action.Status.Message = fmt.Sprintf("Execution failed: %v", err)
+	setCondition(&action.Status.Conditions, metav1.Condition{
+		Type:               "Executed",
+		Status:             metav1.ConditionFalse,
+		Reason:             string(veyronv1alpha1.ActionPhaseFailed),
+		Message:            action.Status.Message,
+		LastTransitionTime: completedAt,
+	})
+	_ = r.Status().Update(ctx, action)
+	r.Recorder.Eventf(action, "Warning", "ExecutionFailed", "RestartVM failed: %v", err)
+	r.publishActionEvent(eventbus.SubjectActionFailed, action)
+	vmmetrics.ActionExecutions.WithLabelValues("RestartVM", "failed").Inc()
+	return ctrl.Result{}, err
+}
+
+func (r *VeyronActionReconciler) executeAction(ctx context.Context, action *veyronv1alpha1.VeyronAction) error {
+	if action.Spec.VMRef == "" && requiresVMRef(action.Spec.ActionType) {
+		return fmt.Errorf("action type %s requires a vmRef", action.Spec.ActionType)
+	}
+
+	namespace := action.Spec.Namespace
+	if namespace == "" {
+		namespace = action.Namespace
+	}
+
+	switch action.Spec.ActionType {
+	case "StartVM":
+		return r.patchVMRunning(ctx, namespace, action.Spec.VMRef, true)
+	case "StopVM":
+		return r.patchVMRunning(ctx, namespace, action.Spec.VMRef, false)
+	case "ScaleResources":
+		return r.scaleVM(ctx, namespace, action.Spec.VMRef, action.Spec.Parameters)
+	case "CreateSnapshot":
+		return r.createSnapshot(ctx, namespace, action.Spec.VMRef, action.Spec.Parameters)
+	case "DeleteVM":
+		return r.deleteVM(ctx, namespace, action.Spec.VMRef)
+	case "Migrate":
+		return r.migrateVM(ctx, namespace, action.Spec.VMRef)
+	case "SendNotification":
+		msg := action.Spec.Parameters["message"]
+		if msg == "" {
+			msg = fmt.Sprintf("Action notification for VM %s", action.Spec.VMRef)
+		}
+		log.FromContext(ctx).Info("Notification", "message", msg, "vm", action.Spec.VMRef)
+		return nil
+	default:
+		return fmt.Errorf("unsupported action type: %s", action.Spec.ActionType)
+	}
+}
+
+func (r *VeyronActionReconciler) patchVMRunning(ctx context.Context, namespace, name string, running bool) error {
+	var vm veyronv1alpha1.VeyronVM
+	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &vm); err != nil {
+		return fmt.Errorf("getting VM %s/%s: %w", namespace, name, err)
+	}
+
+	vm.Spec.Running = &running
+	return r.Update(ctx, &vm)
+}
+
+func (r *VeyronActionReconciler) scaleVM(ctx context.Context, namespace, name string, params map[string]string) error {
+	var vm veyronv1alpha1.VeyronVM
+	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &vm); err != nil {
+		return fmt.Errorf("getting VM %s/%s: %w", namespace, name, err)
+	}
+
+	if cpuStr, ok := params["cpu"]; ok {
+		cpu, err := strconv.ParseUint(cpuStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid cpu value %q: %w", cpuStr, err)
+		}
+		vm.Spec.CPU.Cores = uint32(cpu)
+	}
+
+	if memory, ok := params["memory"]; ok {
+		vm.Spec.Memory.Size = memory
+	}
+
+	return r.Update(ctx, &vm)
+}
+
+func (r *VeyronActionReconciler) createSnapshot(ctx context.Context, namespace, vmName string, params map[string]string) error {
+	snapshotName := params["name"]
+	if snapshotName == "" {
+		snapshotName = fmt.Sprintf("snap-%s-%d", vmName, time.Now().Unix())
+	}
+
+	snapshot := &unstructured.Unstructured{}
+	snapshot.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "snapshot.kubevirt.io",
+		Version: "v1alpha1",
+		Kind:    "VirtualMachineSnapshot",
+	})
+	snapshot.SetNamespace(namespace)
+	snapshot.SetName(snapshotName)
+	snapshot.Object["spec"] = map[string]interface{}{
+		"source": map[string]interface{}{
+			"apiGroup": "kubevirt.io",
+			"kind":     "VirtualMachine",
+			"name":     vmName,
+		},
+	}
+
+	return r.Create(ctx, snapshot)
+}
+
+func (r *VeyronActionReconciler) deleteVM(ctx context.Context, namespace, name string) error {
+	var vm veyronv1alpha1.VeyronVM
+	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &vm); err != nil {
+		return fmt.Errorf("getting VM %s/%s: %w", namespace, name, err)
+	}
+	return r.Delete(ctx, &vm)
+}
+
+func (r *VeyronActionReconciler) migrateVM(ctx context.Context, namespace, vmName string) error {
+	if err := r.checkMigrationEligible(ctx, namespace, vmName); err != nil {
+		return fmt.Errorf("migration blocked: %w", err)
+	}
+
+	migration := &unstructured.Unstructured{}
+	migration.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "kubevirt.io",
+		Version: "v1",
+		Kind:    "VirtualMachineInstanceMigration",
+	})
+	migration.SetNamespace(namespace)
+	migration.SetGenerateName(fmt.Sprintf("migrate-%s-", vmName))
+	migration.Object["spec"] = map[string]interface{}{
+		"vmiName": vmName,
+	}
+
+	return r.Create(ctx, migration)
+}
+
+func (r *VeyronActionReconciler) publishActionEvent(subject string, action *veyronv1alpha1.VeyronAction) {
+	if r.EventBus == nil {
+		return
+	}
+	event, err := eventbus.NewEvent(subject, "operator", subject, eventbus.ActionEventData{
+		Name:       action.Name,
+		Namespace:  action.Namespace,
+		ActionType: action.Spec.ActionType,
+		VMRef:      action.Spec.VMRef,
+		Phase:      string(action.Status.Phase),
+		Message:    action.Status.Message,
+	})
+	if err == nil {
+		_ = r.EventBus.Publish(event)
+	}
+}
+
+func requiresVMRef(actionType string) bool {
+	switch actionType {
+	case "StartVM", "StopVM", "RestartVM", "ScaleResources", "CreateSnapshot", "DeleteVM", "Migrate":
+		return true
+	default:
+		return false
+	}
+}
+
+func (r *VeyronActionReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&veyronv1alpha1.VeyronAction{}).
+		Complete(r)
+}

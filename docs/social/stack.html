@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Veyron stack</title>
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+     1600x900 layered stack. Rendered by ./build.sh to docs/assets/readme-stack.jpg. -->
+<link rel="stylesheet" href="dark.css">
+<style>
+  body { height:900px; }
+  .cols { margin-top:34px; flex:1; display:grid; grid-template-columns:430px 1fr; gap:56px; }
+  .story p { margin:0 0 22px; font-size:20px; line-height:1.45; color:var(--soft); }
+  .story p b { color:var(--ink); font-weight:600; }
+  .stack { display:flex; flex-direction:column; gap:12px; position:relative; }
+  .layer { position:relative; display:grid; grid-template-columns:200px 1fr auto; align-items:center; gap:20px; padding:18px 24px; border-radius:20px;
+    background:linear-gradient(90deg, color-mix(in srgb, var(--c) 22%, transparent), rgba(255,255,255,.035));
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent), 0 18px 40px rgba(0,0,0,.35); }
+  .layer::before { content:""; position:absolute; left:0; top:14px; bottom:14px; width:4px; border-radius:4px; background:var(--c); box-shadow:0 0 16px var(--c); }
+  .layer .name { font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .layer .name small { display:block; margin-top:3px; font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--c); font-weight:700; }
+  .layer .job { font-size:18px; line-height:1.35; color:var(--soft); }
+  .layer .job b { color:var(--ink); font-weight:600; }
+  .layer .tags { display:flex; gap:8px; }
+  .hv { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .hv div { padding:14px 12px; border-radius:16px; text-align:center; font-size:18px; font-weight:700; letter-spacing:-.01em;
+    background:rgba(255,255,255,.05); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
+  .hv div small { display:block; margin-top:4px; font-family:var(--mono); font-size:12px; color:var(--soft); font-weight:500; }
+  .kvm { padding:16px 24px; border-radius:20px; display:flex; align-items:center; gap:18px; font-size:22px; font-weight:700;
+    background:linear-gradient(90deg,#1c1c1e,#26262a); box-shadow:inset 0 0 0 1px var(--edge); }
+  .kvm span { font-family:var(--mono); font-size:15px; color:var(--soft); font-weight:500; }
+  .flow { position:absolute; left:-30px; top:30px; bottom:30px; width:2px; background:linear-gradient(180deg,var(--sky),var(--violet),var(--green),var(--amber)); opacity:.6; }
+</style></head><body>
+<div class="grid"></div>
+<div class="wrap">
+  <div class="brand"><img src="zyvor-mark.svg" alt=""><b>Veyron</b><span>&middot;</span><span>How the stack works</span><span class="r">Kubernetes is the source of truth</span></div>
+  <h1>One click in the console.<br><em>Straight to KVM.</em></h1>
+  <div class="cols">
+    <div class="story">
+      <p><b>Veyron</b> is what you touch: a browser console, an HTTPS API and a CLI. It turns a template into a Kairon <code>Machine</code>.</p>
+      <p><b>Kairon</b> schedules that Machine like Kubernetes schedules Pods, but a VM stays a VM: <b>zero pods per VM</b>, no libvirt in the hot path.</p>
+      <p><b>FluxVM</b> runs on every host and speaks one REST API for four hypervisors. Pick one per Machine.</p>
+      <p><b>KVM</b> does the rest. Nothing sits between the guest and the hardware except the hypervisor you chose.</p>
+    </div>
+    <div class="stack">
+      <div class="flow"></div>
+      <div class="layer" style="--c:var(--sky)"><div class="name">Veyron<small>You are here</small></div><div class="job"><b>Console, API, CLI.</b> Templates, day-2 ops, snapshots, SSO, SOC.</div><div class="tags"><span class="chip" style="--c:var(--sky)"><i></i>Rust</span></div></div>
+      <div class="layer" style="--c:#8e8e93"><div class="name">Kubernetes<small>Desired state</small></div><div class="job"><b><code>Machine</code> CRDs.</b> RBAC, ConfigMaps, nothing else to store.</div><div class="tags"><span class="chip" style="--c:#8e8e93"><i></i>API server</span></div></div>
+      <div class="layer" style="--c:var(--violet)"><div class="name">Kairon<small>VM engine</small></div><div class="job"><b>kairon-controller</b> places, <b>kairon-node</b> runs. eBPF edge on every VM.</div><div class="tags"><span class="chip" style="--c:var(--violet)"><i></i>0 pods / VM</span></div></div>
+      <div class="layer" style="--c:var(--green)"><div class="name">FluxVM<small>VMM layer</small></div><div class="job"><b>One REST API per host.</b> vsock guest agent, fork, warm pools.</div><div class="tags"><span class="chip" style="--c:var(--green)"><i></i>no libvirt</span></div></div>
+      <div class="hv">
+        <div style="--c:var(--amber)">QEMU / KVM<small>full VMs, Windows</small></div>
+        <div style="--c:var(--amber)">Cloud Hypervisor<small>lean Linux VMs</small></div>
+        <div style="--c:var(--amber)">Firecracker<small>microVMs</small></div>
+        <div style="--c:var(--amber)">FluxVM HV<small>in-tree, Rust</small></div>
+      </div>
+      <div class="kvm">Linux KVM &middot; your hardware <span>CPU &middot; memory &middot; NVMe &middot; GPU passthrough</span></div>
+    </div>
+  </div>
+  <div class="foot" style="margin-top:28px"><span><b>docs/architecture.md</b></span><span>github.com/zyvorai/kairon</span><span>github.com/zyvorai/fluxvm</span><span class="r">zyvor.dev</span></div>
+</div>
+</body></html>

@@ -1,0 +1,74 @@
+import { describe, it, expect } from 'vitest';
+import { applyFilter, looksLikeQuestion, matches, newRemoteHits, searchHitPage } from '../aisearch.js';
+
+const vms = [
+  { id: 'a/web-1', name: 'web-1', ns: 'a', status: 'Running', cpu: 2, ram: 4, os: 'ubuntu-24.04' },
+  { id: 'a/db-1', name: 'db-1', ns: 'a', status: 'Stopped', cpu: 8, ram: 32, os: 'windows-server-2022' },
+  { id: 'b/ci', name: 'ci', ns: 'b', status: 'Running', cpu: '—', ram: 16, os: 'debian-12' },
+];
+
+describe('aisearch', () => {
+  it('matches strings case-insensitively and numbers numerically', () => {
+    expect(matches(vms[0], { field: 'status', op: 'eq', value: 'running' })).toBe(true);
+    expect(matches(vms[1], { field: 'os', op: 'contains', value: 'Windows' })).toBe(true);
+    expect(matches(vms[1], { field: 'ram', op: 'gt', value: 8 })).toBe(true);
+    expect(matches(vms[2], { field: 'cpu', op: 'gt', value: 1 })).toBe(false);
+  });
+
+  it('filters, sorts and limits', () => {
+    const f = { resource: 'vms', where: [{ field: 'status', op: 'eq', value: 'Running' }], sort: { field: 'ram', dir: 'desc' }, limit: 1 };
+    expect(applyFilter(vms, f).map((r) => r.name)).toEqual(['ci']);
+    expect(applyFilter(vms, { where: [] })).toHaveLength(3);
+  });
+
+  it('puts unmeasured values last when sorting', () => {
+    const out = applyFilter(vms, { where: [], sort: { field: 'cpu', dir: 'desc' } });
+    expect(out.map((r) => r.name)).toEqual(['db-1', 'web-1', 'ci']);
+  });
+
+  it('tells questions from names', () => {
+    expect(looksLikeQuestion('web-1')).toBe(false);
+    expect(looksLikeQuestion('stopped windows vms')).toBe(true);
+    expect(looksLikeQuestion('which vms?')).toBe(true);
+    expect(looksLikeQuestion('? db')).toBe(true);
+  });
+});
+
+describe('newRemoteHits', () => {
+  const data = { vms: { rows: [{ id: 'a/web-1' }] }, pods: { rows: [] } };
+  it('maps kinds to console pages and drops hits already loaded', () => {
+    expect(searchHitPage('node')).toBe('hosts');
+    expect(searchHitPage('pvc')).toBe('pvcs');
+    expect(searchHitPage('snapshot')).toBe('snapshots');
+    expect(searchHitPage('template')).toBe('templates');
+    expect(searchHitPage('image')).toBe('images');
+    expect(searchHitPage('mystery')).toBeNull();
+    const hits = [
+      { kind: 'vm', id: 'a/web-1', title: 'web-1', subtitle: 'a · Running', status: 'Running' },
+      { kind: 'pod', id: 'a/web-1-abc', title: 'web-1-abc', subtitle: 'a · Running', status: 'Running' },
+      { kind: 'pod', id: 'a/web-1-abc', title: 'dup', subtitle: '', status: '' },
+      { kind: 'node', id: 'n1', title: 'n1', subtitle: 'Ready', status: 'Ready' },
+      { kind: 'mystery', id: 'x', title: 'x' },
+      { kind: 'vm' },
+    ];
+    expect(newRemoteHits(hits, data).map((h) => `${h.page}:${h.id}`)).toEqual(['pods:a/web-1-abc', 'hosts:n1']);
+  });
+  it('opens catalog images by their prefixed row id and skips ones already loaded', () => {
+    const hits = [
+      { kind: 'image', id: 'ubuntu-24.04', title: 'ubuntu-24.04', subtitle: 'catalog image', status: 'Available' },
+      { kind: 'image', id: 'debian-13', title: 'debian-13' },
+      { kind: 'snapshot', id: 'a/web-1-snap', title: 'web-1-snap' },
+      { kind: 'template', id: 'fedora-44', title: 'fedora-44' },
+    ];
+    const loaded = { images: { rows: [{ id: 'catalog/debian-13' }] } };
+    expect(newRemoteHits(hits, loaded).map((h) => `${h.page}:${h.id}`)).toEqual([
+      'images:catalog/ubuntu-24.04',
+      'snapshots:a/web-1-snap',
+      'templates:fedora-44',
+    ]);
+  });
+  it('tolerates missing input', () => {
+    expect(newRemoteHits(undefined, {})).toEqual([]);
+    expect(newRemoteHits([{ kind: 'vm', id: 'a/b' }], undefined)).toHaveLength(1);
+  });
+});

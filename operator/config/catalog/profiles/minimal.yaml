@@ -1,0 +1,20 @@
+apiVersion: veyron.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    veyron.io/managed-by: veyron-catalog-export
+  name: minimal
+spec:
+  description: Minimal - ultra lightweight for basic tasks
+  cores: 1
+  sockets: 1
+  threads: 1
+  memory: '512Mi'
+  diskSize: '5Gi'
+  useCases:
+  - DNS server
+  - Jump host
+  - Monitoring agent
+  - Log collector
+  recommendedTemplates:
+  - debian

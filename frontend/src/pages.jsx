@@ -1,0 +1,1150 @@
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { IntentPanel } from './IntentPanel.jsx';
+import { ForecastBand } from './ForecastBand.jsx';
+import { McpServersBox } from './McpServersBox.jsx';
+import { useFocusTrap } from './a11y.js';
+import {
+  ChevronRight, ArrowRight, Monitor, Terminal, Archive, Plus, X, Copy, RefreshCw,
+  Network, Database, Shield, Settings, Loader2, CheckCircle, Activity, Cpu,
+} from 'lucide-react';
+import { Status } from './status.jsx';
+import { api, loginErrorMessage } from './api.js';
+import { PremiumLoginShell, LoginError } from './PremiumLoginShell.jsx';
+import { LogsPanel } from './LogsPanel.jsx';
+
+const VncConsole = lazy(() => import('./VncConsole.jsx').then((m) => ({ default: m.VncConsole })));
+import { PageHero } from './PageHero.jsx';
+import { FleetHero } from './FleetHero.jsx';
+import { Reveal, useSeries, PulseFigure, OsBadge, osInfo, EmptyArt } from './story.jsx';
+
+const HOT_PCT = 90;
+
+function listJoin(items) {
+  const xs = [...new Set(items.filter(Boolean))];
+  return xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
+}
+
+export function Mission({ data, go, onCreate, onConsole, healthOk, podSummary }) {
+  const vms = data.vms?.rows || [];
+  const hosts = data.hosts?.rows || [];
+  const run = vms.filter((v) => v.status === 'Running').length;
+  const attn = [
+    ...vms.filter((v) => ['Degraded', 'Provisioning', 'Failed'].includes(v.status)).map((v) => ['vms', v]),
+    ...hosts.filter((h) => ['Cordoned', 'NotReady'].includes(h.status)).map((h) => ['hosts', h]),
+    ...(data.pvcs?.rows || []).filter((p) => p.status === 'Pending').map((p) => ['pvcs', p]),
+  ];
+  // Firing alerts count too; before this, Mission Control could say "Operational" with an alert firing.
+  const firing = (data.alerts?.rows || []).filter((a) => !/resolved/i.test(String(a.status || '')));
+  attn.push(...firing.map((a) => ['alerts', { ...a, status: 'Degraded' }]));
+  const hot = hosts.filter((h) => (h.cpu ?? 0) >= HOT_PCT || (h.mem ?? 0) >= HOT_PCT);
+  for (const h of hot) {
+    attn.push(['hosts', { ...h, status: 'Warning', why: `Under pressure: CPU ${h.cpu ?? 0}% · memory ${h.mem ?? 0}%` }]);
+  }
+  const failedPods = podSummary?.failed ?? 0;
+  const attnRows = failedPods
+    ? [...attn.slice(0, 7), ['pods', { id: 'failed-pods', name: `${failedPods.toLocaleString()} failed pod${failedPods === 1 ? '' : 's'}`, status: 'Failed', why: 'Evicted or crashed — safe to clean up' }]]
+    : attn;
+  const why = {
+    Degraded: 'Needs attention',
+    Provisioning: 'Still provisioning',
+    Failed: 'Stopped unexpectedly — open to see events',
+    Pending: 'Waiting for capacity',
+    Cordoned: 'Cordoned for maintenance',
+    NotReady: 'Host not ready',
+  };
+  const measured = hosts.filter((h) => h.cpu != null);
+  const cpuAvg = measured.length ? Math.round(measured.reduce((a, h) => a + h.cpu, 0) / measured.length) : null;
+  const memGiB = vms.filter((v) => v.status === 'Running').reduce((a, v) => a + (Number(v.ram) || 0), 0);
+  const alertCount = (data.alerts?.rows || []).length + attn.length;
+  const series = useSeries({ run, cpu: cpuAvg ?? 0, mem: memGiB, alerts: alertCount });
+
+  const needs = attnRows.length;
+  const headline = !healthOk
+    ? 'Can’t reach the cluster reliably.'
+    : hot.length
+      ? `${hot.length === 1 ? 'A host is' : `${hot.length} hosts are`} under pressure.`
+      : needs
+        ? `${needs} thing${needs === 1 ? '' : 's'} need${needs === 1 ? 's' : ''} a look.`
+        : !vms.length
+          ? 'Your private cloud is ready.'
+          : run === vms.length
+            ? 'Everything’s running.'
+            : 'Everything’s healthy.';
+  const templates = (data.templates?.rows || []).filter((t) => !/^(ubuntu|debian|fedora|centos|almalinux|rocky|opensuse|windows)$/.test(t.name));
+  const seenFamily = new Set();
+  const featured = templates
+    .filter((t) => {
+      const fam = osInfo(t.name).family;
+      if (seenFamily.has(fam)) return false;
+      seenFamily.add(fam);
+      return true;
+    })
+    .slice(0, 12);
+
+  const shortcuts = [
+    { I: Monitor, t: 'Create a machine', p: 'Pick an OS, size it, boot it.', tone: 'sky', run: () => { go('vms'); onCreate?.(); } },
+    { I: Terminal, t: 'Open a console', p: 'A live screen in your browser.', tone: 'violet', run: () => go('console') },
+    { I: Archive, t: 'Protect a machine', p: 'Snapshots, backups and DR.', tone: 'emerald', run: () => go('snapshots') },
+    { I: Activity, t: 'Check capacity', p: 'Headroom before you scale.', tone: 'amber', run: () => go('monitoring') },
+  ];
+
+  return (
+    <div className="mission story">
+      <section className="story-hero">
+        <div className="story-hero-copy">
+          <p className="story-eyebrow">Private cloud command center</p>
+          <h1>{headline}</h1>
+          <p className="story-lede">
+            {run} of {vms.length} machine{vms.length === 1 ? '' : 's'} running on {hosts.length} host
+            {hosts.length === 1 ? '' : 's'}.{' '}
+            {healthOk ? 'Live from your cluster.' : 'The API is degraded; figures may be stale.'}
+          </p>
+          <div className="story-cta">
+            <button className="pill" onClick={() => { go('vms'); onCreate?.(); }}>
+              <Plus size={16} />
+              Create a machine
+            </button>
+            <button className="link on-dark" onClick={() => go('console')}>
+              Open a console
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+        <Reveal className="story-hero-art">
+          <FleetHero
+            hosts={hosts}
+            vms={vms}
+            onVm={(v) => (v.status === 'Running' && onConsole ? onConsole(v) : go('vms', v.id))}
+            onHost={(h) => go('hosts', h.id)}
+          />
+        </Reveal>
+      </section>
+
+      <section className="pulse-band">
+        <Reveal className="pulse-grid">
+          <PulseFigure label="Machines running" value={run} unit={`/${vms.length}`} series={series.run} tone="sky" />
+          <PulseFigure
+            label="Host CPU"
+            value={cpuAvg ?? '—'}
+            unit={cpuAvg == null ? '' : '%'}
+            series={series.cpu}
+            tone={cpuAvg != null && cpuAvg >= HOT_PCT ? 'amber' : 'violet'}
+            sub={cpuAvg == null ? 'No metrics-server data' : `${hosts.length} host${hosts.length === 1 ? '' : 's'}`}
+          />
+          <PulseFigure label="VM memory" value={memGiB} unit=" GiB" series={series.mem} tone="emerald" sub="Allocated to running machines" />
+          <PulseFigure label="Alerts" value={alertCount} series={series.alerts} tone={alertCount ? 'amber' : 'emerald'} />
+        </Reveal>
+      </section>
+
+      <div className="story-duo">
+        <section className="story-band">
+          <Reveal className="apple-chapter">
+            <div className="kicker">Fleet</div>
+            <h2>{attnRows.length ? 'Needs attention.' : 'All clear.'}</h2>
+            <p>Anything that isn’t in the state you asked for shows up here first.</p>
+            <div className="rows">
+              {attnRows.length === 0 ? (
+                <div className="rows-clear">
+                  <CheckCircle size={20} />
+                  <span>No degraded, failed or pending resources.</span>
+                </div>
+              ) : (
+                attnRows.slice(0, 8).map(([k, r]) => (
+                  <button key={`${k}-${r.id}`} onClick={() => go(k, r.why ? undefined : r.id)}>
+                    <Status s={r.status} />
+                    <b>{r.name}</b>
+                    <span className="why">{r.why || why[r.status] || 'Not in the requested state'}</span>
+                    <ChevronRight size={16} />
+                  </button>
+                ))
+              )}
+            </div>
+          </Reveal>
+        </section>
+
+        {hosts.length > 0 && (
+          <section className="story-band">
+            <Reveal className="apple-chapter">
+              <div className="kicker">Capacity</div>
+              <h2>Headroom, per host.</h2>
+              <p>CPU and memory pressure across the nodes running your machines.</p>
+              <div className="cap-list">
+                {hosts.slice(0, 8).map((h) => (
+                  <button key={h.id} className="cap-row" onClick={() => go('hosts', h.id)}>
+                    <span className="cap-name">
+                      <b>{h.name}</b>
+                      <Status s={h.status} />
+                    </span>
+                    <span className="cap-bar" title={`CPU ${h.cpu}%`}>
+                      <i style={{ width: `${Math.min(100, Number(h.cpu) || 0)}%` }} data-hot={Number(h.cpu) > 85 || undefined} />
+                    </span>
+                    <span className="cap-bar mem" title={`Memory ${h.mem}%`}>
+                      <i style={{ width: `${Math.min(100, Number(h.mem) || 0)}%` }} data-hot={Number(h.mem) > 85 || undefined} />
+                    </span>
+                    <span className="cap-num">
+                      {h.cpu == null ? '—' : `${h.cpu}%`} · {h.mem == null ? '—' : `${h.mem}%`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </Reveal>
+          </section>
+        )}
+
+      </div>
+
+      <ForecastBand go={go} />
+
+      <section className="story-band paper">
+        <Reveal className="apple-chapter">
+          <div className="kicker">Shortcuts</div>
+          <h2>Do something great.</h2>
+          <p>The things people come here to do, one click away.</p>
+          <div className="tile-shelf">
+            {shortcuts.map((s, i) => (
+              <Reveal key={s.t} as="button" className="tile" data-tone={s.tone} delay={i * 70} onClick={s.run}>
+                <span className="tile-ico">
+                  <s.I size={22} />
+                </span>
+                <b>{s.t}</b>
+                <p>{s.p}</p>
+                <span className="tile-go">
+                  Go <ChevronRight size={14} />
+                </span>
+              </Reveal>
+            ))}
+          </div>
+        </Reveal>
+      </section>
+
+      {featured.length > 0 && (
+        <section className="story-band">
+          <Reveal className="apple-chapter">
+            <div className="kicker">Templates</div>
+            <h2>Current releases, ready to boot.</h2>
+            <p>{listJoin(featured.map((t) => { const o = osInfo(t.name); return `${o.label} ${o.version || ''}`.trim(); }))}, with cloud-init and the guest agent built in.</p>
+            <div className="os-shelf">
+              {featured.map((t) => {
+                const o = osInfo(t.name);
+                return (
+                  <button key={t.id} className="os-card" onClick={() => { go('vms'); onCreate?.(t.name); }}>
+                    <OsBadge name={t.name} size={44} />
+                    <b>{o.label}</b>
+                    <small>{o.version}</small>
+                  </button>
+                );
+              })}
+            </div>
+            <button className="link" onClick={() => go('templates')}>
+              All templates
+              <ChevronRight size={16} />
+            </button>
+          </Reveal>
+        </section>
+      )}
+
+      <footer className="story-foot">
+        <span>Veyron · Zyvor AI Labs</span>
+        <span>
+          Press <kbd>⌘K</kbd> to jump anywhere
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+export function ConsoleHub({ vms, onOpen, onCreate }) {
+  const live = (vms || []).filter((v) => v.status === 'Running');
+  return (
+    <div className="hub-page story">
+      <section className="story-band">
+        <Reveal className="apple-chapter">
+          <div className="kicker">Display</div>
+          <h2>Consoles.</h2>
+          <p>Open a live screen on any running guest, right in the browser.</p>
+        </Reveal>
+      </section>
+      {live.length === 0 ? (
+        <div className="empty" style={{ minHeight: 320 }}>
+          <div>
+            <EmptyArt tone="violet" />
+            <b>No running guests</b>
+            <p className="lede">Start a machine, then open its console from here.</p>
+            <div className="acts">
+              <button className="pill" onClick={() => onCreate?.()}>
+                Create a machine
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="screen-grid">
+          {live.map((v, i) => (
+            <Reveal key={v.id} as="button" className="screen-card" delay={Math.min(i, 8) * 50} onClick={() => onOpen(v)}>
+              <span className="screen">
+                <span className="screen-glow" />
+                <OsBadge name={v.os && v.os !== "—" ? v.os : v.name} size={46} />
+                <span className="screen-play">
+                  <Terminal size={14} /> Open console
+                </span>
+              </span>
+              <span className="screen-meta">
+                <b>{v.name}</b>
+                <small>
+                  {[v.os && v.os !== '—' ? v.os : null, v.ip && v.ip !== '—' ? v.ip : null].filter(Boolean).join(' · ') || v.status}
+                </small>
+              </span>
+            </Reveal>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function headroomLine(h) {
+  const part = (r, label) =>
+    r && typeof r.headroom === 'number' ? `${label} ${r.headroom.toLocaleString()} of ${r.total.toLocaleString()} ${r.unit} free` : null;
+  return (
+    [
+      part(h.cpu, 'CPU'),
+      part(h.memory, 'memory'),
+      typeof h.nodes === 'number' && `${h.nodes} node${h.nodes === 1 ? '' : 's'}`,
+      typeof h.additional_avg_vms === 'number' && `room for about ${h.additional_avg_vms} more average VMs`,
+    ]
+      .filter(Boolean)
+      .join(' · ') || 'Not available'
+  );
+}
+
+export function SettingsPage({ theme, setTheme }) {
+  const [policy, setPolicy] = useState({ enabled: false, cooldown_secs: 600 });
+  const [policyBusy, setPolicyBusy] = useState(false);
+  const [integrations, setIntegrations] = useState(null);
+  const [about, setAbout] = useState({ versions: null, caps: null });
+  const [headroom, setHeadroom] = useState(null);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const set = (fn) => (v) => {
+      if (!cancelled) fn(v);
+    };
+    api
+      .getSelfHealingPolicy()
+      .catch(() => ({ enabled: false }))
+      .then(set((p) => setPolicy({ enabled: !!p.enabled, namespaces: p.namespaces || 'all', cooldown_secs: p.cooldown_secs || 600 })));
+    api
+      .integrationsStatus()
+      .catch(() => ({ integrations: [] }))
+      .then(set((integ) => setIntegrations(Array.isArray(integ?.integrations) ? integ.integrations : Array.isArray(integ) ? integ : [])));
+    api.platformVersions().catch(() => null).then(set((versions) => setAbout((a) => ({ ...a, versions }))));
+    api.platformCapabilities().catch(() => null).then(set((caps) => setAbout((a) => ({ ...a, caps }))));
+    api.capacityHeadroom().catch(() => null).then(set(setHeadroom));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const savePolicy = async (next) => {
+    setPolicyBusy(true);
+    setErr('');
+    try {
+      await api.setSelfHealingPolicy(next);
+      setPolicy(next);
+    } catch (e) {
+      setErr(e.message || String(e));
+    } finally {
+      setPolicyBusy(false);
+    }
+  };
+
+  const findInteg = (ids) =>
+    (integrations || []).find((i) => ids.includes(String(i.id || '').toLowerCase()) || ids.includes(String(i.name || '').toLowerCase()));
+
+  const netra = findInteg(['netra']);
+  const paqtra = findInteg(['paqtra']);
+  const atlas = findInteg(['atlas']);
+  const gryvia = findInteg(['gryvia']);
+  const oidc = findInteg(['oidc', 'sso']);
+
+  const integRow = (n, d, I, item) => {
+    const detail = item?.configured ? item.endpoint || 'Configured' : d;
+    const state = !integrations
+      ? <span className="dim">Checking…</span>
+      : !item?.configured
+        ? <span className="dim">Not configured</span>
+        : item.probe === 'failed'
+          ? <Status s="Failed" />
+          : <Status s="Healthy" />;
+    return (
+      <div className="srow2" key={n}>
+        <I size={16} style={{ color: 'var(--accent)' }} />
+        <div>
+          <b>{n}</b>
+          <small>{detail}</small>
+        </div>
+        <span className="r">{state}</span>
+      </div>
+    );
+  };
+
+  const kvVersion = about.versions;
+  const verLabel = (v, fallback) => {
+    if (v == null) return fallback;
+    if (typeof v === 'string') return v;
+    if (typeof v === 'object') {
+      return (
+        v.observedVersion ||
+        v.operatorVersion ||
+        v.targetVersion ||
+        v.version ||
+        v.phase ||
+        null
+      );
+    }
+    return String(v);
+  };
+  const versionLine = kvVersion
+    ? [
+        verLabel(kvVersion.kairon || kvVersion.kairon_version, null) && `Kairon ${verLabel(kvVersion.kairon || kvVersion.kairon_version, null)}`,
+        verLabel(kvVersion.veyron || kvVersion.version, null),
+        verLabel(kvVersion.kubevirt, null) && `KubeVirt ${verLabel(kvVersion.kubevirt, null)}`,
+        verLabel(kvVersion.cdi, null) && `CDI ${verLabel(kvVersion.cdi, null)}`,
+      ]
+        .filter(Boolean)
+        .join(' · ') || 'Platform versions available'
+    : 'Loading…';
+
+  return (
+    <div className="settings">
+      {err && <div className="toast err" style={{ position: 'relative', top: 0, marginBottom: 12 }}>{err}</div>}
+      <PageHero kicker="This console" title="Settings" lede="Theme, self-healing, and how this console connects to the cluster." />
+      <div className="sgrid">
+        <div className="scol">
+          <div className="sgroup">
+            <h3>Appearance</h3>
+            <div className="sbox">
+              <div className="srow2">
+                <div>
+                  <b>Theme</b>
+                  <small>Saved on this device.</small>
+                </div>
+                <div className="seg r">
+                  {['light', 'dark'].map((x) => (
+                    <button key={x} className="tb" aria-pressed={theme === x} onClick={() => setTheme(x)}>
+                      {x}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="sgroup">
+            <h3>Cluster</h3>
+            <div className="sbox">
+              <div className="srow2">
+                <div>
+                  <b>Auto-heal degraded machines</b>
+                  <small>Restart Failed or Error machines (self-healing policy).</small>
+                </div>
+                <button
+                  className="sw r"
+                  role="switch"
+                  aria-checked={policy.enabled}
+                  disabled={policyBusy}
+                  onClick={() => savePolicy({ ...policy, enabled: !policy.enabled })}
+                >
+                  <i />
+                </button>
+              </div>
+              <div className="srow2">
+                <div>
+                  <b>Run self-healing now</b>
+                  <small>Dry-run reports unhealthy machines; heal restarts them.</small>
+                </div>
+                <div className="r" style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    className="btn sm secondary"
+                    disabled={policyBusy}
+                    onClick={async () => {
+                      setPolicyBusy(true);
+                      setErr('');
+                      try {
+                        const r = await api.runSelfHealing(false);
+                        setErr('');
+                        alert(`Dry-run: unhealthy=${r?.unhealthy ?? '?'} (heal=${r?.healed ?? 0})`);
+                      } catch (e) {
+                        setErr(e.message || String(e));
+                      } finally {
+                        setPolicyBusy(false);
+                      }
+                    }}
+                  >
+                    Dry-run
+                  </button>
+                  <button
+                    className="btn sm warn"
+                    disabled={policyBusy}
+                    onClick={async () => {
+                      if (!window.confirm('Heal unhealthy VMs now?')) return;
+                      setPolicyBusy(true);
+                      setErr('');
+                      try {
+                        const r = await api.runSelfHealing(true);
+                        alert(`Healed ${r?.healed ?? 0} of ${r?.unhealthy ?? '?'}`);
+                      } catch (e) {
+                        setErr(e.message || String(e));
+                      } finally {
+                        setPolicyBusy(false);
+                      }
+                    }}
+                  >
+                    Heal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="scol">
+          <div className="sgroup">
+            <h3>Integrations</h3>
+            <div className="sbox">
+              {integRow('Netra', 'Auto-detected in netra-system, or set VEYRON_NETRA_URL', Network, netra)}
+              {integRow('Paqtra', 'Auto-detected in the paqtra namespace, or set VEYRON_PAQTRA_URL', Network, paqtra)}
+              {integRow('Atlas storage', 'Configure via VEYRON_ATLAS_URL', Database, atlas)}
+              {integRow('Gryvia GPU platform', 'Auto-detected in gryvia-system, or set VEYRON_GRYVIA_URL', Cpu, gryvia)}
+              {integRow('Single sign-on', 'Configure via VEYRON_OIDC_*', Shield, oidc)}
+            </div>
+          </div>
+          <div className="sgroup">
+            <h3>AI tools from MCP servers</h3>
+            <McpServersBox />
+          </div>
+          <div className="sgroup">
+            <h3>About</h3>
+            <div className="sbox">
+              <div className="srow2">
+                <Settings size={16} style={{ color: 'var(--accent)' }} />
+                <div>
+                  <b>Veyron Console</b>
+                  <small>{versionLine}</small>
+                </div>
+              </div>
+              {headroom && (
+                <div className="srow2">
+                  <div>
+                    <b>Capacity headroom</b>
+                    <small>{headroomLine(headroom)}</small>
+                  </div>
+                </div>
+              )}
+              {about.caps && (
+                <div className="srow2">
+                  <div>
+                    <b>Capabilities</b>
+                    <small>
+                      {[
+                        about.caps.live_migration && 'live migration',
+                        about.caps.machine_backups && 'machine backups',
+                        about.caps.machine_fork && 'VM fork',
+                        about.caps.gpu_passthrough && 'GPU (DRA)',
+                        about.caps.persistent_tpm_efi && 'persistent TPM/EFI',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'See /api/v1/platform/capabilities'}
+                    </small>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ConsoleSheet({ vm, mode = 'console', onClose }) {
+  const [logs, setLogs] = useState('');
+  const [loading, setLoading] = useState(mode === 'logs');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (mode !== 'logs') return;
+    let cancelled = false;
+    setLoading(true);
+    api
+      .podLogs(vm.name, vm.ns || 'default')
+      .then((t) => {
+        if (!cancelled) setLogs(t);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e.message || String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, vm.name, vm.ns]);
+  const sheetRef = useRef(null);
+  useFocusTrap(sheetRef);
+
+  return (
+    <div className="scrim" onClick={onClose}>
+      <div
+        ref={sheetRef}
+        className="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${vm.name} ${mode === 'logs' ? 'logs' : 'console'}`}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: mode === 'console' ? 'min(960px, 96%)' : undefined }}
+      >
+        <div className="sheet-h">
+          <Terminal size={15} />
+          {vm.name} · {mode === 'logs' ? 'logs' : 'console'}
+          <button className="tb x" onClick={onClose} aria-label="Close">
+            <X size={15} />
+          </button>
+        </div>
+        {mode === 'logs' ? (
+          <LogsPanel text={logs} loading={loading} error={error} />
+        ) : (
+          <Suspense fallback={<div className="console"><div className="console-logs">Loading console…</div></div>}>
+            <VncConsole vm={vm} />
+          </Suspense>
+        )}
+        <div className="sheet-f">
+          <button className="btn" onClick={() => navigator.clipboard?.writeText(vm.name)}>
+            <Copy size={13} />
+            Copy name
+          </button>
+          <button className="btn primary" onClick={onClose}>
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SIZES = [
+  { id: 'S', label: 'Small', cpus: 2, memory: '4Gi', note: '2 vCPU · 4 GiB' },
+  { id: 'M', label: 'Medium', cpus: 4, memory: '8Gi', note: '4 vCPU · 8 GiB' },
+  { id: 'L', label: 'Large', cpus: 8, memory: '16Gi', note: '8 vCPU · 16 GiB' },
+];
+const FAMILY_ALIASES = /^(ubuntu|debian|fedora|centos|almalinux|rocky|opensuse|windows)$/;
+
+export function NewSheet({ res, templates, storageClasses, initialTemplate, onClose, onCreate, user }) {
+  const isVm = res.kind === 'VirtualMachine';
+  const osTemplates = (templates || []).filter((t) => !FAMILY_ALIASES.test(t.name));
+  const pickable = osTemplates.length ? osTemplates : templates || [];
+  const [name, setName] = useState('');
+  const [template, setTemplate] = useState(initialTemplate || pickable[0]?.name || '');
+  const [sizeId, setSizeId] = useState('M');
+  const [cls, setCls] = useState(storageClasses?.[0]?.name || '');
+  const [size, setSize] = useState(res.kind === 'Image' ? '20Gi' : '10Gi');
+  const [url, setUrl] = useState('');
+  const [sha256, setSha256] = useState('');
+  const [format, setFormat] = useState('qcow2');
+  const [cidr, setCidr] = useState('10.244.100.0/24');
+  // Kairon image catalog: boot a VM from a catalog image or install from an ISO.
+  const [catalog, setCatalog] = useState(null);
+  const [boot, setBoot] = useState('template');
+  const [catalogImage, setCatalogImage] = useState('');
+  const [iso, setIso] = useState('');
+  const [installSize, setInstallSize] = useState('60Gi');
+  // Image sheet: upload a file, or import a migrated disk by URL.
+  const [mode, setMode] = useState('upload');
+  const [file, setFile] = useState(null);
+  const [imgKind, setImgKind] = useState('iso');
+  const [imgOs, setImgOs] = useState('windows');
+  const [progress, setProgress] = useState(null);
+  useEffect(() => {
+    if (!isVm && res.kind !== 'Image') return;
+    let live = true;
+    api
+      .listMachineImages()
+      .then((rows) => live && setCatalog(rows || []))
+      .catch(() => live && setCatalog(null));
+    return () => {
+      live = false;
+    };
+  }, [isVm, res.kind]);
+  const diskImages = (catalog || []).filter((m) => m.kind !== 'iso' && !m.deprecated);
+  const isoImages = (catalog || []).filter((m) => m.kind === 'iso' && !m.deprecated);
+  const preset = SIZES.find((s) => s.id === sizeId);
+  const o = osInfo(template);
+  const [suffix] = useState(() => Math.random().toString(36).slice(2, 6));
+  const suggested = `${o.family}-${suffix}`;
+  const finalName = name || (isVm ? suggested : '');
+
+  const isImage = res.kind === 'Image';
+  // Uploading needs the Kairon catalog; on KubeVirt the sheet stays import-only.
+  const canUpload = isImage && catalog !== null;
+  const isUpload = canUpload && mode === 'upload';
+  const isImport = isImage && !isUpload;
+  const canCreate =
+    !!finalName &&
+    progress === null &&
+    (!isImport || (/^https?:\/\//.test(url.trim()) && /^(sha256:)?[0-9a-fA-F]{64}$/.test(sha256.trim()))) &&
+    (!isUpload || !!file) &&
+    (!isVm || (!!template && (boot !== 'catalog' || !!catalogImage) && (boot !== 'iso' || !!iso)));
+  const pickFile = (f) => {
+    setFile(f);
+    if (!f) return;
+    const iso = /\.iso$/i.test(f.name);
+    setImgKind(iso ? 'iso' : 'disk');
+    if (!name) setName(f.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9.-]/g, '-'));
+  };
+  const sheetRef = useRef(null);
+  useFocusTrap(sheetRef);
+  const submit = async () => {
+    if (isUpload) setProgress(0);
+    try {
+      await onCreate({
+        name: finalName,
+        template,
+        cls,
+        size: isVm && boot === 'iso' ? installSize : size,
+        url,
+        sha256,
+        format,
+        cidr,
+        ...(isVm ? { cpus: preset.cpus, memory: preset.memory, boot, catalogImage, iso } : {}),
+        ...(isImage ? { mode: isUpload ? 'upload' : 'import', file, imgKind, os: imgOs, onProgress: setProgress } : {}),
+      });
+    } finally {
+      setProgress(null);
+    }
+  };
+  const imageTitle = isUpload ? 'Add an image or ISO' : 'Import a migrated VM';
+
+  return (
+    <div className="scrim" onClick={onClose}>
+      <div
+        ref={sheetRef}
+        className={`sheet${isVm ? ' sheet--wide' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={isVm ? 'Create a machine' : isImage ? imageTitle : `New ${res.kind}`}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sheet-h">
+          <Plus size={15} />
+          {isVm ? 'Create a machine' : isImage ? imageTitle : `New ${res.kind}`}
+          <button className="tb x" onClick={onClose} aria-label="Close">
+            <X size={15} />
+          </button>
+        </div>
+
+        {isVm ? (
+          <div className="create">
+            <div className="create-main">
+              <IntentPanel
+                user={user}
+                onUseSpec={(spec) => {
+                  if (spec.template) setTemplate(spec.template);
+                  if (spec.name) setName(spec.name);
+                  const cpus = spec.cpus || 0;
+                  setSizeId(cpus >= 8 ? 'L' : cpus >= 4 ? 'M' : 'S');
+                }}
+              />
+
+              <h3 className="create-step">
+                <span>1</span> Choose an operating system
+              </h3>
+              <div className="os-pick">
+                {pickable.length === 0 && <p className="ops-hint">No templates available.</p>}
+                {pickable.map((t) => {
+                  const info = osInfo(t.name);
+                  return (
+                    <button
+                      key={t.id || t.name}
+                      type="button"
+                      className="os-opt"
+                      aria-pressed={template === t.name}
+                      onClick={() => setTemplate(t.name)}
+                    >
+                      <OsBadge name={t.name} size={34} />
+                      <span>
+                        <b>{info.label}</b>
+                        <small>{info.version}</small>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(diskImages.length > 0 || isoImages.length > 0) && (
+                <>
+                  <h3 className="create-step">
+                    <span>·</span> Boot from
+                  </h3>
+                  <div className="seg" style={{ width: 'fit-content', marginBottom: 10 }}>
+                    {[
+                      ['template', 'Template image'],
+                      ...(diskImages.length ? [['catalog', 'Catalog image']] : []),
+                      ...(isoImages.length ? [['iso', 'Install from ISO']] : []),
+                    ].map(([id, label]) => (
+                      <button key={id} type="button" className="tb" aria-pressed={boot === id} onClick={() => setBoot(id)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {boot === 'catalog' && (
+                    <div className="field">
+                      <label>Image</label>
+                      <select value={catalogImage} onChange={(e) => setCatalogImage(e.target.value)}>
+                        <option value="">Choose an image…</option>
+                        {diskImages.map((m) => (
+                          <option key={m.name} value={m.name}>
+                            {m.display_name || m.name}
+                            {m.version ? ` (${m.version})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {boot === 'iso' && (
+                    <>
+                      <div className="field">
+                        <label>Install media</label>
+                        <select value={iso} onChange={(e) => setIso(e.target.value)}>
+                          <option value="">Choose an ISO…</option>
+                          {isoImages.map((m) => (
+                            <option key={m.name} value={m.name}>
+                              {m.display_name || m.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Disk size</label>
+                        <input value={installSize} onChange={(e) => setInstallSize(e.target.value)} />
+                      </div>
+                      <p className="ops-hint">
+                        Starts with a blank disk and the ISO in the CD drive; finish setup from the console. Windows
+                        templates also get the virtio-win driver CD when that image is in the catalog.
+                      </p>
+                    </>
+                  )}
+                </>
+              )}
+
+              <h3 className="create-step">
+                <span>2</span> Pick a size
+              </h3>
+              <div className="size-pick">
+                {SIZES.map((s) => (
+                  <button key={s.id} type="button" className="size-opt" aria-pressed={sizeId === s.id} onClick={() => setSizeId(s.id)}>
+                    <b>{s.id}</b>
+                    <span>{s.label}</span>
+                    <small>{s.note}</small>
+                  </button>
+                ))}
+              </div>
+
+              <h3 className="create-step">
+                <span>3</span> Name it
+              </h3>
+              <input
+                className="create-name"
+                value={name}
+                autoFocus
+                onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                onKeyDown={(e) => e.key === 'Enter' && canCreate && submit()}
+                placeholder={suggested}
+              />
+            </div>
+            <aside className="create-summary">
+              <OsBadge name={template} size={64} />
+              <h4>{finalName}</h4>
+              <p>
+                {o.label} {o.version}
+              </p>
+              <dl>
+                <dt>Size</dt>
+                <dd>{preset.note}</dd>
+                <dt>Template</dt>
+                <dd className="mono">{template || '—'}</dd>
+                {boot !== 'template' && (
+                  <>
+                    <dt>{boot === 'iso' ? 'Installs from' : 'Image'}</dt>
+                    <dd className="mono">{(boot === 'iso' ? iso : catalogImage) || '—'}</dd>
+                  </>
+                )}
+                <dt>Starts</dt>
+                <dd>Immediately</dd>
+              </dl>
+              <button className="btn primary create-go" disabled={!canCreate} onClick={submit}>
+                Create machine
+              </button>
+            </aside>
+          </div>
+        ) : (
+          <>
+            <div style={{ padding: '8px 0' }}>
+              <div className="field">
+                <label>Name</label>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder={`e.g. ${res.rows[0]?.name || 'name'}`} />
+              </div>
+              {res.kind === 'PersistentVolumeClaim' && (
+                <>
+                  <div className="field">
+                    <label>Class</label>
+                    <select value={cls} onChange={(e) => setCls(e.target.value)}>
+                      <option value="">(default)</option>
+                      {(storageClasses || []).map((p) => (
+                        <option key={p.id || p.name} value={p.name}>
+                          {p.cls || p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Size</label>
+                    <input value={size} onChange={(e) => setSize(e.target.value)} />
+                  </div>
+                </>
+              )}
+              {canUpload && (
+                <div className="seg" style={{ width: 'fit-content', margin: '4px 0 10px' }}>
+                  {[
+                    ['upload', 'Upload a file'],
+                    ['import', 'Import a migrated VM'],
+                  ].map(([id, label]) => (
+                    <button key={id} type="button" className="tb" aria-pressed={mode === id} onClick={() => setMode(id)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {isUpload && (
+                <>
+                  <p className="ops-hint">
+                    Adds an ISO (install media) or a disk image (qcow2, raw, VMDK, VHD/VHDX, OVA) to the Kairon image
+                    catalog. Nodes download it from Veyron and check it against its SHA-256.
+                  </p>
+                  <div className="field">
+                    <label>File</label>
+                    <input type="file" accept=".iso,.qcow2,.img,.raw,.vmdk,.vhd,.vhdx,.ova" onChange={(e) => pickFile(e.target.files?.[0] || null)} />
+                  </div>
+                  <div className="field">
+                    <label>Use as</label>
+                    <select value={imgKind} onChange={(e) => setImgKind(e.target.value)}>
+                      <option value="iso">Install media (ISO)</option>
+                      <option value="disk">Boot disk</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>OS</label>
+                    <select value={imgOs} onChange={(e) => setImgOs(e.target.value)}>
+                      <option value="windows">Windows</option>
+                      <option value="linux">Linux</option>
+                    </select>
+                  </div>
+                  {progress !== null && (
+                    <p className="ops-hint" role="status">
+                      Uploading… {Math.round(progress * 100)}%
+                    </p>
+                  )}
+                </>
+              )}
+              {isImport && (
+                <>
+                  <p className="ops-hint">
+                    Boots a disk converted by h2kvm (or any qcow2/raw/OVA/VMDK/VHD) as a Kairon machine. The node
+                    downloads it from the URL and checks it against the SHA-256.
+                  </p>
+                  <div className="field">
+                    <label>Disk URL</label>
+                    <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…/web01.qcow2" />
+                  </div>
+                  <div className="field">
+                    <label>SHA-256</label>
+                    <input value={sha256} onChange={(e) => setSha256(e.target.value)} placeholder="sha256sum of the file" />
+                  </div>
+                  <div className="field">
+                    <label>Format</label>
+                    <select value={format} onChange={(e) => setFormat(e.target.value)}>
+                      {['qcow2', 'raw', 'ova', 'vmdk', 'vhd', 'vhdx'].map((f) => (
+                        <option key={f} value={f}>
+                          {f}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+              {res.kind === 'Network' && (
+                <div className="field">
+                  <label>CIDR</label>
+                  <input value={cidr} onChange={(e) => setCidr(e.target.value)} placeholder="10.244.100.0/24" />
+                </div>
+              )}
+            </div>
+            <div className="sheet-f">
+              <button className="btn" onClick={onClose}>
+                Cancel
+              </button>
+              <button className="btn primary" disabled={!canCreate} onClick={submit}>
+                Create
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const LOGIN_STORY = [
+  {
+    name: 'Veyron',
+    title: 'One place for every VM.',
+    body: 'Create, console, snapshot, patch and migrate from the browser, the API or the CLI. Day-2 operations, SSO and a SOC are built in.',
+  },
+  {
+    name: 'Kairon',
+    title: 'No pod per VM.',
+    body: 'Machines run straight on KVM: 7.4x faster to SSH than KubeVirt with five VMs, and a 14x lighter control plane.',
+  },
+  {
+    name: 'FluxVM',
+    title: 'Four hypervisors, one API.',
+    body: 'QEMU/KVM for Windows and full VMs, Cloud Hypervisor, Firecracker microVMs or FluxVM’s own. No libvirt, no XML.',
+  },
+];
+
+/** apple.com Account-style sign-in: username first, then the password field slides in. */
+export function Login({ onSubmit, error }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [step, setStep] = useState('user');
+  const [shown, setShown] = useState(error || '');
+  const [submitting, setSubmitting] = useState(false);
+  const passRef = useRef(null);
+  const userRef = useRef(null);
+
+  useEffect(() => {
+    if (error) setShown(error);
+  }, [error]);
+
+  useEffect(() => {
+    if (step === 'pass') passRef.current?.focus();
+  }, [step]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (step === 'user') {
+      if (!username.trim()) {
+        userRef.current?.focus();
+        return;
+      }
+      setShown('');
+      setStep('pass');
+      return;
+    }
+    if (!password) {
+      passRef.current?.focus();
+      return;
+    }
+    setShown('');
+    setSubmitting(true);
+    try {
+      await onSubmit(username.trim(), password);
+    } catch (err) {
+      setShown(loginErrorMessage(err));
+      setPassword('');
+      passRef.current?.focus();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const arrow = (label) => (
+    <button type="submit" className="siw-go" aria-label={label} disabled={submitting}>
+      {submitting ? <RefreshCw size={16} className="spin" /> : <ArrowRight size={18} />}
+    </button>
+  );
+
+  return (
+    <PremiumLoginShell
+      productName="Veyron"
+      eyebrow="Veyron · Zyvor"
+      heroTitle="Real VMs. One console."
+      heroLede="Fleet, storage, snapshots and day‑2 operations for your virtual machines."
+      footer={
+        <section className="login-story" aria-label="Why Veyron">
+          {LOGIN_STORY.map((s) => (
+            <div key={s.name}>
+              <p className="login-story-name">{s.name}</p>
+              <b>{s.title}</b>
+              <p>{s.body}</p>
+            </div>
+          ))}
+        </section>
+      }
+    >
+      <form className="card login-card" onSubmit={handleSubmit} noValidate>
+        <h1>Sign in to Veyron.</h1>
+        <div className={`siw${step === 'pass' ? ' siw--pass' : ''}${shown ? ' siw--err' : ''}`}>
+          <div className="siw-field">
+            <input
+              ref={userRef}
+              id="siw-user"
+              value={username}
+              placeholder=" "
+              onChange={(e) => {
+                setUsername(e.target.value);
+                setShown('');
+                if (step === 'pass') {
+                  setStep('user');
+                  setPassword('');
+                }
+              }}
+              autoFocus
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              disabled={submitting}
+              aria-invalid={Boolean(shown)}
+            />
+            <label htmlFor="siw-user">Username</label>
+            {step === 'user' && arrow('Continue')}
+          </div>
+          {step === 'pass' && (
+            <div className="siw-field siw-field--pass">
+              <input
+                ref={passRef}
+                id="siw-pass"
+                type="password"
+                value={password}
+                placeholder=" "
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setShown('');
+                }}
+                autoComplete="current-password"
+                disabled={submitting}
+                aria-invalid={Boolean(shown)}
+              />
+              <label htmlFor="siw-pass">Password</label>
+              {arrow('Sign in')}
+            </div>
+          )}
+        </div>
+        <LoginError message={shown} />
+        <p className="siw-help">Forgot your password? Ask your Veyron administrator.</p>
+      </form>
+    </PremiumLoginShell>
+  );
+}

@@ -1,0 +1,122 @@
+[package]
+name = "veyron"
+version = "0.6.0"
+edition = "2024"
+description = "Veyron — Kubernetes-native VM command center (KubeVirt management, Rust-powered)"
+license = "LicenseRef-Zyvor-Production-1.0"
+authors = ["Zyvor"]
+repository = "https://github.com/zyvorai/veyron"
+homepage = "https://github.com/zyvorai/veyron"
+documentation = "https://docs.rs/veyron"
+readme = "README.md"
+keywords = ["kubevirt", "kubernetes", "virtual-machine", "kvm", "cli"]
+categories = ["command-line-utilities", "virtualization"]
+rust-version = "1.85"
+
+[[bin]]
+name = "veyron"
+path = "src/main.rs"
+
+[[bin]]
+name = "trial-tool"
+path = "src/bin/trial-tool.rs"
+required-features = ["trial"]
+
+[lib]
+name = "veyron"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive", "env"] }
+clap_complete = "4.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+# serde_yml is unsound and unmaintained (RUSTSEC-2025-0068); serde_norway is the maintained serde_yaml fork.
+# Renamed so existing `serde_yml::` paths keep working.
+serde_yml = { package = "serde_norway", version = "0.9" }
+sha2 = "0.10"
+hex = "0.4"
+tokio = { version = "1.0", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal", "io-util", "io-std", "process", "fs"] }
+kube = { version = "0.95", features = ["runtime", "derive", "ws"] }
+k8s-openapi = { version = "0.23", features = ["v1_30"] }
+schemars = "0.8"
+thiserror = "1.0"
+log = "0.4"
+env_logger = "0.11"
+regex = "1.10"
+chrono = "0.4"
+cron = "0.15"
+dialoguer = "0.11"
+indicatif = "0.17"
+rand = "0.8"
+zeroize = "1.8"
+argon2 = "0.5"
+base64 = "0.22"
+http = "1.1"
+# Ed25519 keygen for src/bin/trial-tool.rs (verification goes through jsonwebtoken,
+# which already depends on ring internally — this just exposes keygen directly).
+ring = { version = "0.17", optional = true }
+guestkit-agent-protocol = { path = "guestkit/crates/guestkit-agent-protocol" }
+guestkit = { path = "guestkit", default-features = false, features = ["guest-inspect"] }
+once_cell = "1.19"
+include_dir = "0.7"
+
+# TUI dependencies
+ratatui = "0.28"
+crossterm = "0.28"
+colored = "3.1"
+miette = { version = "7.0", features = ["fancy"] }
+toml = "0.8"
+dirs = "5.0"
+rustyline = "17.0"
+
+# Web dashboard dependencies
+axum = { version = "0.7", features = ["ws"], optional = true }
+axum-server = { version = "0.7", features = ["tls-rustls-no-provider"], optional = true }
+rustls = { version = "0.23", default-features = false, features = ["ring", "logging", "std", "tls12"], optional = true }
+tower-http = { version = "0.6", features = ["cors", "timeout"], optional = true }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots", "rustls-tls-native-roots"], optional = true }
+futures-util = { version = "0.3", optional = true }
+rustls-pemfile = { version = "2", optional = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-native-roots", "stream"], optional = true }
+tower = { version = "0.5", features = ["util"], optional = true }
+jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"], optional = true }
+
+[features]
+default = ["web", "kairon"]
+web = [
+    "axum",
+    "axum-server",
+    "rustls",
+    "tower-http",
+    "tokio-tungstenite",
+    "futures-util",
+    "rustls-pemfile",
+    "reqwest",
+    "jsonwebtoken",
+    "tower",
+]
+# 30-day evaluation build for the standalone client tarball (package-binary-remote.sh
+# --trial). Never enabled for in-cluster Helm/deploy-remote.sh builds. See src/trial.rs
+# and src/bin/trial-tool.rs (keygen/issue — requires this feature to build/run).
+trial = ["web", "dep:ring"]
+# Kairon VM platform (kairon.zyvor.dev Machines on FluxVM) as a VM backend, selected at
+# runtime by VEYRON_VM_BACKEND (unset/auto: Kairon when only its CRDs are installed).
+# See src/kairon/, src/api/vm_backend.rs and src/api/kairon_ops.rs.
+kairon = ["web"]
+
+[dev-dependencies]
+tempfile = "3.8"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls-native-roots"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+# Fast iteration builds for ./scripts/deploy-k8s-remote.sh (VEYRON_DEPLOY_FULL_LTO=1 uses release).
+[profile.deploy]
+inherits = "release"
+lto = "thin"
+codegen-units = 16

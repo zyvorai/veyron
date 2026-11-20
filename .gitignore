@@ -1,0 +1,60 @@
+# Docker build context copy of sibling guestkit repo (scripts/prepare-guestkit-docker.sh)
+/guestkit/
+
+# Rust
+/target/
+/dist/
+**/*.rs.bk
+*.pdb
+/vmrogue
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python (example scripts)
+**/__pycache__/
+
+# Operator build artifacts
+operator/bin/
+
+# Helm dependency packages (reproducible via Chart.lock + helm dependency build)
+charts/*/charts/*.tgz
+
+# Local configs
+*.local.yaml
+*.local.json
+
+# React console (frontend/)
+frontend/node_modules/
+frontend/dist/
+
+# Local AI caches
+.grok/
+**/.DS_Store
+
+
+
+# Trial license signing key + issued tokens — NEVER commit (see src/bin/trial-tool.rs,
+# src/trial.rs). Only the embedded public key constant belongs in git.
+trial-keys/
+*.pkcs8*
+trial.token
+
+# Trial signing private keys (never ship)
+secrets/
+dist/
+
+# Local run artifacts and agent scratch files
+/readiness-report*/
+.cursor/plans/
+
+# Assembled by docs/site/build.sh
+docs/site/assets/

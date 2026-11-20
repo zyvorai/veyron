@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Kairon vs KubeVirt: benchmark</title>
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+     1600x900 benchmark bars. Rendered by ./build.sh to docs/assets/readme-benchmark.jpg.
+     Every number is from ../kairon/docs/benchmarks/kairon-vs-kubevirt.md (run 2026-10-04). -->
+<link rel="stylesheet" href="dark.css">
+<style>
+  body { height:900px; }
+  .panels { margin-top:34px; flex:1; display:grid; grid-template-columns:repeat(2,1fr); grid-template-rows:1fr 1fr; gap:22px; }
+  .p { border-radius:24px; padding:22px 26px; background:rgba(255,255,255,.035); box-shadow:inset 0 0 0 1px var(--edge); display:flex; flex-direction:column; }
+  .p h3 { margin:0; font-size:15px; font-family:var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--soft); font-weight:600; }
+  .p .big { margin-top:6px; font-size:46px; font-weight:800; letter-spacing:-.035em; }
+  .p .big em { font-style:normal; background:linear-gradient(90deg,#fff,var(--sky)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .bars { margin-top:auto; display:flex; flex-direction:column; gap:12px; }
+  .row { display:grid; grid-template-columns:110px 1fr 120px; align-items:center; gap:14px; font-size:17px; font-weight:600; }
+  .row .who { color:var(--soft); }
+  .track { height:26px; border-radius:13px; background:rgba(255,255,255,.06); overflow:hidden; }
+  .fill { height:100%; border-radius:13px; width:var(--w); }
+  .k .fill { background:linear-gradient(90deg,var(--blue),var(--sky)); box-shadow:0 0 22px rgba(41,151,255,.55); }
+  .v .fill { background:linear-gradient(90deg,#48484a,#8e8e93); }
+  .row .val { font-family:var(--mono); text-align:right; }
+  .k .val { color:#fff; } .v .val { color:var(--soft); }
+  .dots { margin-top:auto; display:grid; grid-template-columns:110px 1fr; row-gap:14px; align-items:center; font-size:17px; font-weight:600; }
+  .dots .who { color:var(--soft); }
+  .dots .vms { display:flex; gap:10px; align-items:center; }
+  .dots .vms i { width:30px; height:30px; border-radius:9px; }
+  .dots .ok i { background:linear-gradient(145deg,var(--sky),var(--blue)); box-shadow:0 0 14px rgba(41,151,255,.55); }
+  .dots .no i { background:rgba(255,255,255,.07); box-shadow:inset 0 0 0 1.5px rgba(255,69,58,.55); }
+  .dots .vms span { margin-left:10px; font-family:var(--mono); font-size:16px; }
+  .dots .ok span { color:#fff; } .dots .no span { color:var(--red); }
+  .note { margin-top:10px; font-size:14px; color:var(--muted); line-height:1.35; }
+</style></head><body>
+<div class="grid"></div>
+<div class="wrap">
+  <div class="brand"><img src="zyvor-mark.svg" alt=""><b>Kairon</b><span>vs</span><span>KubeVirt v1.9.0</span><span class="r">One node &middot; one script &middot; back to back</span></div>
+  <h1>Pod-per-VM is the bottleneck. <em>We removed it.</em></h1>
+  <div class="panels">
+    <div class="p">
+      <h3>Idle control plane memory</h3><div class="big"><em>14x</em> lighter</div>
+      <div class="bars">
+        <div class="row k"><span class="who">Kairon</span><div class="track"><div class="fill" style="--w:7%"></div></div><span class="val">63 MiB</span></div>
+        <div class="row v"><span class="who">KubeVirt</span><div class="track"><div class="fill" style="--w:100%"></div></div><span class="val">905 MiB</span></div>
+      </div>
+    </div>
+    <div class="p">
+      <h3>1 VM: create to SSH ready</h3><div class="big"><em>2.9x</em> faster</div>
+      <div class="bars">
+        <div class="row k"><span class="who">Kairon</span><div class="track"><div class="fill" style="--w:35%"></div></div><span class="val">23.7 s</span></div>
+        <div class="row v"><span class="who">KubeVirt</span><div class="track"><div class="fill" style="--w:100%"></div></div><span class="val">67.6 s</span></div>
+      </div>
+    </div>
+    <div class="p">
+      <h3>5 VMs at once: create to SSH, p50</h3><div class="big"><em>7.4x</em> faster</div>
+      <div class="bars">
+        <div class="row k"><span class="who">Kairon</span><div class="track"><div class="fill" style="--w:13.4%"></div></div><span class="val">24.8 s</span></div>
+        <div class="row v"><span class="who">KubeVirt</span><div class="track"><div class="fill" style="--w:100%"></div></div><span class="val">184.7 s</span></div>
+      </div>
+    </div>
+    <div class="p">
+      <h3>10 VMs at once: reached SSH in 600 s</h3><div class="big"><em>10 of 10</em> vs 0 of 10</div>
+      <div class="dots">
+        <span class="who">Kairon</span><div class="vms ok"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><span>10/10</span></div>
+        <span class="who">KubeVirt</span><div class="vms no"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><span>0/10</span></div>
+      </div>
+      <div class="note">KubeVirt: containerd timed out creating virt-launcher pods (DeadlineExceeded). Shared host, so read it as "the pod path degrades first", not a density ceiling.</div>
+    </div>
+  </div>
+  <div class="foot" style="margin-top:22px"><span><b>Measured 2026-10-04</b> &middot; Xeon E-2336 &middot; k3s &middot; Ubuntu 24.04 guest, 1 vCPU / 512 MiB &middot; per-VM memory is equal (same QEMU)</span><span class="r">kairon/docs/benchmarks</span></div>
+</div>
+</body></html>

@@ -1,0 +1,1046 @@
+// Copyright 2026 Zyvor AI Labs · https://zyvor.dev
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+
+// Veyron Operator CRD Definitions
+//
+// Rust-side mirror of the Go operator CRDs (veyron.io/v1alpha1).
+// These types allow the Rust API to create/read/update/delete Veyron CRDs
+// via kube-rs, enabling the Rust API server and CLI to interact with the
+// Go operator's custom resources.
+
+use kube::CustomResource;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+// =============================================================================
+// VeyronVM CRD
+// =============================================================================
+
+/// VeyronVM is a higher-level VM abstraction that the Go operator
+/// translates into KubeVirt VirtualMachine resources.
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "veyron.io",
+    version = "v1alpha1",
+    kind = "VeyronVM",
+    namespaced
+)]
+#[kube(status = "VeyronVMStatus")]
+#[kube(shortname = "vrvm")]
+pub struct VeyronVMSpec {
+    /// Template name from Veyron template library.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub template: Option<String>,
+
+    /// Resource profile name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile: Option<String>,
+
+    /// CPU configuration.
+    pub cpu: CRDCPUSpec,
+
+    /// Memory configuration.
+    pub memory: CRDMemorySpec,
+
+    /// Disk definitions.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub disks: Vec<CRDDiskSpec>,
+
+    /// Network interfaces.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub interfaces: Vec<CRDInterfaceSpec>,
+
+    /// Cloud-init configuration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "cloudInit")]
+    pub cloud_init: Option<CRDCloudInitSpec>,
+
+    /// VM features.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub features: Option<CRDFeaturesSpec>,
+
+    /// Firmware configuration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub firmware: Option<CRDFirmwareSpec>,
+
+    /// Clock configuration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub clock: Option<CRDClockSpec>,
+
+    /// Eviction strategy.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "evictionStrategy")]
+    pub eviction_strategy: Option<String>,
+
+    /// Termination grace period in seconds.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "terminationGracePeriod")]
+    pub termination_grace_period: Option<i64>,
+
+    /// Enable TPM 2.0.
+    #[serde(default)]
+    #[serde(rename = "enableTpm")]
+    pub enable_tpm: bool,
+
+    /// Enable virtio-rng.
+    #[serde(default)]
+    #[serde(rename = "enableRng")]
+    pub enable_rng: bool,
+
+    /// Machine type.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "machineType")]
+    pub machine_type: Option<String>,
+
+    /// Running state.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub running: Option<bool>,
+
+    /// Labels for the KubeVirt VM.
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub labels: HashMap<String, String>,
+
+    /// Annotations for the KubeVirt VM.
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub annotations: HashMap<String, String>,
+
+    /// Apply internet egress policy for virt-launcher pods (default true).
+    #[serde(default = "default_true")]
+    #[serde(rename = "allowInternet")]
+    pub allow_internet: bool,
+
+    /// Windows sysprep / domain-join secret references.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub windows: Option<CRDWindowsSpec>,
+
+    /// GPUs bound via KubeVirt `domain.devices.gpus` (passthrough or vGPU).
+    /// A VM holding a passthrough GPU can never live-migrate.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gpus: Vec<CRDGpuSpec>,
+
+    /// Generic passthrough host devices (`domain.devices.hostDevices`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(rename = "hostDevices")]
+    pub host_devices: Vec<CRDHostDeviceSpec>,
+}
+
+/// Mirrors the Go `GPUSpec` (KubeVirt `domain.devices.gpus` entry).
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDGpuSpec {
+    pub name: String,
+    #[serde(rename = "deviceName")]
+    pub device_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "virtualGPUOptions")]
+    pub virtual_gpu_options: Option<CRDVgpuOptionsSpec>,
+}
+
+/// Mirrors the Go `VGPUOptionsSpec`.
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDVgpuOptionsSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "ramFB")]
+    pub ram_fb: Option<bool>,
+}
+
+/// Mirrors the Go `HostDeviceSpec` (KubeVirt `domain.devices.hostDevices` entry).
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDHostDeviceSpec {
+    pub name: String,
+    #[serde(rename = "deviceName")]
+    pub device_name: String,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDCPUSpec {
+    pub cores: u32,
+    #[serde(default = "default_one")]
+    pub sockets: u32,
+    #[serde(default = "default_one")]
+    pub threads: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "dedicatedCpuPlacement")]
+    pub dedicated_cpu_placement: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "isolateEmulatorThread")]
+    pub isolate_emulator_thread: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDMemorySpec {
+    pub size: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "hugepagesPageSize")]
+    pub hugepages_page_size: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "maxGuest")]
+    pub max_guest: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDDiskSpec {
+    pub name: String,
+    pub size: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "storageClass")]
+    pub storage_class: Option<String>,
+    #[serde(default)]
+    #[serde(rename = "bootOrder")]
+    pub boot_order: u32,
+    pub source: CRDDiskSource,
+    #[serde(default = "default_disk")]
+    #[serde(rename = "deviceType")]
+    pub device_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bus: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub io: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDDiskSource {
+    /// `blank` | `pvc` | `containerDisk` | `dataVolume` | `dataSource`
+    #[serde(rename = "type")]
+    pub source_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
+    /// Namespace of the golden-image `DataSource` / source PVC (`dataSource` type).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+    /// Clone straight from a PVC instead of resolving a `DataSource` (`dataSource` type).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[serde(rename = "fromPvc")]
+    pub from_pvc: bool,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDInterfaceSpec {
+    pub name: String,
+    pub network: String,
+    #[serde(default = "default_virtio")]
+    pub model: String,
+    #[serde(rename = "networkType")]
+    pub network_type: CRDNetworkType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "macAddress")]
+    pub mac_address: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDNetworkType {
+    #[serde(rename = "type")]
+    pub net_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDSecretKeyRef {
+    pub name: String,
+    pub key: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDWindowsSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "sysprepSecretRef")]
+    pub sysprep_secret_ref: Option<CRDSecretKeyRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "domainJoinSecretRef")]
+    pub domain_join_secret_ref: Option<CRDSecretKeyRef>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDCloudInitSpec {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    #[serde(rename = "userData")]
+    pub user_data: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "userDataSecretRef")]
+    pub user_data_secret_ref: Option<CRDSecretKeyRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "networkData")]
+    pub network_data: Option<String>,
+    /// `nocloud` (default) or `configdrive` for Cloudbase-Init / Windows.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delivery: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDFeaturesSpec {
+    #[serde(default = "default_true")]
+    pub acpi: bool,
+    #[serde(default)]
+    pub apic: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hyperv: Option<CRDHyperVSpec>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "kvmHidden")]
+    pub kvm_hidden: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub smm: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDHyperVSpec {
+    #[serde(default)]
+    pub relaxed: bool,
+    #[serde(default)]
+    pub vapic: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spinlocks: Option<u32>,
+    #[serde(default)]
+    pub vpindex: bool,
+    #[serde(default)]
+    pub runtime: bool,
+    #[serde(default)]
+    pub synic: bool,
+    #[serde(default)]
+    pub stimer: bool,
+    #[serde(default)]
+    pub reset: bool,
+    #[serde(default)]
+    pub frequencies: bool,
+    #[serde(default)]
+    pub reenlightenment: bool,
+    #[serde(default)]
+    pub tlbflush: bool,
+    #[serde(default)]
+    pub ipi: bool,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDFirmwareSpec {
+    pub bootloader: String,
+    #[serde(default)]
+    #[serde(rename = "secureBoot")]
+    pub secure_boot: bool,
+    #[serde(default)]
+    pub persistent: bool,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDClockSpec {
+    #[serde(default = "default_true")]
+    pub utc: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timezone: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timers: Option<CRDTimersSpec>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDTimersSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "hpetPresent")]
+    pub hpet_present: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "pitTickPolicy")]
+    pub pit_tick_policy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "rtcTickPolicy")]
+    pub rtc_tick_policy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "hypervPresent")]
+    pub hyperv_present: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct VeyronVMStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "kubevirtVMName")]
+    pub kubevirt_vm_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "nodeName")]
+    pub node_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "ipAddress")]
+    pub ip_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "observedGeneration")]
+    pub observed_generation: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "resolvedSpecHash")]
+    pub resolved_spec_hash: Option<String>,
+    #[serde(default)]
+    #[serde(rename = "driftDetected")]
+    pub drift_detected: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "driftMessage")]
+    pub drift_message: Option<String>,
+}
+
+// =============================================================================
+// VMTemplate CRD (cluster-scoped catalog)
+// =============================================================================
+
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "veyron.io",
+    version = "v1alpha1",
+    kind = "VMTemplate",
+    namespaced = false
+)]
+#[kube(status = "VMTemplateStatus")]
+#[kube(shortname = "vmtpl")]
+pub struct VMTemplateSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub family: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(rename = "recommendedProfiles")]
+    pub recommended_profiles: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "minKubeVirtVersion")]
+    pub min_kubevirt_version: Option<String>,
+    pub default: VeyronVMSpec,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct VMTemplateStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "observedGeneration")]
+    pub observed_generation: Option<i64>,
+}
+
+// =============================================================================
+// VMProfile CRD (cluster-scoped catalog)
+// =============================================================================
+
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "veyron.io",
+    version = "v1alpha1",
+    kind = "VMProfile",
+    namespaced = false
+)]
+#[kube(status = "VMProfileStatus")]
+#[kube(shortname = "vmprof")]
+pub struct VMProfileSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub cores: u32,
+    #[serde(default = "default_one")]
+    pub sockets: u32,
+    #[serde(default = "default_one")]
+    pub threads: u32,
+    pub memory: String,
+    #[serde(rename = "diskSize")]
+    pub disk_size: String,
+    /// GPUs granted by this profile (VM's explicit gpus win).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gpus: Vec<CRDGpuSpec>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(rename = "useCases")]
+    pub use_cases: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(rename = "recommendedTemplates")]
+    pub recommended_templates: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct VMProfileStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "observedGeneration")]
+    pub observed_generation: Option<i64>,
+}
+
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "veyron.io",
+    version = "v1alpha1",
+    kind = "VeyronBlueprint",
+    namespaced
+)]
+#[kube(status = "VeyronBlueprintStatus")]
+#[kube(shortname = "vrbp")]
+pub struct VeyronBlueprintSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub vms: Vec<CRDBlueprintVMSpec>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDBlueprintVMSpec {
+    pub name: String,
+    pub template: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cpu: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memory: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "diskSize")]
+    pub disk_size: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(rename = "dependsOn")]
+    pub depends_on: Vec<String>,
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub labels: HashMap<String, String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct VeyronBlueprintStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "totalVMs")]
+    pub total_vms: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "readyVMs")]
+    pub ready_vms: Option<i32>,
+}
+
+// =============================================================================
+// VeyronPolicy CRD
+// =============================================================================
+
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "veyron.io",
+    version = "v1alpha1",
+    kind = "VeyronPolicy",
+    namespaced
+)]
+#[kube(status = "VeyronPolicyStatus")]
+#[kube(shortname = "vrpol")]
+pub struct VeyronPolicySpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub enabled: bool,
+    #[serde(rename = "enforcementAction")]
+    pub enforcement_action: String,
+    pub severity: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub framework: Option<String>,
+    /// Label selector to match VeyronVMs this policy applies to (a Kubernetes
+    /// `LabelSelector`, as the operator reads it).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selector: Option<PolicyLabelSelector>,
+    pub rules: Vec<CRDPolicyRule>,
+}
+
+#[derive(Serialize, Clone, Debug, Default, PartialEq, JsonSchema)]
+pub struct PolicyLabelSelector {
+    #[serde(
+        rename = "matchLabels",
+        default,
+        skip_serializing_if = "std::collections::BTreeMap::is_empty"
+    )]
+    pub match_labels: std::collections::BTreeMap<String, String>,
+    #[serde(
+        rename = "matchExpressions",
+        default,
+        skip_serializing_if = "Vec::is_empty"
+    )]
+    pub match_expressions: Vec<LabelSelectorRequirement>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct LabelSelectorRequirement {
+    pub key: String,
+    /// In, NotIn, Exists or DoesNotExist
+    pub operator: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub values: Vec<String>,
+}
+
+impl PolicyLabelSelector {
+    pub fn matches(&self, labels: &std::collections::BTreeMap<String, String>) -> bool {
+        self.match_labels
+            .iter()
+            .all(|(k, v)| labels.get(k) == Some(v))
+            && self.match_expressions.iter().all(|r| {
+                let have = labels.get(&r.key);
+                match r.operator.as_str() {
+                    "In" => have.is_some_and(|v| r.values.contains(v)),
+                    "NotIn" => have.is_none_or(|v| !r.values.contains(v)),
+                    "Exists" => have.is_some(),
+                    "DoesNotExist" => have.is_none(),
+                    _ => false,
+                }
+            })
+    }
+}
+
+/// Accepts a `LabelSelector`, or the flat `{key: value}` map older clients sent.
+impl<'de> Deserialize<'de> for PolicyLabelSelector {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let v = serde_json::Value::deserialize(d)?;
+        let obj = v.as_object().cloned().unwrap_or_default();
+        if obj.contains_key("matchLabels") || obj.contains_key("matchExpressions") {
+            let match_labels = obj
+                .get("matchLabels")
+                .cloned()
+                .map(serde_json::from_value)
+                .transpose()
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_default();
+            let match_expressions = obj
+                .get("matchExpressions")
+                .cloned()
+                .map(serde_json::from_value)
+                .transpose()
+                .map_err(serde::de::Error::custom)?
+                .unwrap_or_default();
+            return Ok(Self {
+                match_labels,
+                match_expressions,
+            });
+        }
+        let match_labels = obj
+            .into_iter()
+            .filter_map(|(k, v)| v.as_str().map(|s| (k, s.to_string())))
+            .collect();
+        Ok(Self {
+            match_labels,
+            match_expressions: vec![],
+        })
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDPolicyRule {
+    pub name: String,
+    /// Condition identifier, e.g. "max_cpu_cores", "require_cloud_init".
+    pub condition: String,
+    /// Human-readable message shown on violation.
+    pub message: String,
+    /// Numeric threshold for comparison-based conditions (e.g. max_cpu_cores: 8).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<f64>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct VeyronPolicyStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "matchingVMs")]
+    pub matching_vms: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "compliantVMs")]
+    pub compliant_vms: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "violatingVMs")]
+    pub violating_vms: Option<i32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub violations: Vec<PolicyViolationStatus>,
+    #[serde(rename = "lastEvaluated", skip_serializing_if = "Option::is_none")]
+    pub last_evaluated: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct PolicyViolationStatus {
+    #[serde(rename = "vmName", default)]
+    pub vm_name: String,
+    #[serde(default)]
+    pub namespace: String,
+    #[serde(rename = "ruleName", default)]
+    pub rule_name: String,
+    #[serde(default)]
+    pub message: String,
+}
+
+// =============================================================================
+// VeyronInsight CRD
+// =============================================================================
+
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "veyron.io",
+    version = "v1alpha1",
+    kind = "VeyronInsight",
+    namespaced
+)]
+#[kube(status = "VeyronInsightStatus")]
+#[kube(shortname = "vrin")]
+pub struct VeyronInsightSpec {
+    #[serde(rename = "insightType")]
+    pub insight_type: String,
+    pub severity: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "vmRef")]
+    pub vm_ref: Option<String>,
+    pub title: String,
+    pub description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub data: HashMap<String, String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct VeyronInsightStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "actionRef")]
+    pub action_ref: Option<String>,
+}
+
+// =============================================================================
+// VeyronAction CRD
+// =============================================================================
+
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "veyron.io",
+    version = "v1alpha1",
+    kind = "VeyronAction",
+    namespaced
+)]
+#[kube(status = "VeyronActionStatus")]
+#[kube(shortname = "vract")]
+pub struct VeyronActionSpec {
+    #[serde(rename = "actionType")]
+    pub action_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "vmRef")]
+    pub vm_ref: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "insightRef")]
+    pub insight_ref: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub approved: bool,
+    #[serde(default)]
+    #[serde(rename = "autoApprove")]
+    pub auto_approve: bool,
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub parameters: HashMap<String, String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct VeyronActionStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+// =============================================================================
+// Conversion: VMConfig <-> VeyronVMSpec
+// =============================================================================
+
+impl From<&crate::config::VMConfig> for VeyronVMSpec {
+    fn from(config: &crate::config::VMConfig) -> Self {
+        let disks = config
+            .disks
+            .iter()
+            .map(|d| {
+                let (source_type, name, image, src_ns, src_from_pvc) = match &d.source {
+                    crate::config::DiskSource::Blank => {
+                        ("blank".to_string(), None, None, None, false)
+                    }
+                    crate::config::DiskSource::PVC { name } => {
+                        ("pvc".to_string(), Some(name.clone()), None, None, false)
+                    }
+                    crate::config::DiskSource::ContainerDisk { image } => (
+                        "containerDisk".to_string(),
+                        None,
+                        Some(image.clone()),
+                        None,
+                        false,
+                    ),
+                    crate::config::DiskSource::DataVolume { name } => (
+                        "dataVolume".to_string(),
+                        Some(name.clone()),
+                        None,
+                        None,
+                        false,
+                    ),
+                    crate::config::DiskSource::GoldenImage {
+                        name,
+                        namespace,
+                        from_pvc,
+                        ..
+                    } => (
+                        "dataSource".to_string(),
+                        Some(name.clone()),
+                        None,
+                        Some(namespace.clone()),
+                        *from_pvc,
+                    ),
+                };
+
+                let device_type = match d.device_type {
+                    crate::config::DiskDeviceType::Disk => "disk",
+                    crate::config::DiskDeviceType::CDROM => "cdrom",
+                    crate::config::DiskDeviceType::LUN => "lun",
+                };
+
+                CRDDiskSpec {
+                    name: d.name.clone(),
+                    size: d.size.clone(),
+                    storage_class: d.storage_class.clone(),
+                    boot_order: d.boot_order,
+                    source: CRDDiskSource {
+                        source_type,
+                        name,
+                        image,
+                        namespace: src_ns,
+                        from_pvc: src_from_pvc,
+                    },
+                    device_type: device_type.to_string(),
+                    bus: d.bus.clone(),
+                    cache: d.cache.clone(),
+                    io: d.io.clone(),
+                }
+            })
+            .collect();
+
+        let interfaces = config
+            .interfaces
+            .iter()
+            .map(|i| {
+                let (net_type, net_name) = match &i.network_type {
+                    crate::config::NetworkType::Pod => ("pod".to_string(), None),
+                    crate::config::NetworkType::Bridge => ("bridge".to_string(), None),
+                    crate::config::NetworkType::Multus { name } => {
+                        ("multus".to_string(), Some(name.clone()))
+                    }
+                    crate::config::NetworkType::SRIOV { name } => {
+                        ("sriov".to_string(), Some(name.clone()))
+                    }
+                    crate::config::NetworkType::Ovn { name } => {
+                        ("ovn".to_string(), Some(name.clone()))
+                    }
+                };
+
+                CRDInterfaceSpec {
+                    name: i.name.clone(),
+                    network: i.network.clone(),
+                    model: i.model.clone(),
+                    network_type: CRDNetworkType {
+                        net_type,
+                        name: net_name,
+                    },
+                    mac_address: i.mac_address.clone(),
+                }
+            })
+            .collect();
+
+        Self {
+            template: None,
+            profile: None,
+            cpu: CRDCPUSpec {
+                cores: config.cpu.cores,
+                sockets: config.cpu.sockets,
+                threads: config.cpu.threads,
+                model: config.cpu.model.clone(),
+                dedicated_cpu_placement: config.cpu.dedicated_cpu_placement,
+                isolate_emulator_thread: config.cpu.isolate_emulator_thread,
+            },
+            memory: CRDMemorySpec {
+                size: config.memory.size.clone(),
+                hugepages_page_size: config.memory.hugepages_page_size.clone(),
+                max_guest: config.memory.max_guest.clone(),
+            },
+            disks,
+            interfaces,
+            cloud_init: config.cloud_init.as_ref().map(|ci| CRDCloudInitSpec {
+                user_data: ci.user_data.clone(),
+                user_data_secret_ref: None,
+                network_data: ci.network_data.clone(),
+                delivery: match ci.delivery {
+                    crate::config::CloudInitDelivery::NoCloud => None,
+                    crate::config::CloudInitDelivery::ConfigDrive => {
+                        Some("configdrive".to_string())
+                    }
+                },
+            }),
+            features: config.features.as_ref().map(|f| CRDFeaturesSpec {
+                acpi: f.acpi,
+                apic: f.apic,
+                hyperv: f.hyperv.as_ref().map(|h| CRDHyperVSpec {
+                    relaxed: h.relaxed,
+                    vapic: h.vapic,
+                    spinlocks: h.spinlocks,
+                    vpindex: h.vpindex,
+                    runtime: h.runtime,
+                    synic: h.synic,
+                    stimer: h.stimer,
+                    reset: h.reset,
+                    frequencies: h.frequencies,
+                    reenlightenment: h.reenlightenment,
+                    tlbflush: h.tlbflush,
+                    ipi: h.ipi,
+                }),
+                kvm_hidden: f.kvm_hidden,
+                smm: f.smm,
+            }),
+            firmware: config.firmware.as_ref().map(|fw| {
+                let (bootloader, secure_boot, persistent) = match &fw.bootloader {
+                    crate::config::BootloaderType::BIOS => ("bios".to_string(), false, false),
+                    crate::config::BootloaderType::EFI {
+                        secure_boot,
+                        persistent,
+                    } => ("efi".to_string(), *secure_boot, *persistent),
+                };
+                CRDFirmwareSpec {
+                    bootloader,
+                    secure_boot,
+                    persistent,
+                }
+            }),
+            clock: config.clock.as_ref().map(|c| CRDClockSpec {
+                utc: c.utc,
+                timezone: c.timezone.clone(),
+                timers: c.timers.as_ref().map(|t| CRDTimersSpec {
+                    hpet_present: t.hpet_present,
+                    pit_tick_policy: t.pit_tick_policy.clone(),
+                    rtc_tick_policy: t.rtc_tick_policy.clone(),
+                    hyperv_present: t.hyperv_present,
+                }),
+            }),
+            eviction_strategy: config.eviction_strategy.clone(),
+            termination_grace_period: config.termination_grace_period,
+            enable_tpm: config.enable_tpm,
+            enable_rng: config.enable_rng,
+            machine_type: config.machine_type.clone(),
+            running: None,
+            labels: config.labels.clone(),
+            annotations: config.annotations.clone(),
+            allow_internet: config.allow_internet,
+            windows: None,
+            gpus: config
+                .gpus
+                .iter()
+                .map(|g| CRDGpuSpec {
+                    name: g.name.clone(),
+                    device_name: g.device_name.clone(),
+                    virtual_gpu_options: g.virtual_gpu_options.as_ref().map(|o| {
+                        CRDVgpuOptionsSpec {
+                            display: o.display,
+                            ram_fb: o.ram_fb,
+                        }
+                    }),
+                })
+                .collect(),
+            host_devices: config
+                .host_devices
+                .iter()
+                .map(|h| CRDHostDeviceSpec {
+                    name: h.name.clone(),
+                    device_name: h.resource_name.clone(),
+                })
+                .collect(),
+        }
+    }
+}
+
+fn default_one() -> u32 {
+    1
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_disk() -> String {
+    "disk".to_string()
+}
+
+fn default_virtio() -> String {
+    "virtio".to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::VMConfigBuilder;
+    use kube::CustomResourceExt;
+
+    #[test]
+    fn test_vmconfig_to_crd_spec() {
+        let config = VMConfigBuilder::new("test-vm")
+            .namespace("default")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk("root", "20Gi", 1)
+            .add_pod_network("eth0")
+            .build();
+
+        let spec = VeyronVMSpec::from(&config);
+
+        assert_eq!(spec.cpu.cores, 4);
+        assert_eq!(spec.memory.size, "8Gi");
+        assert_eq!(spec.disks.len(), 1);
+        assert_eq!(spec.disks[0].source.source_type, "blank");
+        assert_eq!(spec.interfaces.len(), 1);
+        assert_eq!(spec.interfaces[0].network_type.net_type, "pod");
+    }
+
+    #[test]
+    fn test_veyronvm_crd_generates() {
+        // Verify the CustomResource derive generates the correct CRD metadata
+        let crd = VeyronVM::crd();
+        assert_eq!(crd.metadata.name.as_deref(), Some("veyronvms.veyron.io"));
+    }
+
+    #[test]
+    fn test_veyronblueprint_crd_generates() {
+        let crd = VeyronBlueprint::crd();
+        assert_eq!(
+            crd.metadata.name.as_deref(),
+            Some("veyronblueprints.veyron.io")
+        );
+    }
+
+    #[test]
+    fn test_veyronpolicy_crd_generates() {
+        let crd = VeyronPolicy::crd();
+        assert_eq!(
+            crd.metadata.name.as_deref(),
+            Some("veyronpolicies.veyron.io")
+        );
+    }
+
+    #[test]
+    fn test_veyroninsight_crd_generates() {
+        let crd = VeyronInsight::crd();
+        assert_eq!(
+            crd.metadata.name.as_deref(),
+            Some("veyroninsights.veyron.io")
+        );
+    }
+
+    #[test]
+    fn test_veyronaction_crd_generates() {
+        let crd = VeyronAction::crd();
+        assert_eq!(
+            crd.metadata.name.as_deref(),
+            Some("veyronactions.veyron.io")
+        );
+    }
+
+    #[test]
+    fn test_vmtemplate_crd_generates() {
+        let crd = VMTemplate::crd();
+        assert_eq!(crd.metadata.name.as_deref(), Some("vmtemplates.veyron.io"));
+    }
+
+    #[test]
+    fn test_vmprofile_crd_generates() {
+        let crd = VMProfile::crd();
+        assert_eq!(crd.metadata.name.as_deref(), Some("vmprofiles.veyron.io"));
+    }
+}

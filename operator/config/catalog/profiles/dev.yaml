@@ -1,0 +1,20 @@
+apiVersion: veyron.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    veyron.io/managed-by: veyron-catalog-export
+  name: dev
+spec:
+  description: Development environment - minimal resources for testing
+  cores: 1
+  sockets: 1
+  threads: 1
+  memory: '2Gi'
+  diskSize: '10Gi'
+  useCases:
+  - Local development
+  - Testing
+  - Learning
+  recommendedTemplates:
+  - ubuntu
+  - debian

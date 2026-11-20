@@ -1,0 +1,99 @@
+/** Evaluate a `/ai/search` filter over rows the console already has. */
+
+function num(v) {
+  if (typeof v === 'number') return v;
+  const n = parseFloat(String(v ?? '').replace(/[^\d.-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function str(v) {
+  return String(v ?? '').toLowerCase();
+}
+
+export function matches(row, cond) {
+  const v = row[cond.field];
+  const want = cond.value;
+  switch (cond.op) {
+    case 'eq':
+      return typeof want === 'number' ? num(v) === want : str(v) === str(want);
+    case 'ne':
+      return typeof want === 'number' ? num(v) !== want : str(v) !== str(want);
+    case 'contains':
+      return str(v).includes(str(want));
+    case 'not_contains':
+      return !str(v).includes(str(want));
+    case 'in':
+      return (Array.isArray(want) ? want : [want]).some((w) => str(v) === str(w));
+    case 'gt':
+    case 'gte':
+    case 'lt':
+    case 'lte': {
+      const n = num(v);
+      if (n == null) return false;
+      if (cond.op === 'gt') return n > want;
+      if (cond.op === 'gte') return n >= want;
+      if (cond.op === 'lt') return n < want;
+      return n <= want;
+    }
+    default:
+      return true;
+  }
+}
+
+export function applyFilter(rows, filter) {
+  let out = (rows || []).filter((r) => (filter?.where || []).every((c) => matches(r, c)));
+  const s = filter?.sort;
+  if (s?.field) {
+    const dir = s.dir === 'asc' ? 1 : -1;
+    out = [...out].sort((a, b) => {
+      const x = num(a[s.field]);
+      const y = num(b[s.field]);
+      if (x != null && y != null) return (x - y) * dir;
+      if (x == null && y != null) return 1;
+      if (y == null && x != null) return -1;
+      return str(a[s.field]).localeCompare(str(b[s.field])) * dir;
+    });
+  }
+  if (filter?.limit) out = out.slice(0, filter.limit);
+  return out;
+}
+
+/** Free text that reads like a question rather than a name. */
+export function looksLikeQuestion(q) {
+  const t = q.trim();
+  if (t.startsWith('?')) return true;
+  const words = t.split(/\s+/).filter(Boolean);
+  return words.length >= 3 || /\?$/.test(t) || /^(which|what|why|how|show|list|find|who|where)\b/i.test(t);
+}
+
+/** Console page that lists each `/api/v1/search` hit kind. */
+const SEARCH_PAGE = { vm: 'vms', pod: 'pods', node: 'hosts', pvc: 'pvcs', snapshot: 'snapshots', template: 'templates', image: 'images' };
+
+/** Console row id for a search hit (catalog images are listed as `catalog/<name>`). */
+function rowId(kind, id) {
+  return kind === 'image' ? `catalog/${id}` : id;
+}
+
+export function searchHitPage(kind) {
+  return SEARCH_PAGE[kind] || null;
+}
+
+/**
+ * Server hits the console has not already loaded, as `{ page, id, title, subtitle, status }`.
+ * `data` maps page id to `{ rows }`; a hit is dropped when its row is already there.
+ */
+export function newRemoteHits(hits, data) {
+  const out = [];
+  const seen = new Set();
+  for (const h of hits || []) {
+    const page = searchHitPage(h?.kind);
+    if (!page || !h.id) continue;
+    const id = rowId(h.kind, h.id);
+    const key = `${page}:${id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if ((data?.[page]?.rows || []).some((r) => r.id === id)) continue;
+    out.push({ page, id, title: h.title || h.id, subtitle: h.subtitle || '', status: h.status || '' });
+  }
+  return out;
+}

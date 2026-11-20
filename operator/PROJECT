@@ -1,0 +1,52 @@
+domain: veyron.io
+layout:
+- go.kubebuilder.io/v4
+projectName: veyron-operator
+repo: github.com/zyvorai/veyron/operator
+version: "3"
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: veyron.io
+  group: veyron
+  kind: VeyronVM
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: veyron.io
+  group: veyron
+  kind: VeyronBlueprint
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: veyron.io
+  group: veyron
+  kind: VeyronPolicy
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: veyron.io
+  group: veyron
+  kind: VeyronInsight
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: veyron.io
+  group: veyron
+  kind: VeyronAction
+  path: github.com/zyvorai/veyron/operator/api/v1alpha1
+  version: v1alpha1
