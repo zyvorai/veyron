@@ -265,7 +265,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately 
 Veyron is source-available under the **[Zyvor Production License v1.0](LICENSE)** (SPDX `LicenseRef-Zyvor-Production-1.0`, also in [LICENSES/](LICENSES/LicenseRef-Zyvor-Production-1.0.txt); see [NOTICE](NOTICE)).
 
 - **Free** for evaluation, development, testing, proofs of concept, research, education and all other non-production use.
-- **Production use needs a commercial license** from Zyvor AI Labs. That covers production clusters, customer workloads, SaaS, managed services, OEM and redistribution, with support options to match.
+- **Production use needs a commercial license** from Zyvor AI Labs: INR 67,999 per node per year including 18% GST (about USD 686, GST-free); a node is one server with up to 2 sockets. That covers production clusters, customer workloads, SaaS, managed services, OEM and redistribution, with support options to match.
 
 Talk to us: [sales@zyvor.dev](mailto:sales@zyvor.dev?subject=Veyron) · [zyvor.dev](https://zyvor.dev). Bugs and feature requests: [GitHub Issues](https://github.com/zyvorai/veyron/issues).
 
