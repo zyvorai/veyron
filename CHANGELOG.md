@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/macos-server.sh`: run `veyron api-serve` on a Mac as a launchd LaunchAgent (`dev.zyvor.veyron`; `install`, `uninstall`,
+  `status`, `render`). The API key stays in a mode-0600 env file that the agent sources; it is never written into the plist. Defaults to
+  `127.0.0.1:5151` over plain HTTP, with `--tls-cert`/`--tls-key`/`--host`/`--port`. `scripts/test-macos-server.sh` checks it offline.
+- `docs/macos-server.md`: running Veyron, Kairon and FluxVM together on one Apple Silicon Mac. The full chain has not been run end to end yet.
+
 ## [0.6.0] - 2026-11-19
 
 ### Added

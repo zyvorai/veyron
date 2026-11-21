@@ -9,6 +9,7 @@ Kubernetes API.
 | Goal | Guide |
 |---|---|
 | Install and create a first VM | [getting-started.md](getting-started.md) |
+| Run Veyron, Kairon and FluxVM together on one Apple Silicon Mac | [macos-server.md](macos-server.md) |
 | How the pieces fit | [architecture.md](architecture.md) |
 | Deploy to a cluster, Helm, client tarball, trial builds | [deploy.md](deploy.md) |
 | API keys, roles, routes | [api.md](api.md) |
