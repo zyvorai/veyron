@@ -267,7 +267,7 @@ Veyron is source-available under the **[Zyvor Production License v1.0](LICENSE)*
 - **Free for 30 days** per organization, for evaluation, development, testing, proofs of concept, research and education. After that a commercial license is required.
 - **Production use needs a commercial license** from Zyvor AI Labs: INR 67,999 per node per year including 18% GST in India, or USD 686 per node per year excluding tax elsewhere; a node is one server with up to 2 sockets. A 30-day trial key is available for production evaluation. That covers production clusters, customer workloads, SaaS, managed services, OEM and redistribution, with support options to match.
 
-Buy / get a quote: [zyvor.dev/buy](https://zyvor.dev/buy) · [sales@zyvor.dev](mailto:sales@zyvor.dev?subject=Veyron). Prices: INR incl. 18% GST in India; US dollars excl. tax elsewhere (VAT, GST or sales tax added where applicable). Pay online by UPI, card or netbanking where a buy page exists; international cards work (charged in rupees); or request a US-dollar invoice by bank transfer. Custom pricing: contact [sales@zyvor.dev](mailto:sales@zyvor.dev).
+Buy / get a quote: [zyvor.dev/buy](https://zyvor.dev/buy#veyron) · [sales@zyvor.dev](mailto:sales@zyvor.dev?subject=Veyron). Prices: INR incl. 18% GST in India; US dollars excl. tax elsewhere (VAT, GST or sales tax added where applicable). Pay online by UPI, card or netbanking where a buy page exists; international cards work (charged in rupees). Orders of USD 5,000 or more and quotes are invoiced in USD through Skydo. Custom pricing: contact [sales@zyvor.dev](mailto:sales@zyvor.dev).
 
 Talk to us: [zyvor.dev](https://zyvor.dev). Bugs and feature requests: [GitHub Issues](https://github.com/zyvorai/veyron/issues).
 
