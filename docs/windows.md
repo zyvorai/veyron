@@ -1,5 +1,5 @@
 <!-- Copyright 2026 Zyvor AI Labs · https://zyvor.dev -->
-<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0 -->
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0 -->
 # Windows guests
 
 Veyron runs Windows Server and Windows desktop VMs with the right hardware shape, unattended setup,

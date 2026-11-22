@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Default `spec.lifecycle` for new VMs: a per-tenant (namespace annotation) or
 //! cluster-wide (env) idle action and maximum lifetime, so lab and CI namespaces

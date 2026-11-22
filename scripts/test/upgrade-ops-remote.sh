@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 #
 # P6 — Upgrade path & day-2 ops. Upgrade is a dry-run by default; the real
 # (same-version, no-op) operator bounce is opt-in and asserts a running test VM

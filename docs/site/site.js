@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 (() => {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 

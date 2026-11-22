@@ -1,5 +1,5 @@
 <!-- Copyright 2026 Zyvor AI Labs · https://zyvor.dev -->
-<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0 -->
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0 -->
 # Migrate VMs from VMware, Hyper-V and Azure
 
 Existing VMs move to Kairon in two steps: [h2kvm](https://github.com/zyvorai/h2kvm) fixes and

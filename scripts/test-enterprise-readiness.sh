@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 # Read-only authenticated smoke checks; never starts or stops a VM.
 set -euo pipefail
 : "${VEYRON_URL:?Set VEYRON_URL to your API base URL}"

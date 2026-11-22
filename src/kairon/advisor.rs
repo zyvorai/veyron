@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Migration advisor: which VMs to move off a node that is stalling on CPU, memory
 //! or IO, and where to. Pure logic over host pressure (PSI) and memory samples; the

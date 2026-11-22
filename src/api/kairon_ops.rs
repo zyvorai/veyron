@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Kairon implementations of the VM day-2 routes that have no KubeVirt-shaped
 //! equivalent in [`crate::api::vm_backend`]: snapshots, guest access and expose.

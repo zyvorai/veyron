@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 #
 # Customer-site readiness preflight for a DEPLOYED Veyron API. Reports which
 # Day-2 operations the target cluster actually supports (KubeVirt feature gates

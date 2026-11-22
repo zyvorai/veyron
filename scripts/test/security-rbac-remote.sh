@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 #
 # P3 — Security & multi-tenancy. Asserts the route-level RBAC matrix in
 # src/api/auth_context.rs actually enforces (not just that admin works), plus

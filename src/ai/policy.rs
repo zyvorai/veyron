@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Natural-language guardrails: a sentence becomes a VeyronPolicy whose CEL
 //! rules use the operator's variables, dry-run against the VMs that exist now.

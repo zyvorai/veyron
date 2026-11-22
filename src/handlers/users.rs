@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! `veyron auth-user {create,list,delete,set-password}` — dashboard login
 //! accounts, backed by the `veyron-users` Secret (`src/kube/user_store.rs`).

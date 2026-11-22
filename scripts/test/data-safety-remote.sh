@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 #
 # P4 — Data safety round-trips. The gap the current suite can't close: it runs
 # on ephemeral containerDisk VMs, so a snapshot restore proves nothing about the

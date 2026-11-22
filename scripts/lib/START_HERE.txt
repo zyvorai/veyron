@@ -21,7 +21,7 @@
   LICENSE
   ──────────────────────────────────────────────────────────────
 
-  cat LICENSE              Zyvor Production License v1.0
+  cat LICENSE              Zyvor Production Licence v2.0
                            (a commercial license from zyvor.dev
                            is needed to run it)
 

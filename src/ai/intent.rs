@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Intent to infrastructure: "a Postgres box with 8 GB and a GPU" → validated
 //! `POST /api/v1/vms` bodies with a cost estimate, preflight results and YAML.

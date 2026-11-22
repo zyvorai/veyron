@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Refuse KubeVirt/CDI/operator-only routes with `501` when Kairon runs the VMs, so a
 //! Kairon cluster never quietly creates KubeVirt objects or reports KubeVirt state.

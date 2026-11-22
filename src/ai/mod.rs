@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Veyron AI: one tool registry and approval engine behind the console assistant,
 //! the MCP server, sandboxes and the background investigators. See `docs/ai.md`.

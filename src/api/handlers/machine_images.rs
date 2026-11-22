@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Kairon image catalog (`MachineImage`) and Veyron's image upload store — the
 //! Kairon-native replacement for CDI upload, DataVolumes and DataSources.

@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! OCI container Machines (`spec.sandbox.oci`): run an image in its own
 //! lightweight VM on a FluxVM node and read back the process state

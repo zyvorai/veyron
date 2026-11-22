@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 # Offline test of scripts/macos-server.sh: renders the LaunchAgent for a throwaway HOME and checks it. Loads nothing into
 # launchd and needs no Kubernetes, so it runs on any host with bash (plutil is used when present).

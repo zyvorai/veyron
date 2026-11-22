@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Kairon-only VM controls that live on CRDs rather than the relay: migration
 //! recovery, idle/lifetime lifecycle, placement, per-VM network policy, and

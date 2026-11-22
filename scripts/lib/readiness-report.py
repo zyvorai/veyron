@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 #
 # readiness-report.py — turn the customer-readiness JSONL trail into a signed
 # GO / NO-GO report (JSON + Markdown). Prints the verdict word to stdout and

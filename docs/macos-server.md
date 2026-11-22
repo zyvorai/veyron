@@ -1,5 +1,5 @@
 <!-- Copyright 2026 Zyvor AI Labs · https://zyvor.dev -->
-<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0 -->
+<!-- SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0 -->
 # Veyron, Kairon and FluxVM on one Mac
 
 Run the whole stack on a single Apple Silicon Mac: [FluxVM](https://github.com/zyvorai/zyvor-fluxvm) runs the VMs

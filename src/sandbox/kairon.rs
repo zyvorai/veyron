@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Kairon sandboxes: Firecracker Machines, forked from a running parent when
 //! `VEYRON_SANDBOX_KAIRON_PARENT` (a Machine name in the sandbox namespace) is set,

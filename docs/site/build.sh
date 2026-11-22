@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 #
 # Copy the images the landing page uses from docs/assets/ into docs/site/assets/,
 # so docs/site/ is a self-contained static site (GitHub Pages artifact).

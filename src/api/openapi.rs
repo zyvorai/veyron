@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -157,7 +157,7 @@ impl OpenApiSpec {
                     email: None,
                 }),
                 license: Some(LicenseInfo {
-                    name: "LicenseRef-Zyvor-Production-1.0".to_string(),
+                    name: "LicenseRef-Zyvor-Production-2.0".to_string(),
                     url: Some("https://github.com/zyvorai/veyron/blob/main/LICENSE".to_string()),
                 }),
             },
