@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 //
 // Headless audit of the React console at /console. Driven by console-audit.sh.
 // Prints one JSON object: { width, pages, findings: {page: {...}}, consoleErrors: {page: [...]} }.

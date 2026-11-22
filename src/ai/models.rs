@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! One-click model serving: an Ubuntu VM that runs an OpenAI-compatible server on
 //! port 8000 behind a ClusterIP Service.

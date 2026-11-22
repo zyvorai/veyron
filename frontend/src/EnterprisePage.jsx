@@ -1,5 +1,5 @@
 /* Copyright 2026 Zyvor AI Labs · https://zyvor.dev
- * SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0 */
+ * SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0 */
 import { useEffect, useState } from 'react';
 import { enterpriseCapabilities, enterpriseAssessment, enterpriseOperations, enterpriseSubmit, enterpriseCancel } from './api.js';
 import { ASSESSMENT_KINDS, SAMPLES, parseAssessment } from './enterprise.js';

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-# SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+# SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 #
 # Join machines from a SECOND rack/site into the Veyron k3s cluster over a
 # host-level WireGuard underlay (Tailscale alternative via V9S_MESH_BACKEND).

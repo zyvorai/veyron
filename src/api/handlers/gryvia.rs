@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Gryvia integration (`../gravia`, `zyvorai/gryvia`): the Kubernetes GPU platform for
 //! containerized training and inference. Veyron owns GPUs attached to VMs; Gryvia owns

@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Per-VM live-migration eligibility. Every migrate entry point (single, bulk,
 //! REST) consults this before creating a `VirtualMachineInstanceMigration` —

@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 //! Opt-in, fail-closed tenant authorization. Unknown routes are denied for scoped callers.
 use crate::api::{auth_context::AuthContext, http_server::web::ApiRole};
 use crate::enterprise::planning::dns_label;

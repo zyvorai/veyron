@@ -401,13 +401,13 @@ RUST_LOG=debug cargo run -- command
 
 ## 📜 License
 
-Contributions are accepted under the [Zyvor Production License v1.0](LICENSE). By submitting a change you confirm you have the right to contribute it, and you agree Zyvor AI Labs may use, modify, distribute and commercially license it (section 17 of the license).
+Contributions are accepted under the [Zyvor Production Licence v2.0](LICENSE). By submitting a change you confirm you have the right to contribute it, and you agree Zyvor AI Labs may use, modify, distribute and commercially license it (section 17 of the license).
 
 New source files start with the SPDX header used across the tree:
 
 ```rust
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 ```
 
 Use `#` for shell, Python and YAML, and `<!-- … -->` for Markdown and HTML.

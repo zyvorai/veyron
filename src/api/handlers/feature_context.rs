@@ -1,5 +1,5 @@
 // Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-// SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+// SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 
 //! Metadata for API payloads that are derived, bounded, or backed by a narrow source.
 //! Attached as `veyron_context` so clients and the dashboard can explain what users are seeing.
